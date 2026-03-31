@@ -50,9 +50,13 @@ useEffect(() => {
 - **Exit 3** (API error) → report the error to the user with the response message.
 - **Endpoint discovery:** Read `~/.stream/cache/API.md` first - never `--list` / `--llm`. Refresh if missing.
 
+## CLI install gate (first)
+
+**Before anything else** in this skill (routing, probes, builder, `stream api`, SDK wiring, or docs): verify the **`stream` CLI** is installed (`command -v stream` and `stream --version`). If missing or broken, follow **`bootstrap.md`**: explain, **ask the user once** for permission to install, then install (network). **Do not** skip installation and proceed to scaffold, API calls, or Steps 0–7. If the user declines install, follow **`bootstrap.md`** read-only paths only.
+
 ## Phase order
 
-Follow **[`SKILL.md`](SKILL.md)** phase order. Builder Track A: A1 (CLI probe) → A2 (execute Steps 0–7 immediately).
+Follow **[`SKILL.md`](SKILL.md)** phase order. **Step 0a** (CLI gate) always comes first. Builder Track A: A1 (CLI gate + probe) → A2 (execute Steps 0–7 immediately).
 
 - Do not load `references/*.md` until the user names the product(s).
 - Do not load `builder-ui.md` before Step 4.

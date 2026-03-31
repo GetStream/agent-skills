@@ -2,6 +2,8 @@
 
 Rules: [`RULES.md`](RULES.md) (CLI safety). Use this when the user wants to interact with Stream's APIs via the `stream` CLI.
 
+**Prerequisite:** **[`SKILL.md`](SKILL.md) › Step 0a** - verify the `stream` binary is installed (install via **`bootstrap.md`** if not) before any `stream api` usage.
+
 **Heavy examples / query cookbooks:** load **[`cli-cookbook.md`](cli-cookbook.md)** only when you need a non-obvious `--body` or filter.
 
 ## Credential resolution (before any `stream api` call)

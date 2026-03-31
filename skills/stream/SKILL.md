@@ -15,16 +15,31 @@ This file is the **single entrypoint**: context detection, intent routing, and m
 
 ---
 
-## Step 0: Context probe (run silently before routing)
+## Step 0a: `stream` CLI gate (mandatory first - never skip)
 
-Before responding to ANY Stream-related request, run this **single** probe to understand where you are. Do not show the output as a heading - just use it internally for routing:
+**Before** any routing, answering, reading modules, or running the rest of the context probe: verify the **`stream` executable** is installed and runnable.
+
+1. Run:
+   ```bash
+   bash -ce 'command -v stream >/dev/null 2>&1 && stream --version || echo "NOT_FOUND"'
+   ```
+2. **If the output is `NOT_FOUND` or either command fails:** **stop here.** Do **not** proceed to Step 0b, builder, `stream api`, credential checks, or SDK wiring. Follow **[`bootstrap.md`](bootstrap.md)** (explain what the CLI is, **ask the user once** for permission to install, then run the install - needs network approval). **Do not** suggest continuing scaffold/CLI work without the binary; only after the user **declines** install may you offer read-only help from **`sdk.md`** per bootstrap.
+3. **If `stream --version` succeeds:** continue to Step 0b.
+
+This gate applies to **every** Stream-related request (including docs-only or SDK questions): check first, install if missing, then continue.
+
+---
+
+## Step 0b: Context probe (after CLI is available)
+
+Run this **single** probe to understand where you are. Do not show the output as a heading - just use it internally for routing:
 
 ```bash
 bash -ce 'echo "=== CLI ===" && command -v stream 2>/dev/null && stream --version 2>/dev/null || echo "NOT_FOUND"; echo "=== ENV ===" && grep -s STREAM_API_KEY .env 2>/dev/null | head -1 && echo "ENV_FOUND" || echo "NO_ENV"; echo "=== CONFIG ===" && stream config list 2>/dev/null || echo "NO_CONFIG"; echo "=== PROJECT ===" && (test -f package.json && grep -l "next" package.json >/dev/null 2>&1 && echo "NEXTJS") || echo "NO_PROJECT"'
 ```
 
 This gives you:
-- **CLI state:** installed or not
+- **CLI state:** installed or not (should already be OK after Step 0a)
 - **Credential state:** `.env` in cwd (`env-local`), CLI configured (`cli-configured`), or neither (`none`)
 - **Project state:** Next.js project, other project, or empty directory
 
@@ -33,7 +48,7 @@ Show a **one-line status** after the probe:
 - `✓ Stream CLI v0.1.0 · app-a3f7b201 (Feeds + Chat) · ~/stream-tv`
 - `✓ Stream CLI v0.1.0 · configured via CLI · no local project`
 - `✓ Stream CLI v0.1.0 · no credentials found`
-- `✗ Stream CLI not found - see bootstrap.md to install`
+- `✗ Stream CLI not found - see bootstrap.md to install` (only if Step 0a was skipped in error - **do not** route onward; go back to Step 0a)
 
 ---
 
@@ -77,7 +92,7 @@ Show a **one-line status** after the probe:
 
 | Phase | Name | What you do |
 |-------|------|-------------|
-| **A1** | Context probe | Run Step 0 probe above. Show one-line status. |
+| **A1** | CLI gate + context probe | Run **Step 0a** then **Step 0b**. Show one-line status. If CLI missing, install via **`bootstrap.md`** before A2 - never skip. |
 | **A2** | Execute | **Immediately start** `builder.md` Steps 0–7. Frontend skills + Shadcn/ui are always installed during Step 3 - no prompt needed. |
 
 **Anti-patterns:** running skills install before scaffold; building a moderation review queue in the app.
@@ -87,6 +102,8 @@ Show a **one-line status** after the probe:
 ## Track B - CLI / data queries
 
 **Module:** **[`cli.md`](cli.md)**.
+
+**Prerequisite:** Complete **Step 0a** - the `stream` CLI must be installed before running queries or credential resolution.
 
 **Credential resolution** (do this before any `stream api` call):
 
@@ -116,6 +133,8 @@ Show a **one-line status** after the probe:
 
 **Modules:** **[`sdk.md`](sdk.md)**, **[`docs.md`](docs.md)**.
 
+**Prerequisite:** Complete **Step 0a** first. If the user declined CLI install, limit to read-only **`sdk.md`** / **`docs.md`** per **`bootstrap.md`**.
+
 | Phase | Name | What you do |
 |-------|------|-------------|
 | **D1** | Scope | Which product (Chat / Video / Feeds / Moderation) and whether references files are needed |
@@ -126,6 +145,8 @@ Show a **one-line status** after the probe:
 ## Track E - Enhance existing app
 
 For adding Stream products to an **existing Next.js project**. Uses references files and SDK patterns but skips scaffold entirely.
+
+**Prerequisite:** Complete **Step 0a** - install the `stream` CLI before npm installs, `stream api` setup, or token routes that depend on CLI-backed config.
 
 ### E1: Audit the existing project
 

@@ -1,6 +1,6 @@
 # SDK reference - cross-cutting patterns
 
-Rules: [`RULES.md`](RULES.md) (secrets, strict mode protection, package manager).
+Rules: [`RULES.md`](RULES.md) (secrets, strict mode protection, package manager). **CLI:** complete **[`SKILL.md`](SKILL.md) › Step 0a** before any workflow that needs the `stream` CLI.
 Product-specific SDK wiring, gotchas, and client patterns: see `references/*.md` App Integration sections.
 
 ---
