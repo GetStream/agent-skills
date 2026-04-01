@@ -19,12 +19,14 @@ Do credential resolution **silently** when `.env` or config exists - don't ask t
 **Support:** If the user asks for support or how to contact someone, direct them to [getstream.io/contact](https://getstream.io/contact/).
 
 1. **Resolve credentials** (see above). If none found, stop and guide the user.
-2. **Read `~/.stream/cache/API.md` to find the endpoint.** Do NOT run `--list`, `--llm`, or any CLI command for discovery - the file is always faster. If that file is **missing or empty**, run **`stream api --refresh` once**, then read **`API.md`** again. Use `stream --safe api <endpoint> --help` only after you have the endpoint name.
+2. **Read `~/.stream/cache/API.md` to find the endpoint.** Do NOT run `--list` or any CLI command for discovery - the file is always faster. If that file is **missing or empty**, run **`stream api --refresh` once**, then read **`API.md`** again. Use `stream --safe api <endpoint> --help` only after you have the endpoint name.
 3. **Check required params.** If missing, **ask** - never guess.
 4. **Always run with `--safe`**: `stream --safe api <endpoint> [params]`. This is the only permitted form on the first attempt.
 5. **If exit code 5** (safe mode refusal): the endpoint is mutating. Notify the user that you're about to execute a mutating Stream CLI operation, then re-run without `--safe`.
 6. If the command fails, check exit code and recover (see below).
 7. Summarize the response concisely.
+
+**Focused output:** Use `--jq '<query>'` to filter API responses with a jq expression. Prefer this for endpoints expected to produce long responses.
 
 **Session consent (psychological):** The user may say *Mutating Stream CLI OK for this thread* - still use **`--safe`** first; exit **5** always requires a visible mutating notice before retry without **`--safe`**.
 
@@ -68,7 +70,7 @@ Set defaults: `stream config set org <id>` and `stream config set app <id>`.
 
 ## CLI Rules (summary)
 
-1. **Endpoint discovery:** **`~/.stream/cache/API.md`** first - never `--list` / `--llm` for discovery. Refresh if missing.
+1. **Endpoint discovery:** **`~/.stream/cache/API.md`** first - never `--list` for discovery. Refresh if missing.
 2. **Help:** **`stream --safe api <endpoint> --help`** for parameters after you know the endpoint name.
 3. **Lazy auth** - if exit code **2**, **`stream auth login`** then retry.
 4. **Missing params** - ask; never invent IDs.
