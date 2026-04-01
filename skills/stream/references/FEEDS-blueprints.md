@@ -1,320 +1,103 @@
-# Feeds - full component blueprints
+# Feeds v3 - Full Component Blueprints
 
 Setup, routes, and gotchas: [FEEDS.md](FEEDS.md). Rules: [../RULES.md](../RULES.md).
 
+The Feeds SDK is **headless** - all components below are built entirely with your own UI (Shadcn/Tailwind). The SDK provides hooks and state management only.
+
 ---
 
-## Activity
+## Post Composer
 
-The core content unit in a feed.
+Text input for creating new activities. Includes avatar, textarea, and post button.
 
 ### Blueprint
 
 ```html
-<article class="activity">
-
-  <header class="activity__header">
-    <a class="activity__actor" href="/user/{user.id}">
-      <img class="activity__avatar" src="" alt="" />
-    </a>
-    <div class="activity__meta">
-      <a class="activity__author" href="/user/{user.id}"></a>
-      <span class="activity__type"></span>
-      <time class="activity__time" datetime=""></time>
-    </div>
-    <div class="activity__menu">
-      <button class="activity__menu-trigger" aria-label="More options"></button>
-      <div class="activity__menu-dropdown">
-        <!-- CONDITIONAL: only if activity.user.id === currentUser.id -->
-        <button class="activity__menu-item activity__menu-item--edit">Edit</button>
-        <button class="activity__menu-item activity__menu-item--delete">Delete</button>
-        <!-- Always visible -->
-        <button class="activity__menu-item activity__menu-item--report">Report</button>
-        <button class="activity__menu-item activity__menu-item--copy-link">Copy link</button>
-      </div>
-    </div>
-  </header>
-
-  <div class="activity__body">
-    <!-- Parse @mentions -> <a class="activity__mention">, #hashtags -> <a class="activity__hashtag">, URLs -> <a class="activity__link"> -->
-    <div class="activity__text"></div>
-
-    <!-- CONDITIONAL: activity.attachments contains item with og_scrape_url -->
-    <a class="activity__og" href="" target="_blank" rel="noopener">
-      <img class="activity__og-image" src="" alt="" />
-      <div class="activity__og-content">
-        <span class="activity__og-title"></span>
-        <span class="activity__og-description"></span>
-        <span class="activity__og-domain"></span>
-      </div>
-    </a>
-
-    <!-- CONDITIONAL: activity.attachments contains items with type === "image" -->
-    <!-- Modifiers: activity__gallery--single | --double | --triple | --grid -->
-    <div class="activity__gallery">
-      <figure class="activity__gallery-item">
-        <img src="" alt="" />
-      </figure>
-      <!-- When image attachments count > 4, last item: -->
-      <figure class="activity__gallery-item activity__gallery-item--overflow">
-        <img src="" alt="" />
-        <span class="activity__gallery-overflow-count">+3</span>
-      </figure>
-    </div>
-
-    <!-- CONDITIONAL: activity.attachments contains items with type === "file" -->
-    <div class="activity__files">
-      <a class="activity__file" href="" download>
-        <span class="activity__file-icon"></span>
-        <span class="activity__file-name"></span>
-        <span class="activity__file-size"></span>
-      </a>
-    </div>
-  </div>
-
-  <footer class="activity__footer">
-    <div class="activity__reaction-summary"></div>
-    <div class="activity__actions">
-      <!-- See Reaction Bar component -->
-    </div>
-    <!-- CONDITIONAL: activity.latest_comments exists -->
-    <div class="activity__comment-preview"></div>
-  </footer>
-
-</article>
-```
-
-### Wiring
-
-| Element | Read | Write | Property Path |
-|---|---|---|---|
-| `activity__avatar` | `feed.getOrCreate()` | User profile update | `activity.user.image` |
-| `activity__author` | `feed.getOrCreate()` | User profile update | `activity.user.name` |
-| `activity__time` | `feed.getOrCreate()` | Set at creation | `activity.created_at` |
-| `activity__type` | `feed.getOrCreate()` | Set at creation | `activity.type` (e.g. `"post"`, `"video"`) |
-| `activity__text` | `feed.getOrCreate()` | `feed.addActivity({ type, text })` | `activity.text` |
-| `activity__og-*` | `feed.getOrCreate()` | Automatic URL enrichment, or `client.getOG({ url })` + attach to `attachments[]` with `skip_enrich_url: true` | `activity.attachments[].og_scrape_url`, `.title`, `.text`, `.image_url` |
-| `activity__gallery-item` | `feed.getOrCreate()` | `client.uploadImage({ file })` -> attach CDN URL as `{ type: "image", image_url }` in `attachments[]` | `activity.attachments[].image_url` (where `type === "image"`) |
-| `activity__file` | `feed.getOrCreate()` | `client.uploadFile({ file })` -> attach CDN URL as `{ type: "file", asset_url }` in `attachments[]` | `activity.attachments[].asset_url` (where `type === "file"`) |
-| `activity__menu-item--edit` | `activity.user.id === currentUserId` | `client.updateActivityPartial({ id, set: { text } })` | - |
-| `activity__menu-item--delete` | `activity.user.id === currentUserId` | `client.feeds.deleteActivity({ id, hard_delete: false })` | - |
-| `activity__reaction-summary` | `feed.getOrCreate()` | - | `activity.reaction_groups` (keyed by type) + `activity.latest_reactions` |
-
-### Requirements
-
-| Feature | Requirement | Default |
-|---|---|---|
-| User enrichment | Automatic in v3 | On - `activity.user` is always an enriched object |
-| Reaction groups | Included in `feed.getOrCreate()` response | On - `activity.reaction_groups` always present |
-| Own reactions | Included in `feed.getOrCreate()` response | On - `activity.own_reactions` always present |
-| Latest reactions | Included in `feed.getOrCreate()` response | On - `activity.latest_reactions` always present |
-| Comments | Latest 5 top-level comments included automatically | On - `activity.latest_comments` in response |
-| Image CDN | Stream CDN | On by default |
-| OG Scraping | Automatic URL enrichment on activity creation (or manual via `client.getOG({ url })`) | On - can disable per-request with `skip_enrich_url: true` |
-| @Mentions | Server-side via `mentioned_user_ids` on creation; client-side text parsing for display | Always available |
-
----
-
-## Activity Composer
-
-Input area for creating a new activity.
-
-### Blueprint
-
-```html
-<form class="composer">
-
-  <div class="composer__author">
-    <img class="composer__avatar" src="" alt="" />
-  </div>
-
-  <div class="composer__input-area">
-    <div class="composer__text" contenteditable="true" role="textbox" aria-multiline="true" data-placeholder="What's on your mind?"></div>
-
-    <!-- CONDITIONAL: user types "@" + characters -->
-    <div class="composer__mention-dropdown">
-      <button class="composer__mention-option">
-        <img class="composer__mention-avatar" src="" alt="" />
-        <span class="composer__mention-name"></span>
-        <span class="composer__mention-handle"></span>
-      </button>
-    </div>
-  </div>
-
-  <!-- CONDITIONAL: URL detected in text and OG data fetched -->
-  <div class="composer__og-preview">
-    <img class="composer__og-image" src="" alt="" />
-    <div class="composer__og-content">
-      <span class="composer__og-title"></span>
-      <span class="composer__og-description"></span>
-      <span class="composer__og-domain"></span>
-    </div>
-    <button class="composer__og-remove" aria-label="Remove preview"></button>
-  </div>
-
-  <!-- CONDITIONAL: user has selected files -->
-  <div class="composer__attachments">
-    <div class="composer__attachment">
-      <!-- Modifiers: composer__attachment--uploaded | --error -->
-      <img class="composer__attachment-preview" src="" alt="" />
-      <button class="composer__attachment-remove" aria-label="Remove"></button>
-      <div class="composer__attachment-progress">
-        <div class="composer__attachment-progress-bar" style="width: 0%"></div>
+<div class="post-composer">
+  <div class="post-composer__row">
+    <img class="post-composer__avatar" src="" alt="" />
+    <div class="post-composer__body">
+      <textarea class="post-composer__input" placeholder="What's on your mind?"></textarea>
+      <div class="post-composer__actions">
+        <!-- OPTIONAL: attachment button -->
+        <button class="post-composer__attach" aria-label="Add attachment"></button>
+        <button class="post-composer__submit" disabled>Post</button>
       </div>
     </div>
   </div>
-
-  <div class="composer__toolbar">
-    <div class="composer__tools">
-      <button class="composer__tool composer__tool--image" aria-label="Add image"></button>
-      <button class="composer__tool composer__tool--file" aria-label="Attach file"></button>
-      <button class="composer__tool composer__tool--emoji" aria-label="Add emoji"></button>
-    </div>
-    <!-- OPTIONAL: multiple feed groups -->
-    <select class="composer__target">
-      <option value="user:{userId}">My Timeline</option>
-      <option value="group:{groupId}">Group Name</option>
-    </select>
-    <button class="composer__submit" type="submit" disabled>Post</button>
-  </div>
-
-</form>
-```
-
-### Wiring
-
-| Element | Read | Write | Property Path |
-|---|---|---|---|
-| `composer__avatar` | Connected user | - | `currentUser.image` |
-| `composer__text` | - (user input) | Becomes `activity.text` | - |
-| `composer__mention-dropdown` | `client.queryUsers(...)` for user search | - | Match typed query against users |
-| `composer__og-preview` | `client.getOG({ url })` on URL detection | Attach to `activity.attachments[]` with `skip_enrich_url: true` | Response: `{ og_scrape_url, title, text, image_url }` |
-| `composer__attachment` (image) | Local blob preview | `client.uploadImage({ file })` -> CDN URL | Collect as `{ type: "image", image_url }` in `attachments[]` |
-| `composer__attachment` (file) | Local blob preview | `client.uploadFile({ file })` -> CDN URL | Collect as `{ type: "file", asset_url }` in `attachments[]` |
-| `composer__submit` | - | `feed.addActivity({ type: "post", text, attachments, mentioned_user_ids })` | Target feed from `composer__target`; or use `feeds: ["user:john"]` for multi-feed |
-
-### Requirements
-
-| Feature | Requirement | Default |
-|---|---|---|
-| Image/file upload | Stream CDN via `client.uploadImage` / `client.uploadFile` | On - max size 100MB |
-| OG scraping | `client.getOG({ url })` for preview before posting; or automatic enrichment on creation | Available - cache client-side |
-| @Mention search | `client.queryUsers(...)` to find users; pass `mentioned_user_ids` on creation | Returns enriched `mentioned_users` in response |
-| Target feed | `feeds` array in `addActivity` or call `feed.addActivity` on specific feed | - |
-
----
-
-## Feed
-
-Container that holds a list of activities. Handles pagination and real-time updates.
-
-### Blueprint
-
-```html
-<div class="feed">
-
-  <header class="feed__header">
-    <h1 class="feed__title"></h1>
-    <!-- OPTIONAL: sort/filter -->
-    <div class="feed__controls">
-      <select class="feed__sort">
-        <option value="latest">Latest</option>
-        <option value="popularity">Popular</option>
-      </select>
-    </div>
-  </header>
-
-  <!-- CONDITIONAL: real-time subscription has new activities -->
-  <button class="feed__new-activities">
-    <span class="feed__new-activities-count">3</span> new posts
-  </button>
-
-  <!-- OPTIONAL: show composer on own/home feeds -->
-  <div class="feed__composer">
-    <!-- Insert Composer component -->
-  </div>
-
-  <div class="feed__list" role="feed" aria-busy="false">
-    <article class="feed__item">
-      <!-- Insert Activity component -->
-    </article>
-    <!-- CONDITIONAL: aggregated/notification feeds -->
-    <article class="feed__item feed__item--aggregated"></article>
-  </div>
-
-  <!-- States: feed__loading (skeleton), feed__empty, feed__error (with feed__error-retry button) -->
-
-  <!-- Pagination: pick one -->
-  <div class="feed__sentinel" aria-hidden="true"></div>        <!-- IntersectionObserver -->
-  <button class="feed__load-more">Load more</button>           <!-- Manual -->
-
-  <div class="feed__end">
-    <p class="feed__end-message">You're all caught up</p>
-  </div>
-
 </div>
 ```
 
 ### Wiring
 
-| Element | Read | Write | Notes |
+| Element | Read | Write | Property Path |
 |---|---|---|---|
-| `feed__list` | `feed.getOrCreate({ watch: true, limit: 25 })` | - | Returns activities with reactions, comments, user data enriched automatically. Access via `feed.state.getLatestValue().activities` |
-| `feed__load-more` / `feed__sentinel` | `feed.getNextPage()` (JS) or `feed.queryMoreActivities(limit:)` (native) | - | Cursor pagination: `next` token from response. Check `feed.state.getLatestValue().next` for more pages |
-| `feed__new-activities` | `feed.getOrCreate({ watch: true })` then `feed.state.subscribe(callback)` | - | Real-time updates via WebSocket when `watch: true` |
-| `feed__item` (remove) | - | `client.feeds.deleteActivity({ id })` | Optimistic: remove from DOM, rollback on error |
-| Follow | `client.queryFollows(...)` | `timeline.follow("user:tom")` or `client.follow({ source: "timeline:alice", target: "user:tom" })` | Required for aggregated "Home" feeds |
-| Unfollow | - | `timeline.unfollow("user:tom")` or `client.unfollow({ source, target })` | - |
+| `--avatar` | Current user | - | `userId` from auth state (first letter for fallback) |
+| `--input` | - | Local state | Controlled textarea. **Use the Shadcn `<Textarea>` component with its default styling (border, focus ring, background).** Do NOT strip defaults with `border-0`, `bg-transparent`, `shadow-none`, or `focus-visible:ring-0` - the textarea should look like a standard input inside the card. |
+| `--submit` enabled | Text is non-empty | `feed.addActivity({ type: 'post', text })` | Returns `StreamResponse<AddActivityResponse>` - created activity at `result.activity` |
+| `--attach` (optional) | - | `client.uploadImage({ file })` or `client.uploadFile({ file })` → include URL in `attachments` | `FeedsClient.uploadImage()` / `FeedsClient.uploadFile()` |
 
 ### Requirements
 
 | Feature | Requirement | Default |
 |---|---|---|
-| Feed group | Must exist in Dashboard -> Feed Groups | `user` and `timeline` exist by default |
-| Real-time | `feed.getOrCreate({ watch: true })` then `feed.state.subscribe(callback)` | Available - managed WebSocket |
-| Enrichment | Automatic in v3 | On - user, reactions, comments included by default |
-| Flat feed | Feed group type = "flat" | Standard chronological |
-| Aggregated feed | Feed group type = "aggregated" | Groups activities |
-| Notification feed | Feed group type = "notification" | Adds `is_read` / `is_seen` |
-| Ranking | Dashboard -> Feed Groups -> [group] -> Ranking | Off |
-| Follow relationships | `timeline.follow("user:tom")` calls | Required for "Home" feeds |
+| Post to feed | Feed instance from `client.feed(group, id)` with `getOrCreate({ watch: true })` | Required |
+| File uploads | - | Available via `client.uploadImage()` / `client.uploadFile()` |
 
 ---
 
-## Reaction Bar
+## Post Card
 
-Action buttons beneath an activity: like, comment, repost, bookmark. All toggleable reactions use optimistic UI: toggle class + count immediately, API call async, rollback on error.
+Individual activity card showing author, content, reactions, comments, and actions.
 
 ### Blueprint
 
 ```html
-<div class="reaction-bar">
+<div class="post-card">
 
-  <!-- LIKE: toggle, shows count -->
-  <button class="reaction-bar__btn reaction-bar__btn--like" aria-pressed="false" aria-label="Like">
-    <!-- aria-pressed="true" + modifier --active when own_reactions includes "like" -->
-    <span class="reaction-bar__icon reaction-bar__icon--like"></span>
-    <span class="reaction-bar__count reaction-bar__count--like"></span>
-    <!-- Hide count when 0. Format: "1", "23", "1.2K" -->
-  </button>
+  <div class="post-card__header">
+    <img class="post-card__avatar" src="" alt="" />
+    <div class="post-card__meta">
+      <span class="post-card__author"></span>
+      <time class="post-card__time" datetime=""></time>
+    </div>
+    <button class="post-card__menu" aria-label="More options">
+      <!-- Dropdown: Delete (own post) or Report (other's post) -->
+    </button>
+  </div>
 
-  <!-- COMMENT: not a toggle, opens comment thread -->
-  <button class="reaction-bar__btn reaction-bar__btn--comment" aria-label="Comment">
-    <span class="reaction-bar__icon reaction-bar__icon--comment"></span>
-    <span class="reaction-bar__count reaction-bar__count--comment"></span>
-  </button>
+  <div class="post-card__content">
+    <p class="post-card__text"></p>
+    <!-- CONDITIONAL: has attachments -->
+    <div class="post-card__attachments">
+      <!-- Images, files, etc. -->
+    </div>
+  </div>
 
-  <!-- REPOST: toggle, shows count -->
-  <button class="reaction-bar__btn reaction-bar__btn--repost" aria-pressed="false" aria-label="Repost">
-    <span class="reaction-bar__icon reaction-bar__icon--repost"></span>
-    <span class="reaction-bar__count reaction-bar__count--repost"></span>
-  </button>
+  <!-- CONDITIONAL: has poll -->
+  <div class="post-card__poll">
+    <!-- Poll component -->
+  </div>
 
-  <!-- BOOKMARK: toggle, shows count -->
-  <button class="reaction-bar__btn reaction-bar__btn--bookmark" aria-pressed="false" aria-label="Bookmark">
-    <span class="reaction-bar__icon reaction-bar__icon--bookmark"></span>
-    <span class="reaction-bar__count reaction-bar__count--bookmark"></span>
-  </button>
+  <div class="post-card__actions">
+    <button class="post-card__action post-card__action--like" aria-pressed="false">
+      <!-- aria-pressed="true" when user has liked -->
+      <span class="post-card__action-icon"></span>
+      <span class="post-card__action-count"></span>
+    </button>
+    <button class="post-card__action post-card__action--comment">
+      <span class="post-card__action-icon"></span>
+      <span class="post-card__action-count"></span>
+    </button>
+    <button class="post-card__action post-card__action--bookmark" aria-pressed="false">
+      <span class="post-card__action-icon"></span>
+    </button>
+  </div>
+
+  <!-- CONDITIONAL: comments expanded -->
+  <div class="post-card__comments">
+    <!-- Comments Section component -->
+  </div>
 
 </div>
 ```
@@ -323,98 +106,60 @@ Action buttons beneath an activity: like, comment, repost, bookmark. All togglea
 
 | Element | Read | Write | Property Path |
 |---|---|---|---|
-| Like - count | `feed.getOrCreate()` | - | `activity.reaction_groups.like.count` |
-| Like - active | `feed.getOrCreate()` | - | `activity.own_reactions` (check for `"like"` type) |
-| Like - add | - | `client.addActivityReaction({ activity_id, type: "like" })` | Returns `{ reaction }` |
-| Like - remove | - | `client.deleteActivityReaction({ activity_id, type: "like" })` | - |
-| Comment - count | `feed.getOrCreate()` | - | `activity.reaction_groups.comment.count` or comment count from `activity.latest_comments` |
-| Comment - click | - | Opens Comment Thread | No API call - UI only |
-| Repost - count | `feed.getOrCreate()` | - | `activity.share_count` |
-| Repost - add | - | `feed.addActivity({ type: "post", text, parent_id: activity.id })` | Creates a share/repost; increments `share_count` on parent |
-| Repost - remove | - | `client.feeds.deleteActivity({ id: repostActivityId })` | - |
-| Bookmark - active | `feed.getOrCreate()` | - | `activity.own_bookmarks` (array, truthy = bookmarked) |
-| Bookmark - count | `feed.getOrCreate()` | - | `activity.bookmark_count` |
-| Bookmark - add | - | `client.addBookmark({ activity_id })` | - |
-| Bookmark - remove | - | `client.deleteBookmark({ activity_id })` | - |
+| `--avatar` | `activity.user` | - | `activity.user.image` or first letter of `activity.user.name ?? activity.user.id` |
+| `--author` | `activity.user` | - | `activity.user.name ?? activity.user.id` |
+| `--time` | `activity.created_at` | - | `Date` - format as relative time |
+| `--text` | `activity.text` | - | `activity.text` (optional - may be undefined) |
+| `--attachments` | `activity.attachments` | - | `Attachment[]` with `.type`, `.image_url`, `.asset_url` |
+| Like count | `activity.reaction_groups` | - | `activity.reaction_groups?.like?.count ?? 0` |
+| Has liked | `activity.own_reactions` | - | `activity.own_reactions.some(r => r.type === 'like')` |
+| Like toggle | - | `client.addActivityReaction({ activity_id, type: 'like' })` / `client.deleteActivityReaction({ activity_id, type: 'like' })` | Toggle based on `hasLiked`. Guard: `const client = useFeedsClient(); if (!client) return null;` |
+| Comment count | `activity.comment_count` | - | `activity.comment_count` (number) |
+| Has bookmarked | `activity.own_bookmarks` | - | `activity.own_bookmarks.length > 0` |
+| Bookmark toggle | - | `client.addBookmark({ activity_id })` / `client.deleteBookmark({ activity_id })` | Toggle based on `hasBookmarked` |
+| Delete (own) | - | `client.deleteActivity({ id: activity.id })` | Only show for own posts (`activity.user.id === currentUserId`) |
+| Report (other's) | - | See Report Modal | Only show for other users' posts |
 
 ### Requirements
 
 | Feature | Requirement | Default |
 |---|---|---|
-| Reactions | Included in feed response | On - `reaction_groups`, `own_reactions`, `latest_reactions` always present |
-| Reaction types | Any string works as a reaction type | `like` common - custom types supported via `client.addActivityReaction({ type: "celebrate" })` |
-| Bookmarks | First-class entity in v3 | On - `own_bookmarks` and `bookmark_count` included in activity response |
-| Reposts/Shares | Via `parent_id` on `addActivity` | Increments `share_count` on parent; parent accessible via `activity.parent` |
-| Reaction notifications | Push notifications available | Off by default - use `skip_push: false` |
+| Like reactions | - | Available - `addActivityReaction` always available |
+| Bookmarks | - | Available - `addBookmark` always available |
+| Delete activity | User must be activity author or admin | Authors can delete own activities |
+| Comments | Feed must have comments enabled | Enabled by default |
 
 ---
 
-## Comment Thread
+## Comments Section
 
-Threaded comments beneath an activity. Comments are first-class entities in v3 (not reactions). Nested replies via `parent_id`.
+Inline comments for an activity, with a comment input.
 
 ### Blueprint
 
 ```html
-<div class="comment-thread">
+<div class="comments-section">
 
-  <div class="comment-thread__header">
-    <span class="comment-thread__count"></span>
-    <!-- OPTIONAL: sort (first, last, top, controversial, best) -->
-    <button class="comment-thread__sort"></button>
-  </div>
-
-  <button class="comment-thread__load-previous">View previous comments</button>
-
-  <div class="comment-thread__list">
-    <div class="comment-thread__item">
-      <div class="comment">
-        <a class="comment__actor" href="/user/{user.id}">
-          <img class="comment__avatar" src="" alt="" />
-        </a>
-        <div class="comment__body">
-          <div class="comment__bubble">
-            <a class="comment__author" href="/user/{user.id}"></a>
-            <p class="comment__text"></p>
-          </div>
-          <div class="comment__meta">
-            <time class="comment__time" datetime=""></time>
-            <button class="comment__action comment__action--like">Like</button>
-            <button class="comment__action comment__action--reply">Reply</button>
-            <!-- CONDITIONAL: comment.user.id === currentUserId -->
-            <button class="comment__action comment__action--edit">Edit</button>
-            <button class="comment__action comment__action--delete">Delete</button>
-          </div>
-          <!-- CONDITIONAL: comment.reaction_groups.like exists -->
-          <div class="comment__likes" aria-label="3 likes"></div>
-
-          <!-- CONDITIONAL: comment.replies_count > 0 -->
-          <div class="comment__replies">
-            <button class="comment__replies-toggle">View <span>5</span> replies</button>
-            <div class="comment__replies-list">
-              <div class="comment-thread__item comment-thread__item--reply">
-                <div class="comment">
-                  <!-- Same structure, limit nesting to 1-2 levels -->
-                </div>
-              </div>
-            </div>
-          </div>
+  <div class="comments-section__list">
+    <div class="comments-section__item">
+      <img class="comments-section__avatar" src="" alt="" />
+      <div class="comments-section__body">
+        <div class="comments-section__meta">
+          <span class="comments-section__author"></span>
+          <time class="comments-section__time" datetime=""></time>
         </div>
+        <p class="comments-section__text"></p>
       </div>
     </div>
   </div>
 
-  <div class="comment-thread__input">
-    <img class="comment-thread__input-avatar" src="" alt="" />
-    <div class="comment-thread__input-area">
-      <div class="comment-thread__input-text" contenteditable="true" role="textbox" aria-label="Write a comment" data-placeholder="Write a comment..."></div>
-      <!-- CONDITIONAL: replying to a specific comment -->
-      <div class="comment-thread__reply-context">
-        Replying to <span class="comment-thread__reply-target"></span>
-        <button class="comment-thread__reply-cancel" aria-label="Cancel reply"></button>
-      </div>
-    </div>
-    <button class="comment-thread__submit" aria-label="Post comment" disabled></button>
+  <!-- CONDITIONAL: has more comments -->
+  <button class="comments-section__load-more">Load more comments</button>
+
+  <div class="comments-section__input-row">
+    <img class="comments-section__input-avatar" src="" alt="" />
+    <input class="comments-section__input" placeholder="Write a comment..." />
+    <button class="comments-section__submit" disabled aria-label="Send"></button>
   </div>
 
 </div>
@@ -424,34 +169,204 @@ Threaded comments beneath an activity. Comments are first-class entities in v3 (
 
 | Element | Read | Write | Property Path |
 |---|---|---|---|
-| `comment-thread__count` | `feed.getOrCreate()` | - | `activity.reaction_groups.comment.count` or derived from comments array |
-| Comment list | `feed.loadNextPageActivityComments(activity, { sort: "best", limit: 10 })` or `client.getComments({ object_type: "activity", object_id, sort, limit })` | - | Returns `{ comments: [...] }` stored in feed state |
-| Comment list (paginate) | `feed.loadNextPageActivityComments(activity, { sort, limit })` | - | Cursor-based via feed state |
-| Comment - avatar | Included in comment response | - | `comment.user.image` |
-| Comment - author | Included in comment response | - | `comment.user.name` |
-| Comment - text | Included in comment response | - | `comment.text` (NOT `comment.comment` - asymmetric with the `comment` param used in `addComment`) |
-| Comment - time | Included in comment response | - | `comment.created_at` |
-| Comment - add | - | `client.addComment({ comment: "text", object_id: activity.id, object_type: "activity" })` | Returns `{ comment: { id, text, user, ... }, duration }` - unwrap with `result.comment` |
-| Comment - edit | - | `client.updateComment({ id: comment.id, comment: "new text" })` | Partial update - only specified fields changed |
-| Comment - delete | - | `client.deleteComment({ id: comment.id })` | Optional `hard_delete` param |
-| Comment like - count | In comment response | - | `comment.reaction_groups.like.count` |
-| Comment like - add | - | `client.addCommentReaction({ id: comment.id, type: "like" })` | - |
-| Comment like - remove | - | `client.deleteCommentReaction({ id: comment.id, type: "like" })` | - |
-| Nested replies - list | `comment.latest_replies` or `client.getComments({ object_type: "comment", object_id: parentId })` | - | `comment.replies_count` for count |
-| Nested reply - add | - | `client.addComment({ comment: "text", parent_id: parentComment.id })` | - |
-| Load previous | `feed.loadNextPageActivityComments(activity, { sort, limit })` | - | - |
+| Comments list | `useActivityComments({ feed, activity })` | - | Returns `{ comments, has_next_page, is_loading_next_page, loadNextPage }`. **`comments` starts as `undefined` - MUST call `loadNextPage()` once on mount (useEffect + ref guard) to trigger initial fetch.** |
+| `--author` | `comment.user` | - | `comment.user.name ?? comment.user.id` |
+| `--time` | `comment.created_at` | - | `Date` - format as relative time |
+| `--text` | `comment.text` | - | `comment.text` (optional) |
+| `--load-more` | `has_next_page` | `onClick={() => loadNextPage()}` | `loadNextPage` is async `(request?) => Promise<void>` - wrap for onClick, do NOT pass directly |
+| `--submit` | - | `client.addComment({ object_id: activity.id, object_type: 'activity', comment: text })` | Returns `StreamResponse<AddCommentResponse>` - comment at `result.comment`. Field is `comment`, NOT `text`; uses `object_id` + `object_type`, NOT `activity_id` |
+| Reply to comment | - | `client.addComment({ parent_id: comment.id, comment: text })` | `parent_id` auto-inherits `object_id` and `object_type` from parent |
+| Delete comment | - | `client.deleteComment({ id: comment.id })` | Only for own comments or admins |
 
 ### Requirements
 
 | Feature | Requirement | Default |
 |---|---|---|
-| Comments | First-class entity in v3 | Always available |
-| Nested threading | Via `parent_id` on `addComment` | API supports unlimited; cap at 2 levels in UI |
-| User enrichment | Automatic in v3 | `comment.user` always enriched with `id`, `name`, `image` |
-| @Mentions | `mentioned_user_ids` on `addComment`; returns `mentioned_users` | Always available |
-| Comment reactions | `client.addCommentReaction({ id, type })` / `client.deleteCommentReaction(...)` | `comment.reaction_groups` and `comment.own_reactions` included |
-| Comment sorting | `sort` param: `first`, `last`, `top`, `controversial`, `best` | `best` recommended - Wilson score balancing |
-| Comment notifications | `create_notification_activity: true` on `addComment` | Off by default |
+| Load comments | Feed + activity passed to `useActivityComments()`. **Must call `loadNextPage()` on mount** - hook does NOT auto-fetch. Use `useEffect` + `useRef` guard to call once. | Required |
+| Add comments | - | Available via `client.addComment()` |
+| Nested replies | Pass `parent_id` to `addComment()` | Available |
+| Real-time updates | Feed must be watched (`getOrCreate({ watch: true })`) | Comments appear in real-time when watched |
+
+---
+
+## Feed List
+
+Scrollable list of activities from a feed, with loading and empty states.
+
+### Blueprint
+
+```html
+<div class="feed-list">
+
+  <!-- Loading state -->
+  <div class="feed-list__loading">
+    <span class="feed-list__spinner"></span>
+  </div>
+
+  <!-- Empty state -->
+  <div class="feed-list__empty">
+    <span class="feed-list__empty-icon"></span>
+    <p class="feed-list__empty-text">No posts yet. Be the first to share something!</p>
+  </div>
+
+  <!-- Activities -->
+  <div class="feed-list__items">
+    <div class="feed-list__item">
+      <!-- Post Card component -->
+    </div>
+  </div>
+
+  <!-- CONDITIONAL: has more activities -->
+  <button class="feed-list__load-more">Load more</button>
+
+</div>
+```
+
+### Wiring
+
+| Element | Read | Write | Property Path |
+|---|---|---|---|
+| Activities | `useFeedActivities(feed)` | - | Returns `{ activities?, is_loading?, has_next_page?, loadNextPage }`. **All fields except `loadNextPage` are optional (`T \| undefined`).** |
+| Loading state | `is_loading` | - | Show spinner when `is_loading === true` |
+| Empty state | `activities` | - | Show when `!is_loading && (!activities \|\| activities.length === 0)` |
+| `--load-more` | `has_next_page` | `onClick={() => loadNextPage()}` | `loadNextPage` is async `() => Promise<void>` - wrap for onClick, do NOT pass directly |
+| Each item | `activities[i]` | - | `ActivityResponse` - pass to Post Card |
+
+### Requirements
+
+| Feature | Requirement | Default |
+|---|---|---|
+| Feed data | `<StreamFeed feed={feed}>` wrapper or pass `feed` to hook directly | Required - hook reads from context or prop |
+| Real-time | Feed created with `getOrCreate({ watch: true })` | New activities appear automatically |
+| Pagination | - | Cursor-based via `loadNextPage()` |
+
+---
+
+## Follow Button
+
+Toggle button to follow/unfollow a user's feed.
+
+### Blueprint
+
+```html
+<button class="follow-btn" aria-pressed="false">
+  <!-- aria-pressed="true" + --following modifier when following -->
+  Follow
+</button>
+```
+
+### Wiring
+
+| Element | Read | Write | Property Path |
+|---|---|---|---|
+| Is following | `useOwnFollows(feed)` | - | `own_follows?.some(f => f.target === targetFid)` - check if any of current user's feeds follow this one |
+| Follow | - | `feed.follow('user:targetId')` | On the current user's **timeline feed instance**. Do NOT use `client.follow()` — it won't update reactive hook state. |
+| Unfollow | - | `feed.unfollow('user:targetId')` | On the current user's **timeline feed instance**. Do NOT use `client.unfollow()`. |
+| Follower count | `useFeedMetadata(feed)` | - | `follower_count` |
+| Following count | `useFeedMetadata(feed)` | - | `following_count` |
+
+### Requirements
+
+| Feature | Requirement | Default |
+|---|---|---|
+| Follow/unfollow | Feed instance required | Available |
+| Follow count | Feed must be loaded with `getOrCreate()` | Populated on load |
+
+---
+
+## Notification Feed
+
+Aggregated notifications for reactions, comments, follows, and mentions.
+
+### Blueprint
+
+```html
+<div class="notification-feed">
+
+  <div class="notification-feed__header">
+    <h2 class="notification-feed__title">Notifications</h2>
+    <span class="notification-feed__badge"></span>
+  </div>
+
+  <div class="notification-feed__list">
+    <div class="notification-feed__group">
+      <!-- Modifier: --unread | --unseen -->
+      <div class="notification-feed__group-header">
+        <span class="notification-feed__group-verb"></span>
+        <time class="notification-feed__group-time" datetime=""></time>
+      </div>
+      <div class="notification-feed__group-activities">
+        <!-- Individual notification items -->
+      </div>
+    </div>
+  </div>
+
+</div>
+```
+
+### Wiring
+
+| Element | Read | Write | Property Path |
+|---|---|---|---|
+| Aggregated activities | `useAggregatedActivities(feed)` | - | Returns `{ aggregated_activities, is_loading, has_next_page, loadNextPage }`. `loadNextPage` is async - wrap for onClick. |
+| Unread/unseen counts | `useNotificationStatus(feed)` | - | `{ unread, unseen, last_read_at, last_seen_at }` |
+| Badge count | `useNotificationStatus(feed)` | - | `unseen` or `unread` count |
+| React key | `aggregatedActivity.group` | - | String identifier - use as `key` prop. **There is no `.id` property.** |
+| Group verb (derived) | `aggregatedActivity.activities[0].type` | - | Derive verb from first activity's type, e.g. `"like"`, `"comment"`, `"post"`. **There is no `.verb` property on `AggregatedActivityResponse`.** |
+| Group actors | `aggregatedActivity.activities` | - | `ActivityResponse[]` - array of activities in this group |
+| Mark read/seen | - | `feed.markActivity({ mark_read: [activityId], mark_seen: [activityId] })` | Via `Feed` API. Also: `feed.markActivity({ mark_all_read: true, mark_all_seen: true })` to mark all. |
+
+### Requirements
+
+| Feature | Requirement | Default |
+|---|---|---|
+| Notification feed | Feed group with `notification` config (`track_seen`, `track_read`) | `notification` group has this by default |
+| Aggregation | Feed group with `aggregation.format` configured | `notification` group has default format |
+| Real-time | Feed created with `getOrCreate({ watch: true })` | Badge updates in real-time |
+
+---
+
+## User Profile Card
+
+User info with follow button, follower/following counts, and recent activity.
+
+### Blueprint
+
+```html
+<div class="user-profile">
+  <img class="user-profile__avatar" src="" alt="" />
+  <h3 class="user-profile__name"></h3>
+  <div class="user-profile__stats">
+    <span class="user-profile__stat">
+      <strong class="user-profile__stat-count"></strong> followers
+    </span>
+    <span class="user-profile__stat">
+      <strong class="user-profile__stat-count"></strong> following
+    </span>
+  </div>
+  <!-- Follow Button component -->
+  <div class="user-profile__feed">
+    <!-- Feed List filtered to this user's activities -->
+  </div>
+</div>
+```
+
+### Wiring
+
+| Element | Read | Write | Property Path |
+|---|---|---|---|
+| Avatar | User data | - | `user.image` or initial letter |
+| Name | User data | - | `user.name ?? user.id` |
+| Followers count | `useFeedMetadata(userFeed)` | - | `follower_count` |
+| Following count | `useFeedMetadata(userFeed)` | - | `following_count` |
+| User's activities | `useFeedActivities(userFeed)` | - | Activities on the user's personal feed |
+
+### Requirements
+
+| Feature | Requirement | Default |
+|---|---|---|
+| User feed | `client.feed('user', userId)` with `getOrCreate()` | Required |
+| Metadata | Returned by `getOrCreate()` response | Populated on load |
 
 ---
 
@@ -462,7 +377,7 @@ Used in livestreaming apps (Video + Feeds). A live activity represents an active
 ### Blueprint
 
 ```html
-<!-- CONDITIONAL: activity.type === "live" - render LiveCard instead of standard Activity -->
+<!-- CONDITIONAL: activity.type === "live" - render LiveCard instead of standard Post Card -->
 <div class="live-card">
   <div class="live-card__badge">
     <span class="live-card__dot"></span> <!-- Pulsing red dot via CSS animation -->
@@ -483,24 +398,19 @@ Used in livestreaming apps (Video + Feeds). A live activity represents an active
 
 | Element | Read | Write | Property Path |
 |---|---|---|---|
-| Live activities | `feed.getOrCreate()` - filter by `type === "live"` | - | `activity.type === "live"` |
-| `live-card__author` | Feed response | - | `activity.user.name` |
-| `live-card__title` | Feed response | - | `activity.text` |
-| `live-card__watch` | - | Navigate to `/watch/{callId}` | `activity.custom.call_id` |
-| Go Live (create) | - | `client.feeds.addActivity({ feeds: ["user:community"], type: "live", text: title, user_id, custom: { call_id } })` | - |
-| End Stream (remove) | - | `client.feeds.deleteActivity({ id: liveActivityId })` | - |
+| Live activities | `useFeedActivities(feed)` - filter by `type === "live"` | - | `activity.type === "live"` |
+| `live-card__author` | Activity data | - | `activity.user.name` |
+| `live-card__title` | Activity data | - | `activity.text` |
+| `live-card__watch` | - | Navigate to watch view | `activity.custom.callId` |
+| Go Live (create, client-side) | - | `feed.addActivity({ type: 'live', text: title, custom: { callId } })` | Returns `StreamResponse<AddActivityResponse>` - save `result.activity.id` for cleanup |
+| Go Live (create, server-side) | - | `client.feeds.addActivity({ feeds: ['user:' + userId], type: 'live', text: title, custom: { callId } })` | Server route (`/api/feed/live`). `client.feeds.*` — NOT `client.*` directly. Returns `{ activity: { id } }` |
+| End Stream (remove, client-side) | - | `client.deleteActivity({ id: liveActivityId })` | Use the activity ID saved from Go Live |
+| End Stream (remove, server-side) | - | `client.feeds.deleteActivity({ id: liveActivityId })` | Server route. `client.feeds.*` — NOT `client.*` directly |
 
 ### Requirements
 
 | Feature | Requirement | Default |
 |---|---|---|
 | Live activity type | Use `type: "live"` to distinguish from posts | Convention - not enforced by API |
-| Custom fields | Store `call_id` in `activity.custom` to link feed activity to video call | - |
-| Rendering | FeedList should partition activities: `type === "live"` at top, rest below | Client-side logic |
-
-### API Route
-
-| Route | Method | Params | Action | Response |
-|---|---|---|---|---|
-| `/api/feed/live` | POST | `{ userId, text, callId }` | `addActivity({ feeds: ["user:community"], type: "live", text, user_id, custom: { call_id: callId } })` | `{ activity }` |
-| `/api/feed/live` | DELETE | `{ activityId }` | `client.feeds.deleteActivity({ id: activityId })` | `{ removed: true }` |
+| Custom fields | Store `callId` in `activity.custom` to link feed activity to video call | - |
+| Rendering | Feed List should partition activities: `type === "live"` at top, rest below | Client-side logic |
