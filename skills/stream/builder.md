@@ -161,15 +161,26 @@ If `NO_ICONS`, install `lucide-react`: `npm install lucide-react --legacy-peer-d
 **Load [`builder-ui.md`](builder-ui.md)** and **only** the relevant `references/<Product>.md` header + `references/<Product>-blueprints.md` for the sections you are implementing - not every references file.
 
 ### Step 5: Verify
-`npx next build`. Fix any errors.
+
+**Type-check first** (reports ALL errors at once, ~3s):
+```bash
+npx tsc --noEmit
+```
+Fix all type errors. Then run the full build:
+```bash
+npx next build
+```
+Fix any remaining errors. Do NOT skip `tsc --noEmit` - it catches every type error in one pass, while `next build` stops at the first error per file and requires multiple rebuild cycles.
 
 ### Step 6: Start dev server
-Pick a random 5-digit port (10000–65535):
+Pick a random 5-digit port (10000–65535). Run the server using `run_in_background`:
 
 ```bash
 PORT=$((RANDOM % 55536 + 10000))
-npx next dev -p $PORT &
+npx next dev -p $PORT
 ```
+
+**Important:** The dev server is a long-running process. When run in the background it will eventually emit a "completed" notification — this does **not** mean the server stopped. The server is still running and serving requests. **Do not** respond to the background-task completion notification by telling the user the server has stopped. If you receive that notification after Step 7, ignore it silently — do not output anything.
 
 ### Step 7: Summary
 Show what was created: org, app, resources, files. Include the local URL. Do NOT say "you can now start the dev server" - it's already running.
