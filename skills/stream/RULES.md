@@ -38,8 +38,18 @@ useEffect(() => {
 }, [deps]);
 ```
 
+**Do NOT use `useRef` as a "run once" guard** with this pattern (e.g. `const initRef = useRef(false); if (initRef.current) return; initRef.current = true;`). `useRef` persists across strict mode's unmount→remount cycle - if you set `ref.current = true` on the first mount, it stays `true` after cleanup, and the second mount skips initialization entirely. The `let mounted` + `setTimeout` + cleanup pattern handles strict mode correctly on its own.
+
 - Client-side Chat: `new StreamChat(apiKey)` - never `getInstance()` (singletons break strict mode).
+- Client-side Feeds: `useCreateFeedsClient()` handles strict mode internally - no manual pattern needed for connection. But `feed.getOrCreate()` must still use the `setTimeout` + `mounted` guard.
 - Server-side: `StreamChat.getInstance(apiKey, apiSecret)` is fine (singleton OK).
+
+## Base UI (not Radix)
+
+Shadcn components use `@base-ui/react`, NOT `@radix-ui`. Key differences:
+- **Never use `asChild`** - it does not exist in Base UI. Trigger components render children directly.
+- Style triggers by passing `className` directly to `<DropdownMenuTrigger>`, `<PopoverTrigger>`, etc.
+- Do NOT wrap triggers with `<Button>` - style the trigger element itself.
 
 ## CLI safety
 
