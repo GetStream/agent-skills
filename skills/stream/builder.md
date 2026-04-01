@@ -45,6 +45,17 @@ Always use `npm`. Never use bun.
 ### Step 1: Auth
 If the user is not logged in, run `stream auth login` in a **normal terminal** so the browser opens (PKCE).
 
+### Step 1b: Theme pick
+
+Ask the user which Shadcn theme they'd like **before doing anything else**:
+
+> **Quick theme pick:** I can use a random shadcn theme, or you can design your own at [ui.shadcn.com/create](https://ui.shadcn.com/create) and share the `--preset` value (e.g. `--preset b1Gdi7z7r`). Want a random one or do you have a preset?
+
+**STOP here and wait for the user's answer.** Do not continue with org/app creation or any other steps until the user responds. Asking a question and continuing to work in parallel is confusing — the user misses the question as output scrolls past.
+
+- **User provides a preset** → store it for Task A scaffold command.
+- **User says random / doesn't care / wants to move on** → pick a random preset from `nova`, `vega`, `maia`, `lyra`, `mira`, `luma`.
+
 ### Step 2: Create org + app
 
 **First, check existing orgs** with `stream api OrganizationRead`. If there are already 10 orgs, do NOT create a new one - pick an existing `builder-*` org and create a new app inside it.
@@ -74,18 +85,21 @@ stream config set org <org_id> && stream config set app <app_id>
 
 #### Scaffold order
 
-`npx shadcn@latest init -t next` requires the target directory to not yet exist - it creates the project directory. Order:
+Order:
 
-1. **Steps 1–2:** Auth + org/app.
-2. **Task A:** Scaffold with Shadcn + Next.js in one command.
-3. **Task A.1:** Add base Shadcn components.
-4. **Task A.2:** Install frontend skills.
-5. Continue with Task B (.env), Task C (SDKs), Task D (CLI config).
+1. **Steps 1–1b:** Auth + theme pick (wait for answer).
+2. **Step 2:** Create org/app.
+3. **Task A:** Scaffold with Shadcn + Next.js using the chosen preset.
+4. **Task A.1:** Add base Shadcn components.
+5. **Task A.2:** Install frontend skills.
+6. Continue with Task B (.env), Task C (SDKs), Task D (CLI config).
 
-**Task A: Scaffold** - creates the project directory with Next.js + Tailwind + Shadcn/ui (Base UI) in one step. Pick the preset based on use case (see **Preset Matching** below) - never use `mira` (no border radius):
+**Task A: Scaffold** - scaffolds Next.js + Tailwind + Shadcn/ui (Base UI) into the current directory. Use the theme preset chosen in **Step 1b**.
+
+The scaffold command creates a new directory, so we scaffold into a temporary `.scaffold` subdirectory and move everything up:
 
 ```bash
-npx shadcn@latest init -t next -b base -n <project-name> --no-monorepo -p <preset>
+npx shadcn@latest init -t next -b base -n .scaffold --no-monorepo -p <random-preset> && mv .scaffold/* .scaffold/.* . 2>/dev/null; rm -rf .scaffold
 ```
 
 **Task A.1: Add base Shadcn components:**
@@ -157,32 +171,17 @@ End with:
 
 ---
 
-## Preset Matching
-
-Presets control font, icon library, and component shape - **not** colors (all presets use neutral). Pick based on the use case vibe:
-
-| Preset | Font | Icons | Style | Best for |
-|---|---|---|---|---|
-| **nova** | Geist | lucide-react | Rounded-lg, compact | Productivity, messaging |
-| **vega** | Inter | lucide-react | Rounded-md, shadows | Professional, business |
-| **maia** | Figtree | hugeicons | Rounded-4xl, spacious | Consumer, social, entertainment |
-| **lyra** | Geist + JetBrains Mono | phosphor | Rounded-none, sharp | Technical, developer tools |
-
-If the use case doesn't match any row below, pick a **random** preset from nova, vega, maia, lyra. **Never use mira** (no border radius).
-
----
-
 ## Use Case Matching
 
 **Only build with the products the user explicitly mentions.** If unclear, ask.
 
-| User says | Use case | Products | Preset |
-|---|---|---|---|
-| "Twitch", "YouTube Live", "Kick", "livestream" | Livestreaming | Video + Chat + Feeds | **maia** (soft, playful - consumer/entertainment) |
-| "Zoom", "Google Meet", "video call", "meeting" | Video Conferencing | Video [+ Chat] | **vega** (professional, structured - business tool) |
-| "Slack", "Discord", "team chat", "channels" | Team Messaging | Chat | **nova** (clean, modern - productivity) |
-| "WhatsApp", "iMessage", "DM", "messaging" | Direct Messaging | Chat [+ Video] | **nova** (minimal, fast - messaging focus) |
-| "Instagram", "Twitter", "social feed", "Reddit" | Social Feed | Feeds + Chat | **maia** (friendly, rounded - social feel) |
+| User says | Use case | Products |
+|---|---|---|
+| "Twitch", "YouTube Live", "Kick", "livestream" | Livestreaming | Video + Chat + Feeds |
+| "Zoom", "Google Meet", "video call", "meeting" | Video Conferencing | Video [+ Chat] |
+| "Slack", "Discord", "team chat", "channels" | Team Messaging | Chat |
+| "WhatsApp", "iMessage", "DM", "messaging" | Direct Messaging | Chat [+ Video] |
+| "Instagram", "Twitter", "social feed", "Reddit" | Social Feed | Feeds + Chat |
 
 **Moderation** is configured via CLI during setup only. **Never build moderation review UI in the app** (RULES.md › Moderation is Dashboard-only) - review happens in the [Stream Dashboard](https://beta.dashboard.getstream.io).
 

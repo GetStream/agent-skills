@@ -55,8 +55,9 @@ This ensures the developer always knows which user they are operating as.
 
 ### Stack
 - Next.js 16, Tailwind v4, TypeScript (match scaffold defaults).
-- **Shadcn/ui with Base UI** - scaffolded via `shadcn init -t next -b base -p <preset>` (random preset per project: nova, vega, maia, or lyra - never mira). Use Shadcn components (`Button`, `Input`, `Textarea`, `Card`, etc.) for all standard UI. Add more via `npx shadcn@latest add <component>` as needed.
-- **Icons:** Use whichever icon library the preset installs (e.g. `lucide-react` or `@hugeicons/react`) - not emoji characters in the app shell.
+- **Shadcn/ui with Base UI** - scaffolded via `shadcn init -t next -b base -p <preset>` (random preset per project — see builder.md Task A). Use Shadcn components (`Button`, `Input`, `Textarea`, `Card`, etc.) for all standard UI. Add more via `npx shadcn@latest add <component>` as needed.
+- **Icons:** Use whichever icon package the scaffold installed (check `package.json`). If none present, `lucide-react` is installed during Step 3 Task C. Standard PascalCase imports:
+  `import { Heart, Send, Bookmark, MoreHorizontal } from "lucide-react"`. If the project uses a different icon package (e.g. `@phosphor-icons/react`), use that one instead — do not mix icon packages.
 - Tailwind utility classes for custom styling beyond Shadcn components - never inline styles.
 - **Theme:** RULES.md › Theme - `next-themes` with system default (class-based dark mode, scaffolded automatically).
 - `-webkit-font-smoothing: antialiased` on html (set by scaffold).
