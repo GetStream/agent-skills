@@ -70,10 +70,11 @@ Use whatever `globals.css` Shadcn generates. Do not add custom variables, custom
 
 Use Shadcn components, Tailwind utilities, and the frontend skills (installed during Step 3) to build a polished UI. No further opinions - use your best judgement. Stream references provide structure and wiring; frontend skills provide design guidance.
 
-### Stream SDK CSS
+### Stream SDK CSS & Providers
 
-- Import `stream-chat-react/dist/css/v2/index.css` and `@stream-io/video-react-sdk/dist/css/styles.css` when using those SDKs.
-- Match Stream's theme to the app: use `useTheme()` from `next-themes` to get `resolvedTheme`, then pass `str-chat__theme-dark` or `str-chat__theme-light` to `<Chat>`.
+- **Chat:** Import `stream-chat-react/dist/css/v2/index.css`. Match theme: `useTheme()` → `str-chat__theme-dark` or `str-chat__theme-light` to `<Chat>`.
+- **Video:** Import `@stream-io/video-react-sdk/dist/css/styles.css`.
+- **Feeds:** No CSS import - headless SDK. Wrap app in `<StreamFeeds client={client}>`, then per-feed in `<StreamFeed feed={feed}>`. Use `useCreateFeedsClient()` for client creation - **gate rendering on `client !== null`** (returns `null` until connected). Call `feed.getOrCreate({ watch: true })` inside `setTimeout(50ms)` + `mounted` guard (strict mode protection) before passing to `<StreamFeed>`. See `references/FEEDS.md` for complete patterns.
 
 ### Moderation
 

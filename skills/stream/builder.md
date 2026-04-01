@@ -136,14 +136,23 @@ echo "NEXT_PUBLIC_STREAM_API_KEY=$API_KEY" >> .env
 echo "NEXT_PUBLIC_STREAM_APP_ID=<app_id>" >> .env
 ```
 
-**Task C: Install Stream SDKs** - Only what the use case needs:
+**Task C: Install Stream SDKs + verify icons** - Only what the use case needs:
 
 ```bash
 # Chat:     stream-chat stream-chat-react
 # Video:    @stream-io/video-react-sdk
+# Feeds:    @stream-io/feeds-react-sdk
 # Server:   @stream-io/node-sdk
 npm install <packages> --legacy-peer-deps
 ```
+
+After installing SDKs, verify an icon package is available. Some Shadcn presets bundle one, others don't:
+
+```bash
+node -e "try{require.resolve('lucide-react');console.log('ICONS_OK')}catch{try{require.resolve('@phosphor-icons/react');console.log('ICONS_OK')}catch{console.log('NO_ICONS')}}"
+```
+
+If `NO_ICONS`, install `lucide-react`: `npm install lucide-react --legacy-peer-deps`. If an icon package is already present, use that one throughout the app — do not install a second.
 
 **Task D: Configure Stream** - Run the CLI commands from each relevant references's App Integration → Setup section.
 
@@ -227,8 +236,16 @@ Login → Conversation list → Open a conversation → Start new conversation
 
 **Social Feed (Instagram, Twitter):**
 ```
-Login → Feed (posts + composer) → Comments → User profiles
+Login → Feed hub (follow users + composer + tabs: Timeline | My Posts) → Comments → User profiles
 ```
+- The user posts to their own `user:<userId>` feed and reads from `timeline:<userId>` (aggregates followed users' posts)
+- **Feed hub tabs:** Use a `Tabs` component with two views:
+  - **Timeline** (default) — shows `timeline:<userId>` (posts from followed users)
+  - **My Posts** — shows `user:<userId>` (the current user's own posts)
+- **Refresh button:** Place a refresh/reload button next to the tabs. On click, re-call `feed.getOrCreate({ watch: true })` on the active feed to re-fetch the latest activities. This gives users an explicit way to refresh after follows or if real-time events are missed.
+- A **Follow User** input (username + follow button) must be visible so users can populate their timeline
+- Without following, the timeline is permanently empty — this component is not optional
+- **Follow wiring:** The Follow component must receive the **timeline feed instance** and call `timelineFeed.follow('user:targetId')` — not `client.follow()`. Using the feed instance keeps `useFeedActivities()` in sync so the timeline updates immediately after following.
 
 ### Key rules
 
