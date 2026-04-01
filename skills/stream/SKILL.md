@@ -5,6 +5,13 @@ license: See LICENSE in repository root
 compatibility: Requires Node.js, npm, and the stream CLI binary (see bootstrap.md)
 metadata:
   author: GetStream
+allowed-tools: >-
+  Read, Write, Edit, Glob, Grep,
+  Bash(stream *),
+  Bash(npx *), Bash(npm install *),
+  Bash(node -e *), Bash(openssl rand *),
+  Bash(mv .scaffold*), Bash(rm -rf .scaffold),
+  Bash(ls *)
 ---
 
 # Stream - skill router + execution flow
