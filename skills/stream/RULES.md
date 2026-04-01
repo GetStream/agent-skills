@@ -48,7 +48,7 @@ useEffect(() => {
 - **Exit 2** (auth error) → run `stream auth login` (browser PKCE in a real terminal), then retry.
 - **Exit 4** (spec stale) → run `stream api --refresh`, then retry.
 - **Exit 3** (API error) → report the error to the user with the response message.
-- **Endpoint discovery:** Read `~/.stream/cache/API.md` first - never `--list` / `--llm`. Refresh if missing.
+- **Endpoint discovery:** Read `~/.stream/cache/API.md` first - never `--list`. Refresh if missing.
 
 ## CLI install gate (first)
 
