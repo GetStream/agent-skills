@@ -1,0 +1,24 @@
+{
+  "name": "stream",
+  "displayName": "Stream",
+  "version": "0.1.0",
+  "description": "Build, query, and manage Stream Chat, Video, Feeds, and Moderation. Scaffold full apps, add products to existing projects, query live data, and configure moderation — all from your editor.",
+  "author": {
+    "name": "GetStream"
+  },
+  "homepage": "https://getstream.io",
+  "repository": "https://github.com/GetStream/agent-skills",
+  "license": "See LICENSE",
+  "keywords": [
+    "stream",
+    "chat",
+    "video",
+    "feeds",
+    "moderation",
+    "realtime",
+    "messaging",
+    "getstream"
+  ],
+  "logo": "assets/logo.png",
+  "skills": "./skills/"
+}
