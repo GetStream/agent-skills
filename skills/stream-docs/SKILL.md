@@ -164,7 +164,7 @@ Slugs follow predictable patterns — use these to guide your scan, then verify 
 - **Chat UI SDKs:** `chat-sdk-{framework}` (e.g. `chat-sdk-react`, `chat-sdk-ios`). Versioned — see **Step 1d**.
 - **Chat low-level / server-side:** `chat-{framework}` (e.g. `chat-javascript`, `chat-node`, `chat-python`). No version suffix.
 - **Video:** `video-{framework}` (e.g. `video-react`, `video-ios`, `video-api`). No version suffix.
-- **Feeds (v3):** `activity-feeds-{framework}` (e.g. `activity-feeds-react`, `activity-feeds-node`). For v2, append `-v2`.
+- **Feeds (v3):** `activity-feeds-{framework}` (e.g. `activity-feeds-react`, `activity-feeds-node`). **Feeds v2 exists only for server-side languages** — append `-v2` to one of: `node`, `python`, `go-golang`, `java`, `ruby`, `php`, `dotnet-csharp`, `javascript`. There are no v2 slugs for React, React Native, iOS, Android, or Flutter.
 - **Moderation:** `moderation-{framework}` (e.g. `moderation-node`, `moderation-python`). No version suffix.
 
 If your constructed slug isn't in `llms.txt`, don't use it. If you can't find a match at all, tell the user the combination isn't in the docs and list what is available.
