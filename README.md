@@ -2,8 +2,24 @@
 
 Give your AI coding agent the ability to build, query, and manage [Stream](https://getstream.io) - Chat, Video, Feeds, and Moderation.
 
+## Install
+
+Everything (default):
+
 ```bash
 npx skills add GetStream/agent-skills
+```
+
+Just the main Stream pack:
+
+```bash
+npx skills add GetStream/agent-skills --skill stream
+```
+
+Just the docs skill:
+
+```bash
+npx skills add GetStream/agent-skills --skill stream-docs
 ```
 
 ## What your agent can do
