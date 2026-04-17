@@ -13,6 +13,7 @@ npx skills add GetStream/agent-skills
 - **Query live data** - "any active calls?", "show flagged messages", "list my channels" - natural language to CLI
 - **Set up moderation** - blocklists, automod config, and content policies via the Stream CLI
 - **Answer SDK questions** - token patterns, strict mode, client/server instantiation, theme wiring
+- **Search live SDK docs** - ask questions about any Stream SDK, framework, or version; answers come verbatim from getstream.io with citations
 
 ## How it works
 
@@ -25,6 +26,7 @@ The skill pack is markdown only - no code, no build step. Your agent reads `SKIL
 | Data queries and CLI operations | `cli.md` + `cli-cookbook.md` |
 | SDK and integration questions | `sdk.md` + `references/*.md` |
 | Install the Stream CLI | `bootstrap.md` |
+| Search the official SDK documentation | `stream-docs/SKILL.md` |
 
 ## Contents
 
@@ -34,3 +36,4 @@ The skill pack is markdown only - no code, no build step. Your agent reads `SKIL
 - [`skills/stream/cli.md`](skills/stream/cli.md) + [`cli-cookbook.md`](skills/stream/cli-cookbook.md) - CLI workflow and query examples
 - [`skills/stream/sdk.md`](skills/stream/sdk.md) - cross-cutting SDK patterns
 - `skills/stream/references/*.md` - per-product setup, gotchas, and component blueprints
+- [`skills/stream-docs/SKILL.md`](skills/stream-docs/SKILL.md) - live documentation lookup: resolves your SDK from project context or explicit input, then answers from getstream.io with cited sources
