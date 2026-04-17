@@ -51,6 +51,36 @@ These rules are non-negotiable. Read them before every response.
 
    Then list actual pages/topics. Do **not** call it a "map", "index", or "TOC" — just present the content.
 
+   **List formatting rules** (apply anywhere you emit links — SDK-loaded intros, "see also" notes, recovery messages):
+
+   - **Every link is a markdown link with a short title:** `[Installation](https://getstream.io/chat/docs/sdk/react/basics/installation.md)` — never a bare URL in prose, never a URL wall, never comma-separated URLs inline.
+   - **One link per line.** Readers scan vertically. Breaking five links onto one line hides four of them.
+   - **Curate, don't dump.** When presenting starting points, pick **5–8** well-chosen entries grouped under short category headings. An exhaustive 30-URL inventory is a sitemap, not an intro. If the user wants the full index, they'll ask.
+   - **Group with short bold headings, not prose prefixes.** Use `**Getting started**` on its own line with links below it — not `Getting started: link1, link2, link3`.
+
+   Example — good:
+
+   ```
+   **Video Android docs loaded.** Here are good starting points:
+
+   **Getting started**
+   - [Installation](https://getstream.io/video/docs/android/basics/installation.md)
+   - [Quickstart](https://getstream.io/video/docs/android/basics/quickstart.md)
+
+   **Core APIs**
+   - [Joining a call](https://getstream.io/video/docs/android/guides/joining-and-creating-calls.md)
+   - [Call state](https://getstream.io/video/docs/android/guides/call-and-participant-state.md)
+
+   What would you like to look up?
+   ```
+
+   Example — bad (URL wall):
+
+   ```
+   - Getting started: https://.../installation.md, https://.../quickstart.md, https://.../intro.md
+   - Core APIs: https://.../call.md, https://.../state.md, https://.../participant.md
+   ```
+
 3. **Only answer from fetched content.** No training data, no assumptions, no "I think it's probably..." If you didn't fetch it in this conversation, you don't know it.
 
 4. **Cite the source page URL** in every answer. Format: `Source: [Page Title](https://getstream.io/...)` — a complete, clickable URL.
