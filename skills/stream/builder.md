@@ -14,7 +14,7 @@ Then run the probe and report the result as a **single line** with a checkmark. 
 - **Not found →** you must not reach A2; follow **`bootstrap.md`** until installed (or user declines - then stop builder work).
 
 ```bash
-bash -ce 'command -v stream >/dev/null 2>&1 && stream --version || echo "STREAM_CLI_NOT_FOUND"'
+bash -c 'command -v stream >/dev/null 2>&1 && stream --version || echo "STREAM_CLI_NOT_FOUND"'
 ```
 
 If the sandbox blocks the probe, say so and ask the user to confirm `stream` is installed.
@@ -33,7 +33,7 @@ Execute phases **in order** (later steps depend on earlier ones). Do **not** run
 
 ### Sandboxed agents / fewer "Run" prompts
 
-**Rule - one invocation per phase:** Wrap everything in `bash -ce 'set -euo pipefail; …'` (or `&&` on one line).
+**Rule - one invocation per phase:** Wrap everything in `bash -c '…'` and chain with `&&` on one line. **Do NOT use `bash -ce` or `set -e`** — `grep` (and friends) return exit 1 on "no match," which aborts the entire probe and leaves you with partial or no output. If you need to tolerate specific failures, handle them explicitly (`|| echo NOT_FOUND`, `|| true`) rather than relying on `-e`.
 
 **When you need two calls:** If you must Read JSON (e.g. `OrganizationRead`) and then choose IDs, use one call for the read, one batched call for all creates + `stream config set`.
 
@@ -43,7 +43,14 @@ Execute phases **in order** (later steps depend on earlier ones). Do **not** run
 Always use `npm`. Never use bun.
 
 ### Step 1: Auth
-If the user is not logged in, run `stream auth login` in a **normal terminal** so the browser opens (PKCE).
+
+**Test auth first, then act — don't skip this and don't wait until Step 2 surfaces an error.** Run `stream api OrganizationRead` as a probe:
+
+- **Exit 0** → already authenticated, continue to Step 1b.
+- **Exit 2 / "not authenticated"** → **immediately** run `stream auth login` as its **own** Bash invocation. This is a hard constraint:
+  - Browser PKCE requires an unwrapped `stream auth login` call — **never** chain with `&&`, embed in a heredoc, or bundle with other commands.
+  - Do not ask the user first; just run it. Give it up to ~3 minutes for the browser flow.
+- **Login hangs past ~60s, or the user reports the browser is stuck** → run `stream auth logout` to clear any stale session state, then retry `stream auth login` **once**. If the second attempt also hangs, stop and ask the user to run `! stream auth login` themselves (the `!` prefix runs it in-session so you see the result).
 
 ### Step 1b: Theme pick
 
@@ -123,18 +130,10 @@ Do **not** modify `layout.tsx` or `globals.css` after scaffold - use Shadcn's de
 **Task B: .env** - Run AFTER scaffold so the .env lands inside the project directory.
 
 ```bash
-stream env 2>/dev/null
-ENV_EXIT=$?
-if [ $ENV_EXIT -eq 2 ]; then
-  stream auth login && stream env 2>/dev/null
-elif [ $ENV_EXIT -ne 0 ]; then
-  echo "stream env failed (exit $ENV_EXIT)" >&2; exit 1
-fi
-API_KEY=$(grep STREAM_API_KEY .env | head -1 | cut -d= -f2)
-echo "STREAM_APP_ID=<app_id>" >> .env
-echo "NEXT_PUBLIC_STREAM_API_KEY=$API_KEY" >> .env
-echo "NEXT_PUBLIC_STREAM_APP_ID=<app_id>" >> .env
+stream env
 ```
+
+That's it. `stream env` writes `STREAM_API_KEY` and `STREAM_API_SECRET` — both server-side. The client never reads env vars directly; it gets `apiKey`, `userId`, and its token from the `/api/token` response and holds them in React state. No `NEXT_PUBLIC_*` duplication, no `.env` gymnastics.
 
 **Task C: Install Stream SDKs + verify icons** - Only what the use case needs:
 

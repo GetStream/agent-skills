@@ -66,8 +66,10 @@ After the answer arrives, route as if the user had given that signal directly.
 A local-only probe. **No CLI binary, no network, no gate.** Both Track D and tracks A/B/C/E consume the result, so it's worth running once on the first invocation regardless of which track was picked.
 
 ```bash
-bash -ce 'echo "=== PKG ==="; grep -oE "\"(stream-chat[^\"]*|@stream-io/[^\"]*)\": *\"[^\"]*\"" package.json 2>/dev/null; echo "=== NEXT ==="; test -f package.json && grep -q "\"next\"" package.json && echo "NEXTJS" || echo "NO_NEXT"; echo "=== NATIVE ==="; ls pubspec.yaml go.mod requirements.txt pyproject.toml Podfile build.gradle 2>/dev/null; echo "=== EMPTY ==="; test -z "$(ls -A 2>/dev/null)" && echo "EMPTY_CWD" || echo "NON_EMPTY"'
+bash -c 'echo "=== PKG ==="; grep -oE "\"(stream-chat[^\"]*|@stream-io/[^\"]*)\": *\"[^\"]*\"" package.json 2>/dev/null; echo "=== NEXT ==="; test -f package.json && grep -q "\"next\"" package.json && echo "NEXTJS" || echo "NO_NEXT"; echo "=== NATIVE ==="; ls pubspec.yaml go.mod requirements.txt pyproject.toml Podfile build.gradle 2>/dev/null; echo "=== EMPTY ==="; test -z "$(ls -A 2>/dev/null)" && echo "EMPTY_CWD" || echo "NON_EMPTY"'
 ```
+
+**Do NOT use `bash -ce`** (`-e` = exit-on-error): `grep` returns exit 1 when it finds no matches, which aborts the entire probe and leaves you with partial output. Same applies to every other probe in this file.
 
 This gives you:
 - **PKG:** Stream npm packages with versions (e.g. `"stream-chat-react": "^14.2.0"`) — empty if none
@@ -90,7 +92,7 @@ This gives you:
 
 1. Run:
    ```bash
-   bash -ce 'command -v stream >/dev/null 2>&1 && stream --version || echo "NOT_FOUND"'
+   bash -c 'command -v stream >/dev/null 2>&1 && stream --version || echo "NOT_FOUND"'
    ```
 2. **If the output is `NOT_FOUND` or either command fails:** **stop here.** Do **not** proceed to the credentials probe, builder, `stream api`, credential checks, or SDK wiring. Follow **[`bootstrap.md`](bootstrap.md)** (explain what the CLI is, **ask the user once** for permission to install, then run the install — needs network approval). **Do not** suggest continuing scaffold/CLI work without the binary; only after the user **declines** install may you offer read-only help from **`sdk.md`** per bootstrap, or hand the user back to Track D for documentation questions.
 3. **If `stream --version` succeeds:** continue to the credentials probe.
@@ -102,12 +104,28 @@ This gives you:
 Run this **single** probe to confirm the CLI works and credentials are available. Project signals are already in context from the earlier local probe — don't repeat them here.
 
 ```bash
-bash -ce 'echo "=== CLI ===" && command -v stream 2>/dev/null && stream --version 2>/dev/null || echo "NOT_FOUND"; echo "=== ENV ===" && grep -s STREAM_API_KEY .env 2>/dev/null | head -1 && echo "ENV_FOUND" || echo "NO_ENV"; echo "=== CONFIG ===" && stream config list 2>/dev/null || echo "NO_CONFIG"'
+bash -c 'echo "=== CLI ==="; command -v stream 2>/dev/null; stream --version 2>/dev/null || echo "NOT_FOUND"; echo "=== CONFIG ==="; stream config list 2>/dev/null || echo "NO_CONFIG"'
 ```
 
 This gives you:
 - **CLI state:** installed or not (should already be OK after the CLI gate)
-- **Credential state:** `.env` in cwd (`env-local`), CLI configured (`cli-configured`), or neither (`none`)
+- **Config state:** CLI configured (`cli-configured`) or not (`NO_CONFIG`)
+
+**`.env` is intentionally NOT checked here.** Many sandbox configs install a `PreToolUse` hook that blocks any bash command referencing `.env` — including inside a `bash -c` wrapper — which would silently fail this whole probe. For tracks A (new app) and E (enhance), you'll either create a fresh `.env` via `stream env` (Task B) or work in a project that already has one; the project-signals probe tells you whether you're in an existing project.
+
+**Auth check (run only on tracks A/B/E that need to make `stream api` calls):**
+
+The probe above does NOT verify you're logged in — `stream config list` succeeds even when unauthenticated. Run one auth-requiring call, **unpiped** so the exit code surfaces:
+
+```bash
+stream api OrganizationRead
+```
+
+Do not pipe through `head`/`tail`/`jq` on this probe — the pipeline exit code is the last command's, which masks the auth failure. If output volume is a concern, redirect: `stream api OrganizationRead >/dev/null 2>&1; echo "exit=$?"`.
+
+- Exit 0 → authenticated, continue. (Bonus: the output is reusable for Step 2's "check existing orgs".)
+- Exit 2 / "not authenticated" → **immediately** run `stream auth login` as its own Bash invocation (required for browser PKCE — never chain with `&&` or wrap inside a heredoc). Do not ask the user first.
+- If `stream auth login` hangs past ~60s or the user reports a stuck browser state → run `stream auth logout` to clear stale state, then retry `stream auth login` once. If the second attempt also hangs, stop and ask the user to complete login manually (they can type `! stream auth login` to run it in-session).
 
 Show a **one-line status** combining project signals and CLI + credentials:
 
@@ -280,6 +298,6 @@ Run `npx next build` and fix any errors.
 
 **Loading:** This file (`SKILL.md`) + `RULES.md` + files **named by the routing table** for the task. Track D loads `docs-search.md` only; tracks A/B/C/E load their respective modules.
 
-**Batching:** One `bash -ce` per builder phase where possible; `stream auth login` stays its own invocation for browser PKCE.
+**Batching:** One `bash -c` per builder phase where possible (never `-ce` — `-e` aborts on any non-zero exit, including `grep` finding nothing). `stream auth login` stays its own invocation for browser PKCE — never chain with `&&` or wrap in a heredoc.
 
 **Support:** If the user asks for support or how to contact someone, direct them to [getstream.io/contact](https://getstream.io/contact/).

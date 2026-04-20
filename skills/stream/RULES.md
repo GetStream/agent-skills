@@ -6,10 +6,10 @@ Every rule below is stated once. Other files reference this file - do not duplic
 
 ## Secrets
 
-Never Read/Edit **`.env`** in chat - secrets leak into the conversation. Use Bash with `grep`/`echo` to inspect or append values. Never hardcode secrets in code - use environment variables:
+Never Read/Edit **`.env`** in chat — secrets leak into the conversation. Let the CLI own it: `stream env` writes `STREAM_API_KEY` + `STREAM_API_SECRET`, and that's all you need. Don't grep, don't cat, don't `echo >> .env`. Never hardcode secrets in code.
 
-- **Client:** `NEXT_PUBLIC_STREAM_API_KEY`, `NEXT_PUBLIC_STREAM_APP_ID`
-- **Server:** `STREAM_API_KEY`, `STREAM_API_SECRET`, `STREAM_APP_ID`
+**Env vars are server-side only.** The client never reads `process.env` for Stream credentials — it receives `apiKey`, `userId`, and its token from the `/api/token` response (upserted once per login) and holds them in React state. No `NEXT_PUBLIC_STREAM_*` vars. This keeps secrets out of the client bundle *and* sidesteps the `.env` hook entirely.
+
 - Narrow `searchParams.get()` (returns `string | null`) with guards before passing to SDK methods.
 
 ## No auto-seeding
@@ -55,7 +55,7 @@ Shadcn components use `@base-ui/react`, NOT `@radix-ui`. Key differences:
 
 - **First attempt always:** `stream --safe api <endpoint> [params]`.
 - **Exit 5** (safe mode refusal) → endpoint is mutating. Notify the user, then rerun **without** `--safe`.
-- **Exit 2** (auth error) → run `stream auth login` (browser PKCE in a real terminal), then retry.
+- **Exit 2** (auth error) → run `stream auth login` as its **own** Bash invocation (browser PKCE — never chain with `&&` or wrap in a heredoc), then retry. If `stream auth login` hangs past ~60s, run `stream auth logout` to clear stale state, then retry `stream auth login` **once**; if it hangs again, ask the user to run `! stream auth login` themselves.
 - **Exit 4** (spec stale) → run `stream api --refresh`, then retry.
 - **Exit 3** (API error) → report the error to the user with the response message.
 - **Endpoint discovery:** Read `~/.stream/cache/API.md` first - never `--list`. Refresh if missing.
