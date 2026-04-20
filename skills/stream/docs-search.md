@@ -1,21 +1,10 @@
----
-name: stream-docs
-description: "Search and answer questions from Stream's official documentation for Chat, Video, Feeds and Moderation SDKs."
-license: See LICENSE in repository root
-metadata:
-  author: GetStream
-allowed-tools: >-
-  Read, Glob, Grep,
-  Bash(grep *), Bash(cat package.json), Bash(cat pubspec.yaml),
-  Bash(cat go.mod), Bash(cat requirements.txt), Bash(cat pyproject.toml),
-  WebFetch(domain:getstream.io)
----
+# Track D — Docs search (live SDK documentation)
 
-# Stream Docs
-
-Search and answer questions from Stream's official SDK documentation. Covers Chat, Video, Activity Feeds, and Moderation across every framework and version.
+Loaded by **[`SKILL.md`](SKILL.md)** when the intent classifier routes to Track D. Answers questions from Stream's official SDK documentation by fetching live pages from `getstream.io`. Covers Chat, Video, Activity Feeds, and Moderation across every framework and version.
 
 **Docs index:** `https://getstream.io/cli/llms.txt`
+
+> **No CLI gate.** Track D never invokes Write, Edit, npm, scaffold tools, or `Bash(stream *)`. It only reads project files (for SDK detection) and fetches pages from `getstream.io`. If the user's question requires running the CLI or building code, hand back to **[`SKILL.md`](SKILL.md)** for re-routing to Track A/B/E.
 
 ---
 
@@ -27,7 +16,7 @@ These rules are non-negotiable. Read them before every response.
    - "Looking in **Chat React v13** (detected from your package.json)..."
    - "Inferring **Video** from your question about 'calls' — let me know if you meant something else..."
 
-   On follow-ups within the same SDK, stay silent — the user knows what's loaded. Only re-announce when the SDK changes. For explicit input (e.g. `/stream-docs Chat React v14`), no preamble is needed — go straight to the answer.
+   On follow-ups within the same SDK, stay silent — the user knows what's loaded. Only re-announce when the SDK changes. For explicit input (e.g. `/stream Chat React v14`), no preamble is needed — go straight to the answer.
 
 2. **Write for humans, not for the skill.** Users don't know (or care) how this skill works — they want their answer. No internal workflow terminology, status narration, or process commentary should ever appear in output. The answer itself proves the fetch worked.
 
@@ -38,12 +27,12 @@ These rules are non-negotiable. Read them before every response.
    | "framework index", "CLI index", "the index" | Internal term — call it "the docs" or skip the label |
    | "slug", "per `llms.txt`", "per Step 1d" | Workflow jargon the user never sees |
    | "docs map", "table of contents" | Sounds like a data dump, not an answer |
-   | "Reading the stream-docs skill and searching..." | Meta-narration of your own tool use |
+   | "Reading the docs-search module and searching..." | Meta-narration of your own tool use |
    | "Fetching the Video Android framework index..." | Process commentary |
    | "the versioned URL returned 200", "index is in context now" | Fetch status — users assume success |
    | "Still in Chat React v14" on a follow-up | Redundant; users know they didn't switch |
 
-   **When an SDK has just loaded** (explicit invocation like `/stream-docs Video Android`), open with a warm human sentence, then get to the point. Good examples:
+   **When an SDK has just loaded** (explicit invocation like `/stream Video Android`), open with a warm human sentence, then get to the point. Good examples:
 
    - "**Video Android docs loaded.** Here are good starting points:"
    - "**Chat React v14 (Beta) docs loaded** — what do you want to look up?"
@@ -112,23 +101,30 @@ These rules are non-negotiable. Read them before every response.
 
 ## Invocation
 
+Track D is reached through `/stream`. The same input shapes work:
+
 ```
-/stream-docs <Product> <Framework> [Version]    Load a specific SDK
-/stream-docs <question>                         Answer from the docs
-/stream-docs                                    Show what's available
+/stream <Product> <Framework> [Version]    Load a specific SDK
+/stream <question about the SDK>           Answer from the docs
+/stream                                    Triggers SKILL.md routing
 ```
 
-Examples:
+Examples that route here:
+
 ```
-/stream-docs Chat React v14
-/stream-docs Video iOS
-/stream-docs Moderation
-/stream-docs how do I add reactions to messages?
+/stream Chat React v14
+/stream Video iOS
+/stream Moderation
+/stream how do I add reactions to messages?
 ```
 
-### Shortcut: no arguments
+### Shortcut: SDK named with no question
 
-If the user invokes `/stream-docs` with nothing after it, fetch `https://getstream.io/cli/llms.txt` (which you'd fetch anyway in Step 1b), summarize what products/frameworks are available, and ask what they want to look up. Skip the rest of Step 1.
+If the user invokes `/stream Chat React v14` (or any product/framework/version) with no follow-up question, fetch `https://getstream.io/cli/llms.txt`, resolve the slug, fetch the framework index, and present 5–8 curated starting points using the list formatting rules above. Wait for the user to pick a topic.
+
+### Shortcut: bare `/stream` with no args
+
+That's handled by **[`SKILL.md`](SKILL.md)** (it shows the available tracks). Don't intercept it here.
 
 ---
 
@@ -136,7 +132,7 @@ If the user invokes `/stream-docs` with nothing after it, fetch `https://getstre
 
 ### Precedence
 
-1. **Explicit user input always wins.** If the user named a product/framework/version (`/stream-docs Chat React v14`), use that even if the project contains a different SDK.
+1. **Explicit user input always wins.** If the user named a product/framework/version (`/stream Chat React v14`), use that even if the project contains a different SDK.
 2. **Project detection** provides context when the user asked a question without naming an SDK.
 3. **Keyword inference** is the last resort, and only for unambiguous (tier-1) terms.
 
@@ -151,27 +147,28 @@ Stop at the first step that gives a confident answer:
 
 ### Step 1a — Project detection
 
-Only run this for Case B (question without named SDK) or when confirming a user-named framework version.
+**Check project signals signals first.** SKILL.md › project signals runs once per session and populates `PKG` (Stream npm packages with versions) and `NATIVE` (non-npm project files). If those signals are already in conversation context, use them directly — no extra probe.
 
-#### npm projects
+Only run a fresh probe if:
+- project signals hasn't run yet in this conversation (rare — usually means you're answering before SKILL.md routed)
+- project signals found nothing but the user's question implies a project file exists (e.g., the user said "in my Flutter project" but `NATIVE` was empty when probed)
+- A scaffold or install completed mid-conversation and may have added packages
+
+#### Fallback probes (when project signals signals are missing)
+
+npm:
 
 ```bash
 grep -oE '"(stream-chat-react|stream-chat-react-native|stream-chat-expo|stream-chat-angular|stream-chat|@stream-io/video-react-sdk|@stream-io/video-react-native-sdk|@stream-io/video-client|@stream-io/node-sdk|@stream-io/stream-node|@stream-io/feeds-react-sdk)": *"[^"]*"' package.json 2>/dev/null
 ```
 
-Extract the **major version** from the semver (e.g. `"stream-chat-react": "^13.2.0"` → `13`). You'll need this for Chat SDK slugs.
-
-Then map packages to a product + framework using **Step 1b** (which resolves to a slug via `llms.txt`).
-
-#### Non-npm projects
-
-If `package.json` doesn't exist, scan for other project files:
+Non-npm:
 
 ```bash
 ls pubspec.yaml go.mod requirements.txt pyproject.toml Podfile build.gradle 2>/dev/null
 ```
 
-For whichever file exists, grep it for Stream references (see "Non-npm project files" in Step 1b).
+Either way, extract the **major version** from semver (e.g. `"stream-chat-react": "^13.2.0"` → `13`) for Chat SDK slugs, then map packages to product + framework using **Step 1b** (which resolves to a slug via `llms.txt`).
 
 #### Multiple SDKs detected
 
@@ -311,7 +308,7 @@ When the only signal is a tier-2 keyword:
 
 ### Step 1d — Version handling (Chat SDKs only)
 
-Video, Feeds, and Moderation slugs don't have version suffixes. Skip this step for those — if the user said something like `/stream-docs Video Android Latest`, silently ignore the "Latest" token and use `video-android`. Don't ask about it and don't mention that "Latest" was meaningless — just proceed.
+Video, Feeds, and Moderation slugs don't have version suffixes. Skip this step for those — if the user said something like `/stream Video Android Latest`, silently ignore the "Latest" token and use `video-android`. Don't ask about it and don't mention that "Latest" was meaningless — just proceed.
 
 For Chat SDK slugs (`chat-sdk-*`):
 
@@ -392,6 +389,12 @@ You can browse the full index at https://getstream.io/cli/docs/{slug}.md or try:
 
 ---
 
+## Cross-references to other tracks
+
+Full guidance lives in **[`SKILL.md`](SKILL.md) › Cross-track follow-ups**. Track D's specific guarantee: **never execute a cross-track action from inside Track D** — only offer. The user re-routes by asking, which re-enters Step 0. This keeps Track D's no-side-effects promise intact even when a docs answer naturally enables a CLI run, scaffold, or integration.
+
+---
+
 ## Recovery from failures
 
 ### 404 on framework index
@@ -427,7 +430,9 @@ Don't invent cross-references. Say: "That specific topic isn't in the {SDK} inde
 
 ## Worked example
 
-**User:** `/stream-docs how do I add reactions?` (in a React project with `stream-chat-react@^13.2.0`)
+**User:** `/stream how do I add reactions?` (in a React project with `stream-chat-react@^13.2.0`)
+
+**Step 0 (in SKILL.md):** intent classifier — "how do I" + no operational verb + project context likely → Track D, no CLI gate.
 
 **Step 1 — Identify the SDK:**
 - No explicit SDK → Case B.

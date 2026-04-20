@@ -1,6 +1,6 @@
 # Bootstrap - `stream` CLI
 
-Read this module when the **`stream` executable** is missing or broken. The skill’s **mandatory first step** is **[`SKILL.md`](SKILL.md) › Step 0a** - never skip this check before other Stream work.
+Read this module when the **`stream` executable** is missing or broken. **[`SKILL.md`](SKILL.md) › CLI gate** is the mandatory first step for tracks A, B, C, and E — never skip the CLI check before scaffold, `stream api`, or SDK wiring. Track D (docs search) does not need the CLI; if the user only wants documentation, route them to Track D instead of installing.
 
 ## Install the `stream` CLI
 

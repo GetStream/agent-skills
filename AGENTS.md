@@ -7,7 +7,7 @@
 
 ## Codex-specific
 
-- **`stream` CLI first:** Before any other Stream skill step, run **`SKILL.md` › Step 0a** - if the CLI is missing, follow **`bootstrap.md`** and get user approval to install; do not skip install or continue builder/API work without it.
+- **`stream` CLI first:** For tracks A/B/C/E, run **`SKILL.md` › CLI gate** before any other Stream skill step — if the CLI is missing, follow **`bootstrap.md`** and get user approval to install; do not skip install or continue builder/API work without it. Track D (docs search) does not need the CLI.
 - **Batch shell** commands into single `bash -ce 'set -euo pipefail; …'` invocations to minimize approval prompts.
 - **`stream auth login`** needs a **separate** terminal invocation so the browser can open (PKCE).
 - **Network:** scaffold (`npx`, `npm`, `stream` install) needs network - approve **once** per session when prompted.

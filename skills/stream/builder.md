@@ -6,7 +6,7 @@ Phase table: [`SKILL.md`](SKILL.md) Track A. Rules: [`RULES.md`](RULES.md) (secr
 
 ## A1: CLI gate + probe
 
-Follow **[`SKILL.md`](SKILL.md) › Step 0a** first: if `stream` is missing, install via **`bootstrap.md`** after user permission - **do not** start Steps 0–7 until the CLI works.
+Follow **[`SKILL.md`](SKILL.md) › CLI gate** first: if `stream` is missing, install via **`bootstrap.md`** after user permission - **do not** start Steps 0–7 until the CLI works.
 
 Then run the probe and report the result as a **single line** with a checkmark. Do **not** use a heading, section number, or bullet list - just one line:
 
@@ -21,7 +21,7 @@ If the sandbox blocks the probe, say so and ask the user to confirm `stream` is 
 
 ## A2: Immediate execution
 
-After the CLI is verified (and **Step 0a** satisfied), **immediately start executing Steps 0–7**. No prompts, no checklist, no confirmation. Just build it step by step.
+After the CLI is verified (and the **CLI gate** satisfied), **immediately start executing Steps 0–7**. No prompts, no checklist, no confirmation. Just build it step by step.
 
 Frontend skills (`vercel-react-best-practices` + `web-design-guidelines`) and Shadcn/ui are **always installed** during Step 3 - never ask, never skip. Load them before Step 4 alongside `references/*.md`. **Precedence:** Stream referencess win for SDK wiring; frontend skills guide generic React / UI polish.
 

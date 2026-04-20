@@ -60,13 +60,17 @@ Shadcn components use `@base-ui/react`, NOT `@radix-ui`. Key differences:
 - **Exit 3** (API error) → report the error to the user with the response message.
 - **Endpoint discovery:** Read `~/.stream/cache/API.md` first - never `--list`. Refresh if missing.
 
-## CLI install gate (first)
+## CLI install gate (per track)
 
-**Before anything else** in this skill (routing, probes, builder, `stream api`, SDK wiring, or docs): verify the **`stream` CLI** is installed (`command -v stream` and `stream --version`). If missing or broken, follow **`bootstrap.md`**: explain, **ask the user once** for permission to install, then install (network). **Do not** skip installation and proceed to scaffold, API calls, or Steps 0–7. If the user declines install, follow **`bootstrap.md`** read-only paths only.
+For tracks **A, B, C, E** — verify the **`stream` CLI** is installed (`command -v stream` and `stream --version`) before any further work in that track. If missing or broken, follow **`bootstrap.md`**: explain, **ask the user once** for permission to install, then install (network). **Do not** skip installation and proceed to scaffold, API calls, or Steps 0–7.
+
+**Track D (docs search) does not require the CLI** — it only fetches from `getstream.io`. Skip the gate entirely for Track D.
+
+If the user declines install, follow **`bootstrap.md`** read-only paths or hand documentation questions to Track D.
 
 ## Phase order
 
-Follow **[`SKILL.md`](SKILL.md)** phase order. **Step 0a** (CLI gate) always comes first. Builder Track A: A1 (CLI gate + probe) → A2 (execute Steps 0–7 immediately).
+Follow **[`SKILL.md`](SKILL.md)** phase order: **Step 0** (intent classifier) → **Project signals** (local-only, always once per session) → for tracks A/B/C/E only, **CLI gate** then **CLI + credentials** → execute the track. Track D skips the CLI gate and credentials probe but still consumes project signals. Builder Track A: Step 0 → project signals → A1 (CLI gate + credentials) → A2 (execute Steps 0–7 immediately).
 
 - Do not load `references/*.md` until the user names the product(s).
 - Do not load `builder-ui.md` before Step 4.

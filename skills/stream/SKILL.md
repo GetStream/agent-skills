@@ -1,8 +1,8 @@
 ---
 name: stream
-description: "The fastest and easiest way to build with Stream: Chat, Video, Feeds and Moderation."
+description: "The fastest and easiest way to build with Stream: Chat, Video, Feeds and Moderation — including live SDK docs search."
 license: See LICENSE in repository root
-compatibility: Requires Node.js, npm, and the stream CLI binary (see bootstrap.md)
+compatibility: Requires Node.js, npm, and the stream CLI binary (see bootstrap.md). Track D (docs search) only requires WebFetch — no CLI binary needed.
 metadata:
   author: GetStream
 allowed-tools: >-
@@ -11,78 +11,135 @@ allowed-tools: >-
   Bash(npx *), Bash(npm install *),
   Bash(node -e *), Bash(openssl rand *),
   Bash(mv .scaffold*), Bash(rm -rf .scaffold),
-  Bash(ls *)
+  Bash(ls *),
+  Bash(grep *),
+  Bash(cat package.json), Bash(cat pubspec.yaml),
+  Bash(cat go.mod), Bash(cat requirements.txt), Bash(cat pyproject.toml),
+  WebFetch(domain:getstream.io)
 ---
 
-# Stream - skill router + execution flow
+# Stream — skill router + execution flow
 
-**Rules:** Read **[`RULES.md`](RULES.md)** once per session - every non-negotiable rule is stated there, nowhere else.
+**Rules:** Read **[`RULES.md`](RULES.md)** once per session — every non-negotiable rule is stated there, nowhere else.
 
-This file is the **single entrypoint**: context detection, intent routing, and module pointers.
+This file is the **single entrypoint**: intent classification, conditional context detection, and module pointers.
 
 ---
 
-## Step 0a: `stream` CLI gate (mandatory first - never skip)
+## Step 0: Intent classifier (mandatory first — never skip)
 
-**Before** any routing, answering, reading modules, or running the rest of the context probe: verify the **`stream` executable** is installed and runnable.
+Before any tool call, decide the **track** from the user's input alone — no probes, no fetches, no CLI checks. The classifier is deterministic: scan the input for the signals below in order.
+
+### Signals → track
+
+| Signal in user input | Track | Skip CLI gate? |
+|---|---|---|
+| Explicit SDK/framework token: `Chat React`, `Video iOS`, `Feeds Node`, `Moderation`, etc. (with or without version) | **D — Docs search** | **Yes** |
+| Words "docs" or "documentation" | **D** | **Yes** |
+| "How do I {X} in {framework}?", "How does {hook/component/method} work?", "What does {SDK thing} do?" | **D** | **Yes** |
+| Operational verbs + Stream noun: "list calls", "show channels", "any flagged", "find users", "check {anything}" | **B — CLI / data query** | No |
+| `stream api`, `stream config`, `stream auth` (literal CLI invocation) | **B** | No |
+| "Build me a … app", "scaffold", "create a new …" + Stream product, in an empty/new directory | **A — Builder (new app)** | No |
+| "Add Chat/Video/Feeds to this app", "integrate Stream into" — existing project | **E — Builder (enhance)** | No |
+| "Install the CLI", "set up stream" with no project context | **C — Bootstrap** | n/a |
+| Operational verb wrapped in how-to phrasing (e.g. "how do I list my calls?" — docs *or* CLI) | **Ask one disambiguator** | Defer |
+
+### Disambiguation flow
+
+If the input fits more than one row (typically operational verb + how-to phrasing), ask **one** short question and wait. Do not probe, fetch, or gate before the answer.
+
+> Want me to look up the SDK method (docs) or run it now via CLI?
+
+After the answer arrives, route as if the user had given that signal directly.
+
+### After classification
+
+- **Always (first invocation in conversation)** → run **Project signals**. Cheap local probe; populates session context for every track.
+- **Track D** → skip the **CLI gate** and **CLI + credentials** probes. Consume project signals, then go to **[`docs-search.md`](docs-search.md)**.
+- **Tracks A, B, C, E** → run the **CLI gate** then **CLI + credentials**, then the track. Project signals inform the one-line status and routing.
+- **Bare `/stream` with no args** → list the available tracks briefly and wait for input.
+
+---
+
+## Project signals (always — once per session)
+
+A local-only probe. **No CLI binary, no network, no gate.** Both Track D and tracks A/B/C/E consume the result, so it's worth running once on the first invocation regardless of which track was picked.
+
+```bash
+bash -ce 'echo "=== PKG ==="; grep -oE "\"(stream-chat[^\"]*|@stream-io/[^\"]*)\": *\"[^\"]*\"" package.json 2>/dev/null; echo "=== NEXT ==="; test -f package.json && grep -q "\"next\"" package.json && echo "NEXTJS" || echo "NO_NEXT"; echo "=== NATIVE ==="; ls pubspec.yaml go.mod requirements.txt pyproject.toml Podfile build.gradle 2>/dev/null; echo "=== EMPTY ==="; test -z "$(ls -A 2>/dev/null)" && echo "EMPTY_CWD" || echo "NON_EMPTY"'
+```
+
+This gives you:
+- **PKG:** Stream npm packages with versions (e.g. `"stream-chat-react": "^14.2.0"`) — empty if none
+- **NEXT:** `NEXTJS` if `next` is in `package.json`, else `NO_NEXT`
+- **NATIVE:** Names of non-npm project files present (Flutter, Go, Python, iOS, Android)
+- **EMPTY:** `EMPTY_CWD` if cwd is empty, else `NON_EMPTY`
+
+**Hold the result in conversation context.** Don't re-run unless:
+- A scaffold (Track A) or install (Track E) completed and added new packages
+- The user changed directory mid-conversation
+- A signal you need is missing (e.g., Track D needs a version and `PKG` was empty earlier — re-probe one specific file)
+
+**Don't print this result as a heading.** Use it internally; surface a signal only when it changes what you say to the user (e.g., "I see Chat React v14 — looking up v14 docs.").
+
+---
+
+## CLI gate (tracks A, B, C, E only)
+
+**Track D skips this step.** For all other tracks: verify the **`stream` executable** is installed and runnable before any further work.
 
 1. Run:
    ```bash
    bash -ce 'command -v stream >/dev/null 2>&1 && stream --version || echo "NOT_FOUND"'
    ```
-2. **If the output is `NOT_FOUND` or either command fails:** **stop here.** Do **not** proceed to Step 0b, builder, `stream api`, credential checks, or SDK wiring. Follow **[`bootstrap.md`](bootstrap.md)** (explain what the CLI is, **ask the user once** for permission to install, then run the install - needs network approval). **Do not** suggest continuing scaffold/CLI work without the binary; only after the user **declines** install may you offer read-only help from **`sdk.md`** per bootstrap.
-3. **If `stream --version` succeeds:** continue to Step 0b.
-
-This gate applies to **every** Stream-related request (including docs-only or SDK questions): check first, install if missing, then continue.
+2. **If the output is `NOT_FOUND` or either command fails:** **stop here.** Do **not** proceed to the credentials probe, builder, `stream api`, credential checks, or SDK wiring. Follow **[`bootstrap.md`](bootstrap.md)** (explain what the CLI is, **ask the user once** for permission to install, then run the install — needs network approval). **Do not** suggest continuing scaffold/CLI work without the binary; only after the user **declines** install may you offer read-only help from **`sdk.md`** per bootstrap, or hand the user back to Track D for documentation questions.
+3. **If `stream --version` succeeds:** continue to the credentials probe.
 
 ---
 
-## Step 0b: Context probe (after CLI is available)
+## CLI + credentials probe (tracks A, B, C, E only)
 
-Run this **single** probe to understand where you are. Do not show the output as a heading - just use it internally for routing:
+Run this **single** probe to confirm the CLI works and credentials are available. Project signals are already in context from the earlier local probe — don't repeat them here.
 
 ```bash
-bash -ce 'echo "=== CLI ===" && command -v stream 2>/dev/null && stream --version 2>/dev/null || echo "NOT_FOUND"; echo "=== ENV ===" && grep -s STREAM_API_KEY .env 2>/dev/null | head -1 && echo "ENV_FOUND" || echo "NO_ENV"; echo "=== CONFIG ===" && stream config list 2>/dev/null || echo "NO_CONFIG"; echo "=== PROJECT ===" && (test -f package.json && grep -l "next" package.json >/dev/null 2>&1 && echo "NEXTJS") || echo "NO_PROJECT"'
+bash -ce 'echo "=== CLI ===" && command -v stream 2>/dev/null && stream --version 2>/dev/null || echo "NOT_FOUND"; echo "=== ENV ===" && grep -s STREAM_API_KEY .env 2>/dev/null | head -1 && echo "ENV_FOUND" || echo "NO_ENV"; echo "=== CONFIG ===" && stream config list 2>/dev/null || echo "NO_CONFIG"'
 ```
 
 This gives you:
-- **CLI state:** installed or not (should already be OK after Step 0a)
+- **CLI state:** installed or not (should already be OK after the CLI gate)
 - **Credential state:** `.env` in cwd (`env-local`), CLI configured (`cli-configured`), or neither (`none`)
-- **Project state:** Next.js project, other project, or empty directory
 
-Show a **one-line status** after the probe:
+Show a **one-line status** combining project signals and CLI + credentials:
 
-- `✓ Stream CLI v0.1.0 · app-a3f7b201 (Feeds + Chat) · ~/stream-tv`
+- `✓ Stream CLI v0.1.0 · app-a3f7b201 (Feeds + Chat) · Next.js + Chat React v14 · ~/stream-tv`
 - `✓ Stream CLI v0.1.0 · configured via CLI · no local project`
-- `✓ Stream CLI v0.1.0 · no credentials found`
-- `✗ Stream CLI not found - see bootstrap.md to install` (only if Step 0a was skipped in error - **do not** route onward; go back to Step 0a)
+- `✓ Stream CLI v0.1.0 · no credentials · empty dir (ready to scaffold)`
+- `✗ Stream CLI not found — see bootstrap.md to install` (only if the CLI gate was skipped in error — **do not** route onward; go back and run it)
 
 ---
 
 ## Install
 
-**Skill pack:** `npx skills add GetStream/agent-skills` ([skills.sh](https://skills.sh/docs/cli)) - markdown only, does **not** install the `stream` binary.
+**Skill pack:** `npx skills add GetStream/agent-skills` ([skills.sh](https://skills.sh/docs/cli)) — markdown only, does **not** install the `stream` binary.
 
 **`stream` CLI:** See **[`bootstrap.md`](bootstrap.md)** for binary install from `latest.json` / `install.sh`.
 
 ---
 
-## Route by intent + context
+## Module map
 
-| User intent | Context | Route |
-|-------------|---------|-------|
-| **"Build me a … app"** / scaffold | Empty dir or new dir | **Track A** → [`builder.md`](builder.md) + [`builder-ui.md`](builder-ui.md) |
-| **"Add Chat/Video/Feeds to this app"** | Existing Next.js project | **Track E** → [`builder.md`](builder.md) (skip scaffold, add product only) |
-| **"Any live calls?"** / **"anything flagged?"** / data queries | Any (with credentials) | **Track B** → [`cli.md`](cli.md) (auto-resolve credentials) |
-| **"Any live calls?"** / data queries | No credentials | **Guide** → tell user to run `stream auth login` or `cd` into a project with `.env` |
-| **`stream api`** / config / operational CLI | Any | **Track B** → [`cli.md`](cli.md). Tricky bodies/queries → [`cli-cookbook.md`](cli-cookbook.md) |
-| **Install `stream` CLI or skill pack** | CLI not found | **Track C** → [`bootstrap.md`](bootstrap.md) |
-| **SDK / React / Node questions** | Any | **Track D** → [`sdk.md`](sdk.md); add **one** [`references/<Product>.md`](references/) only if wiring UI |
-| **Product/docs questions only** | Any | [`docs.md`](docs.md) |
+Step 0 picks the track. Each Track section below has the full prerequisites and phase table — this is just the at-a-glance map.
 
-**Natural language queries** (Track B - "anything flagged?", "any live calls?", "show my channels", etc.): resolve credentials, then look up the right endpoint in `~/.stream/cache/API.md` (run `stream api --refresh` if missing) and execute via [`cli.md`](cli.md) workflow. Do not hardcode endpoint names - they come from the OpenAPI spec.
+| Track | Module(s) |
+|---|---|
+| A — Build new app | [`builder.md`](builder.md) + [`builder-ui.md`](builder-ui.md) |
+| B — CLI / data query | [`cli.md`](cli.md); tricky bodies → [`cli-cookbook.md`](cli-cookbook.md) |
+| C — Bootstrap | [`bootstrap.md`](bootstrap.md) |
+| D — Docs search (no CLI gate) | [`docs-search.md`](docs-search.md) |
+| E — Enhance existing app | [`builder.md`](builder.md) (skip scaffold) + [`references/<Product>.md`](references/) |
+| SDK wiring inside A/E | [`sdk.md`](sdk.md) + relevant [`references/<Product>.md`](references/) |
 
-**Reference blueprints** (load only after the user names the product):
+**Reference blueprints** (load only after the user names the product, used by Tracks A and E):
 
 | Product | Header (setup + gotchas) | Full blueprints (load per component) |
 |---------|--------------------------|--------------------------------------|
@@ -93,24 +150,37 @@ Show a **one-line status** after the probe:
 
 ---
 
-## Track A - Build new app (empty directory)
+## Cross-track follow-ups (use judgment)
+
+The tracks share a single skill so a result from one can naturally enable an action in another. Surface a follow-up offer when it genuinely helps the user — not as boilerplate on every turn.
+
+- **D → B:** A docs answer that names a runnable operation can offer "want me to run that now via CLI?" (only if read-safe or clearly operational intent).
+- **B → D:** A CLI result that has a relevant docs page can offer "want the page that explains this?" (link only — don't fetch unprompted).
+- **A/E → D:** After scaffold or integration completes, mention that the SDK + version is preloaded and ask-anything is available.
+- **D → A/E:** A docs answer that describes a setup-heavy flow can mention scaffold / integrate is available — without running it.
+
+**Do not** auto-execute a cross-track action. Offer, then wait for the user to confirm. The track switch happens through the user's reply, which re-enters Step 0.
+
+---
+
+## Track A — Build new app (empty directory)
 
 **Full detail:** Steps 0–7 in **[`builder.md`](builder.md)**; Step 4 UI in **[`builder-ui.md`](builder-ui.md)**.
 
 | Phase | Name | What you do |
 |-------|------|-------------|
-| **A1** | CLI gate + context probe | Run **Step 0a** then **Step 0b**. Show one-line status. If CLI missing, install via **`bootstrap.md`** before A2 - never skip. |
-| **A2** | Execute | **Immediately start** `builder.md` Steps 0–7. Frontend skills + Shadcn/ui are always installed during Step 3 - no prompt needed. |
+| **A1** | CLI gate + context probe | Run the **CLI gate** then **CLI + credentials**. Show one-line status. If CLI missing, install via **`bootstrap.md`** before A2 — never skip. |
+| **A2** | Execute | **Immediately start** `builder.md` Steps 0–7. Frontend skills + Shadcn/ui are always installed during Step 3 — no prompt needed. |
 
 **Anti-patterns:** running skills install before scaffold; building a moderation review queue in the app.
 
 ---
 
-## Track B - CLI / data queries
+## Track B — CLI / data queries
 
 **Module:** **[`cli.md`](cli.md)**.
 
-**Prerequisite:** Complete **Step 0a** - the `stream` CLI must be installed before running queries or credential resolution.
+**Prerequisite:** Complete the **CLI gate** — the `stream` CLI must be installed before running queries or credential resolution.
 
 **Credential resolution** (do this before any `stream api` call):
 
@@ -120,12 +190,12 @@ Show a **one-line status** after the probe:
 
 | Phase | Name | What you do | WAIT? |
 |-------|------|-------------|-------|
-| **B1** | Resolve credentials | Run credential resolution above - silently if `.env` or config exists | Only if no credentials found |
-| **B2** | Execute | `stream --safe api …` first; exit 5 → explain, confirm, retry without `--safe` | - |
+| **B1** | Resolve credentials | Run credential resolution above — silently if `.env` or config exists | Only if no credentials found |
+| **B2** | Execute | `stream --safe api …` first; exit 5 → explain, confirm, retry without `--safe` | — |
 
 ---
 
-## Track C - Bootstrap (install CLI / skill)
+## Track C — Bootstrap (install CLI / skill)
 
 **Module:** **[`bootstrap.md`](bootstrap.md)**.
 
@@ -136,34 +206,37 @@ Show a **one-line status** after the probe:
 
 ---
 
-## Track D - SDK / Docs (no full scaffold)
+## Track D — Docs search (no CLI gate)
 
-**Modules:** **[`sdk.md`](sdk.md)**, **[`docs.md`](docs.md)**.
+**Module:** **[`docs-search.md`](docs-search.md)**.
 
-**Prerequisite:** Complete **Step 0a** first. If the user declined CLI install, limit to read-only **`sdk.md`** / **`docs.md`** per **`bootstrap.md`**.
+The full docs-search engine: SDK identification (explicit input → project signals → keyword inference), `llms.txt` slug resolution, framework-index fetch, page fetch, cited answer. All honesty rules and URL-grounding rules live in `docs-search.md` — read it before answering.
 
 | Phase | Name | What you do |
 |-------|------|-------------|
-| **D1** | Scope | Which product (Chat / Video / Feeds / Moderation) and whether references files are needed |
-| **D2** | Answer | Load `references/<Product>.md` header when wiring code; load blueprints only if implementing components |
+| **D1** | Identify SDK | Explicit input wins; otherwise consume **project signals** (PKG / NATIVE already in context); fall back to keyword tiers (Step 1c in `docs-search.md`) |
+| **D2** | Resolve slug | Fetch `llms.txt` once per conversation, find slug for product + framework |
+| **D3** | Fetch + answer | Fetch the framework index (verbatim URLs), pick the right page, fetch it, quote and cite |
+
+Track D never invokes Write, Edit, npm, scaffold tools, or `Bash(stream *)`. If the user asks for action mid-conversation, offer to switch tracks (D → B/A/E) and re-enter Step 0.
 
 ---
 
-## Track E - Enhance existing app
+## Track E — Enhance existing app
 
 For adding Stream products to an **existing Next.js project**. Uses references files and SDK patterns but skips scaffold entirely.
 
-**Prerequisite:** Complete **Step 0a** - install the `stream` CLI before npm installs, `stream api` setup, or token routes that depend on CLI-backed config.
+**Prerequisite:** Complete the **CLI gate** — install the `stream` CLI before npm installs, `stream api` setup, or token routes that depend on CLI-backed config.
 
 ### E1: Audit the existing project
 
 Before writing any code, understand what's already in place:
 
 1. **Packages:** Check `package.json` for `stream-chat`, `stream-chat-react`, `@stream-io/video-react-sdk`, `@stream-io/node-sdk`.
-2. **Auth:** Does the app already have a `/api/token` route? If so, extend it with the new product's token - don't create a second token route.
+2. **Auth:** Does the app already have a `/api/token` route? If so, extend it with the new product's token — don't create a second token route.
 3. **Credentials:** Check for `.env` with `STREAM_API_KEY` / `STREAM_API_SECRET`. If missing, run credential resolution (Track B).
 4. **UI framework:** Confirm Tailwind, Shadcn, or whatever the project uses. Do **not** install Shadcn or change the styling setup unless the user asks.
-5. **Directory structure:** Note whether the project uses `app/` or `src/app/` - match the existing convention.
+5. **Directory structure:** Note whether the project uses `app/` or `src/app/` — match the existing convention.
 
 ### E2: Install + configure
 
@@ -175,8 +248,8 @@ Before writing any code, understand what's already in place:
 
 1. **Token route:** Extend the existing `/api/token` to return the new product's token alongside existing ones. Follow `sdk.md` for server-side instantiation patterns.
 2. **API routes:** Add product-specific routes from the relevant `references/<Product>.md` (App Integration → API Routes). Feeds needs several (`/api/feed/get`, `/api/feed/post`, etc.); Chat and Video typically only need the token route.
-3. **Components:** Load the relevant `references/<Product>-blueprints.md` sections and build components using the existing project's patterns and styling conventions - not the builder-ui.md defaults.
-4. **State:** If the app already manages user state (auth context, session), wire Stream tokens into that - don't add a separate Login Screen unless the app has no auth.
+3. **Components:** Load the relevant `references/<Product>-blueprints.md` sections and build components using the existing project's patterns and styling conventions — not the builder-ui.md defaults.
+4. **State:** If the app already manages user state (auth context, session), wire Stream tokens into that — don't add a separate Login Screen unless the app has no auth.
 
 ### E4: Verify
 
@@ -185,9 +258,9 @@ Run `npx next build` and fix any errors.
 ### Key constraints
 
 - Do **not** re-scaffold, re-initialize Shadcn, install frontend skills, or modify `globals.css` / `layout.tsx`.
-- Do **not** overwrite or restructure existing files - add new files alongside them.
+- Do **not** overwrite or restructure existing files — add new files alongside them.
 - Do **not** change the existing auth flow. Adapt Stream's token generation to fit the app's existing auth, not the other way around.
-- If the project uses a different package manager (yarn, pnpm), match what it already uses - the npm-only rule applies to new scaffolds, not existing projects.
+- If the project uses a different package manager (yarn, pnpm), match what it already uses — the npm-only rule applies to new scaffolds, not existing projects.
 
 ---
 
@@ -197,6 +270,7 @@ Run `npx next build` and fix any errors.
 |------|--------|
 | Reference headers | `agent-skills/skills/stream/references/*.md` |
 | Reference blueprints | `agent-skills/skills/stream/references/*-blueprints.md` |
+| Docs search engine | `agent-skills/skills/stream/docs-search.md` |
 | CLI endpoint index | `~/.stream/cache/API.md` after `stream api --refresh` |
 | Skill modules | `agent-skills/skills/stream/` |
 
@@ -204,7 +278,7 @@ Run `npx next build` and fix any errors.
 
 ## Tooling (all hosts)
 
-**Loading:** This file (`SKILL.md`) + `RULES.md` + files **named by the routing table** for the task.
+**Loading:** This file (`SKILL.md`) + `RULES.md` + files **named by the routing table** for the task. Track D loads `docs-search.md` only; tracks A/B/C/E load their respective modules.
 
 **Batching:** One `bash -ce` per builder phase where possible; `stream auth login` stays its own invocation for browser PKCE.
 
