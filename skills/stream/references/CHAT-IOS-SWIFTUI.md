@@ -105,9 +105,28 @@ Use Option B when the app needs `UIApplicationDelegate` callbacks for push notif
 
 ### User Authentication
 
-**Production — token provider (expiring tokens; required for production):**
+**Default — hardcoded token (no expiry):**
 
-Access the client via `@Injected(\.chatClient)` in any view or call it where you have a `chatClient` reference:
+Ask the user for their Stream token from the [Stream Dashboard](https://dashboard.getstream.io) (User Explorer → generate token). Access the client via `@Injected(\.chatClient)` in any view or call it where you have a `chatClient` reference:
+
+```swift
+@Injected(\.chatClient) private var chatClient
+
+let userInfo = UserInfo(
+    id: "user-id",
+    name: "User Name",
+    imageURL: nil
+)
+
+let token = Token(stringLiteral: "your_static_token_here")
+chatClient.connectUser(userInfo: userInfo, token: token) { error in
+    if let error { print("Connect failed: \(error)") }
+}
+```
+
+**Token provider (expiring tokens — use only if the user asks for it):**
+
+Use this when the user has a backend endpoint that issues Stream JWTs. The provider is called automatically when the token expires:
 
 ```swift
 @Injected(\.chatClient) private var chatClient
@@ -130,17 +149,6 @@ let tokenProvider: TokenProvider = { completion in
 }
 
 chatClient.connectUser(userInfo: userInfo, tokenProvider: tokenProvider) { error in
-    if let error { print("Connect failed: \(error)") }
-}
-```
-
-The token provider is called automatically when the token expires — implement it for every production app.
-
-**Development only — static token (never ship to production):**
-
-```swift
-let token: Token = "your_static_token_here"
-chatClient.connectUser(userInfo: userInfo, token: token) { error in
     if let error { print("Connect failed: \(error)") }
 }
 ```

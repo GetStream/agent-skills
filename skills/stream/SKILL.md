@@ -320,11 +320,10 @@ Write (or extend) `AppDelegate.swift` following **CHAT-IOS-SWIFTUI.md § Client 
 
 ### F4: Authentication
 
-Wire the token provider following **CHAT-IOS-SWIFTUI.md § User Authentication**.
+Wire authentication following **CHAT-IOS-SWIFTUI.md § User Authentication**.
 
-- Confirm the user has a backend endpoint that issues Stream tokens (`/token?user_id=xxx` → JWT)
-- If not, offer to look up the server-side token docs via Track D before proceeding
-- Never use `devToken()` or static tokens in production
+- Default to a hardcoded static token (no expiry) — ask the user for their token from the Stream Dashboard
+- Only switch to a token provider if the user explicitly asks for it (e.g. they have a backend that issues JWTs)
 
 ### F5: UI integration
 
@@ -346,7 +345,7 @@ Confirm the build succeeds: `StreamChatSwiftUI` appears in the Xcode package lis
 | **F5** | UI | Add views from blueprints | — |
 | **F6** | Verify | Confirm build and channel list appears | — |
 
-**Anti-patterns:** creating `ChatClient` in a `View` body; using `devToken()` in production; connecting a new user before logout completes; creating controllers as computed properties.
+**Anti-patterns:** creating `ChatClient` in a `View` body; using `devToken()` (insecure — disables token auth entirely); connecting a new user before logout completes; creating controllers as computed properties.
 
 ---
 
