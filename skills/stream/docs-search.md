@@ -4,7 +4,7 @@ Loaded by **[`SKILL.md`](SKILL.md)** when the intent classifier routes to Track 
 
 **Docs index:** `https://getstream.io/cli/llms.txt`
 
-> **No CLI gate.** Track D never invokes Write, Edit, npm, scaffold tools, or `Bash(stream *)`. It only reads project files (for SDK detection) and fetches pages from `getstream.io`. If the user's question requires running the CLI or building code, hand back to **[`SKILL.md`](SKILL.md)** for re-routing to Track A/B/E.
+> **No CLI gate, no up-front shell.** Track D never invokes Write, Edit, npm, scaffold tools, or `Bash(stream *)`. Pure docs questions with an explicit SDK reach `WebFetch` without running *any* shell command. A small read-only probe runs **only on demand** — inside Step 1a below — when the SDK can't be resolved from the user's input. If the user's question requires running the CLI or building code, hand back to **[`SKILL.md`](SKILL.md)** for re-routing to Track A/B/E.
 
 ---
 

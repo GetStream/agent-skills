@@ -70,7 +70,7 @@ If the user declines install, follow **`bootstrap.md`** read-only paths or hand 
 
 ## Phase order
 
-Follow **[`SKILL.md`](SKILL.md)** phase order: **Step 0** (intent classifier) → **Project signals** (local-only, always once per session) → for tracks A/B/C/E only, **CLI gate** then **CLI + credentials** → execute the track. Track D skips the CLI gate and credentials probe but still consumes project signals. Builder Track A: Step 0 → project signals → A1 (CLI gate + credentials) → A2 (execute Steps 0–7 immediately).
+Follow **[`SKILL.md`](SKILL.md)** phase order: **Step 0** (intent classifier) → **Project signals** for tracks A/B/C/E only → **CLI gate** → **CLI + credentials** → execute. Track D skips project signals, the CLI gate, and credentials by default; it only runs a read-only probe **on demand** if SDK inference can't resolve from user input alone (see `docs-search.md` § On-demand project-signals probe). Builder Track A: Step 0 → project signals → A1 (CLI gate + credentials) → A2 (execute Steps 0–7 immediately).
 
 - Do not load `references/*.md` until the user names the product(s).
 - Do not load `builder-ui.md` before Step 4.

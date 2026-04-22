@@ -54,16 +54,15 @@ After the answer arrives, route as if the user had given that signal directly.
 
 ### After classification
 
-- **Always (first invocation in conversation)** → run **Project signals**. Cheap local probe; populates session context for every track.
-- **Track D** → skip the **CLI gate** and **CLI + credentials** probes. Consume project signals, then go to **[`docs-search.md`](docs-search.md)**.
-- **Tracks A, B, C, E** → run the **CLI gate** then **CLI + credentials**, then the track. Project signals inform the one-line status and routing.
-- **Bare `/stream` with no args** → list the available tracks briefly and wait for input.
+- **Tracks A, B, C, E** → run **Project signals** (local probe), then the **CLI gate**, then **CLI + credentials**, then the track. Project signals inform the one-line status and routing.
+- **Track D** → **skip Project signals by default.** Track D only runs the probe on demand, inside `docs-search.md`'s inference step, and only when the SDK can't be resolved from explicit user input. Pure docs questions with an explicit SDK (e.g. `/stream Chat React v14 …`) reach `WebFetch` without any shell execution. Also skip the **CLI gate** and **CLI + credentials** probes.
+- **Bare `/stream` with no args** → list the available tracks briefly and wait for input. No shell execution.
 
 ---
 
-## Project signals (always — once per session)
+## Project signals (tracks A/B/C/E — once per session; Track D on demand only)
 
-A local-only probe. **No CLI binary, no network, no gate.** Both Track D and tracks A/B/C/E consume the result, so it's worth running once on the first invocation regardless of which track was picked.
+A local-only probe. **No CLI binary, no network, no gate.** Tracks A/B/C/E run it once on first invocation because scaffold, credentials, and routing depend on it. **Track D does not run it up front** — docs answers shouldn't require inspecting the user's filesystem. If Track D's SDK inference reaches the "need project context" tier (see `docs-search.md` § Inference tiers), it runs the probe at that point and only at that point.
 
 ```bash
 bash -c 'echo "=== PKG ==="; grep -oE "\"(stream-chat[^\"]*|@stream-io/[^\"]*)\": *\"[^\"]*\"" package.json 2>/dev/null; echo "=== NEXT ==="; test -f package.json && grep -q "\"next\"" package.json && echo "NEXTJS" || echo "NO_NEXT"; echo "=== NATIVE ==="; ls pubspec.yaml go.mod requirements.txt pyproject.toml Podfile build.gradle 2>/dev/null; echo "=== EMPTY ==="; test -z "$(ls -A 2>/dev/null)" && echo "EMPTY_CWD" || echo "NON_EMPTY"'
@@ -232,7 +231,7 @@ The full docs-search engine: SDK identification (explicit input → project sign
 
 | Phase | Name | What you do |
 |-------|------|-------------|
-| **D1** | Identify SDK | Explicit input wins; otherwise consume **project signals** (PKG / NATIVE already in context); fall back to keyword tiers (Step 1c in `docs-search.md`) |
+| **D1** | Identify SDK | Explicit input wins — no probe. Only if SDK remains ambiguous, run the **project signals probe on demand** (inside `docs-search.md` § Inference tiers), then fall back to keyword tiers. |
 | **D2** | Resolve slug | Fetch `llms.txt` once per conversation, find slug for product + framework |
 | **D3** | Fetch + answer | Fetch the framework index (verbatim URLs), pick the right page, fetch it, quote and cite |
 
