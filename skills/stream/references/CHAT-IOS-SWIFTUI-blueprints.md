@@ -1,0 +1,813 @@
+# Chat iOS SwiftUI — View Blueprints
+
+Load only the section you are implementing. For setup, client initialization, and gotchas, see [CHAT-IOS-SWIFTUI.md](CHAT-IOS-SWIFTUI.md).
+
+---
+
+## App Entry Point Blueprint
+
+Two patterns — pick one. Appearance customization must happen before `StreamChat` is initialized in either case.
+
+### Option A — App struct `init()` (pure SwiftUI)
+
+Preferred for apps that don't need `UIApplicationDelegate` callbacks.
+
+```swift
+import SwiftUI
+import StreamChat
+import StreamChatSwiftUI
+
+@main
+struct StreamChatApp: App {
+    @State private var streamChat: StreamChat
+
+    init() {
+        let config = ChatClientConfig(apiKey: .init("your_api_key"))
+        let chatClient = ChatClient(config: config)
+        let appearance = AppearanceProvider.make()
+        _streamChat = State(wrappedValue: StreamChat(chatClient: chatClient, appearance: appearance))
+    }
+
+    var body: some Scene {
+        WindowGroup {
+            RootView()
+        }
+    }
+}
+```
+
+### Option B — `AppDelegate` (required for push notifications, background tasks, URL handling)
+
+```swift
+import SwiftUI
+import StreamChat
+import StreamChatSwiftUI
+
+@main
+struct StreamChatApp: App {
+    @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+
+    var body: some Scene {
+        WindowGroup {
+            RootView()
+        }
+    }
+}
+
+class AppDelegate: NSObject, UIApplicationDelegate {
+    var streamChat: StreamChat?
+
+    func application(
+        _ application: UIApplication,
+        didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
+    ) -> Bool {
+        let config = ChatClientConfig(apiKey: .init("your_api_key"))
+        let chatClient = ChatClient(config: config)
+        let appearance = AppearanceProvider.make()
+        streamChat = StreamChat(chatClient: chatClient, appearance: appearance)
+        return true
+    }
+}
+```
+
+**Wiring (both options):**
+- Option A: `@State` is required — `App` is a value type and SwiftUI can recreate it; `@State` pins the instance across re-creations. A plain `let`/`var` would be re-initialized. Initialize via `_streamChat = State(wrappedValue:)` from `init()`.
+- Option B: `StreamChat` is stored on `AppDelegate` (`var streamChat: StreamChat?`) — `AppDelegate` is a reference type with UIKit-managed lifetime, so a plain `var` is fine there.
+- `ChatClient` and `StreamChat` are initialized once and never recreated
+- `Appearance` must be passed at `StreamChat` init time — not settable afterward
+
+---
+
+## Login / Connect User Blueprint
+
+Show a login screen before connecting. Invoke `connectUser` once per user session, not on every view appear.
+
+```swift
+struct LoginView: View {
+    @State private var userId = ""
+    @State private var name = ""
+    @State private var isConnecting = false
+    @State private var connectError: String?
+    var onConnected: () -> Void
+
+    var body: some View {
+        VStack(spacing: 20) {
+            Text("Sign In")
+                .font(.largeTitle).bold()
+            TextField("User ID", text: $userId)
+                .textFieldStyle(.roundedBorder)
+                .autocorrectionDisabled()
+                .textInputAutocapitalization(.never)
+            TextField("Display Name", text: $name)
+                .textFieldStyle(.roundedBorder)
+            if let error = connectError {
+                Text(error).foregroundStyle(.red).font(.caption)
+            }
+            Button {
+                connect()
+            } label: {
+                Group {
+                    if isConnecting {
+                        ProgressView()
+                    } else {
+                        Text("Connect")
+                    }
+                }
+                .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.borderedProminent)
+            .disabled(userId.isEmpty || isConnecting)
+        }
+        .padding()
+    }
+
+    private func connect() {
+        isConnecting = true
+        connectError = nil
+        let userInfo = UserInfo(id: userId, name: name.isEmpty ? userId : name)
+        let tokenProvider: TokenProvider = { completion in
+            // Replace with your backend token endpoint
+            guard let url = URL(string: "https://your-backend.com/api/stream-token?user_id=\(userId)") else {
+                completion(.failure(NSError(domain: "Token", code: 0)))
+                return
+            }
+            URLSession.shared.dataTask(with: url) { data, _, error in
+                if let error {
+                    completion(.failure(error))
+                    return
+                }
+                guard let data, let tokenString = String(data: data, encoding: .utf8) else {
+                    completion(.failure(NSError(domain: "Token", code: 1)))
+                    return
+                }
+                completion(.success(Token(stringLiteral: tokenString.trimmingCharacters(in: .whitespacesAndNewlines))))
+            }.resume()
+        }
+        ChatClient.shared.connectUser(userInfo: userInfo, tokenProvider: tokenProvider) { error in
+            DispatchQueue.main.async {
+                isConnecting = false
+                if let error {
+                    connectError = error.localizedDescription
+                } else {
+                    onConnected()
+                }
+            }
+        }
+    }
+}
+```
+
+**Wiring:**
+- `TokenProvider` closure is called by the SDK on initial connect and on every token expiry
+- `ChatClient.shared.connectUser` is async via callback — update UI on `DispatchQueue.main`
+- Backend endpoint must return a plain JWT string (or JSON with a `token` field — parse accordingly)
+
+---
+
+## Root Navigation Blueprint
+
+Gates the app on login state. Skips login if the user is already connected (e.g. token still valid from last session).
+
+```swift
+struct RootView: View {
+    @Injected(\.chatClient) private var chatClient
+    @State private var isConnected = false
+
+    var body: some View {
+        Group {
+            if isConnected {
+                ChannelListScreen()
+            } else {
+                LoginView {
+                    isConnected = true
+                }
+            }
+        }
+        .onAppear {
+            // Skip login if SDK already has a connected user
+            isConnected = chatClient.currentUserId != nil
+        }
+    }
+}
+```
+
+**Wiring:**
+- `chatClient.currentUserId` is non-nil when a user is connected (persists across foreground/background)
+- `LoginView.onConnected` callback sets `isConnected = true` to trigger navigation
+
+---
+
+## Channel List Blueprint
+
+### Default channel list (all channels the user is a member of)
+
+```swift
+struct ChannelListScreen: View {
+    var body: some View {
+        NavigationView {
+            ChatChannelListView()
+                .navigationTitle("Messages")
+        }
+    }
+}
+```
+
+### Filtered and sorted channel list
+
+```swift
+struct ChannelListScreen: View {
+    @State private var controller: ChatChannelListController?
+    @Injected(\.chatClient) private var chatClient
+
+    var body: some View {
+        NavigationView {
+            ChatChannelListView(channelListController: controller)
+                .navigationTitle("Messages")
+        }
+        .task {
+            guard let userId = chatClient.currentUserId else { return }
+            controller = chatClient.channelListController(
+                query: .init(
+                    filter: .containMembers(userIds: [userId]),
+                    sort: [.init(key: .lastMessageAt, isAscending: false)]
+                )
+            )
+        }
+    }
+}
+```
+
+**Wiring:**
+- `ChatChannelListView()` with no arguments uses the default query (all channels the current user is a member of)
+- `channelListController` must be created as `@State` — not a computed property — to avoid re-creation on redraws
+- Navigation from the channel list into a channel view is handled by `ChatChannelListView` automatically
+
+---
+
+## Channel (Message List) Blueprint
+
+Navigation from `ChatChannelListView` to a channel is automatic. For manual or deep-link navigation:
+
+```swift
+struct ChannelScreen: View {
+    let channelId: ChannelId
+
+    var body: some View {
+        ChatChannelView(
+            viewFactory: DefaultViewFactory.shared,
+            channelController: ChatClient.shared.channelController(for: channelId)
+        )
+    }
+}
+```
+
+**Deep-link example** (navigate to a specific channel by ID):
+
+```swift
+// From RootView or a coordinator:
+NavigationLink(destination: ChannelScreen(channelId: ChannelId(type: .messaging, id: "general"))) {
+    Text("Go to General")
+}
+```
+
+**Wiring:**
+- `DefaultViewFactory.shared` provides the default message, header, and composer implementations
+- Substitute a custom `ViewFactory` conformance to swap individual sub-views
+
+---
+
+## Custom Appearance Blueprint
+
+Build and apply appearance once in `AppDelegate` before `StreamChat` initialization.
+
+```swift
+enum AppearanceProvider {
+    static func make() -> Appearance {
+        var colors = Appearance.ColorPalette()
+        colors.accentPrimary = UIColor(named: "BrandPrimary") ?? .systemBlue
+        colors.navigationBarTintColor = UIColor(named: "BrandPrimary") ?? .systemBlue
+        // Outgoing bubble tint
+        colors.chatBackgroundOutgoing = (UIColor(named: "BrandPrimary") ?? .systemBlue).withAlphaComponent(0.12)
+
+        var fonts = Appearance.FontsSwiftUI()
+        fonts.body = .system(size: 16, weight: .regular, design: .default)
+        fonts.headline = .system(size: 17, weight: .semibold)
+
+        var images = Appearance.Images()
+        images.composerSend = UIImage(systemName: "paperplane.fill")!
+        images.close = UIImage(systemName: "xmark")!
+
+        var appearance = Appearance()
+        appearance.colorPalette = colors
+        appearance.fontsSwiftUI = fonts
+        appearance.images = images
+        return appearance
+    }
+}
+```
+
+**Wiring:**
+- `Appearance.ColorPalette()` — all semantic color tokens (accent, surface, text, border, chat, reaction, nav)
+- `Appearance.FontsSwiftUI()` — SwiftUI `Font` values for body, caption, headline, footnote
+- `Appearance.Images()` — `UIImage` overrides for composer icons, navigation icons, etc.
+- Pass to `StreamChat(chatClient: chatClient, appearance: appearance)` — not settable after init
+
+---
+
+## Logout Blueprint
+
+Call before presenting a login screen for a different account. Always wait for the completion callback.
+
+```swift
+struct ProfileView: View {
+    @Injected(\.chatClient) private var chatClient
+    var onLoggedOut: () -> Void
+
+    var body: some View {
+        Button("Log out") {
+            logout()
+        }
+    }
+
+    private func logout() {
+        chatClient.logout {
+            DispatchQueue.main.async {
+                onLoggedOut() // Navigate to LoginView only after this fires
+            }
+        }
+    }
+}
+```
+
+**Wiring:**
+- `chatClient.logout` clears offline storage, pending operations, and the current user token
+- `connectUser` for a new user must only be called after the `logout` callback fires
+- Calling `connectUser` on a new user before logout completes risks state corruption and crashes (go-live checklist requirement)
+
+---
+
+## ViewFactory Blueprints
+
+Pass your factory to every root SDK view: `ChatChannelListView(viewFactory: CustomFactory.shared)` and `ChatChannelView(viewFactory: CustomFactory.shared, ...)`. A singleton pattern prevents multiple instances.
+
+### Minimal factory scaffold
+
+```swift
+import StreamChatSwiftUI
+
+class CustomFactory: ViewFactory {
+    @Injected(\.chatClient) public var chatClient
+    public static let shared = CustomFactory()
+    private init() {}
+
+    // Add overrides below — all unoverridden slots use SDK defaults
+}
+```
+
+---
+
+### Custom User Avatar Blueprint
+
+```swift
+struct CustomUserAvatarView: View {
+    let user: ChatUser
+    let size: CGSize
+
+    var body: some View {
+        AsyncImage(url: user.imageURL) { image in
+            image.resizable().scaledToFill()
+        } placeholder: {
+            Circle()
+                .fill(Color.gray.opacity(0.3))
+                .overlay(
+                    Text(user.name?.prefix(1).uppercased() ?? "?")
+                        .font(.headline)
+                        .foregroundStyle(.secondary)
+                )
+        }
+        .frame(width: size.width, height: size.height)
+        .clipShape(Circle())
+    }
+}
+
+// Register in the factory:
+extension CustomFactory {
+    func makeUserAvatarView(options: UserAvatarViewOptions) -> some View {
+        CustomUserAvatarView(user: options.user, size: options.size)
+    }
+}
+```
+
+---
+
+### Custom Channel List Item Blueprint
+
+```swift
+struct CustomChannelListItemView: View {
+    let channel: ChatChannel
+    let currentUserId: UserId?
+
+    var body: some View {
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(channel.name ?? "Channel")
+                    .font(.headline)
+                if let latest = channel.latestMessages.first {
+                    Text(latest.text)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+            }
+            Spacer()
+            VStack(alignment: .trailing, spacing: 4) {
+                if let date = channel.lastMessageAt {
+                    Text(date, style: .time)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+                if channel.unreadCount.messages > 0 {
+                    Text("\(channel.unreadCount.messages)")
+                        .font(.caption2.bold())
+                        .foregroundStyle(.white)
+                        .padding(6)
+                        .background(Color.accentColor, in: Circle())
+                }
+            }
+        }
+        .padding(.vertical, 8)
+    }
+}
+
+// Register in the factory:
+extension CustomFactory {
+    func makeChannelListItemView(options: ChannelListItemViewOptions) -> some View {
+        CustomChannelListItemView(
+            channel: options.channel,
+            currentUserId: chatClient.currentUserId
+        )
+    }
+}
+```
+
+---
+
+### Custom Channel List Header Blueprint
+
+```swift
+struct CustomChannelListHeaderView: View {
+    @Injected(\.chatClient) var chatClient
+
+    var body: some View {
+        HStack {
+            Text("Messages")
+                .font(.largeTitle.bold())
+            Spacer()
+            if let user = chatClient.currentUserController().currentUser {
+                AsyncImage(url: user.imageURL) { image in
+                    image.resizable().scaledToFill()
+                } placeholder: {
+                    Circle().fill(Color.gray.opacity(0.3))
+                }
+                .frame(width: 36, height: 36)
+                .clipShape(Circle())
+            }
+        }
+        .padding(.horizontal)
+    }
+}
+
+// Register in the factory:
+extension CustomFactory {
+    func makeChannelListHeaderViewModifier(title: String) -> some ChatChannelListHeaderViewModifier {
+        CustomChannelListHeader(title: title)
+    }
+}
+```
+
+---
+
+### Custom Styles Blueprint (Liquid Glass vs Regular)
+
+```swift
+// Use the built-in iOS 26 Liquid Glass style (floating composer):
+extension CustomFactory {
+    public var styles: some Styles { LiquidGlassStyles() }
+}
+
+// Or define custom style overrides:
+class MyStyles: Styles {
+    var composerPlacement: ComposerPlacement = .docked
+
+    func makeComposerInputViewModifier(
+        options: ComposerInputModifierOptions
+    ) -> some ViewModifier {
+        MyComposerInputModifier()
+    }
+}
+
+extension CustomFactory {
+    public var styles: some Styles { MyStyles() }
+}
+```
+
+**Wiring:**
+- `LiquidGlassStyles()` — floating composer above keyboard, iOS 26 material treatment
+- `RegularStyles()` — docked bottom composer (SDK default)
+- Override individual modifier methods on a custom `Styles` conformance to mix-and-match
+
+---
+
+### Custom Injection Key Blueprint
+
+Register your own services alongside the SDK's injectables and access them from any view or factory method.
+
+```swift
+// 1. Define a key
+struct AnalyticsServiceKey: InjectionKey {
+    static var currentValue: AnalyticsService = AnalyticsService()
+}
+
+// 2. Extend InjectedValues
+extension InjectedValues {
+    var analytics: AnalyticsService {
+        get { Self[AnalyticsServiceKey.self] }
+        set { Self[AnalyticsServiceKey.self] = newValue }
+    }
+}
+
+// 3. Use in any view or factory method alongside SDK injectables
+struct CustomMessageView: View {
+    @Injected(\.analytics) var analytics
+    @Injected(\.fonts) var fonts
+    @Injected(\.colors) var colors
+
+    var body: some View {
+        // ...
+    }
+}
+
+// 4. Override the value at app startup (e.g. for testing):
+InjectedValues[\.analytics] = MockAnalyticsService()
+```
+
+---
+
+## Push Notifications Blueprint
+
+Use this AppDelegate when push notifications are needed (Option B entry point). Handles permission, device registration, tap routing, and logout cleanup.
+
+```swift
+import UIKit
+import StreamChat
+import UserNotifications
+
+class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
+    var streamChat: StreamChat?
+    var chatClient: ChatClient { InjectedValues[\.chatClient] }
+
+    func application(_ application: UIApplication,
+                     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
+        var config = ChatClientConfig(apiKey: .init("your_api_key"))
+        config.applicationGroupIdentifier = "group.com.yourcompany.yourapp"
+        let client = ChatClient(config: config)
+        streamChat = StreamChat(chatClient: client)
+
+        UNUserNotificationCenter.current().delegate = self
+        return true
+    }
+
+    // Called after connectUser completes — request permission then register
+    func requestPushPermissionAndRegister() {
+        UNUserNotificationCenter.current()
+            .requestAuthorization(options: [.alert, .sound, .badge]) { granted, _ in
+                guard granted else { return }
+                DispatchQueue.main.async { UIApplication.shared.registerForRemoteNotifications() }
+            }
+    }
+
+    func application(_ application: UIApplication,
+                     didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
+        guard chatClient.currentUserId != nil else { return }
+        chatClient.currentUserController().addDevice(.apn(token: deviceToken)) { error in
+            if let error { log.warning("addDevice failed: \(error)") }
+        }
+    }
+
+    // Handle tap on a push notification
+    func userNotificationCenter(_ center: UNUserNotificationCenter,
+                                didReceive response: UNNotificationResponse,
+                                withCompletionHandler completionHandler: @escaping () -> Void) {
+        defer { completionHandler() }
+        guard let info = try? ChatPushNotificationInfo(content: response.notification.request.content),
+              let cid = info.cid else { return }
+        // Post a notification or use a coordinator to navigate to the channel
+        NotificationCenter.default.post(name: .navigateToChannel, object: cid)
+    }
+
+    // Remove device token on logout to stop notifications for this device
+    func removeDeviceToken() {
+        guard let deviceId = chatClient.currentUserController().currentUser?.devices.last?.id else { return }
+        chatClient.currentUserController().removeDevice(id: deviceId) { _ in }
+    }
+}
+
+extension Notification.Name {
+    static let navigateToChannel = Notification.Name("navigateToChannel")
+}
+```
+
+**Wiring:**
+- Call `requestPushPermissionAndRegister()` inside the `connectUser` completion callback, not before
+- `removeDeviceToken()` must be called before `chatClient.logout { }` so the device is cleaned up while still authenticated
+- The `applicationGroupIdentifier` must match the App Group added in both the app target and the Notification Service Extension target
+
+---
+
+## State Layer SwiftUI View Blueprint
+
+Use the state layer when you want `async`/`await` mutations and `@Published` state instead of controller delegates.
+
+```swift
+import SwiftUI
+import StreamChat
+
+@MainActor
+class ChannelViewModel: ObservableObject {
+    @Published var messages: [ChatMessage] = []
+    @Published var isLoading = false
+
+    private var chat: Chat?
+    private let channelId: ChannelId
+
+    init(channelId: ChannelId) {
+        self.channelId = channelId
+    }
+
+    func load(client: ChatClient) async {
+        isLoading = true
+        chat = client.makeChat(for: channelId)
+        do {
+            try await chat?.get(watch: true)
+            messages = chat?.state.messages ?? []
+        } catch {
+            print("Load failed: \(error)")
+        }
+        isLoading = false
+    }
+
+    func send(text: String) async {
+        try? await chat?.sendMessage(with: text)
+        messages = chat?.state.messages ?? []
+    }
+
+    func loadOlder() async {
+        try? await chat?.loadOlderMessages()
+        messages = chat?.state.messages ?? []
+    }
+}
+
+struct StateLayerChannelView: View {
+    @StateObject private var viewModel: ChannelViewModel
+    @Injected(\.chatClient) private var chatClient
+    @State private var text = ""
+
+    init(channelId: ChannelId) {
+        _viewModel = StateObject(wrappedValue: ChannelViewModel(channelId: channelId))
+    }
+
+    var body: some View {
+        VStack {
+            ScrollView {
+                LazyVStack(alignment: .leading) {
+                    ForEach(viewModel.messages, id: \.id) { message in
+                        Text(message.text).padding(.horizontal)
+                    }
+                }
+            }
+            HStack {
+                TextField("Message", text: $text)
+                    .textFieldStyle(.roundedBorder)
+                Button("Send") {
+                    Task { await viewModel.send(text: text); text = "" }
+                }
+            }
+            .padding()
+        }
+        .task { await viewModel.load(client: chatClient) }
+        .navigationTitle("Channel")
+    }
+}
+```
+
+---
+
+## Channel Tap Handling Blueprint
+
+### Custom navigation destination
+
+Replace the default channel view with your own screen:
+
+```swift
+struct MyChannelView: View {
+    let channel: ChatChannel
+    var body: some View {
+        Text("Custom view for \(channel.name ?? channel.cid.id)")
+    }
+}
+
+extension CustomFactory {
+    func makeChannelDestination(
+        options: ChannelDestinationOptions
+    ) -> @MainActor (ChannelSelectionInfo) -> MyChannelView {
+        { info in MyChannelView(channel: info.channel) }
+    }
+}
+```
+
+### Deep-link to a channel from a push notification
+
+```swift
+struct RootView: View {
+    @State private var selectedChannelId: String?
+
+    var body: some View {
+        ChatChannelListView(
+            viewFactory: CustomFactory.shared,
+            selectedChannelId: selectedChannelId
+        )
+        .onReceive(NotificationCenter.default.publisher(for: .navigateToChannel)) { note in
+            if let cid = note.object as? ChannelId {
+                selectedChannelId = cid.rawValue
+            }
+        }
+    }
+}
+```
+
+### Intercept taps without navigating
+
+```swift
+ChatChannelListView(viewFactory: CustomFactory.shared) { channel in
+    // e.g. show an action sheet, analytics event, etc.
+    print("Tapped: \(channel.name ?? "")")
+}
+```
+
+### Use your own NavigationStack
+
+```swift
+NavigationStack {
+    ChatChannelListView(
+        viewFactory: CustomFactory.shared,
+        embedInNavigationView: false   // opt out of the SDK's built-in NavigationView
+    )
+}
+```
+
+---
+
+## Message Display Options Blueprint
+
+All `MessageDisplayOptions` are optional — only specify what differs from the defaults.
+
+```swift
+// Compose options
+let messageDisplayOptions = MessageDisplayOptions(
+    showIncomingMessageAvatar: true,
+    showOutgoingMessageAvatar: false,
+    showAvatarsInGroups: true,
+    showMessageDate: true,
+    showAuthorName: true,
+    animateChanges: true,
+    shouldAnimateReactions: true,
+    reactionsPlacement: .top,            // .top or .bottom
+    minimumSwipeGestureDistance: 20,
+    newMessagesSeparatorSize: 50,
+
+    // Color links differently for sender vs receiver
+    messageLinkDisplayResolver: { message in
+        [.foregroundColor: message.isSentByCurrentUser ? UIColor.systemBlue : UIColor.systemGreen]
+    },
+
+    // Custom date separator — show only when day changes
+    dateSeparator: { message, previous in
+        Calendar.current.isDate(message.createdAt, inSameDayAs: previous.createdAt)
+            ? nil
+            : message.createdAt
+    },
+
+    // Constrain message bubble width to 70% of available space
+    spacerWidth: { availableWidth in availableWidth * 0.30 }
+)
+
+// Wire it up
+let utils = Utils(
+    messageListConfig: MessageListConfig(messageDisplayOptions: messageDisplayOptions)
+)
+streamChat = StreamChat(chatClient: chatClient, utils: utils)
+```
+
+**Wiring:**
+- `MessageDisplayOptions` → `MessageListConfig(messageDisplayOptions:)` → `Utils(messageListConfig:)` → `StreamChat(chatClient:utils:)`
+- All 24 parameters have defaults — a bare `MessageDisplayOptions()` is valid and applies no changes
