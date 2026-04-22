@@ -107,7 +107,11 @@ Use Option B when the app needs `UIApplicationDelegate` callbacks for push notif
 
 **Production — token provider (expiring tokens; required for production):**
 
+Access the client via `@Injected(\.chatClient)` in any view or call it where you have a `chatClient` reference:
+
 ```swift
+@Injected(\.chatClient) private var chatClient
+
 let userInfo = UserInfo(
     id: currentUser.id,
     name: currentUser.name,
@@ -125,7 +129,7 @@ let tokenProvider: TokenProvider = { completion in
     }
 }
 
-ChatClient.shared.connectUser(userInfo: userInfo, tokenProvider: tokenProvider) { error in
+chatClient.connectUser(userInfo: userInfo, tokenProvider: tokenProvider) { error in
     if let error { print("Connect failed: \(error)") }
 }
 ```
@@ -136,7 +140,7 @@ The token provider is called automatically when the token expires — implement 
 
 ```swift
 let token: Token = "your_static_token_here"
-ChatClient.shared.connectUser(userInfo: userInfo, token: token) { error in
+chatClient.connectUser(userInfo: userInfo, token: token) { error in
     if let error { print("Connect failed: \(error)") }
 }
 ```
@@ -144,11 +148,13 @@ ChatClient.shared.connectUser(userInfo: userInfo, token: token) { error in
 ### Disconnect and Logout
 
 ```swift
+@Injected(\.chatClient) private var chatClient
+
 // Temporarily pause updates (e.g. user navigates away from chat section)
-ChatClient.shared.disconnect { error in /* handle */ }
+chatClient.disconnect { error in /* handle */ }
 
 // Full logout — clears offline storage. WAIT for the callback before any other action.
-ChatClient.shared.logout {
+chatClient.logout {
     // Safe to log in a different user only AFTER this fires
 }
 ```
@@ -156,8 +162,10 @@ ChatClient.shared.logout {
 ### Creating Channels
 
 ```swift
+@Injected(\.chatClient) private var chatClient
+
 let channelId = ChannelId(type: .messaging, id: UUID().uuidString)
-let controller = try ChatClient.shared.channelController(
+let controller = try chatClient.channelController(
     createChannelWithId: channelId,
     name: "General",
     members: [currentUserId, otherUserId]
@@ -190,17 +198,19 @@ struct ContentView: View {
 Each SwiftUI redraw creates a new controller instance from a computed var, causing unpredictable state and re-fetches.
 
 ```swift
+@Injected(\.chatClient) private var chatClient
+
 // Wrong — new instance on every redraw
 var channelListController: ChatChannelListController {
-    ChatClient.shared.channelListController(query: .init(...))
+    chatClient.channelListController(query: .init(...))
 }
 
 // Correct — single stable instance
 @State private var channelListController: ChatChannelListController?
 
 .task {
-    guard let userId = ChatClient.shared.currentUserId else { return }
-    channelListController = ChatClient.shared.channelListController(
+    guard let userId = chatClient.currentUserId else { return }
+    channelListController = chatClient.channelListController(
         query: .init(
             filter: .containMembers(userIds: [userId]),
             sort: [.init(key: .lastMessageAt, isAscending: false)]
@@ -759,7 +769,7 @@ ChatChannelListView(viewFactory: CustomFactory.shared, embedInNavigationView: fa
 - **Never store your Stream secret in the app.** Secrets on-device can be extracted from jailbroken devices and enable destructive actions on your app instance.
 - **Always wait for `logout` completion before connecting another user.** The SDK uses persistent storage for offline support and optimistic updates. Connecting a new user while logout is in progress risks state corruption and crashes.
 - **`StreamChat` must be initialized before any view renders.** Accessing SDK views before setup causes an immediate `fatalError`.
-- **`ChatClient.shared` requires `ChatClient(config:)` to have run first.** Never call `.shared` before the `AppDelegate` init.
+- **Never use `ChatClient.shared`.** Access the client via `@Injected(\.chatClient)` in views. The SDK registers the instance automatically when `StreamChat(chatClient:)` is initialized.
 - **Import both `StreamChat` and `StreamChatSwiftUI`.** `ChatClient`, `UserInfo`, `Token` live in `StreamChat`; SwiftUI views and the `StreamChat` wrapper type live in `StreamChatSwiftUI`.
 - **Controllers are stateful — store them as `@State` or in an `@ObservableObject`**, not computed vars. Computed vars create new instances on every SwiftUI redraw.
 - **The token provider is called automatically on expiry.** You do not need to call `connectUser` again — implement the provider closure correctly and the SDK handles refresh.

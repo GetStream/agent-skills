@@ -84,6 +84,7 @@ Show a login screen before connecting. Invoke `connectUser` once per user sessio
 
 ```swift
 struct LoginView: View {
+    @Injected(\.chatClient) private var chatClient
     @State private var userId = ""
     @State private var name = ""
     @State private var isConnecting = false
@@ -143,7 +144,7 @@ struct LoginView: View {
                 completion(.success(Token(stringLiteral: tokenString.trimmingCharacters(in: .whitespacesAndNewlines))))
             }.resume()
         }
-        ChatClient.shared.connectUser(userInfo: userInfo, tokenProvider: tokenProvider) { error in
+        chatClient.connectUser(userInfo: userInfo, tokenProvider: tokenProvider) { error in
             DispatchQueue.main.async {
                 isConnecting = false
                 if let error {
@@ -159,7 +160,7 @@ struct LoginView: View {
 
 **Wiring:**
 - `TokenProvider` closure is called by the SDK on initial connect and on every token expiry
-- `ChatClient.shared.connectUser` is async via callback — update UI on `DispatchQueue.main`
+- `chatClient.connectUser` is async via callback — update UI on `DispatchQueue.main`
 - Backend endpoint must return a plain JWT string (or JSON with a `token` field — parse accordingly)
 
 ---
@@ -250,12 +251,13 @@ Navigation from `ChatChannelListView` to a channel is automatic. For manual or d
 
 ```swift
 struct ChannelScreen: View {
+    @Injected(\.chatClient) private var chatClient
     let channelId: ChannelId
 
     var body: some View {
         ChatChannelView(
             viewFactory: DefaultViewFactory.shared,
-            channelController: ChatClient.shared.channelController(for: channelId)
+            channelController: chatClient.channelController(for: channelId)
         )
     }
 }
