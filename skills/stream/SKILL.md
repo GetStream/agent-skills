@@ -137,9 +137,9 @@ Show a **one-line status** combining project signals and CLI + credentials:
 
 ## Install
 
-**Skill pack:** `npx skills add GetStream/agent-skills` ([skills.sh](https://skills.sh/docs/cli)) — markdown only, does **not** install the `stream` binary.
+**Skill pack:** `npx skills add GetStream/agent-skills` ([skills.sh](https://skills.sh/docs/cli)) — markdown only, does **not** install the `stream` binary. A git-clone alternative that bypasses `skills.sh` is documented in the [README](../../README.md#install--direct-from-github-no-third-party-cli).
 
-**`stream` CLI:** See **[`bootstrap.md`](bootstrap.md)** for binary install from `latest.json` / `install.sh`.
+**`stream` CLI:** See **[`bootstrap.md`](bootstrap.md)** for binary install. That file also includes **§ What the installer does** — a line-by-line description of `install.sh`, checksum verification, TTY confirmation, and an audit recipe for reviewers who want to inspect before running.
 
 ---
 
@@ -187,7 +187,7 @@ The tracks share a single skill so a result from one can naturally enable an act
 | Phase | Name | What you do |
 |-------|------|-------------|
 | **A1** | CLI gate + context probe | Run the **CLI gate** then **CLI + credentials**. Show one-line status. If CLI missing, install via **`bootstrap.md`** before A2 — never skip. |
-| **A2** | Execute | **Immediately start** `builder.md` Steps 0–7. Frontend skills + Shadcn/ui are always installed during Step 3 — no prompt needed. |
+| **A2** | Execute | **Immediately start** `builder.md` Steps 0–7. Shadcn/ui installs silently; third-party **frontend skills** require one explicit user confirmation during Step 3 Task A.2 (third-party provenance). |
 
 **Anti-patterns:** running skills install before scaffold; building a moderation review queue in the app.
 

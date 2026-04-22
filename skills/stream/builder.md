@@ -23,7 +23,7 @@ If the sandbox blocks the probe, say so and ask the user to confirm `stream` is 
 
 After the CLI is verified (and the **CLI gate** satisfied), **immediately start executing Steps 0–7**. No prompts, no checklist, no confirmation. Just build it step by step.
 
-Frontend skills (`vercel-react-best-practices` + `web-design-guidelines`) and Shadcn/ui are **always installed** during Step 3 - never ask, never skip. Load them before Step 4 alongside `references/*.md`. **Precedence:** Stream referencess win for SDK wiring; frontend skills guide generic React / UI polish.
+Shadcn/ui is always installed during Step 3. Third-party **frontend skills** (`vercel-react-best-practices`, `web-design-guidelines`, `frontend-design`) are installed **only with explicit user consent** — see Task A.2 for the disclosure script. If the user declines, Step 4 proceeds using Stream references only. **Precedence (when the skills are present):** Stream references win for SDK wiring; frontend skills guide generic React / UI polish.
 
 ---
 
@@ -98,7 +98,7 @@ Order:
 2. **Step 2:** Create org/app.
 3. **Task A:** Scaffold with Shadcn + Next.js using the chosen preset.
 4. **Task A.1:** Add base Shadcn components.
-5. **Task A.2:** Install frontend skills.
+5. **Task A.2:** Disclose + ask about third-party frontend skill installs; install only with user consent.
 6. Continue with Task B (.env), Task C (SDKs), Task D (CLI config).
 
 **Task A: Scaffold** - scaffolds Next.js + Tailwind + Shadcn/ui (Base UI) into the current directory. Use the theme preset chosen in **Step 1b**.
@@ -117,13 +117,23 @@ npx shadcn@latest add button input textarea card avatar badge separator
 
 Add more components as the use case requires (e.g. `dialog`, `dropdown-menu`, `tabs`, `popover`).
 
-**Task A.2: Frontend skills** - always install after scaffold (do NOT construct your own command variant):
+**Task A.2: Frontend skills** — third-party skill packs. **You must disclose and ask before installing.** Do NOT construct your own command variant.
 
-```bash
-npx skills add https://github.com/vercel-labs/agent-skills --skill vercel-react-best-practices -y && npx skills add https://github.com/vercel-labs/agent-skills --skill web-design-guidelines -y && npx skills add https://github.com/anthropics/skills --skill frontend-design -y
-```
+Print this disclosure verbatim, then stop and wait for the user's answer:
 
-If install fails, continue with Stream referencess only - mention the failure briefly.
+> I'd like to install three third-party skill packs that improve generic UI quality:
+> - `vercel-react-best-practices` — from [`vercel-labs/agent-skills`](https://github.com/vercel-labs/agent-skills)
+> - `web-design-guidelines` — from [`vercel-labs/agent-skills`](https://github.com/vercel-labs/agent-skills)
+> - `frontend-design` — from [`anthropics/skills`](https://github.com/anthropics/skills)
+>
+> These aren't required — Stream reference files cover SDK wiring either way. Install them?
+
+- **User agrees** → run:
+  ```bash
+  npx skills add https://github.com/vercel-labs/agent-skills --skill vercel-react-best-practices -y && npx skills add https://github.com/vercel-labs/agent-skills --skill web-design-guidelines -y && npx skills add https://github.com/anthropics/skills --skill frontend-design -y
+  ```
+- **User declines** → skip silently and continue to Task B. Do not retry, do not bring it up again this session.
+- **Install fails** → continue with Stream reference files only; mention the failure briefly.
 
 Do **not** modify `layout.tsx` or `globals.css` after scaffold - use Shadcn's defaults as-is (RULES.md › Theme).
 

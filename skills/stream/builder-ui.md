@@ -68,7 +68,7 @@ Use whatever `globals.css` Shadcn generates. Do not add custom variables, custom
 
 ### Design
 
-Use Shadcn components, Tailwind utilities, and the frontend skills (installed during Step 3) to build a polished UI. No further opinions - use your best judgement. Stream references provide structure and wiring; frontend skills provide design guidance.
+Use Shadcn components, Tailwind utilities, and — if the user approved them in Step 3 Task A.2 — the frontend skills to build a polished UI. No further opinions; use your best judgement. Stream references provide structure and wiring; frontend skills (when present) provide generic design guidance.
 
 ### Stream SDK CSS & Providers
 

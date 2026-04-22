@@ -74,7 +74,7 @@ Follow **[`SKILL.md`](SKILL.md)** phase order: **Step 0** (intent classifier) �
 
 - Do not load `references/*.md` until the user names the product(s).
 - Do not load `builder-ui.md` before Step 4.
-- Frontend skills and Shadcn/ui are always installed during Step 3 - never ask, never skip.
+- Shadcn/ui is always installed during Step 3 — never skip. Third-party **frontend skills** (`vercel-labs/*`, `anthropics/*`) require one explicit user confirmation per session before install — see `builder.md` Task A.2.
 
 ## Theme
 

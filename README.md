@@ -10,6 +10,42 @@ npx skills add GetStream/agent-skills
 
 A single skill — `/stream` — covers scaffolding, CLI queries, integration, and live docs search.
 
+### Install — direct from GitHub (no third-party CLI)
+
+If you'd rather not route through `skills.sh`, clone this repo into your skills directory:
+
+```bash
+# Claude Code
+git clone https://github.com/GetStream/agent-skills ~/.claude/skills/stream-pack
+
+# Or download a tagged release tarball
+curl -L https://github.com/GetStream/agent-skills/archive/refs/heads/main.tar.gz | tar -xz -C ~/.claude/skills/
+```
+
+This is byte-for-byte the same content `npx skills add` installs, fetched directly from GitHub.
+
+## What gets installed
+
+This pack is **markdown only** — no code, no postinstall scripts, no binaries. Two install paths touch the network; each is listed below so you can audit before running.
+
+| Step | Trigger | What it does | Source |
+|---|---|---|---|
+| `npx skills add GetStream/agent-skills` | Manual, by you | Fetches this repo's markdown into your skills directory via the [`skills.sh` CLI](https://skills.sh/docs/cli) ([source](https://github.com/skills-sh/skills-cli)). | GitHub (`GetStream/agent-skills`) |
+| `curl -sSL https://getstream.io/cli/install.sh \| bash` | Agent runs only after you approve | Installs the `stream` CLI binary. Skipped entirely for docs-only usage (Track D). Full audit of what the installer does — including SHA-256 verification and TTY confirmation — in [`skills/stream/bootstrap.md`](skills/stream/bootstrap.md#what-the-installer-does). | `getstream.io/cli/` |
+| Frontend skill installs (builder only) | Agent asks first, then runs | Installs three third-party skill packs for UI scaffolding — see below. | GitHub (listed) |
+
+### Frontend skills (builder track only)
+
+When you ask the agent to scaffold a new app (Track A) or enhance an existing one (Track E), Step 3 can install three helper skill packs. **The agent surfaces the full list and waits for your confirmation before running any install.**
+
+| Skill | Purpose | Source |
+|---|---|---|
+| `vercel-react-best-practices` | React/Next.js idioms | [`vercel-labs/agent-skills`](https://github.com/vercel-labs/agent-skills) |
+| `web-design-guidelines` | Generic UI design polish | [`vercel-labs/agent-skills`](https://github.com/vercel-labs/agent-skills) |
+| `frontend-design` | Frontend structure | [`anthropics/skills`](https://github.com/anthropics/skills) |
+
+Decline and the builder still runs — Stream reference files cover the SDK wiring; the frontend skills only tune generic UI quality. Tracks B (CLI queries), C (bootstrap), and D (docs search) never trigger these installs.
+
 ## What your agent can do
 
 - **Scaffold a full app** - Next.js + Tailwind + Stream SDKs, wired end-to-end in one shot
