@@ -188,12 +188,12 @@ controller.synchronize { error in
 ```swift
 struct ContentView: View {
     var body: some View {
-        ChatChannelListView()
+        ChatChannelListView(title: "Messages")
     }
 }
 ```
 
-`ChatChannelListView` handles navigation to individual channel views automatically.
+`ChatChannelListView` includes its own `NavigationView` — never wrap it in `NavigationView` or `NavigationStack`. Set the title via the `title` parameter in the initializer. Navigation to individual channel views is handled automatically.
 
 ---
 
@@ -765,8 +765,15 @@ ChatChannelListView(viewFactory: CustomFactory.shared) { channel in
 // Deep-link directly to a channel (e.g. from a push notification)
 ChatChannelListView(viewFactory: CustomFactory.shared, selectedChannelId: cid.rawValue)
 
-// Disable the built-in NavigationView to use your own navigation stack
-ChatChannelListView(viewFactory: CustomFactory.shared, embedInNavigationView: false)
+// Use your own NavigationView/NavigationStack — opt out of the SDK's built-in one
+// and pass title via the title parameter
+NavigationStack {
+    ChatChannelListView(
+        viewFactory: CustomFactory.shared,
+        title: "Messages",
+        embedInNavigationView: false
+    )
+}
 ```
 
 ---
@@ -778,7 +785,8 @@ ChatChannelListView(viewFactory: CustomFactory.shared, embedInNavigationView: fa
 - **Always wait for `logout` completion before connecting another user.** The SDK uses persistent storage for offline support and optimistic updates. Connecting a new user while logout is in progress risks state corruption and crashes.
 - **`StreamChat` must be initialized before any view renders.** Accessing SDK views before setup causes an immediate `fatalError`.
 - **Never use `ChatClient.shared`.** Access the client via `@Injected(\.chatClient)` in views. The SDK registers the instance automatically when `StreamChat(chatClient:)` is initialized.
-- **Import both `StreamChat` and `StreamChatSwiftUI`.** `ChatClient`, `UserInfo`, `Token` live in `StreamChat`; SwiftUI views and the `StreamChat` wrapper type live in `StreamChatSwiftUI`.
+- **Import both `StreamChat` and `StreamChatSwiftUI` in every file that uses either module.** `ChatClient`, `UserInfo`, `Token`, and all controllers live in `StreamChat`; SwiftUI views and the `StreamChat` wrapper type live in `StreamChatSwiftUI`. Missing `import StreamChat` causes compile errors when accessing the client or creating controllers.
+- **Never wrap `ChatChannelListView` in `NavigationView` or `NavigationStack`.** It includes its own built-in `NavigationView`. Set the navigation bar title via the `title` parameter in its initializer. If you must embed it in your own navigation container, set `embedInNavigationView: false` — and still pass `title` via the initializer, not `.navigationTitle()`.
 - **Controllers are stateful — store them as `@State` or in an `@ObservableObject`**, not computed vars. Computed vars create new instances on every SwiftUI redraw.
 - **The token provider is called automatically on expiry.** You do not need to call `connectUser` again — implement the provider closure correctly and the SDK handles refresh.
 - **`channel("livestream", id)` takes no third argument in v5+.** Passing `{ name }` as a third parameter causes a compile error.

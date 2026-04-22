@@ -205,10 +205,7 @@ struct RootView: View {
 ```swift
 struct ChannelListScreen: View {
     var body: some View {
-        NavigationView {
-            ChatChannelListView()
-                .navigationTitle("Messages")
-        }
+        ChatChannelListView(title: "Messages")
     }
 }
 ```
@@ -221,25 +218,24 @@ struct ChannelListScreen: View {
     @Injected(\.chatClient) private var chatClient
 
     var body: some View {
-        NavigationView {
-            ChatChannelListView(channelListController: controller)
-                .navigationTitle("Messages")
-        }
-        .task {
-            guard let userId = chatClient.currentUserId else { return }
-            controller = chatClient.channelListController(
-                query: .init(
-                    filter: .containMembers(userIds: [userId]),
-                    sort: [.init(key: .lastMessageAt, isAscending: false)]
+        ChatChannelListView(channelListController: controller, title: "Messages")
+            .task {
+                guard let userId = chatClient.currentUserId else { return }
+                controller = chatClient.channelListController(
+                    query: .init(
+                        filter: .containMembers(userIds: [userId]),
+                        sort: [.init(key: .lastMessageAt, isAscending: false)]
+                    )
                 )
-            )
-        }
+            }
     }
 }
 ```
 
 **Wiring:**
 - `ChatChannelListView()` with no arguments uses the default query (all channels the current user is a member of)
+- The `title` parameter in `ChatChannelListView` sets the navigation bar title — do **not** use `.navigationTitle()` or wrap in `NavigationView`
+- `ChatChannelListView` includes its own `NavigationView` — never wrap it in another one
 - `channelListController` must be created as `@State` — not a computed property — to avoid re-creation on redraws
 - Navigation from the channel list into a channel view is handled by `ChatChannelListView` automatically
 
@@ -562,6 +558,7 @@ Use this AppDelegate when push notifications are needed (Option B entry point). 
 ```swift
 import UIKit
 import StreamChat
+import StreamChatSwiftUI
 import UserNotifications
 
 class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
@@ -758,11 +755,14 @@ ChatChannelListView(viewFactory: CustomFactory.shared) { channel in
 
 ### Use your own NavigationStack
 
+When you need to embed `ChatChannelListView` inside your own `NavigationView` or `NavigationStack`, set `embedInNavigationView: false` to opt out of the SDK's built-in navigation container. Pass the title via the `title` parameter.
+
 ```swift
 NavigationStack {
     ChatChannelListView(
         viewFactory: CustomFactory.shared,
-        embedInNavigationView: false   // opt out of the SDK's built-in NavigationView
+        title: "Messages",
+        embedInNavigationView: false
     )
 }
 ```
