@@ -444,12 +444,61 @@ struct CustomChannelListHeaderView: View {
 }
 
 // Register in the factory:
+// NOTE: Verify the exact Options type against https://getstream.io/chat/docs/sdk/ios/swiftui/view-customizations/
+// before using — do not rely on training data for the parameter signature.
 extension CustomFactory {
-    func makeChannelListHeaderViewModifier(title: String) -> some ChatChannelListHeaderViewModifier {
-        CustomChannelListHeader(title: title)
+    func makeChannelListHeaderViewModifier(options: ChannelListHeaderViewModifierOptions) -> some ChatChannelListHeaderViewModifier {
+        CustomChannelListHeader(title: options.title)
     }
 }
 ```
+
+---
+
+### Custom Channel Header Blueprint
+
+Customizes the navigation bar shown at the top of a chat channel (message list) view. Sourced from [getstream.io/chat/docs/sdk/ios/swiftui/chat-channel-components/channel-header/](https://getstream.io/chat/docs/sdk/ios/swiftui/chat-channel-components/channel-header/).
+
+```swift
+import SwiftUI
+import StreamChat
+import StreamChatSwiftUI
+
+struct CustomChatChannelHeaderModifier: ChatChannelHeaderViewModifier {
+    var channel: ChatChannel
+
+    func body(content: Content) -> some View {
+        content.toolbar {
+            ToolbarItem(placement: .principal) {
+                Text(channel.name ?? channel.cid.id)
+                    .font(.headline)
+            }
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    // action
+                } label: {
+                    Image(systemName: "phone.fill")
+                }
+            }
+        }
+    }
+}
+
+// Register in the factory:
+extension CustomFactory {
+    func makeChannelHeaderViewModifier(
+        options: ChannelHeaderViewModifierOptions
+    ) -> some ChatChannelHeaderViewModifier {
+        CustomChatChannelHeaderModifier(channel: options.channel)
+    }
+}
+```
+
+**Wiring:**
+- `ChannelHeaderViewModifierOptions` exposes `options.channel: ChatChannel`
+- `ChatChannelHeaderViewModifier` conformance requires implementing `body(content:) -> some View`
+- Use `.toolbar { ToolbarItem(placement: .topBarTrailing) { … } }` for trailing nav-bar buttons
+- Use `.toolbar { ToolbarItem(placement: .principal) { … } }` to replace the default title/avatar
 
 ---
 

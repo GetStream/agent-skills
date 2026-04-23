@@ -463,6 +463,20 @@ ChatChannelListView(viewFactory: CustomFactory.shared)
 | Reactions & actions | 7 | Message actions popup, reaction details, read indicators |
 | Thread list | 8 | Items, empty/loading states, header, footer |
 
+> **Never guess ViewFactory method signatures from training data.** All factory methods take a single `Options` struct — the parameter label is always `options:`, never bare names like `channel:` or `title:`. Always verify against the [view-customizations docs](https://getstream.io/chat/docs/sdk/ios/swiftui/view-customizations/) before overriding a slot.
+
+**Confirmed method signatures (sourced from docs at [getstream.io/chat/docs/sdk/ios/swiftui/view-customizations/](https://getstream.io/chat/docs/sdk/ios/swiftui/view-customizations/)):**
+
+| Method | Options type | Key properties |
+|---|---|---|
+| `makeChannelHeaderViewModifier(options:)` | `ChannelHeaderViewModifierOptions` | `options.channel: ChatChannel` |
+| `makeUserAvatarView(options:)` | `UserAvatarViewOptions` | `options.user: ChatUser`, `options.size: CGSize` |
+| `makeChannelAvatarView(options:)` | `ChannelAvatarViewOptions` | varies |
+| `makeChannelListItem(options:)` | varies | `options.channel: ChatChannel` |
+| `makeEmptyMessagesView(options:)` | varies | — |
+
+For the full list of factory methods, fetch the view-customizations docs page above — do not rely on training data for method names.
+
 **Styles — Regular vs Liquid Glass:**
 
 ```swift
