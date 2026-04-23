@@ -440,7 +440,7 @@ class CustomFactory: ViewFactory {
     private init() {}
 
     // Required by ViewFactory protocol — use RegularStyles() (docked composer) or LiquidGlassStyles() (iOS 26 floating composer)
-    public var styles: some Styles { RegularStyles() }
+    public var styles: some Styles = RegularStyles()
 
     // Override only the slots you need
     func makeUserAvatarView(options: UserAvatarViewOptions) -> some View {
