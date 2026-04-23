@@ -1,6 +1,6 @@
 # Stream Agent Skills
 
-Give your AI coding agent the ability to build, query, and manage [Stream](https://getstream.io) - Chat, Video, Feeds, and Moderation.
+Give your AI coding agent the ability to build, query, and manage [Stream](https://getstream.io) - Chat, Video, Feeds, Moderation, and Swift/iOS integrations.
 
 ## Install
 
@@ -8,7 +8,10 @@ Give your AI coding agent the ability to build, query, and manage [Stream](https
 npx skills add GetStream/agent-skills
 ```
 
-A single skill — `/stream` — covers scaffolding, CLI queries, integration, and live docs search.
+This pack installs two skills:
+
+- `/stream` for cross-platform scaffolding, CLI queries, integration, and live docs search
+- `/stream-swift` for SwiftUI, UIKit, Xcode, and iOS Stream integration work
 
 ### Install — direct from GitHub (no third-party CLI)
 
@@ -50,6 +53,7 @@ Decline and the builder still runs — Stream reference files cover the SDK wiri
 
 - **Scaffold a full app** - Next.js + Tailwind + Stream SDKs, wired end-to-end in one shot
 - **Add products to existing apps** - drop Chat, Video, or Feeds into a project that's already running
+- **Build and extend Swift apps** - wire Stream into SwiftUI or UIKit Xcode projects with iOS-specific setup patterns
 - **Query live data** - "any active calls?", "show flagged messages", "list my channels" - natural language to CLI
 - **Set up moderation** - blocklists, automod config, and content policies via the Stream CLI
 - **Answer SDK questions** - token patterns, strict mode, client/server instantiation, theme wiring
@@ -57,7 +61,7 @@ Decline and the builder still runs — Stream reference files cover the SDK wiri
 
 ## How it works
 
-The skill pack is markdown only - no code, no build step. Your agent reads `SKILL.md`, classifies intent, then either skips straight to docs (Track D — no CLI required) or runs the CLI gate and context probe before routing to the right module:
+The skill pack is markdown only - no code, no build step. Each skill has its own `SKILL.md` entrypoint and routes to the right module set for the job:
 
 | Intent | Module |
 |---|---|
@@ -67,6 +71,7 @@ The skill pack is markdown only - no code, no build step. Your agent reads `SKIL
 | SDK wiring during builder/enhance | `sdk.md` + `references/*.md` |
 | Install the Stream CLI | `bootstrap.md` |
 | Search the official SDK documentation (no CLI needed) | `docs-search.md` |
+| Build or integrate a Swift/iOS app | `skills/stream-swift/builder.md` + `skills/stream-swift/sdk.md` + `skills/stream-swift/references/*.md` |
 
 ## Contents
 
@@ -77,3 +82,7 @@ The skill pack is markdown only - no code, no build step. Your agent reads `SKIL
 - [`skills/stream/sdk.md`](skills/stream/sdk.md) - cross-cutting SDK patterns
 - [`skills/stream/docs-search.md`](skills/stream/docs-search.md) - live documentation lookup: resolves your SDK from project context or explicit input, then answers from getstream.io with cited sources
 - `skills/stream/references/*.md` - per-product setup, gotchas, and component blueprints
+- [`skills/stream-swift/SKILL.md`](skills/stream-swift/SKILL.md) - Swift/iOS entrypoint: intent classifier, local project detection, module pointers
+- [`skills/stream-swift/RULES.md`](skills/stream-swift/RULES.md) - Swift/iOS non-negotiable rules
+- [`skills/stream-swift/builder.md`](skills/stream-swift/builder.md) + [`skills/stream-swift/sdk.md`](skills/stream-swift/sdk.md) - shared Swift app integration flow and SDK ownership patterns
+- `skills/stream-swift/references/*.md` - product/framework-specific Swift references and blueprints

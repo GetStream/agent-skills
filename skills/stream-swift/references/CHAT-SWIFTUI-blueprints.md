@@ -1,14 +1,14 @@
-# Chat iOS SwiftUI — View Blueprints
+# Chat SwiftUI - View Blueprints
 
-Load only the section you are implementing. For setup, client initialization, and gotchas, see [CHAT-IOS-SWIFTUI.md](CHAT-IOS-SWIFTUI.md).
+Load only the section you are implementing. For setup, client initialization, and gotchas, see [CHAT-SWIFTUI.md](CHAT-SWIFTUI.md).
 
 ---
 
 ## App Entry Point Blueprint
 
-Two patterns — pick one. Appearance customization must happen before `StreamChat` is initialized in either case.
+Two patterns - pick one. Appearance customization must happen before `StreamChat` is initialized in either case.
 
-### Option A — App struct `init()` (pure SwiftUI)
+### Option A - App struct `init()` (pure SwiftUI)
 
 Preferred for apps that don't need `UIApplicationDelegate` callbacks.
 
@@ -36,7 +36,7 @@ struct StreamChatApp: App {
 }
 ```
 
-### Option B — `AppDelegate` (required for push notifications, background tasks, URL handling)
+### Option B - `AppDelegate` (required for push notifications, background tasks, URL handling)
 
 ```swift
 import SwiftUI
@@ -71,10 +71,10 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 ```
 
 **Wiring (both options):**
-- Option A: `@State` is required — `App` is a value type and SwiftUI can recreate it; `@State` pins the instance across re-creations. A plain `let`/`var` would be re-initialized. Initialize via `_streamChat = State(wrappedValue:)` from `init()`.
-- Option B: `StreamChat` is stored on `AppDelegate` (`var streamChat: StreamChat?`) — `AppDelegate` is a reference type with UIKit-managed lifetime, so a plain `var` is fine there.
+- Option A: `@State` is required - `App` is a value type and SwiftUI can recreate it; `@State` pins the instance across re-creations. A plain `let`/`var` would be re-initialized. Initialize via `_streamChat = State(wrappedValue:)` from `init()`.
+- Option B: `StreamChat` is stored on `AppDelegate` (`var streamChat: StreamChat?`) - `AppDelegate` is a reference type with UIKit-managed lifetime, so a plain `var` is fine there.
 - `ChatClient` and `StreamChat` are initialized once and never recreated
-- `Appearance` must be passed at `StreamChat` init time — not settable afterward
+- `Appearance` must be passed at `StreamChat` init time - not settable afterward
 
 ---
 
@@ -160,8 +160,8 @@ struct LoginView: View {
 
 **Wiring:**
 - `TokenProvider` closure is called by the SDK on initial connect and on every token expiry
-- `chatClient.connectUser` is async via callback — update UI on `DispatchQueue.main`
-- Backend endpoint must return a plain JWT string (or JSON with a `token` field — parse accordingly)
+- `chatClient.connectUser` is async via callback - update UI on `DispatchQueue.main`
+- Backend endpoint must return a plain JWT string (or JSON with a `token` field - parse accordingly)
 
 ---
 
@@ -234,9 +234,9 @@ struct ChannelListScreen: View {
 
 **Wiring:**
 - `ChatChannelListView()` with no arguments uses the default query (all channels the current user is a member of)
-- The `title` parameter in `ChatChannelListView` sets the navigation bar title — do **not** use `.navigationTitle()` or wrap in `NavigationView`
-- `ChatChannelListView` includes its own `NavigationView` — never wrap it in another one
-- `channelListController` must be created as `@State` — not a computed property — to avoid re-creation on redraws
+- The `title` parameter in `ChatChannelListView` sets the navigation bar title - do **not** use `.navigationTitle()` or wrap in `NavigationView`
+- `ChatChannelListView` includes its own `NavigationView` - never wrap it in another one
+- `channelListController` must be created as `@State` - not a computed property - to avoid re-creation on redraws
 - Navigation from the channel list into a channel view is handled by `ChatChannelListView` automatically
 
 ---
@@ -305,10 +305,10 @@ enum AppearanceProvider {
 ```
 
 **Wiring:**
-- `Appearance.ColorPalette()` — all semantic color tokens (accent, surface, text, border, chat, reaction, nav)
-- `Appearance.FontsSwiftUI()` — SwiftUI `Font` values for body, caption, headline, footnote
-- `Appearance.Images()` — `UIImage` overrides for composer icons, navigation icons, etc.
-- Pass to `StreamChat(chatClient: chatClient, appearance: appearance)` — not settable after init
+- `Appearance.ColorPalette()` - all semantic color tokens (accent, surface, text, border, chat, reaction, nav)
+- `Appearance.FontsSwiftUI()` - SwiftUI `Font` values for body, caption, headline, footnote
+- `Appearance.Images()` - `UIImage` overrides for composer icons, navigation icons, etc.
+- Pass to `StreamChat(chatClient: chatClient, appearance: appearance)` - not settable after init
 
 ---
 
@@ -326,7 +326,7 @@ class CustomFactory: ViewFactory {
     public static let shared = CustomFactory()
     private init() {}
 
-    // Add overrides below — all unoverridden slots use SDK defaults
+    // Add overrides below - all unoverridden slots use SDK defaults
 }
 ```
 
@@ -445,7 +445,7 @@ struct CustomChannelListHeaderView: View {
 
 // Register in the factory:
 // NOTE: Verify the exact Options type against https://getstream.io/chat/docs/sdk/ios/swiftui/view-customizations/
-// before using — do not rely on training data for the parameter signature.
+// before using - do not rely on training data for the parameter signature.
 extension CustomFactory {
     func makeChannelListHeaderViewModifier(options: ChannelListHeaderViewModifierOptions) -> some ChatChannelListHeaderViewModifier {
         CustomChannelListHeader(title: options.title)
@@ -497,8 +497,8 @@ extension CustomFactory {
 **Wiring:**
 - `ChannelHeaderViewModifierOptions` exposes `options.channel: ChatChannel`
 - `ChatChannelHeaderViewModifier` conformance requires implementing `body(content:) -> some View`
-- Use `.toolbar { ToolbarItem(placement: .topBarTrailing) { … } }` for trailing nav-bar buttons
-- Use `.toolbar { ToolbarItem(placement: .principal) { … } }` to replace the default title/avatar
+- Use `.toolbar { ToolbarItem(placement: .topBarTrailing) { ... } }` for trailing nav-bar buttons
+- Use `.toolbar { ToolbarItem(placement: .principal) { ... } }` to replace the default title/avatar
 
 ---
 
@@ -527,8 +527,8 @@ extension CustomFactory {
 ```
 
 **Wiring:**
-- `LiquidGlassStyles()` — floating composer above keyboard, iOS 26 material treatment
-- `RegularStyles()` — docked bottom composer (SDK default)
+- `LiquidGlassStyles()` - floating composer above keyboard, iOS 26 material treatment
+- `RegularStyles()` - docked bottom composer (SDK default)
 - Override individual modifier methods on a custom `Styles` conformance to mix-and-match
 
 ---
@@ -711,4 +711,3 @@ NavigationStack {
     )
 }
 ```
-

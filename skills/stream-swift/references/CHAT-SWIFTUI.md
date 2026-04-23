@@ -1,22 +1,22 @@
-# Chat iOS — SwiftUI SDK Setup & Integration
+# Chat - SwiftUI SDK Setup & Integration
 
-Stream Chat iOS (SwiftUI) provides pre-built SwiftUI components for building rich messaging UIs. This file covers package installation, client setup, authentication, customization, and gotchas. For view blueprints, see [CHAT-IOS-SWIFTUI-blueprints.md](CHAT-IOS-SWIFTUI-blueprints.md).
+Stream Chat SwiftUI provides pre-built SwiftUI components for building rich messaging UIs. This file covers package installation, client setup, authentication, customization, and gotchas. For view blueprints, see [CHAT-SWIFTUI-blueprints.md](CHAT-SWIFTUI-blueprints.md).
 
 Rules: [../RULES.md](../RULES.md) (secrets, no dev tokens in production, proper logout).
 
-- **Blueprint** — SwiftUI view structure and initialization
-- **Wiring** — SDK calls for each component, exact property paths
-- **Requirements** — Info.plist keys, SDK version, Xcode version
+- **Blueprint** - SwiftUI view structure and initialization
+- **Wiring** - SDK calls for each component, exact property paths
+- **Requirements** - Info.plist keys, SDK version, Xcode version
 
 ## Quick ref
 
-- **Package (SwiftUI):** `StreamChatSwiftUI` via SPM — `https://github.com/getstream/stream-chat-swiftui`
-- **Package (core only):** `StreamChat` via SPM — `https://github.com/getstream/stream-chat-swift`
-- **First:** Installation → Info.plist → Client init → Connect user → Show views
+- **Package (SwiftUI):** `StreamChatSwiftUI` via SPM - `https://github.com/getstream/stream-chat-swiftui`
+- **Package (core only):** `StreamChat` via SPM - `https://github.com/getstream/stream-chat-swift`
+- **First:** Installation -> Info.plist -> Client init -> Connect user -> Show views
 - **Per feature:** Jump to the relevant section or blueprint when implementing a screen
 - **Docs:** If you can't find an information here, check the docs: `https://getstream.io/chat/docs/sdk/ios/`
 
-Full view blueprints: [CHAT-IOS-SWIFTUI-blueprints.md](CHAT-IOS-SWIFTUI-blueprints.md) — load only the section you are implementing.
+Full view blueprints: [CHAT-SWIFTUI-blueprints.md](CHAT-SWIFTUI-blueprints.md) - load only the section you are implementing.
 
 ---
 
@@ -28,11 +28,11 @@ Check if the SDK is already installed in the project. If not, ask the user to ch
 
 ### Client Initialization
 
-Initialize once at app launch. **Never** create `ChatClient` in a SwiftUI `View` body or computed property — doing so creates a new instance on every redraw.
+Initialize once at app launch. **Never** create `ChatClient` in a SwiftUI `View` body or computed property - doing so creates a new instance on every redraw.
 
-Two equally valid patterns — pick one:
+Two equally valid patterns - pick one:
 
-**Option A — App struct `init()` (pure SwiftUI, no UIKit dependency):**
+**Option A - App struct `init()` (pure SwiftUI, no UIKit dependency):**
 
 ```swift
 import StreamChat
@@ -56,9 +56,9 @@ struct MyApp: App {
 }
 ```
 
-`@State` is required — `App` is a value type and SwiftUI can recreate it; `@State` ensures the `StreamChat` instance survives those re-creations. A plain `let` or `var` would be re-initialized. Use `_streamChat = State(wrappedValue:)` to initialize a `@State` property from `init()`.
+`@State` is required - `App` is a value type and SwiftUI can recreate it; `@State` ensures the `StreamChat` instance survives those re-creations. A plain `let` or `var` would be re-initialized. Use `_streamChat = State(wrappedValue:)` to initialize a `@State` property from `init()`.
 
-**Option B — `AppDelegate` (required when you also need other `UIApplicationDelegate` callbacks):**
+**Option B - `AppDelegate` (required when you also need other `UIApplicationDelegate` callbacks):**
 
 ```swift
 import StreamChat
@@ -94,9 +94,9 @@ Use Option B when the app needs `UIApplicationDelegate` callbacks for push notif
 
 ### User Authentication
 
-**Default — hardcoded token (no expiry):**
+**Default - hardcoded token (no expiry):**
 
-Ask the user for their Stream token from the [Stream Dashboard](https://dashboard.getstream.io) (User Explorer → generate token). Access the client via `@Injected(\.chatClient)` in any view or call it where you have a `chatClient` reference:
+Ask the user for their Stream token from the [Stream Dashboard](https://dashboard.getstream.io) (User Explorer -> generate token). Access the client via `@Injected(\.chatClient)` in any view or call it where you have a `chatClient` reference:
 
 ```swift
 @Injected(\.chatClient) private var chatClient
@@ -113,7 +113,7 @@ chatClient.connectUser(userInfo: userInfo, token: token) { error in
 }
 ```
 
-**Token provider (expiring tokens — use only if the user asks for it):**
+**Token provider (expiring tokens - use only if the user asks for it):**
 
 Use this when the user has a backend endpoint that issues Stream JWTs. The provider is called automatically when the token expires:
 
@@ -168,7 +168,7 @@ struct ContentView: View {
 }
 ```
 
-`ChatChannelListView` includes its own `NavigationView` — never wrap it in `NavigationView` or `NavigationStack`. Set the title via the `title` parameter in the initializer. Navigation to individual channel views is handled automatically.
+`ChatChannelListView` includes its own `NavigationView` - never wrap it in `NavigationView` or `NavigationStack`. Set the title via the `title` parameter in the initializer. Navigation to individual channel views is handled automatically.
 
 ---
 
@@ -176,19 +176,19 @@ struct ContentView: View {
 
 ### Controller Management
 
-**Create controllers as `@State` variables — never as computed properties.**
+**Create controllers as `@State` variables - never as computed properties.**
 
 Each SwiftUI redraw creates a new controller instance from a computed var, causing unpredictable state and re-fetches.
 
 ```swift
 @Injected(\.chatClient) private var chatClient
 
-// Wrong — new instance on every redraw
+// Wrong - new instance on every redraw
 var channelListController: ChatChannelListController {
     chatClient.channelListController(query: .init(...))
 }
 
-// Correct — single stable instance
+// Correct - single stable instance
 @State private var channelListController: ChatChannelListController?
 
 .task {
@@ -244,7 +244,7 @@ let chatClient = ChatClient(config: config)
 
 Offline-queueable actions: send/edit/delete messages, add/remove reactions, pin/unpin messages, save drafts.
 
-**Simulator note:** Reconnection after backgrounding is unreliable on the iOS Simulator — test offline behavior on a real device.
+**Simulator note:** Reconnection after backgrounding is unreliable on the iOS Simulator - test offline behavior on a real device.
 
 ---
 
@@ -295,7 +295,7 @@ channelList.state.$channels
     .store(in: &cancellables)
 ```
 
-**Other state objects** (all follow the same `make*` → `get()` → `loadMore*()` → `.state.*` pattern):
+**Other state objects** (all follow the same `make*` -> `get()` -> `loadMore*()` -> `.state.*` pattern):
 `MemberList`, `MessageSearch`, `ReactionList`, `UserList`, `UserSearch`, `ConnectedUser`.
 
 **User-level actions via `ConnectedUser`:**
@@ -398,7 +398,7 @@ appearance.images = images
 streamChat = StreamChat(chatClient: chatClient, appearance: appearance)
 ```
 
-> **Never guess `ColorPalette` property names.** Use only tokens listed below or fetched from the [theming docs](https://getstream.io/chat/docs/sdk/ios/swiftui/theming/). Names look guessable but are often wrong — if a token isn't in this table, fetch the theming page before using it.
+> **Never guess `ColorPalette` property names.** Use only tokens listed below or fetched from the [theming docs](https://getstream.io/chat/docs/sdk/ios/swiftui/theming/). Names look guessable but are often wrong - if a token isn't in this table, fetch the theming page before using it.
 
 **Confirmed `ColorPalette` tokens:**
 
@@ -429,7 +429,7 @@ streamChat = StreamChat(chatClient: chatClient, utils: utils)
 
 ### View Customization (ViewFactory)
 
-The `ViewFactory` protocol defines every swappable view slot in the SDK — channel list items, message bubbles, composer, avatars, reactions, attachments, and more. Create a singleton factory subclass, override only the slots you need, and pass it to your root view. All unoverridden slots fall back to the SDK defaults.
+The `ViewFactory` protocol defines every swappable view slot in the SDK - channel list items, message bubbles, composer, avatars, reactions, attachments, and more. Create a singleton factory subclass, override only the slots you need, and pass it to your root view. All unoverridden slots fall back to the SDK defaults.
 
 **Minimal custom factory:**
 
@@ -439,7 +439,7 @@ class CustomFactory: ViewFactory {
     public static let shared = CustomFactory()
     private init() {}
 
-    // Required by ViewFactory protocol — use RegularStyles() (docked composer) or LiquidGlassStyles() (iOS 26 floating composer)
+    // Required by ViewFactory protocol - use RegularStyles() (docked composer) or LiquidGlassStyles() (iOS 26 floating composer)
     public var styles: some Styles = RegularStyles()
 
     // Override only the slots you need
@@ -466,7 +466,7 @@ ChatChannelListView(viewFactory: CustomFactory.shared)
 | Reactions & actions | 7 | Message actions popup, reaction details, read indicators |
 | Thread list | 8 | Items, empty/loading states, header, footer |
 
-> **Never guess ViewFactory method signatures from training data.** All factory methods take a single `Options` struct — the parameter label is always `options:`, never bare names like `channel:` or `title:`. Always verify against the [view-customizations docs](https://getstream.io/chat/docs/sdk/ios/swiftui/view-customizations/) before overriding a slot.
+> **Never guess ViewFactory method signatures from training data.** All factory methods take a single `Options` struct - the parameter label is always `options:`, never bare names like `channel:` or `title:`. Always verify against the [view-customizations docs](https://getstream.io/chat/docs/sdk/ios/swiftui/view-customizations/) before overriding a slot.
 
 **Confirmed method signatures (sourced from docs at [getstream.io/chat/docs/sdk/ios/swiftui/view-customizations/](https://getstream.io/chat/docs/sdk/ios/swiftui/view-customizations/)):**
 
@@ -476,11 +476,11 @@ ChatChannelListView(viewFactory: CustomFactory.shared)
 | `makeUserAvatarView(options:)` | `UserAvatarViewOptions` | `options.user: ChatUser`, `options.size: CGSize` |
 | `makeChannelAvatarView(options:)` | `ChannelAvatarViewOptions` | varies |
 | `makeChannelListItem(options:)` | varies | `options.channel: ChatChannel` |
-| `makeEmptyMessagesView(options:)` | varies | — |
+| `makeEmptyMessagesView(options:)` | varies | - |
 
-For the full list of factory methods, fetch the view-customizations docs page above — do not rely on training data for method names.
+For the full list of factory methods, fetch the view-customizations docs page above - do not rely on training data for method names.
 
-**Styles — Regular vs Liquid Glass:**
+**Styles - Regular vs Liquid Glass:**
 
 ```swift
 class CustomFactory: ViewFactory {
@@ -489,7 +489,7 @@ class CustomFactory: ViewFactory {
     private init() {}
 
     public var styles: some Styles { LiquidGlassStyles() } // iOS 26 floating composer
-    // Default: RegularStyles() — docked bottom composer
+    // Default: RegularStyles() - docked bottom composer
 }
 ```
 
@@ -521,7 +521,7 @@ public func makeEmptyChannelsView(options: EmptyChannelsViewOptions) -> CustomEm
 }
 ```
 
-For concrete view code, see [CHAT-IOS-SWIFTUI-blueprints.md § ViewFactory Blueprints](CHAT-IOS-SWIFTUI-blueprints.md).
+For concrete view code, see [CHAT-SWIFTUI-blueprints.md, "ViewFactory Blueprints"](CHAT-SWIFTUI-blueprints.md).
 
 ### Channel List Tap Handling
 
@@ -535,7 +535,7 @@ class CustomFactory: ViewFactory {
     }
 }
 
-// Intercept taps (no navigation — run your own logic)
+// Intercept taps (no navigation - run your own logic)
 ChatChannelListView(viewFactory: CustomFactory.shared) { channel in
     print("Tapped: \(channel.name ?? "")")
 }
@@ -543,7 +543,7 @@ ChatChannelListView(viewFactory: CustomFactory.shared) { channel in
 // Deep-link directly to a channel (e.g. from a push notification)
 ChatChannelListView(viewFactory: CustomFactory.shared, selectedChannelId: cid.rawValue)
 
-// Use your own NavigationView/NavigationStack — opt out of the SDK's built-in one
+// Use your own NavigationView/NavigationStack - opt out of the SDK's built-in one
 // and pass title via the title parameter
 NavigationStack {
     ChatChannelListView(
@@ -564,7 +564,7 @@ NavigationStack {
 - **`StreamChat` must be initialized before any view renders.** Accessing SDK views before setup causes an immediate `fatalError`.
 - **Never use `ChatClient.shared`.** Access the client via `@Injected(\.chatClient)` in views. The SDK registers the instance automatically when `StreamChat(chatClient:)` is initialized.
 - **Import both `StreamChat` and `StreamChatSwiftUI` in every file that uses either module.** `ChatClient`, `UserInfo`, `Token`, and all controllers live in `StreamChat`; SwiftUI views and the `StreamChat` wrapper type live in `StreamChatSwiftUI`. Missing `import StreamChat` causes compile errors when accessing the client or creating controllers.
-- **Never wrap `ChatChannelListView` in `NavigationView` or `NavigationStack`.** It includes its own built-in `NavigationView`. Set the navigation bar title via the `title` parameter in its initializer. If you must embed it in your own navigation container, set `embedInNavigationView: false` — and still pass `title` via the initializer, not `.navigationTitle()`.
-- **Controllers are stateful — store them as `@State` or in an `@ObservableObject`**, not computed vars. Computed vars create new instances on every SwiftUI redraw.
-- **The token provider is called automatically on expiry.** You do not need to call `connectUser` again — implement the provider closure correctly and the SDK handles refresh.
+- **Never wrap `ChatChannelListView` in `NavigationView` or `NavigationStack`.** It includes its own built-in `NavigationView`. Set the navigation bar title via the `title` parameter in its initializer. If you must embed it in your own navigation container, set `embedInNavigationView: false` - and still pass `title` via the initializer, not `.navigationTitle()`.
+- **Controllers are stateful - store them as `@State` or in an `@ObservableObject`**, not computed vars. Computed vars create new instances on every SwiftUI redraw.
+- **The token provider is called automatically on expiry.** You do not need to call `connectUser` again - implement the provider closure correctly and the SDK handles refresh.
 - **`channel("livestream", id)` takes no third argument in v5+.** Passing `{ name }` as a third parameter causes a compile error.

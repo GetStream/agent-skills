@@ -42,7 +42,6 @@ Before any tool call, decide the **track** from the user's input alone — no pr
 | "Build me a … app", "scaffold", "create a new …" + Stream product, in an empty/new directory | **A — Builder (new app)** | No |
 | "Add Chat/Video/Feeds to this app", "integrate Stream into" — existing project | **E — Builder (enhance)** | No |
 | "Install the CLI", "set up stream" with no project context | **C — Bootstrap** | n/a |
-| "Build me a … iOS app", "add Stream Chat to my SwiftUI/Xcode project", explicit iOS/SwiftUI + Stream Chat context | **F — iOS Chat (SwiftUI)** | n/a (no CLI gate) |
 | Operational verb wrapped in how-to phrasing (e.g. "how do I list my calls?" — docs *or* CLI) | **Ask one disambiguator** | Defer |
 
 ### Disambiguation flow
@@ -66,7 +65,7 @@ After the answer arrives, route as if the user had given that signal directly.
 A local-only probe. **No CLI binary, no network, no gate.** Tracks A/B/C/E run it once on first invocation because scaffold, credentials, and routing depend on it. **Track D does not run it up front** — docs answers shouldn't require inspecting the user's filesystem. If Track D's SDK inference reaches the "need project context" tier (see `docs-search.md` § Inference tiers), it runs the probe at that point and only at that point.
 
 ```bash
-bash -c 'echo "=== PKG ==="; grep -oE "\"(stream-chat[^\"]*|@stream-io/[^\"]*)\": *\"[^\"]*\"" package.json 2>/dev/null; echo "=== NEXT ==="; test -f package.json && grep -q "\"next\"" package.json && echo "NEXTJS" || echo "NO_NEXT"; echo "=== NATIVE ==="; ls pubspec.yaml go.mod requirements.txt pyproject.toml Podfile build.gradle Package.swift 2>/dev/null; ls -d *.xcodeproj *.xcworkspace 2>/dev/null; echo "=== EMPTY ==="; test -z "$(ls -A 2>/dev/null)" && echo "EMPTY_CWD" || echo "NON_EMPTY"'
+bash -c 'echo "=== PKG ==="; grep -oE "\"(stream-chat[^\"]*|@stream-io/[^\"]*)\": *\"[^\"]*\"" package.json 2>/dev/null; echo "=== NEXT ==="; test -f package.json && grep -q "\"next\"" package.json && echo "NEXTJS" || echo "NO_NEXT"; echo "=== NATIVE ==="; ls pubspec.yaml go.mod requirements.txt pyproject.toml Podfile build.gradle 2>/dev/null; echo "=== EMPTY ==="; test -z "$(ls -A 2>/dev/null)" && echo "EMPTY_CWD" || echo "NON_EMPTY"'
 ```
 
 **Do NOT use `bash -ce`** (`-e` = exit-on-error): `grep` returns exit 1 when it finds no matches, which aborts the entire probe and leaves you with partial output. Same applies to every other probe in this file.
@@ -156,7 +155,6 @@ Step 0 picks the track. Each Track section below has the full prerequisites and 
 | D — Docs search (no CLI gate) | [`docs-search.md`](docs-search.md) |
 | E — Enhance existing app | [`builder.md`](builder.md) (skip scaffold) + [`references/<Product>.md`](references/) |
 | SDK wiring inside A/E | [`sdk.md`](sdk.md) + relevant [`references/<Product>.md`](references/) |
-| F — iOS Chat (SwiftUI) | [`references/CHAT-IOS-SWIFTUI.md`](references/CHAT-IOS-SWIFTUI.md) + [`references/CHAT-IOS-SWIFTUI-blueprints.md`](references/CHAT-IOS-SWIFTUI-blueprints.md) |
 
 **Reference blueprints** (load only after the user names the product, used by Tracks A and E):
 
@@ -166,7 +164,6 @@ Step 0 picks the track. Each Track section below has the full prerequisites and 
 | Feeds | [`references/FEEDS.md`](references/FEEDS.md) | [`references/FEEDS-blueprints.md`](references/FEEDS-blueprints.md) |
 | Video | [`references/VIDEO.md`](references/VIDEO.md) | [`references/VIDEO-blueprints.md`](references/VIDEO-blueprints.md) |
 | Moderation | [`references/MODERATION.md`](references/MODERATION.md) | [`references/MODERATION-blueprints.md`](references/MODERATION-blueprints.md) |
-| Chat iOS (SwiftUI) | [`references/CHAT-IOS-SWIFTUI.md`](references/CHAT-IOS-SWIFTUI.md) | [`references/CHAT-IOS-SWIFTUI-blueprints.md`](references/CHAT-IOS-SWIFTUI-blueprints.md) |
 
 ---
 
@@ -281,71 +278,6 @@ Run `npx next build` and fix any errors.
 - Do **not** overwrite or restructure existing files — add new files alongside them.
 - Do **not** change the existing auth flow. Adapt Stream's token generation to fit the app's existing auth, not the other way around.
 - If the project uses a different package manager (yarn, pnpm), match what it already uses — the npm-only rule applies to new scaffolds, not existing projects.
-
----
-
-## Track F — iOS Chat (SwiftUI)
-
-For integrating Stream Chat into an iOS app using the SwiftUI SDK. **No CLI gate, no npm.** Works entirely via Swift Package Manager and Xcode. Covers both new iOS projects and adding Chat to an existing one.
-
-**Modules:** **[`references/CHAT-IOS-SWIFTUI.md`](references/CHAT-IOS-SWIFTUI.md)** (setup + patterns) + **[`references/CHAT-IOS-SWIFTUI-blueprints.md`](references/CHAT-IOS-SWIFTUI-blueprints.md)** (view blueprints).
-
-### F1: Project detect
-
-```bash
-bash -c 'ls -d *.xcodeproj *.xcworkspace 2>/dev/null; ls Package.swift Podfile 2>/dev/null || echo "NO_IOS_PROJECT"'
-```
-
-- `*.xcodeproj` / `*.xcworkspace` → existing Xcode project → skip to F2
-- `Package.swift` → Swift package → ask if it's an iOS app or library
-- `Podfile` → CocoaPods project → note that SPM is the recommended install path; can coexist
-- Nothing → tell the user to create a new iOS App project in Xcode (SwiftUI interface, any bundle ID) first; do **not** try to scaffold an Xcode project from the CLI
-
-### F2: Install StreamChatSwiftUI
-
-Guide the user (cannot automate Xcode GUI steps):
-
-1. **Xcode → File → Add Package Dependencies...**
-2. Paste URL: `https://github.com/getstream/stream-chat-swiftui`
-3. Select target: **`StreamChatSwiftUI`** (this pulls in `StreamChat` core automatically)
-4. Add required `Info.plist` keys — see **CHAT-IOS-SWIFTUI.md § Installation**
-
-### F3: Client setup
-
-Write (or extend) `AppDelegate.swift` following **CHAT-IOS-SWIFTUI.md § Client Initialization** and the App Entry Point Blueprint.
-
-- Ask the user for their Stream API key if not already visible in the project
-- Never hardcode secrets — store the key in `Secrets.swift` (gitignored) or an environment config
-- `StreamChat` (the wrapper) must be initialized before any SwiftUI view renders — init it in `AppDelegate.application(_:didFinishLaunchingWithOptions:)`, not in a `View`
-
-### F4: Authentication
-
-Wire authentication following **CHAT-IOS-SWIFTUI.md § User Authentication**.
-
-- Default to a hardcoded static token (no expiry) — ask the user for their token from the Stream Dashboard
-- Only switch to a token provider if the user explicitly asks for it (e.g. they have a backend that issues JWTs)
-
-### F5: UI integration
-
-Load only the blueprint sections needed from **CHAT-IOS-SWIFTUI-blueprints.md**:
-
-- New app: Root Navigation Blueprint → Login Blueprint → Channel List Blueprint
-- Existing app: load only the view(s) the user asks for
-
-### F6: Verify
-
-Confirm the build succeeds: `StreamChatSwiftUI` appears in the Xcode package list, `StreamChat` instance is initialized before views render, and the channel list displays after user connection.
-
-| Phase | Name | What you do | WAIT? |
-|-------|------|-------------|-------|
-| **F1** | Project detect | Shell probe for Xcode/Package.swift | If none, tell user to create project in Xcode first |
-| **F2** | Install | Guide SPM steps + Info.plist keys | User must complete in Xcode GUI |
-| **F3** | Client setup | Write AppDelegate init code | — |
-| **F4** | Auth | Wire token provider, confirm backend | If no backend, offer Track D docs first |
-| **F5** | UI | Add views from blueprints | — |
-| **F6** | Verify | Confirm build and channel list appears | — |
-
-**Anti-patterns:** creating `ChatClient` in a `View` body; using `devToken()` (insecure — disables token auth entirely); connecting a new user before logout completes; creating controllers as computed properties.
 
 ---
 
