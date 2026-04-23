@@ -398,9 +398,19 @@ appearance.images = images
 streamChat = StreamChat(chatClient: chatClient, appearance: appearance)
 ```
 
+> **Never guess `ColorPalette` property names.** Use only tokens listed below or fetched from the [theming docs](https://getstream.io/chat/docs/sdk/ios/swiftui/theming/). Names look guessable but are often wrong — if a token isn't in this table, fetch the theming page before using it.
+
+**Confirmed `ColorPalette` tokens:**
+
+| Token | What it controls |
+|---|---|
+| `chatBackgroundOutgoing` | Current user's message bubble background |
+| `accentPrimary` | Primary accent (send button, selection highlights) |
+| `navigationBarTintColor` | Navigation bar tint color |
+
 Key color token groups: accent, elevation, surface, text, border, avatar, badge, chat bubble, reaction, navigation.
 
-You can find more details around the design tokens and theming [here](https://getstream.io/chat/docs/sdk/ios/swiftui/theming/).
+Full token reference: [getstream.io/chat/docs/sdk/ios/swiftui/theming/](https://getstream.io/chat/docs/sdk/ios/swiftui/theming/)
 
 ### Channel Name Formatting
 
