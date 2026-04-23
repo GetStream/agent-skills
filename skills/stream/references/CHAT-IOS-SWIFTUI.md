@@ -14,6 +14,7 @@ Rules: [../RULES.md](../RULES.md) (secrets, no dev tokens in production, proper 
 - **Package (core only):** `StreamChat` via SPM — `https://github.com/getstream/stream-chat-swift`
 - **First:** Installation → Info.plist → Client init → Connect user → Show views
 - **Per feature:** Jump to the relevant section or blueprint when implementing a screen
+- **Docs:** If you can't find an information here, check the docs: `https://getstream.io/chat/docs/sdk/ios/`
 
 Full view blueprints: [CHAT-IOS-SWIFTUI-blueprints.md](CHAT-IOS-SWIFTUI-blueprints.md) — load only the section you are implementing.
 
@@ -23,19 +24,7 @@ Full view blueprints: [CHAT-IOS-SWIFTUI-blueprints.md](CHAT-IOS-SWIFTUI-blueprin
 
 ### Installation (Swift Package Manager)
 
-1. In Xcode: **File → Add Package Dependencies...**
-2. Paste URL: `https://github.com/getstream/stream-chat-swiftui`
-3. Select target: **`StreamChatSwiftUI`** — this includes the `StreamChat` core automatically
-4. Add required `Info.plist` keys:
-
-```xml
-<key>NSPhotoLibraryUsageDescription</key>
-<string>$(PRODUCT_NAME) needs access to your photo library to send images.</string>
-<key>NSPhotoLibraryAddUsageDescription</key>
-<string>$(PRODUCT_NAME) needs access to save photos to your library.</string>
-<key>NSCameraUsageDescription</key>
-<string>$(PRODUCT_NAME) needs access to your camera to send photos and videos.</string>
-```
+Check if the SDK is already installed in the project. If not, ask the user to check the installation guide in the [docs](https://getstream.io/chat/docs/sdk/ios/basics/integration/).
 
 ### Client Initialization
 
@@ -150,20 +139,6 @@ let tokenProvider: TokenProvider = { completion in
 
 chatClient.connectUser(userInfo: userInfo, tokenProvider: tokenProvider) { error in
     if let error { print("Connect failed: \(error)") }
-}
-```
-
-### Disconnect and Logout
-
-```swift
-@Injected(\.chatClient) private var chatClient
-
-// Temporarily pause updates (e.g. user navigates away from chat section)
-chatClient.disconnect { error in /* handle */ }
-
-// Full logout — clears offline storage. WAIT for the callback before any other action.
-chatClient.logout {
-    // Safe to log in a different user only AFTER this fires
 }
 ```
 
@@ -335,128 +310,6 @@ let unread = connectedUser.state.user.unreadCount
 
 ---
 
-## Event Listening
-
-Store the returned `AnyCancellable` — releasing it cancels the subscription.
-
-```swift
-// All events
-chatClient.subscribe { event in print(event) }
-    .store(in: &cancellables)
-
-// Specific event type
-chatClient.subscribe(toEvent: ConnectionStatusUpdated.self) { event in }
-    .store(in: &cancellables)
-
-// Scoped to a channel
-let chat = chatClient.makeChat(for: channelId)
-chat.subscribe { event in }
-    .store(in: &cancellables)
-
-chat.subscribe(toEvent: ChannelHiddenEvent.self) { event in }
-    .store(in: &cancellables)
-```
-
----
-
-## Push Notifications
-
-Push notifications require `UIApplicationDelegate` — use the AppDelegate entry point (Option B) when enabling push.
-
-**Xcode capabilities:** Add `Push Notifications` and `Background Modes → Remote notifications`.
-
-**Stream Dashboard:** Push Notifications → New Configuration → APN → fill bundle ID, team ID, key ID, `.p8` token.
-
-**Request permission and register** (call inside `connectUser` completion):
-
-```swift
-UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, _ in
-    guard granted else { return }
-    DispatchQueue.main.async { UIApplication.shared.registerForRemoteNotifications() }
-}
-```
-
-**Register device token** (in `AppDelegate`):
-
-```swift
-func application(_ application: UIApplication,
-                 didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
-    guard chatClient.currentUserId != nil else { return }
-    chatClient.currentUserController().addDevice(.apn(token: deviceToken)) { error in
-        if let error { log.warning("Adding device failed: \(error)") }
-    }
-}
-```
-
-For multi-bundle setups (dev/prod), pass `providerName` matching the Dashboard configuration name:
-```swift
-.addDevice(.apn(token: deviceToken, providerName: "MyApp-Production"))
-```
-
-**Remove token on logout** (prevents notifications to logged-out devices):
-
-```swift
-if let deviceId = chatClient.currentUserController().currentUser?.devices.last?.id {
-    chatClient.currentUserController().removeDevice(id: deviceId) { _ in }
-}
-```
-
-**Handle notification taps** (implement `UNUserNotificationCenterDelegate`):
-
-```swift
-func userNotificationCenter(_ center: UNUserNotificationCenter,
-                             didReceive response: UNNotificationResponse,
-                             withCompletionHandler completionHandler: @escaping () -> Void) {
-    defer { completionHandler() }
-    guard let info = try? ChatPushNotificationInfo(content: response.notification.request.content),
-          let cid = info.cid else { return }
-    // Navigate to the channel — see blueprints for the full pattern
-    navigateToChannel(cid)
-}
-```
-
-Set `UNUserNotificationCenter.current().delegate` in `AppDelegate.application(_:didFinishLaunchingWithOptions:)`.
-
-**Notification Service Extension** (enrich notifications before display; requires App Groups):
-
-```swift
-// Info.plist: add applicationGroupIdentifier to both app and extension targets
-// ChatClientConfig: config.applicationGroupIdentifier = "group.com.yourcompany.yourapp"
-
-class NotificationService: UNNotificationServiceExtension {
-    var contentHandler: ((UNNotificationContent) -> Void)?
-
-    override func didReceive(_ request: UNNotificationRequest,
-                             withContentHandler contentHandler: @escaping (UNNotificationContent) -> Void) {
-        self.contentHandler = contentHandler
-        guard let content = request.content.mutableCopy() as? UNMutableNotificationContent else {
-            return contentHandler(request.content)
-        }
-        var config = ChatClientConfig(apiKey: .init("your_api_key"))
-        config.applicationGroupIdentifier = "group.com.yourcompany.yourapp"
-        let client = ChatClient(config: config)
-        client.setToken(token: "<# User Token #>")
-        _ = ChatRemoteNotificationHandler(client: client, content: content)
-            .handleNotification { chatContent in
-                if case let .message(n) = chatContent {
-                    content.title = n.message.author.name ?? ""
-                    content.subtitle = n.message.text
-                }
-                contentHandler(content)
-            }
-    }
-
-    override func serviceExtensionTimeWillExpire() {
-        if let handler = contentHandler,
-           let content = request?.content.mutableCopy() as? UNMutableNotificationContent {
-            handler(content)
-        }
-    }
-}
-```
-
----
-
 ## Extra Data
 
 Attach arbitrary `[String: RawJSON]` to users, messages, and channels.
@@ -499,49 +352,6 @@ extension ChatUser {
     var email: String? { extraData["email"]?.stringValue }
     var isPremium: Bool { extraData["isPremium"]?.boolValue ?? false }
 }
-```
-
----
-
-## Polls
-
-Polls are **disabled by default** — enable in Stream Dashboard → your app → channel type → Polls.
-
-**Configure poll creation UI:**
-
-```swift
-let pollsConfig = PollsConfig(
-    multipleAnswers: PollsEntryConfig(configurable: true, defaultValue: false),
-    anonymousPoll: .default,
-    suggestAnOption: PollsEntryConfig(configurable: false, defaultValue: false),
-    addComments: .default,
-    maxVotesPerPerson: .default
-)
-streamChat = StreamChat(chatClient: chatClient, utils: Utils(pollsConfig: pollsConfig))
-```
-
-**Create a poll:**
-
-```swift
-channelController.createPoll(
-    name: "Favourite language?",
-    allowAnswers: true,
-    allowUserSuggestedOptions: false,
-    enforceUniqueVote: true,
-    maxVotesAllowed: nil,
-    votingVisibility: .public,
-    options: [.init(text: "Swift"), .init(text: "Kotlin"), .init(text: "Rust")]
-) { result in /* handle */ }
-```
-
-**Vote, comment, close:**
-
-```swift
-let ctrl = chatClient.pollController(messageId: message.id, pollId: poll.id)
-ctrl.castPollVote(answerText: nil, optionId: option.id) { _ in }  // vote
-ctrl.castPollVote(answerText: "Great idea!", optionId: nil) { _ in }  // comment
-ctrl.removePollVote(voteId: vote.id) { _ in }
-ctrl.closePoll { _ in }
 ```
 
 ---
@@ -683,67 +493,6 @@ public func makeEmptyChannelsView(options: EmptyChannelsViewOptions) -> CustomEm
 ```
 
 For concrete view code, see [CHAT-IOS-SWIFTUI-blueprints.md § ViewFactory Blueprints](CHAT-IOS-SWIFTUI-blueprints.md).
-
-### Channel List Swipe Actions
-
-Extend the default actions (leave, mute/unmute, delete) via `ChannelListConfig` without replacing the whole sheet:
-
-```swift
-let channelListConfig = ChannelListConfig(
-    supportedMoreChannelActions: { options in
-        var actions = ChannelAction.defaultActions(for: options)
-        let freeze: @MainActor () -> Void = {
-            InjectedValues[\.chatClient]
-                .channelController(for: options.channel.cid)
-                .freezeChannel { error in
-                    error == nil ? options.onDismiss() : options.onError(error!)
-                }
-        }
-        actions.insert(
-            ChannelAction(
-                title: "Freeze",
-                iconName: "snowflake",
-                action: freeze,
-                confirmationPopup: ConfirmationPopup(
-                    title: "Freeze channel",
-                    message: "Are you sure?",
-                    buttonTitle: "Freeze"
-                ),
-                isDestructive: false
-            ),
-            at: 0
-        )
-        return actions
-    }
-)
-streamChat = StreamChat(chatClient: chatClient, utils: Utils(channelListConfig: channelListConfig))
-```
-
-To replace the sheet entirely, implement `makeMoreChannelActionsView` in your `ViewFactory`.
-
-### Message Display Options
-
-Configure per-message appearance via `MessageDisplayOptions` → `MessageListConfig` → `Utils`:
-
-```swift
-let messageDisplayOptions = MessageDisplayOptions(
-    showIncomingMessageAvatar: true,
-    showOutgoingMessageAvatar: false,
-    showMessageDate: true,
-    showAuthorName: true,
-    animateChanges: true,
-    shouldAnimateReactions: true,
-    reactionsPlacement: .top        // .top or .bottom
-)
-streamChat = StreamChat(
-    chatClient: chatClient,
-    utils: Utils(messageListConfig: MessageListConfig(messageDisplayOptions: messageDisplayOptions))
-)
-```
-
-Key toggles: `showIncomingMessageAvatar`, `showOutgoingMessageAvatar`, `showAvatarsInGroups`, `showMessageDate`, `showAuthorName`, `animateChanges`, `shouldAnimateReactions`, `showOriginalTranslatedButton`.
-Layout: `reactionsPlacement`, `minimumSwipeGestureDistance`, `newMessagesSeparatorSize`.
-Closures: `dateSeparator`, `spacerWidth`, `messageLinkDisplayResolver`, `reactionsTopPadding`.
 
 ### Channel List Tap Handling
 
