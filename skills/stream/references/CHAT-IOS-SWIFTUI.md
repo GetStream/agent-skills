@@ -400,6 +400,8 @@ streamChat = StreamChat(chatClient: chatClient, appearance: appearance)
 
 Key color token groups: accent, elevation, surface, text, border, avatar, badge, chat bubble, reaction, navigation.
 
+You can find more details around the design tokens and theming [here](https://getstream.io/chat/docs/sdk/ios/swiftui/theming/).
+
 ### Channel Name Formatting
 
 ```swift
