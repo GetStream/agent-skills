@@ -39,13 +39,14 @@ Bad ownership points:
 
 Use the simplest token shape that matches the user's environment:
 
-- **Backend exists:** prefer a backend-issued Stream token
-- **No backend / demo flow:** use a static token only if the user explicitly wants that simpler path
+- **Backend exists:** prefer a backend-issued Stream token.
+- **No backend / demo flow:** generate a token with the Stream CLI (see Step 0.5 in `SKILL.md`). Never-expiring: `stream token <user_id>`. Expiring: `stream token <user_id> --ttl <duration>` (e.g. `1h`, `1d`, `30m`, `1800s`).
+- **User pastes their own:** accept it and move on.
 
 Keep the split clear:
 
 - **client:** API key, user id, user token
-- **server:** API secret and token minting
+- **server:** API secret and token minting (the CLI handles this automatically)
 
 If the app already has its own auth system, extend that flow instead of adding a second login model beside it.
 

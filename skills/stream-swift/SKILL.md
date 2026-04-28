@@ -10,7 +10,10 @@ allowed-tools: >-
   Bash(ls *),
   Bash(grep *),
   Bash(find . *),
-  Bash(cat Package.swift), Bash(cat Package.resolved), Bash(cat Podfile)
+  Bash(cat Package.swift), Bash(cat Package.resolved), Bash(cat Podfile),
+  Bash(stream token *),
+  Bash(stream chat *),
+  Bash(stream config *)
 ---
 
 # Stream Swift - skill router + execution flow
@@ -47,6 +50,77 @@ If the request is ambiguous between **build/integrate** and **reference lookup**
 
 - **Tracks A, B, D** -> run **Project signals** once per session, then continue in [`builder.md`](builder.md) and [`sdk.md`](sdk.md).
 - **Track C** -> skip the probe if the product + framework are explicit. Only run it on demand if the SDK or UI layer is ambiguous.
+
+---
+
+## Step 0.5: Credentials, token, and seed data (tracks A, B, D only)
+
+Run this once per session, right after intent classification, before the Project signals probe.
+
+### Goal
+
+Collect the Stream **API key**, a **user token**, and optionally seed a few channels — all before touching code — so the app has real data to show from the first run.
+
+### Single upfront question (ask exactly once, then act immediately)
+
+Post **one message** asking all three things together. Do not split into multiple rounds:
+
+> To wire everything up with real data, I need a few quick answers:
+>
+> 1. **Credentials** — Should I fetch your API key from the dashboard and generate a token via the Stream CLI, or will you paste them yourself?
+> 2. **Token expiry** — If I'm generating the token: should it expire? (e.g. `1h`, `1d`, `30m`) or never expire?
+> 3. **Seed channels** — Should I pre-create a few channels with random usernames so the app has something to show immediately?
+>
+> If you want to handle everything yourself, just paste your API key and token and tell me whether to seed channels.
+
+### After the user replies — act without further prompting
+
+Once the user answers, execute all CLI steps in sequence **without pausing for confirmation between them**. Narrate each step briefly as you go (one line per action), but do not stop to ask "shall I continue?".
+
+#### Step A — API key
+
+```bash
+stream config get-app
+```
+
+Extract the `api_key` field. Hold it in context.
+
+#### Step B — Token
+
+```bash
+# Never-expiring
+stream token <user_id>
+
+# Expiring
+stream token <user_id> --ttl <duration>
+```
+
+Hold the token in context. Use it (and the API key) in every code snippet — no placeholder strings.
+
+#### Step C — Seed channels (only if the user said yes)
+
+Create 3–5 channels with random realistic usernames. Use `messaging` as the default channel type.
+
+```bash
+# Create a channel and add members (repeat for each channel)
+stream chat channel create --type messaging --id <channel-id> --members <user1>,<user2>
+```
+
+Generate short memorable channel IDs (e.g. `general`, `random`, `team-alpha`) and use a small set of random usernames (e.g. `alice`, `bob`, `carol`, `dave`, `eve`). Make sure the token user is a member of at least one channel so they can see it on first launch.
+
+After seeding, print a brief summary:
+
+> Created channels: `general` (alice, bob), `random` (carol, dave), `team-alpha` (alice, eve)
+
+#### Step D — Proceed automatically
+
+After all CLI steps succeed, move straight to **Project signals** and then into `builder.md` — no additional prompt needed. If any CLI step fails, explain the error briefly and ask the user to paste the missing value manually before continuing.
+
+### What NOT to do
+
+- Never put the API **secret** in app code — the CLI uses it server-side only.
+- Never invent or fabricate credentials.
+- Never ask "should I continue?" between Step A, B, C, and D — execute the whole sequence once the user's upfront answers are in.
 
 ---
 
