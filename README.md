@@ -8,10 +8,11 @@ Give your AI coding agent the ability to build, query, and manage [Stream](https
 npx skills add GetStream/agent-skills
 ```
 
-This pack installs two skills:
+This pack installs three skills:
 
 - `/stream` for cross-platform scaffolding, CLI queries, integration, and live docs search
 - `/stream-swift` for SwiftUI, UIKit, Xcode, and iOS Stream integration work
+- `/stream-android` for Jetpack Compose, XML/Views, Android Studio, and Gradle Stream integration work
 
 ### Install — direct from GitHub (no third-party CLI)
 
@@ -54,6 +55,7 @@ Decline and the builder still runs — Stream reference files cover the SDK wiri
 - **Scaffold a full app** - Next.js + Tailwind + Stream SDKs, wired end-to-end in one shot
 - **Add products to existing apps** - drop Chat, Video, or Feeds into a project that's already running
 - **Build and extend Swift apps** - wire Stream into SwiftUI or UIKit Xcode projects with iOS-specific setup patterns
+- **Build and extend Android apps** - wire Stream into Jetpack Compose or XML/Views Gradle projects with Android-specific setup patterns
 - **Query live data** - "any active calls?", "show flagged messages", "list my channels" - natural language to CLI
 - **Set up moderation** - blocklists, automod config, and content policies via the Stream CLI
 - **Answer SDK questions** - token patterns, strict mode, client/server instantiation, theme wiring
@@ -72,6 +74,7 @@ The skill pack is markdown only - no code, no build step. Each skill has its own
 | Install the Stream CLI | `bootstrap.md` |
 | Search the official SDK documentation (no CLI needed) | `docs-search.md` |
 | Build or integrate a Swift/iOS app | `skills/stream-swift/builder.md` + `skills/stream-swift/sdk.md` + `skills/stream-swift/references/*.md` |
+| Build or integrate an Android app | `skills/stream-android/builder.md` + `skills/stream-android/sdk.md` + `skills/stream-android/references/*.md` |
 
 ## Contents
 
@@ -86,3 +89,7 @@ The skill pack is markdown only - no code, no build step. Each skill has its own
 - [`skills/stream-swift/RULES.md`](skills/stream-swift/RULES.md) - Swift/iOS non-negotiable rules
 - [`skills/stream-swift/builder.md`](skills/stream-swift/builder.md) + [`skills/stream-swift/sdk.md`](skills/stream-swift/sdk.md) - shared Swift app integration flow and SDK ownership patterns
 - `skills/stream-swift/references/*.md` - product/framework-specific Swift references and blueprints
+- [`skills/stream-android/SKILL.md`](skills/stream-android/SKILL.md) - Android entrypoint: intent classifier, local Gradle/project detection, module pointers
+- [`skills/stream-android/RULES.md`](skills/stream-android/RULES.md) - Android non-negotiable rules
+- [`skills/stream-android/builder.md`](skills/stream-android/builder.md) + [`skills/stream-android/sdk.md`](skills/stream-android/sdk.md) - shared Android app integration flow and `ChatClient` ownership patterns
+- `skills/stream-android/references/*.md` - product/UI-layer-specific Android references and blueprints
