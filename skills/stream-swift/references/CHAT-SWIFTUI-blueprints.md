@@ -4,6 +4,60 @@ Load only the section you are implementing. For setup, client initialization, an
 
 ---
 
+## ChatService.swift Blueprint (Combined Chat + Video Apps)
+
+Use this pattern when the app also integrates `StreamVideo`. Isolating Chat setup in its own file prevents type-name collisions (`UserInfo` vs `User`, `Token` vs `UserToken`). See `sdk.md` → "Combined Chat + Video apps".
+
+```swift
+// ChatService.swift
+import StreamChat
+import StreamChatSwiftUI
+
+final class ChatService {
+    static let shared = ChatService()
+
+    private(set) var streamChat: StreamChat?
+
+    private init() {}
+
+    func setUp(apiKey: String, userId: String, userName: String, token: String) {
+        let config = ChatClientConfig(apiKey: .init(apiKey))
+        let chatClient = ChatClient(config: config)
+        streamChat = StreamChat(chatClient: chatClient)
+
+        let userInfo = UserInfo(id: userId, name: userName)
+        let chatToken = Token(stringLiteral: token)
+        chatClient.connectUser(userInfo: userInfo, token: chatToken) { error in
+            if let error { print("Chat connect error: \(error)") }
+        }
+    }
+}
+```
+
+Call from the app entry point — which imports **neither** Stream SDK:
+
+```swift
+// MyApp.swift — no Stream imports here
+@main
+struct MyApp: App {
+    init() {
+        ChatService.shared.setUp(
+            apiKey: "your_api_key",
+            userId: "alice",
+            userName: "Alice",
+            token: "your_chat_token"
+        )
+        // VideoService.shared.setUp(...) in VideoService.swift
+    }
+
+    var body: some Scene {
+        WindowGroup { RootView() }
+    }
+}
+```
+
+---
+
 ## App Entry Point Blueprint
 
 Two patterns - pick one. Appearance customization must happen before `StreamChat` is initialized in either case.

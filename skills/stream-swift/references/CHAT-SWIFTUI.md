@@ -30,6 +30,8 @@ Check if the SDK is already installed in the project. If not, ask the user to ch
 
 Initialize once at app launch. **Never** create `ChatClient` in a SwiftUI `View` body or computed property - doing so creates a new instance on every redraw.
 
+> **Combining Chat + Video?** Several names collide when both SDKs are imported in the same file: `UserInfo`/`User`, `Token`/`UserToken`, `ViewFactory`, and `@Injected`/`InjectionKey`/`InjectedValues`. Keep each SDK in its own file: `ChatService.swift` and `ChatViewFactory.swift` import only `StreamChat`/`StreamChatSwiftUI`; `VideoService.swift` and `VideoViewFactory.swift` import only `StreamVideo`/`StreamVideoSwiftUI`. See `sdk.md` → "Combined Chat + Video apps" and the `ChatService.swift` blueprint in `CHAT-SWIFTUI-blueprints.md`.
+
 Two equally valid patterns - pick one:
 
 **Option A - App struct `init()` (pure SwiftUI, no UIKit dependency):**

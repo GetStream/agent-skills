@@ -18,6 +18,19 @@ Default token model:
 
 ---
 
+## No wrapper or bridge abstractions
+
+Do **not** introduce intermediate types — `VideoCallBridge`, `CallManager`, `StreamWrapper`, `SDKAdapter`, or anything similar — between the app and the Stream SDK.
+
+Use SDK types directly:
+- `StreamVideo` / `StreamVideoUI` initialized in `App.init()` or `AppDelegate`
+- `CallViewModel` owned as `@StateObject` in the root call view
+- `callViewModel.call?.state` for call state — never a wrapper property
+
+The only exception is a thin file-isolation class for **combined Chat + Video apps**, where both SDKs export colliding names (`User`/`UserInfo`, `Token`/`UserToken`, `ViewFactory`). Even then, the class does nothing beyond holding the two SDK instances — it has no methods, no extra state, and no logic.
+
+---
+
 ## Project ownership
 
 Preserve the app's existing architecture:

@@ -62,15 +62,16 @@ Keep the existing app shell intact. Add the minimum composition points needed fo
 
 Use the product + UI layer to choose the smallest relevant reference set.
 
-Available extracted module:
+Available extracted modules:
 
 - Chat + SwiftUI: [`references/CHAT-SWIFTUI.md`](references/CHAT-SWIFTUI.md)
 - Chat + SwiftUI view blueprints: [`references/CHAT-SWIFTUI-blueprints.md`](references/CHAT-SWIFTUI-blueprints.md)
+- Video + SwiftUI: [`references/VIDEO-SWIFTUI.md`](references/VIDEO-SWIFTUI.md)
+- Video + SwiftUI view blueprints: [`references/VIDEO-SWIFTUI-blueprints.md`](references/VIDEO-SWIFTUI-blueprints.md)
 
 Future modules should follow the same naming family:
 
 - `CHAT-UIKIT.md`
-- `VIDEO-SWIFTUI.md`
 - `VIDEO-UIKIT.md`
 - `FEEDS-SWIFTUI.md`
 - `FEEDS-UIKIT.md`

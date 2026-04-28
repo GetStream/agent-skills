@@ -63,7 +63,9 @@ Collect the Stream **API key**, a **user token**, and optionally seed a few chan
 
 ### Single upfront question (ask exactly once, then act immediately)
 
-Post **one message** asking all three things together. Do not split into multiple rounds:
+Post **one message** asking all relevant things together. Do not split into multiple rounds.
+
+**For Chat projects:**
 
 > To wire everything up with real data, I need a few quick answers:
 >
@@ -72,6 +74,15 @@ Post **one message** asking all three things together. Do not split into multipl
 > 3. **Seed channels** — Should I pre-create a few channels with random usernames so the app has something to show immediately?
 >
 > If you want to handle everything yourself, just paste your API key and token and tell me whether to seed channels.
+
+**For Video projects** (calls are ephemeral — no seeding needed):
+
+> To wire everything up, I need a couple of quick answers:
+>
+> 1. **Credentials** — Should I fetch your API key from the dashboard and generate a token via the Stream CLI, or will you paste them yourself?
+> 2. **Token expiry** — If I'm generating the token: should it expire? (e.g. `1h`, `1d`, `30m`) or never expire?
+>
+> If you want to handle everything yourself, just paste your API key and token.
 
 ### After the user replies — act without further prompting
 
@@ -97,7 +108,7 @@ stream token <user_id> --ttl <duration>
 
 Hold the token in context. Use it (and the API key) in every code snippet — no placeholder strings.
 
-#### Step C — Seed channels (only if the user said yes)
+#### Step C — Seed channels (Chat projects only; only if the user said yes)
 
 Create 3–5 channels with random realistic usernames. Use `messaging` as the default channel type.
 
@@ -162,14 +173,14 @@ Product and framework specifics live under **`references/`** using a flat naming
 - **Reference:** `references/<PRODUCT>-<FRAMEWORK>.md`
 - **Blueprints:** `references/<PRODUCT>-<FRAMEWORK>-blueprints.md`
 
-Current extracted module:
+Current extracted modules:
 
 - **Chat + SwiftUI:** [`references/CHAT-SWIFTUI.md`](references/CHAT-SWIFTUI.md) + [`references/CHAT-SWIFTUI-blueprints.md`](references/CHAT-SWIFTUI-blueprints.md)
+- **Video + SwiftUI:** [`references/VIDEO-SWIFTUI.md`](references/VIDEO-SWIFTUI.md) + [`references/VIDEO-SWIFTUI-blueprints.md`](references/VIDEO-SWIFTUI-blueprints.md)
 
 Future Swift product coverage should stay in this naming family instead of creating more top-level skills:
 
 - `CHAT-UIKIT.md`
-- `VIDEO-SWIFTUI.md`
 - `VIDEO-UIKIT.md`
 - `FEEDS-SWIFTUI.md`
 - `FEEDS-UIKIT.md`
@@ -211,8 +222,10 @@ Load only the relevant files for the requested product and UI layer.
 - Shared lifecycle / auth / state patterns -> [`sdk.md`](sdk.md)
 - Chat SwiftUI setup and gotchas -> [`references/CHAT-SWIFTUI.md`](references/CHAT-SWIFTUI.md)
 - Chat SwiftUI view structure -> [`references/CHAT-SWIFTUI-blueprints.md`](references/CHAT-SWIFTUI-blueprints.md)
+- Video SwiftUI setup and gotchas -> [`references/VIDEO-SWIFTUI.md`](references/VIDEO-SWIFTUI.md)
+- Video SwiftUI view structure -> [`references/VIDEO-SWIFTUI-blueprints.md`](references/VIDEO-SWIFTUI-blueprints.md)
 
-If the user asks for an exact Video, Feeds, or UIKit module that is not bundled yet, say that clearly instead of inventing API details.
+If the user asks for a Feeds or UIKit module that is not bundled yet, say that clearly instead of inventing API details.
 
 ---
 

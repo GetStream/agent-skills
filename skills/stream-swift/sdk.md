@@ -71,6 +71,34 @@ Preserve the project's concurrency style. If the app already uses `async`/`await
 
 ---
 
+## Combined Chat + Video apps
+
+`StreamChat` and `StreamVideo` export overlapping names that cause compile errors when both SDKs are imported in the same Swift file:
+
+| Concept | Chat name (module) | Video name (module) |
+|---|---|---|
+| User model | `UserInfo` (`StreamChat`) | `User` (`StreamVideo`) |
+| Token | `Token` (`StreamChat`) | `UserToken` (`StreamVideo`) |
+| SDK wrapper | `StreamChat` (`StreamChatSwiftUI`) | `StreamVideoUI` (`StreamVideoSwiftUI`) |
+| View customization protocol | `ViewFactory` (`StreamChatSwiftUI`) | `ViewFactory` (`StreamVideoSwiftUI`) |
+| Dependency injection | `@Injected`, `InjectionKey`, `InjectedValues` (`StreamChatSwiftUI`) | `@Injected`, `InjectionKey`, `InjectedValues` (`StreamVideoSwiftUI`) |
+
+**Rule: never import both SDKs in the same file.** Isolate each SDK's setup and view customization in its own file so each file imports only its own frameworks. The `App` struct calls both services but does not import either SDK directly.
+
+```
+ChatService.swift        → import StreamChat, StreamChatSwiftUI
+ChatViewFactory.swift    → import StreamChatSwiftUI   (conforms to StreamChatSwiftUI.ViewFactory)
+VideoService.swift       → import StreamVideo, StreamVideoSwiftUI
+VideoViewFactory.swift   → import StreamVideoSwiftUI  (conforms to StreamVideoSwiftUI.ViewFactory)
+MyApp.swift              → no Stream imports — calls both services
+```
+
+Both SDKs share the same Stream API key and secret. Tokens for Chat and Video can be the same JWT — they are generated identically (`stream token <user_id>`). The user ID must match in both services.
+
+See the `ChatService.swift` and `VideoService.swift` blueprints in the product reference files for concrete implementations.
+
+---
+
 ## Verification checklist
 
 Before calling the work done, confirm:
