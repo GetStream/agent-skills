@@ -36,7 +36,7 @@ Initialize `StreamVideo` **once** at app launch. **Never** create it in a SwiftU
 
 Wrap it with `StreamVideoUI` before any SDK view renders. Two patterns — pick one:
 
-> **Combining Chat + Video?** Several names collide when both SDKs are imported in the same file: `User`/`UserInfo`, `UserToken`/`Token`, `ViewFactory`, and `@Injected`/`InjectionKey`/`InjectedValues`. Keep each SDK in its own file: `VideoService.swift` and `VideoViewFactory.swift` import only `StreamVideo`/`StreamVideoSwiftUI`; `ChatService.swift` and `ChatViewFactory.swift` import only `StreamChat`/`StreamChatSwiftUI`. See `sdk.md` → "Combined Chat + Video apps" and the `VideoService.swift` blueprint in `VIDEO-SWIFTUI-blueprints.md`.
+> **Combining Chat + Video?** `ViewFactory`, `@Injected`, `InjectionKey`, and `InjectedValues` collide between `StreamVideoSwiftUI` and `StreamChatSwiftUI`. Never import both in the same file. See [`COMBINED-CHAT-VIDEO.md`](COMBINED-CHAT-VIDEO.md) for the full collision table and file isolation blueprints. The `VideoService.swift` blueprint is in `VIDEO-SWIFTUI-blueprints.md`.
 
 **Option A — App struct `init()` (pure SwiftUI, no UIKit dependency):**
 

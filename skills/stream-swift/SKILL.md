@@ -178,10 +178,11 @@ Current extracted modules:
 - **Chat + SwiftUI:** [`references/CHAT-SWIFTUI.md`](references/CHAT-SWIFTUI.md) + [`references/CHAT-SWIFTUI-blueprints.md`](references/CHAT-SWIFTUI-blueprints.md)
 - **Chat + UIKit:** [`references/CHAT-UIKIT.md`](references/CHAT-UIKIT.md) + [`references/CHAT-UIKIT-blueprints.md`](references/CHAT-UIKIT-blueprints.md)
 - **Video + SwiftUI:** [`references/VIDEO-SWIFTUI.md`](references/VIDEO-SWIFTUI.md) + [`references/VIDEO-SWIFTUI-blueprints.md`](references/VIDEO-SWIFTUI-blueprints.md)
+- **Video + UIKit:** [`references/VIDEO-UIKIT.md`](references/VIDEO-UIKIT.md) + [`references/VIDEO-UIKIT-blueprints.md`](references/VIDEO-UIKIT-blueprints.md)
+- **Combined Chat + Video (SwiftUI or UIKit):** [`references/COMBINED-CHAT-VIDEO.md`](references/COMBINED-CHAT-VIDEO.md)
 
 Future Swift product coverage should stay in this naming family instead of creating more top-level skills:
 
-- `VIDEO-UIKIT.md`
 - `FEEDS-SWIFTUI.md`
 - `FEEDS-UIKIT.md`
 
@@ -226,8 +227,11 @@ Load only the relevant files for the requested product and UI layer.
 - Chat UIKit view controller structure -> [`references/CHAT-UIKIT-blueprints.md`](references/CHAT-UIKIT-blueprints.md)
 - Video SwiftUI setup and gotchas -> [`references/VIDEO-SWIFTUI.md`](references/VIDEO-SWIFTUI.md)
 - Video SwiftUI view structure -> [`references/VIDEO-SWIFTUI-blueprints.md`](references/VIDEO-SWIFTUI-blueprints.md)
+- Video UIKit setup and gotchas -> [`references/VIDEO-UIKIT.md`](references/VIDEO-UIKIT.md)
+- Video UIKit view controller structure -> [`references/VIDEO-UIKIT-blueprints.md`](references/VIDEO-UIKIT-blueprints.md)
+- Combined Chat + Video (collision table, file isolation, UIKit + SwiftUI blueprints) -> [`references/COMBINED-CHAT-VIDEO.md`](references/COMBINED-CHAT-VIDEO.md)
 
-If the user asks for a Feeds or Video UIKit module that is not bundled yet, say that clearly instead of inventing API details.
+If the user asks for a Feeds module that is not bundled yet, say that clearly instead of inventing API details.
 
 ---
 

@@ -86,7 +86,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 
 ## Combined Chat + Video: File Isolation Blueprint
 
-Only needed when the app imports **both** `StreamChat` and `StreamVideo`. Both SDKs export colliding names (`User`/`UserInfo`, `UserToken`/`Token`, `ViewFactory`). The fix is file isolation — one file per SDK. This is not a service abstraction; the class holds nothing but the two SDK instances.
+Only needed when the app imports **both** `StreamChatSwiftUI` and `StreamVideoSwiftUI`. `ViewFactory`, `@Injected`, `InjectionKey`, and `InjectedValues` exist in both modules — importing both in the same file causes an "ambiguous use" compiler error. The fix is file isolation — one file per SDK. See [`COMBINED-CHAT-VIDEO.md`](COMBINED-CHAT-VIDEO.md) for the full guide including UIKit patterns.
 
 ```swift
 // VideoService.swift — import isolation only, no logic

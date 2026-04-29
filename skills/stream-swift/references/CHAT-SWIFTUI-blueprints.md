@@ -6,7 +6,7 @@ Load only the section you are implementing. For setup, client initialization, an
 
 ## ChatService.swift Blueprint (Combined Chat + Video Apps)
 
-Use this pattern when the app also integrates `StreamVideo`. Isolating Chat setup in its own file prevents type-name collisions (`UserInfo` vs `User`, `Token` vs `UserToken`). See `sdk.md` → "Combined Chat + Video apps".
+Use this pattern when the app also integrates `StreamVideo`. `ViewFactory`, `@Injected`, `InjectionKey`, and `InjectedValues` collide between `StreamChatSwiftUI` and `StreamVideoSwiftUI` — file isolation is required. See [`COMBINED-CHAT-VIDEO.md`](COMBINED-CHAT-VIDEO.md) for the full collision table and UIKit patterns.
 
 ```swift
 // ChatService.swift

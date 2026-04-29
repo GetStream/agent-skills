@@ -32,7 +32,7 @@ Initialize `ChatClient` once at app launch in `AppDelegate`. **Never** create `C
 
 > **No `StreamChat` wrapper in UIKit.** Unlike the SwiftUI SDK, the UIKit layer does not require a `StreamChat` wrapper type. Use `ChatClient` directly; there is no equivalent of `StreamChat(chatClient:)` for UIKit apps.
 
-> **Combining Chat + Video?** When using `StreamChat` and `StreamVideo` together in a UIKit app, keep each SDK's setup in its own file to avoid name collisions. See [`sdk.md`](../sdk.md) → "Combined Chat + Video apps".
+> **Combining Chat + Video?** Importing `StreamChat` and `StreamVideo` in the same file causes "Ambiguous use of 'init'" for `User` and `Token` types. File isolation is required — same rule as SwiftUI. See [`COMBINED-CHAT-VIDEO.md`](COMBINED-CHAT-VIDEO.md) for the type-name mapping table and UIKit service file blueprints.
 
 ```swift
 import StreamChat

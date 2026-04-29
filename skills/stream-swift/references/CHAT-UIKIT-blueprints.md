@@ -320,6 +320,8 @@ final class CustomChannelListItemView: ChatChannelListItemView {
 
 Subclass `ChatChannelListRouter` to intercept or replace the default navigation from the channel list to the message list.
 
+**Pattern A — navigate to a `ChatMessageListVC` subclass (most common):**
+
 ```swift
 import UIKit
 import StreamChat
@@ -327,11 +329,47 @@ import StreamChatUI
 
 final class CustomChannelListRouter: ChatChannelListRouter {
     override func showChannel(for cid: ChannelId) {
-        // Default: pushes ChatMessageListVC onto the navigation stack
-        // Override to push a custom VC instead
-        let customVC = CustomMessageListViewController(cid: cid)
-        navigationController?.pushViewController(customVC, animated: true)
+        guard let client = rootViewController?.controller.client else { return }
+        let vc = CustomMessageListVC()
+        vc.channelController = client.channelController(for: cid)
+        navigationController?.pushViewController(vc, animated: true)
     }
+}
+
+final class CustomMessageListVC: ChatMessageListVC {
+    // channelController is inherited — it must be set before the VC is pushed, not after viewDidLoad
+    // Override SDK methods as needed
+}
+
+// Register in AppDelegate before ChatClient init:
+// Components.default.channelListRouter = CustomChannelListRouter.self
+```
+
+**Pattern B — navigate to a completely custom `UIViewController`:**
+
+```swift
+import UIKit
+import StreamChat
+import StreamChatUI
+
+final class CustomChannelListRouter: ChatChannelListRouter {
+    override func showChannel(for cid: ChannelId) {
+        guard let client = rootViewController?.controller.client else { return }
+        let vc = MyChannelViewController(cid: cid, client: client)
+        navigationController?.pushViewController(vc, animated: true)
+    }
+}
+
+final class MyChannelViewController: UIViewController {
+    private let cid: ChannelId
+    private let chatClient: ChatClient
+
+    init(cid: ChannelId, client: ChatClient) {
+        self.cid = cid
+        self.chatClient = client
+        super.init(nibName: nil, bundle: nil)
+    }
+    required init?(coder: NSCoder) { fatalError() }
 }
 
 // Register in AppDelegate before ChatClient init:
@@ -339,9 +377,10 @@ final class CustomChannelListRouter: ChatChannelListRouter {
 ```
 
 **Wiring:**
-- Override `showChannel(for cid: ChannelId)` to replace the default push to `ChatMessageListVC`
+- `rootViewController` is typed `ChatChannelListVC?` — `rootViewController?.controller.client` compiles correctly; `client` is a stored `let` property on the controller
+- Pattern A: `channelController` is inherited from `ChatMessageListVC` — assign it before the push; the SDK reads it in `viewWillAppear`
+- Pattern B: pass `client` and `cid` to your custom VC at init time rather than accessing them later through the router
 - Override `showChannel(for cid: ChannelId, at messageId: MessageId?)` to also handle deep-links to specific messages
-- `navigationController` is the `UINavigationController` that owns the `ChatChannelListVC`
 - The router is instantiated by the SDK — do not create it manually
 - Other overridable methods: `showCurrentUserProfile()`, `didTapMoreButton(for:)`, `didTapDeleteButton(for:)`
 
@@ -379,6 +418,9 @@ final class CustomMessageContentView: ChatMessageContentView {
 ## Logout Blueprint
 
 ```swift
+import UIKit
+import StreamChat
+
 func logout(chatClient: ChatClient, completion: @escaping () -> Void) {
     chatClient.logout {
         DispatchQueue.main.async {
