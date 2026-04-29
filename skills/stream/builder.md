@@ -27,6 +27,26 @@ Shadcn/ui is always installed during Step 3. Third-party **frontend skills** (`v
 
 ---
 
+## Install trust & integrity
+
+The builder runs three classes of network-touching commands. Each is listed here so a reviewer can audit before approving. The full CLI installer audit (SHA-256 verification, TTY confirmation, scoped platform) lives in [`bootstrap.md`](bootstrap.md#what-the-installer-does).
+
+| Command | Publisher | Why unpinned | What it writes |
+|---|---|---|---|
+| `npx shadcn@latest init …` (Task A) | Vercel — [`shadcn-ui/ui`](https://github.com/shadcn-ui/ui) | Scaffolder; `@latest` is the maintainer's documented usage. Pinning ships outdated scaffolds. | Project files in cwd. Next.js scaffold's `.gitignore` ignores `.env*` by default. |
+| `npx shadcn@latest add …` (Task A.1) | Vercel — same source as above | Same scaffolder; component sync depends on registry parity. | Component files under `components/ui/`. |
+| `npx skills add <github>` (Task A.2) | `vercel-labs/agent-skills` and `anthropics/skills` | Optional. Markdown-only skill packs; `npx skills add` is the published install path. | Markdown files in the user's skills directory. **Gated by explicit user consent in Task A.2** — never runs without an affirmative answer. |
+| `stream env` (Task B) | GetStream — installed via [`bootstrap.md`](bootstrap.md) (SHA-256 verified) | n/a (local CLI, no network at this step) | `.env` in the project root with `STREAM_API_KEY` + `STREAM_API_SECRET`. The Next.js scaffold's `.gitignore` already includes `.env*`; verify before committing. The agent never reads `.env` (RULES.md › Secrets). |
+
+**Reviewer checklist:**
+
+- All `npx` invocations resolve to the publishers listed above; substitute a different publisher and the install fails.
+- `npx skills add` runs **only after** the disclosure prompt in Task A.2 and an explicit user "yes."
+- `.env` is written by the Stream CLI directly, not by the agent, and is not transmitted into the conversation.
+- If the user wants to pin a specific shadcn version, replace `@latest` with `@<version>` in Tasks A and A.1.
+
+---
+
 ## Builder Steps (A3 execution)
 
 Execute phases **in order** (later steps depend on earlier ones). Do **not** run independent phases in parallel.

@@ -7,36 +7,20 @@ Write every file sequentially. Follow the UI Guidelines below for all visual sty
 
 #### Login Screen (required for every app - RULES.md › Login Screen first)
 
-Centered card on a neutral background. No sidebar, no nav - just the login form.
+Centered card on a neutral background. No sidebar, no nav — just the login form.
 
-```
-┌─────────────────────────────────────┐
-│                                     │
-│         [App Icon / Logo]           │
-│         App Name                    │
-│                                     │
-│    ┌───────────────────────────┐    │
-│    │  Enter your username      │    │
-│    └───────────────────────────┘    │
-│                                     │
-│        [ Continue → ]               │
-│                                     │
-│   Open in another tab with a        │
-│   different username to test        │
-│   multi-user features.              │
-│                                     │
-└─────────────────────────────────────┘
-```
+**Layout (top to bottom, all centered inside the card):**
+- App icon / logo
+- App name (use-case label)
+- Single `username` input (required, full card width)
+- `Continue →` primary button
+- Hint text below the button, in `text-muted-foreground text-sm`: "Open this URL in another tab with a different username to test multi-user features."
 
 **Behavior:**
 - Username input is **required**
 - On submit: `GET /api/token?user_id={username}` → store credentials in **React state** (not localStorage - each tab must be independent)
 - After successful token fetch, render the main app UI (state gate, not redirect)
 - App name / use-case label above the input
-
-**Hint text** - display below the Continue button in `text-muted-foreground text-sm`:
-
-> Open this URL in another tab with a different username to test multi-user features.
 
 #### App Header (required for every app)
 
