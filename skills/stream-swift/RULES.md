@@ -75,5 +75,7 @@ Load only the product/framework reference files that match the request.
 
 - `CHAT-SWIFTUI.md` for Chat + SwiftUI
 - `CHAT-SWIFTUI-blueprints.md` for concrete SwiftUI view structure
+- `CHAT-UIKIT.md` for Chat + UIKit
+- `CHAT-UIKIT-blueprints.md` for concrete UIKit view controller structure
 
-Do not invent missing Video, Feeds, or UIKit API details. If a requested reference is not bundled yet, say so plainly and fall back to shared guidance from [`sdk.md`](sdk.md) or live docs only when the user wants that.
+Do not invent missing Video UIKit, Feeds, or other unbundled API details. If a requested reference is not bundled yet, say so plainly and fall back to shared guidance from [`sdk.md`](sdk.md) or live docs only when the user wants that.

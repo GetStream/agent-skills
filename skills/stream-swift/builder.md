@@ -66,12 +66,13 @@ Available extracted modules:
 
 - Chat + SwiftUI: [`references/CHAT-SWIFTUI.md`](references/CHAT-SWIFTUI.md)
 - Chat + SwiftUI view blueprints: [`references/CHAT-SWIFTUI-blueprints.md`](references/CHAT-SWIFTUI-blueprints.md)
+- Chat + UIKit: [`references/CHAT-UIKIT.md`](references/CHAT-UIKIT.md)
+- Chat + UIKit view controller blueprints: [`references/CHAT-UIKIT-blueprints.md`](references/CHAT-UIKIT-blueprints.md)
 - Video + SwiftUI: [`references/VIDEO-SWIFTUI.md`](references/VIDEO-SWIFTUI.md)
 - Video + SwiftUI view blueprints: [`references/VIDEO-SWIFTUI-blueprints.md`](references/VIDEO-SWIFTUI-blueprints.md)
 
 Future modules should follow the same naming family:
 
-- `CHAT-UIKIT.md`
 - `VIDEO-UIKIT.md`
 - `FEEDS-SWIFTUI.md`
 - `FEEDS-UIKIT.md`
