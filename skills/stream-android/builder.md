@@ -52,16 +52,16 @@ Install only the artifacts needed for the requested Stream products.
 
 ## 4. Wire the shared app setup
 
-**Before writing any code**, confirm that Step 0.5 in [`SKILL.md`](SKILL.md) has completed — API key, token, and optional seed channels should already be in context. If not, run that step now before continuing.
+**Before writing any code**, confirm that the credentials flow in [`credentials.md`](credentials.md) has completed — API key, token, and optional seed channels should already be in context. If not, run it now before continuing.
 
 Follow [`sdk.md`](sdk.md) for:
 
 - `ChatClient` lifetime in the `Application` class (or app-scoped DI provider)
-- auth and token transport — use the real API key and token from Step 0.5, never placeholder strings
+- auth and token transport — use the real API key and token from `credentials.md`, never placeholder strings
 - ViewModel ownership and main-dispatcher boundaries
 - `disconnect()` / `connectUser()` ordering when changing users
 
-If seed channels were created in Step 0.5, the app should render them on first launch without any extra setup — no additional sample data or hardcoded channel IDs needed in the code.
+If seed channels were created during the credentials flow, the app should render them on first launch without any extra setup — no additional sample data or hardcoded channel IDs needed in the code.
 
 Keep the existing app shell intact. Add the minimum composition points needed for Stream (typically: `Application` subclass registered in the manifest, one host Activity that sets up `ChatTheme { ... }`, and the requested screen Composable).
 
@@ -75,6 +75,8 @@ Available extracted module:
 
 - Chat + Compose: [`references/CHAT-COMPOSE.md`](references/CHAT-COMPOSE.md)
 - Chat + Compose screen blueprints: [`references/CHAT-COMPOSE-blueprints.md`](references/CHAT-COMPOSE-blueprints.md)
+
+Per [`RULES.md`](RULES.md) → *Blueprints are mandatory, on every turn*: every Stream Chat screen, Composable, navigation handler, deep-link route, or UI customization must be preceded by reading the matching section in the blueprints file. Use the **Request → Blueprint section** table at the top of `CHAT-COMPOSE-blueprints.md` to pick the section. This applies to follow-up requests in the same session too — re-open the file and re-read the matching section before each Stream screen edit, do not rely on what was loaded earlier.
 
 Future modules should follow the same naming family:
 

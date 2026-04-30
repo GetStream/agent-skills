@@ -17,7 +17,7 @@ Never hardcode a Stream API secret in app code, `AndroidManifest.xml`, BuildConf
 Default token model:
 
 - Use a backend-issued token (via a `TokenProvider`) when the user already has a backend.
-- Use a CLI-generated token (`stream token <user_id>` or `stream token <user_id> --ttl <duration>`) for local dev and demo flows - this is the preferred path when no backend exists.
+- Use a CLI-generated token (`stream token <user_id>`, optionally with `--ttl 30s|2h|1d` — see [`credentials.md`](credentials.md)) for local dev and demo flows - this is the preferred path when no backend exists. The binary is `stream`, not `stream-cli`.
 - Use a static token only when the user explicitly wants to paste one themselves.
 - Never use `ChatClient.devToken(userId)` in production - dev tokens disable token verification and let any client impersonate any user.
 - Never invent or generate fake production credentials.
@@ -74,3 +74,11 @@ Load only the product/UI-layer reference files that match the request.
 - `CHAT-COMPOSE-blueprints.md` for concrete Composable screen structure
 
 Do not invent missing Video, Feeds, or XML/UI-Components API details. If a requested reference is not bundled yet, say so plainly and fall back to shared guidance from [`sdk.md`](sdk.md) or live docs only when the user wants that.
+
+### Blueprints are mandatory, on every turn
+
+Before writing or editing **any** Stream Chat screen, Composable, navigation handler, deep-link route, theming override, or channel/message UI customization, you **must** open the matching section of [`references/CHAT-COMPOSE-blueprints.md`](references/CHAT-COMPOSE-blueprints.md) (or the equivalent `<PRODUCT>-<UI_LAYER>-blueprints.md` file) and follow its structure. This applies on **every turn**, not just the first time the skill is invoked in a session — follow-up requests like *"add navigation to the channel screen"*, *"open a channel on tap"*, *"customize the channel header"*, or *"theme the message list"* count as new screen work and require a fresh blueprint read.
+
+Use the **Request → Blueprint section** table at the top of `CHAT-COMPOSE-blueprints.md` to resolve which section to read. If no section matches, say so explicitly before improvising — do not silently fall back to remembered SDK shapes from training data.
+
+Do **not** assume that because a blueprint section was read earlier in the session, its content is still in working context. Re-read the relevant section before each Stream screen edit.

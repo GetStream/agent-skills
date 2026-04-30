@@ -41,7 +41,7 @@ After build time, retrieve the client anywhere via `ChatClient.instance()` - the
 Use the simplest token shape that matches the user's environment:
 
 - **Backend exists:** prefer a backend-issued Stream token via a `TokenProvider` - the SDK will call it again automatically when the token expires.
-- **No backend / demo flow:** generate a token with the Stream CLI (see Step 0.5 in `SKILL.md`). Never-expiring: `stream token <user_id>`. Expiring: `stream token <user_id> --ttl <duration>` (e.g. `1h`, `1d`, `30m`, `1800s`).
+- **No backend / demo flow:** generate a token with the Stream CLI (binary is `stream` — see [`credentials.md`](credentials.md)). Never-expiring: `stream token <user_id>`. Expiring: `stream token <user_id> --ttl 1h` (units: `s`/`m`/`h`/`d`).
 - **User pastes their own:** accept it and pass it directly to `client.connectUser(user, token)`.
 
 Keep the split clear:
