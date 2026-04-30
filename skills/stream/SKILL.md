@@ -1,6 +1,6 @@
 ---
 name: stream
-description: "The fastest and easiest way to build with Stream: Chat, Video, Feeds and Moderation — including live SDK docs search."
+description: "The fastest to build with Stream: Chat, Video, Feeds and Moderation."
 license: See LICENSE in repository root
 compatibility: Requires Node.js, npm, and the stream CLI binary (see bootstrap.md). Track D (docs search) only requires WebFetch — no CLI binary needed.
 metadata:
