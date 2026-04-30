@@ -34,8 +34,9 @@ The builder runs three classes of network-touching commands. Each is listed here
 |---|---|---|---|
 | `npx shadcn@latest init …` (Task A) | Vercel — [`shadcn-ui/ui`](https://github.com/shadcn-ui/ui) | Scaffolder; `@latest` is the maintainer's documented usage. Pinning ships outdated scaffolds. | Project files in cwd. Next.js scaffold's `.gitignore` ignores `.env*` by default. |
 | `npx shadcn@latest add …` (Task A.1) | Vercel — same source as above | Same scaffolder; component sync depends on registry parity. | Component files under `components/ui/`. |
+| `npm install <stream-packages> --legacy-peer-deps` (Task C) | GetStream (npm) for `@stream-io/*` and `stream-chat-react`; transitive deps via standard npm trust | Latest published versions of GetStream's own SDKs — same trust model as the CLI itself. | Modules under `node_modules/`. Runtime SDKs + transitive deps. |
 | `npx skills add <github>` (Task A.2) | `vercel-labs/agent-skills` and `anthropics/skills` | Optional. Markdown-only skill packs; `npx skills add` is the published install path. | Markdown files in the user's skills directory. **Gated by explicit user consent in Task A.2** — never runs without an affirmative answer. |
-| `stream env` (Task B) | GetStream — installed via [`bootstrap.md`](bootstrap.md) (SHA-256 verified) | n/a (local CLI, no network at this step) | `.env` in the project root with `STREAM_API_KEY` + `STREAM_API_SECRET`. The Next.js scaffold's `.gitignore` already includes `.env*`; verify before committing. The agent never reads `.env` (RULES.md › Secrets). |
+| `stream env` (Task B) | GetStream — installed via [`bootstrap.md`](bootstrap.md) (SHA-256 verified) | n/a (local CLI, no network at this step) | `.env` in the project root with `STREAM_API_KEY` + `STREAM_API_SECRET`. Task B verifies `.gitignore` covers `.env*` before writing (Next.js scaffold's default already does). The agent never reads `.env` (RULES.md › Secrets). |
 
 **Reviewer checklist:**
 
@@ -148,17 +149,25 @@ Print this disclosure verbatim, then stop and wait for the user's answer:
 - **User declines** → skip silently and continue to Task B. Do not retry, do not bring it up again this session.
 - **Install fails** → continue with Stream reference files only; mention the failure briefly.
 
-Do **not** modify `layout.tsx` or `globals.css` after scaffold - use Shadcn's defaults as-is (RULES.md › Theme).
+Do **not** modify `layout.tsx` or `globals.css` after scaffold — use Shadcn's defaults as-is (RULES.md › Theme).
 
-**Task B: .env** - Run AFTER scaffold so the .env lands inside the project directory.
+**Task B: .env** — run AFTER scaffold so the `.env` lands inside the project directory.
+
+**First, verify `.env*` is gitignored** ([`RULES.md`](RULES.md) › Secrets). The Next.js scaffold's default already includes it; this is a safety net for projects whose `.gitignore` was hand-edited or doesn't yet exist:
+
+```bash
+bash -c 'test -f .gitignore && grep -qE "^\.env" .gitignore || echo ".env*" >> .gitignore'
+```
+
+Then write secrets:
 
 ```bash
 stream env
 ```
 
-That's it. `stream env` writes `STREAM_API_KEY` and `STREAM_API_SECRET` — both server-side. The client never reads env vars directly; it gets `apiKey`, `userId`, and its token from the `/api/token` response and holds them in React state. No `NEXT_PUBLIC_*` duplication, no `.env` gymnastics.
+`stream env` writes `STREAM_API_KEY` and `STREAM_API_SECRET` — both server-side. The client never reads env vars directly; it gets `apiKey`, `userId`, and its token from the `/api/token` response and holds them in React state. No `NEXT_PUBLIC_*` duplication, no `.env` gymnastics.
 
-**Task C: Install Stream SDKs + verify icons** - Only what the use case needs:
+**Task C: Install Stream SDKs + verify icons** — Only what the use case needs:
 
 ```bash
 # Chat:     stream-chat stream-chat-react

@@ -10,6 +10,8 @@ Never Read/Edit **`.env`** in chat — secrets leak into the conversation. Let t
 
 **Env vars are server-side only.** The client never reads `process.env` for Stream credentials — it receives `apiKey`, `userId`, and its token from the `/api/token` response (upserted once per login) and holds them in React state. No `NEXT_PUBLIC_STREAM_*` vars. This keeps secrets out of the client bundle *and* sidesteps the `.env` hook entirely.
 
+**`.gitignore` before any `.env` write.** Before any tool writes secrets to `.env` (notably `stream env` in builder Task B), confirm a line covering `.env*` exists in `.gitignore` and add one if missing. The Next.js scaffold's default already does — this rule covers the edge case where the project's `.gitignore` was hand-edited or doesn't exist yet.
+
 - Narrow `searchParams.get()` (returns `string | null`) with guards before passing to SDK methods.
 
 ## No auto-seeding
