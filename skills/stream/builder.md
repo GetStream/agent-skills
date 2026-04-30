@@ -1,27 +1,26 @@
-# Builder - scaffold execution (Track A)
+# Builder — scaffold execution (Track A)
 
-Phase table: [`SKILL.md`](SKILL.md) Track A. Rules: [`RULES.md`](RULES.md) (secrets, no auto-seeding, login screen first, phase order, package manager).
+Rules: [`RULES.md`](RULES.md) (secrets, no auto-seeding, login screen first, package manager, shell discipline).
+Preflight: [`preflight.md`](preflight.md) must pass before this file runs — CLI installed, credentials resolved, auth live.
 
 ---
 
-## A1: CLI gate + probe
+## Start
 
-Follow **[`SKILL.md`](SKILL.md) › CLI gate** first: if `stream` is missing, install via **`bootstrap.md`** after user permission - **do not** start Steps 0–7 until the CLI works.
+Once preflight has reported `✓ Stream CLI vN.N.N · …`, announce the network plan once, then **immediately start executing Steps 0–7** — no interactive prompts at the start (the user has authorized the build by asking for it).
 
-Then run the probe and report the result as a **single line** with a checkmark. Do **not** use a heading, section number, or bullet list - just one line:
+### Trust readout (announce, then continue on the same turn — do not wait)
 
-- **Found → output exactly:** `✓ Stream CLI v0.1.0` (substitute actual version)
-- **Not found →** you must not reach A2; follow **`bootstrap.md`** until installed (or user declines - then stop builder work).
+Before the first network command, print this verbatim to the user, then proceed straight into Step 0 without stopping for a reply:
 
-```bash
-bash -c 'command -v stream >/dev/null 2>&1 && stream --version || echo "STREAM_CLI_NOT_FOUND"'
-```
+> Scaffolding now. Network calls you'll see:
+> - `npx shadcn@latest …` (Vercel) — scaffold + UI components from npm.
+> - `npm install <stream-packages> --legacy-peer-deps` — Stream SDKs from npm (`stream-chat-react`, `@stream-io/video-react-sdk`, etc.).
+> - `stream env` — local CLI, no network; writes `.env` (gitignored by the Next.js scaffold's default; Task B verifies).
+>
+> Interrupt me at any point if something looks wrong. The only step that pauses for explicit consent is the optional third-party skill packs in Task A.2.
 
-If the sandbox blocks the probe, say so and ask the user to confirm `stream` is installed.
-
-## A2: Immediate execution
-
-After the CLI is verified (and the **CLI gate** satisfied), **immediately start executing Steps 0–7**. No prompts, no checklist, no confirmation. Just build it step by step.
+Full per-command audit (publisher, why unpinned, what each writes): § Install trust & integrity below. The user's continued silence after the readout is implicit consent for this scaffold; an objection or stop instruction aborts the run.
 
 Shadcn/ui is always installed during Step 3. Third-party **frontend skills** (`vercel-react-best-practices`, `web-design-guidelines`, `frontend-design`) are installed **only with explicit user consent** — see Task A.2 for the disclosure script. If the user declines, Step 4 proceeds using Stream references only. **Precedence (when the skills are present):** Stream references win for SDK wiring; frontend skills guide generic React / UI polish.
 
@@ -47,17 +46,11 @@ The builder runs three classes of network-touching commands. Each is listed here
 
 ---
 
-## Builder Steps (A3 execution)
+## Builder Steps
 
-Execute phases **in order** (later steps depend on earlier ones). Do **not** run independent phases in parallel.
+Execute phases **in order** (later steps depend on earlier ones). Do **not** run independent phases in parallel. Shell discipline (one `bash -c` per phase, no `bash -ce`, `stream auth login` standalone) lives in [`RULES.md`](RULES.md) › Shell discipline.
 
-### Sandboxed agents / fewer "Run" prompts
-
-**Rule - one invocation per phase:** Wrap everything in `bash -c '…'` and chain with `&&` on one line. **Do NOT use `bash -ce` or `set -e`** — `grep` (and friends) return exit 1 on "no match," which aborts the entire probe and leaves you with partial or no output. If you need to tolerate specific failures, handle them explicitly (`|| echo NOT_FOUND`, `|| true`) rather than relying on `-e`.
-
-**When you need two calls:** If you must Read JSON (e.g. `OrganizationRead`) and then choose IDs, use one call for the read, one batched call for all creates + `stream config set`.
-
-**Exception - browser auth:** `stream auth login` stays its own invocation so the browser can open.
+**Two-call exception:** If you must Read JSON (e.g. `OrganizationRead`) and then choose IDs, use one call for the read, one batched call for all creates + `stream config set`.
 
 ### Step 0: Package manager
 Always use `npm`. Never use bun.

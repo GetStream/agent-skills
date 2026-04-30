@@ -147,14 +147,14 @@ Stop at the first step that gives a confident answer:
 
 ### Step 1a — Project detection
 
-**Check project signals signals first.** SKILL.md › project signals runs once per session and populates `PKG` (Stream npm packages with versions) and `NATIVE` (non-npm project files). If those signals are already in conversation context, use them directly — no extra probe.
+**Check project signals first.** [`preflight.md`](preflight.md) › Project signals runs once per session for tracks A, B, C, E and populates `PKG` (Stream npm packages with versions) and `NATIVE` (non-npm project files). If those signals are already in conversation context, use them directly — no extra probe.
 
 Only run a fresh probe if:
-- project signals hasn't run yet in this conversation (rare — usually means you're answering before SKILL.md routed)
+- project signals hasn't run yet in this conversation (rare — usually means you're answering before the router classified)
 - project signals found nothing but the user's question implies a project file exists (e.g., the user said "in my Flutter project" but `NATIVE` was empty when probed)
 - A scaffold or install completed mid-conversation and may have added packages
 
-#### Fallback probes (when project signals signals are missing)
+#### Fallback probes (when project signals are missing)
 
 npm:
 
@@ -391,7 +391,7 @@ You can browse the full index at https://getstream.io/cli/docs/{slug}.md or try:
 
 ## Cross-references to other tracks
 
-Full guidance lives in **[`SKILL.md`](SKILL.md) › Cross-track follow-ups**. Track D's specific guarantee: **never execute a cross-track action from inside Track D** — only offer. The user re-routes by asking, which re-enters Step 0. This keeps Track D's no-side-effects promise intact even when a docs answer naturally enables a CLI run, scaffold, or integration.
+Full guidance lives in [`RULES.md`](RULES.md) › Cross-track follow-ups. Track D's specific guarantee: **never execute a cross-track action from inside Track D** — only offer. The user re-routes by asking, which re-enters the router. This keeps Track D's no-side-effects promise intact even when a docs answer naturally enables a CLI run, scaffold, or integration.
 
 ---
 

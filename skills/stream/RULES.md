@@ -60,21 +60,32 @@ Shadcn components use `@base-ui/react`, NOT `@radix-ui`. Key differences:
 - **Exit 3** (API error) → report the error to the user with the response message.
 - **Endpoint discovery:** Read `~/.stream/cache/API.md` first - never `--list`. Refresh if missing.
 
-## CLI install gate (per track)
+## Preflight & phase order
 
-For tracks **A, B, C, E** — verify the **`stream` CLI** is installed (`command -v stream` and `stream --version`) before any further work in that track. If missing or broken, follow **`bootstrap.md`**: explain, **ask the user once** for permission to install, then install (network). **Do not** skip installation and proceed to scaffold, API calls, or Steps 0–7.
+Tracks **A, B, C, E** must complete [`preflight.md`](preflight.md) once per session before any further work — project signals → CLI gate → credentials + auth check. **Track D (docs search) skips preflight entirely** and never runs shell commands except an on-demand read-only probe inside `docs-search.md` Step 1a when the SDK can't be resolved from user input.
 
-**Track D (docs search) does not require the CLI** — it only fetches from `getstream.io`. Skip the gate entirely for Track D.
-
-If the user declines install, follow **`bootstrap.md`** read-only paths or hand documentation questions to Track D.
-
-## Phase order
-
-Follow **[`SKILL.md`](SKILL.md)** phase order: **Step 0** (intent classifier) → **Project signals** for tracks A/B/C/E only → **CLI gate** → **CLI + credentials** → execute. Track D skips project signals, the CLI gate, and credentials by default; it only runs a read-only probe **on demand** if SDK inference can't resolve from user input alone (see `docs-search.md` § On-demand project-signals probe). Builder Track A: Step 0 → project signals → A1 (CLI gate + credentials) → A2 (execute Steps 0–7 immediately).
+If the CLI is missing, follow [`bootstrap.md`](bootstrap.md): explain, **ask the user once** for permission to install, then install. Do not skip installation and proceed to scaffold, API calls, or Steps 0–7. If the user declines, follow `bootstrap.md` read-only paths or hand documentation questions to Track D.
 
 - Do not load `references/*.md` until the user names the product(s).
 - Do not load `builder-ui.md` before Step 4.
 - Shadcn/ui is always installed during Step 3 — never skip. Third-party **frontend skills** (`vercel-labs/*`, `anthropics/*`) require one explicit user confirmation per session before install — see `builder.md` Task A.2.
+
+## Shell discipline
+
+- **Never `bash -ce` or `set -e`** in probes or batched phases. `grep` (and friends) return exit 1 on "no match," which under `-e` aborts the whole script and leaves you with partial output. Tolerate specific failures explicitly (`|| echo NOT_FOUND`, `|| true`) instead.
+- **One `bash -c` per phase where possible.** Chain with `&&` on a single line to minimize sandbox approval prompts. If you need to read JSON and then act on it, use one call to read and one batched call for the writes.
+- **`stream auth login` stays its own invocation.** Browser PKCE needs an unwrapped call — never chain with `&&`, embed in a heredoc, or bundle with other commands. Hang recovery is in CLI safety above.
+
+## Cross-track follow-ups
+
+The tracks share a single skill so a result from one can naturally enable an action in another. Surface a follow-up offer when it genuinely helps the user — not as boilerplate on every turn.
+
+- **D → B:** a docs answer that names a runnable operation can offer "want me to run that now via CLI?" (only if read-safe or clearly operational intent).
+- **B → D:** a CLI result that has a relevant docs page can offer "want the page that explains this?" (link only — don't fetch unprompted).
+- **A/E → D:** after scaffold or integration completes, mention that the SDK + version is preloaded and ask-anything is available.
+- **D → A/E:** a docs answer that describes a setup-heavy flow can mention scaffold / integrate is available — without running it.
+
+**Do not auto-execute a cross-track action.** Offer, then wait for the user to confirm. The track switch happens through the user's reply, which re-enters the router.
 
 ## Theme
 

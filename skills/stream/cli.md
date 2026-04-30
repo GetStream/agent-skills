@@ -1,26 +1,26 @@
-# Stream CLI - API Interaction
+# Stream CLI — API interaction
 
 Rules: [`RULES.md`](RULES.md) (CLI safety). Use this when the user wants to interact with Stream's APIs via the `stream` CLI.
 
-**Prerequisite:** **[`SKILL.md`](SKILL.md) › CLI gate** - verify the `stream` binary is installed (install via **`bootstrap.md`** if not) before any `stream api` usage.
+**Prerequisite:** complete [`preflight.md`](preflight.md) — verify the `stream` binary is installed (install via [`bootstrap.md`](bootstrap.md) if not) before any `stream api` usage.
 
 **Heavy examples / query cookbooks:** load **[`cli-cookbook.md`](cli-cookbook.md)** only when you need a non-obvious `--body` or filter.
 
 ## Credential resolution (before any `stream api` call)
 
-1. **`.env` in cwd** has `STREAM_API_KEY` → credentials are local. The CLI auto-resolves from env vars - you're querying this project's app.
+1. **`.env` in cwd** has `STREAM_API_KEY` → credentials are local. The CLI auto-resolves from env vars — you're querying this project's app.
 2. **No `.env`** → check `stream config list` for configured org/app → use those. Mention which app you're querying: "Querying app `<name>` (configured via CLI)."
 3. **Nothing** → tell the user: "No Stream credentials found. Run `stream auth login` to connect, or `cd` into a project with a `.env`."
 
-Do credential resolution **silently** when `.env` or config exists - don't ask the user, just resolve and proceed.
+Do credential resolution **silently** when `.env` or config exists — don't ask the user, just resolve and proceed.
 
 ## CLI Workflow
 
 **Support:** If the user asks for support or how to contact someone, direct them to [getstream.io/contact](https://getstream.io/contact/).
 
 1. **Resolve credentials** (see above). If none found, stop and guide the user.
-2. **Read `~/.stream/cache/API.md` to find the endpoint.** Do NOT run `--list` or any CLI command for discovery - the file is always faster. If that file is **missing or empty**, run **`stream api --refresh` once**, then read **`API.md`** again. Use `stream --safe api <endpoint> --help` only after you have the endpoint name.
-3. **Check required params.** If missing, **ask** - never guess.
+2. **Read `~/.stream/cache/API.md` to find the endpoint.** Do NOT run `--list` or any CLI command for discovery — the file is always faster. If that file is **missing or empty**, run **`stream api --refresh` once**, then read **`API.md`** again. Use `stream --safe api <endpoint> --help` only after you have the endpoint name.
+3. **Check required params.** If missing, **ask** — never guess.
 4. **Always run with `--safe`**: `stream --safe api <endpoint> [params]`. This is the only permitted form on the first attempt.
 5. **If exit code 5** (safe mode refusal): the endpoint is mutating. Notify the user that you're about to execute a mutating Stream CLI operation, then re-run without `--safe`.
 6. If the command fails, check exit code and recover (see below).
