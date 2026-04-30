@@ -28,7 +28,7 @@ Do credential resolution **silently** when `.env` or config exists — don't ask
 
 **Focused output:** Use `--jq '<query>'` to filter API responses with a jq expression. Prefer this for endpoints expected to produce long responses.
 
-**Session consent (psychological):** The user may say *Mutating Stream CLI OK for this thread* - still use **`--safe`** first; exit **5** always requires a visible mutating notice before retry without **`--safe`**.
+**Session consent (psychological):** The user may say *Mutating Stream CLI OK for this thread* — still use **`--safe`** first; exit **5** always requires a visible mutating notice before retry without **`--safe`**.
 
 ## Exit Code Recovery
 
@@ -57,22 +57,22 @@ Set defaults: `stream config set org <id>` and `stream config set app <id>`.
 
 ## Negative knowledge
 
-- **No `OrganizationDelete`** - contact Stream support.
-- **No `AppSuspend` / `AppResume`** - contact support.
-- **`CreateBlockList` is NOT idempotent** - returns 400 if exists.
-- **`CreateChannelType` is NOT idempotent** - returns 400 if exists.
-- **Ampere endpoints use `app_id`/`org_id`, not `id`** - e.g., `AppDelete app_id=123`.
-- **Auth endpoints** (`AuthLoginBasic`, `AuthLoginGithub`, etc.) are internal - always use **`stream auth login`** / **`stream auth logout`** instead.
+- **No `OrganizationDelete`** — contact Stream support.
+- **No `AppSuspend` / `AppResume`** — contact support.
+- **`CreateBlockList` is NOT idempotent** — returns 400 if exists.
+- **`CreateChannelType` is NOT idempotent** — returns 400 if exists.
+- **Ampere endpoints use `app_id`/`org_id`, not `id`** — e.g., `AppDelete app_id=123`.
+- **Auth endpoints** (`AuthLoginBasic`, `AuthLoginGithub`, etc.) are internal — always use **`stream auth login`** / **`stream auth logout`** instead.
 
 ### Auth (assistants)
 
-- Use **`stream auth login`** with no extra flags, in a terminal where a **browser window can open**. The CLI uses PKCE with the dashboard - that is the supported sign-in path.
+- Use **`stream auth login`** with no extra flags, in a terminal where a **browser window can open**. The CLI uses PKCE with the dashboard — that is the supported sign-in path.
 
 ## CLI Rules (summary)
 
-1. **Endpoint discovery:** **`~/.stream/cache/API.md`** first - never `--list` for discovery. Refresh if missing.
+1. **Endpoint discovery:** **`~/.stream/cache/API.md`** first — never `--list` for discovery. Refresh if missing.
 2. **Help:** **`stream --safe api <endpoint> --help`** for parameters after you know the endpoint name.
-3. **Lazy auth** - if exit code **2**, **`stream auth login`** then retry.
-4. **Missing params** - ask; never invent IDs.
-5. **First attempt always `--safe`** - exit **5** → explain mutating op → retry without **`--safe`**.
+3. **Lazy auth** — if exit code **2**, **`stream auth login`** then retry.
+4. **Missing params** — ask; never invent IDs.
+5. **First attempt always `--safe`** — exit **5** → explain mutating op → retry without **`--safe`**.
 6. **Summarize** API responses concisely for the user.

@@ -79,7 +79,7 @@ Ask the user which Shadcn theme they'd like **before doing anything else**:
 
 ### Step 2: Create org + app
 
-**First, check existing orgs** with `stream api OrganizationRead`. If there are already 10 orgs, do NOT create a new one - pick an existing `builder-*` org and create a new app inside it.
+**First, check existing orgs** with `stream api OrganizationRead`. If there are already 10 orgs, do NOT create a new one — pick an existing `builder-*` org and create a new app inside it.
 
 **App names are globally unique.** Always use `app-<hash>` where hash = `openssl rand -hex 4`.
 
@@ -98,11 +98,11 @@ stream api AppCreate name=app-$HASH org_id=<org_id> is_development=true region_i
 stream config set org <org_id> && stream config set app <app_id>
 ```
 
-**Never use the auto-created app** from OrganizationCreate - it uses Feeds v2 and US Ohio.
+**Never use the auto-created app** from OrganizationCreate — it uses Feeds v2 and US Ohio.
 
 **Fallback (org limit / 429):** Use `OrganizationRead` to list existing builder orgs, pick one, create a new app in it.
 
-### Step 3: Scaffold + .env + SDKs + Configure - SEQUENTIALLY
+### Step 3: Scaffold + .env + SDKs + Configure — SEQUENTIALLY
 
 #### Scaffold order
 
@@ -115,7 +115,7 @@ Order:
 5. **Task A.2:** Disclose + ask about third-party frontend skill installs; install only with user consent.
 6. Continue with Task B (.env), Task C (SDKs), Task D (CLI config).
 
-**Task A: Scaffold** - scaffolds Next.js + Tailwind + Shadcn/ui (Base UI) into the current directory. Use the theme preset chosen in **Step 1b**.
+**Task A: Scaffold** — scaffolds Next.js + Tailwind + Shadcn/ui (Base UI) into the current directory. Use the theme preset chosen in **Step 1b**.
 
 The scaffold command creates a new directory, so we scaffold into a temporary `.scaffold` subdirectory and move everything up:
 
@@ -140,7 +140,7 @@ Print this disclosure verbatim, then stop and wait for the user's answer:
 > - `web-design-guidelines` — from [`vercel-labs/agent-skills`](https://github.com/vercel-labs/agent-skills)
 > - `frontend-design` — from [`anthropics/skills`](https://github.com/anthropics/skills)
 >
-> These aren't required — Stream reference files cover SDK wiring either way. Install them?
+> The packs are markdown only — no scripts execute. If you say yes, I'll run `npx skills add … -y` once per pack from those GitHub repos at their current `main` branch (`-y` skips the installer's own confirmation since you've consented here). These aren't required — Stream reference files cover SDK wiring either way. Install them?
 
 - **User agrees** → run:
   ```bash
@@ -185,11 +185,11 @@ node -e "try{require.resolve('lucide-react');console.log('ICONS_OK')}catch{try{r
 
 If `NO_ICONS`, install `lucide-react`: `npm install lucide-react --legacy-peer-deps`. If an icon package is already present, use that one throughout the app — do not install a second.
 
-**Task D: Configure Stream** - Run the CLI commands from each relevant references's App Integration → Setup section.
+**Task D: Configure Stream** — run the CLI commands from the relevant `references/<Product>.md` (App Integration → Setup) for each product the use case needs.
 
 ### Step 4: Generate code and UI
 
-**Load [`builder-ui.md`](builder-ui.md)** and **only** the relevant `references/<Product>.md` header + `references/<Product>-blueprints.md` for the sections you are implementing - not every references file.
+**Load [`builder-ui.md`](builder-ui.md)** and **only** the relevant `references/<Product>.md` header + `references/<Product>-blueprints.md` for the sections you are implementing — not every reference file.
 
 ### Step 5: Verify
 
@@ -201,7 +201,7 @@ Fix all type errors. Then run the full build:
 ```bash
 npx next build
 ```
-Fix any remaining errors. Do NOT skip `tsc --noEmit` - it catches every type error in one pass, while `next build` stops at the first error per file and requires multiple rebuild cycles.
+Fix any remaining errors. Do NOT skip `tsc --noEmit` — it catches every type error in one pass, while `next build` stops at the first error per file and requires multiple rebuild cycles.
 
 ### Step 6: Start dev server
 Pick a random 5-digit port (10000–65535). Run the server using `run_in_background`:
@@ -214,7 +214,7 @@ npx next dev -p $PORT
 **Important:** The dev server is a long-running process. When run in the background it will eventually emit a "completed" notification — this does **not** mean the server stopped. The server is still running and serving requests. **Do not** respond to the background-task completion notification by telling the user the server has stopped. If you receive that notification after Step 7, ignore it silently — do not output anything.
 
 ### Step 7: Summary
-Show what was created: org, app, resources, files. Include the local URL. Do NOT say "you can now start the dev server" - it's already running.
+Show what was created: org, app, resources, files. Include the local URL. Do NOT say "you can now start the dev server" — it's already running.
 
 End with:
 
@@ -234,7 +234,7 @@ End with:
 | "WhatsApp", "iMessage", "DM", "messaging" | Direct Messaging | Chat [+ Video] |
 | "Instagram", "Twitter", "social feed", "Reddit" | Social Feed | Feeds + Chat |
 
-**Moderation** is configured via CLI during setup only. **Never build moderation review UI in the app** (RULES.md › Moderation is Dashboard-only) - review happens in the [Stream Dashboard](https://beta.dashboard.getstream.io).
+**Moderation** is configured via CLI during setup only. **Never build moderation review UI in the app** (RULES.md › Moderation is Dashboard-only) — review happens in the [Stream Dashboard](https://beta.dashboard.getstream.io).
 
 ---
 
@@ -244,7 +244,7 @@ Every app needs a clear navigation structure. Users should always understand whe
 
 ### Principle: Hub-first
 
-After login, land on a **hub** - a home screen that shows what's happening and lets the user choose their path. The hub is the anchor; everything else is a destination the user navigates to intentionally.
+After login, land on a **hub** — a home screen that shows what's happening and lets the user choose their path. The hub is the anchor; everything else is a destination the user navigates to intentionally.
 
 ### Flow by use case
 
@@ -254,15 +254,15 @@ Login → Feed hub (live streams + posts) → Watch a stream (viewer: video + ch
                                         → Go Live (explicit action → then camera/mic setup → streaming)
 ```
 - The feed hub shows live streams (if any) as prominent cards, plus regular posts below
-- Clicking a live card opens the **watch** view - video player + chat as a viewer. No camera permissions.
+- Clicking a live card opens the **watch** view — video player + chat as a viewer. No camera permissions.
 - "Go Live" is a deliberate action (button in header or dedicated screen). Only THEN prompt for camera/mic. The streamer sees a setup/preview before going live.
-- Viewers and streamers are the same user type - the difference is the action they take, not the page they land on.
+- Viewers and streamers are the same user type — the difference is the action they take, not the page they land on.
 
 **Video Conferencing (Zoom, Google Meet):**
 ```
 Login → Lobby (list of calls or "start a call") → Join call (camera/mic preview → join)
 ```
-- Land on a lobby or call list - not directly in a call.
+- Land on a lobby or call list — not directly in a call.
 - Joining a call shows a **preview screen** (camera/mic toggles) before connecting. The user opts in.
 
 **Team Messaging (Slack, Discord):**
@@ -292,7 +292,7 @@ Login → Feed hub (follow users + composer + tabs: Timeline | My Posts) → Com
 ### Key rules
 
 - **Camera/mic: opt-in only.** Never request permissions on page load. Only when the user takes an explicit action (Go Live, Join Call).
-- **No empty ambiguity.** If there's no content yet, show a clear empty state that tells the user what to do ("No live streams yet - be the first to Go Live").
+- **No empty ambiguity.** If there's no content yet, show a clear empty state that tells the user what to do ("No live streams yet — be the first to Go Live").
 - **Navigation is visible.** The user should always be able to get back to the hub. Use the App Header or a sidebar for navigation.
 - **One primary action per screen.** The hub's primary action is browsing/discovering. The watch screen's primary action is viewing. The Go Live screen's primary action is streaming. Don't mix them.
 
@@ -300,12 +300,12 @@ Login → Feed hub (follow users + composer + tabs: Timeline | My Posts) → Com
 
 ## Cross-Product Integration
 
-When building apps that combine multiple products, read each relevant references's App Integration section. Key patterns:
+When building apps that combine multiple products, read each relevant `references/<Product>.md` App Integration section. Key patterns:
 
-- **Combined token route:** `/api/token` returns tokens for each product (`{ chatToken, videoToken, feedToken, apiKey }`). Upsert only the requesting user - never seed demo users.
+- **Combined token route:** `/api/token` returns tokens for each product (`{ chatToken, videoToken, feedToken, apiKey }`). Upsert only the requesting user — never seed demo users.
 - **Video + Feeds (Livestreaming):** Feed hub separates `type === "live"` activities as prominent live cards. "Go Live" posts a live activity via `/api/feed/live`. "End Stream" removes it.
-- **Video + Chat (Livestreaming):** Chat alongside video on the watch screen. Use `livestream` channel type - one channel per stream, keyed by call ID. Create the chat channel in the `/api/token` route.
-- **Moderation (all use cases):** Run Moderation CLI setup commands from `references/MODERATION.md` (App Integration → Setup), adjusting channel type name. **Never build moderation review UI** (RULES.md › Moderation is Dashboard-only) - review happens in the [Stream Dashboard](https://beta.dashboard.getstream.io).
+- **Video + Chat (Livestreaming):** Chat alongside video on the watch screen. Use `livestream` channel type — one channel per stream, keyed by call ID. Create the chat channel in the `/api/token` route.
+- **Moderation (all use cases):** Run Moderation CLI setup commands from `references/MODERATION.md` (App Integration → Setup), adjusting channel type name. **Never build moderation review UI** (RULES.md › Moderation is Dashboard-only) — review happens in the [Stream Dashboard](https://beta.dashboard.getstream.io).
 
 ---
 

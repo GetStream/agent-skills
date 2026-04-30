@@ -1,4 +1,4 @@
-# Stream CLI - cookbook (load for tricky queries)
+# Stream CLI — cookbook (load for tricky queries)
 
 Load this file when **`cli.md`** workflow is not enough: tricky **`--body`** values, filters, or query examples.
 
@@ -21,8 +21,8 @@ These endpoints need specific body structures that aren't obvious from the name 
 | "Update call settings" | `UpdateCall` | `--body '{"settings_override":{"recording":{"mode":"auto_on"}}}'` |
 | "Shadow ban a user" | `ban` | `shadow=true` flag |
 | "Ban via review queue" | `submit_action` | `action_type=ban`, NOT the `ban` endpoint |
-| "Create a post" | `AddActivity` | Must specify `feeds:["user:john"]` - target feeds required |
-| "Follow a feed" | `Follow` | `source=timeline:john target=user:jane` - source follows target |
+| "Create a post" | `AddActivity` | Must specify `feeds:["user:john"]` — target feeds required |
+| "Follow a feed" | `Follow` | `source=timeline:john target=user:jane` — source follows target |
 | "Get app settings" | `GetApp` | SDK endpoint (not AppRead). Auto-resolves org/app. |
 
 ## Filter & Sort Cookbook
@@ -31,7 +31,7 @@ All Query endpoints accept `filter_conditions` + `sort` + `limit` + `next`/`prev
 
 **Operators:** `$eq`, `$ne`, `$gt`, `$gte`, `$lt`, `$lte`, `$in`, `$nin`, `$exists`, `$and`, `$or`, `$autocomplete`, `$q`, `$contains`
 
-**Sort syntax:** `"sort":[{"field":"created_at","direction":-1}]` - `-1` descending, `1` ascending
+**Sort syntax:** `"sort":[{"field":"created_at","direction":-1}]` — `-1` descending, `1` ascending
 
 ### QueryChannels
 Fields: `type`, `id`, `cid`, `members`, `member_count`, `created_at`, `updated_at`, `last_message_at`, `frozen`, `disabled`, `created_by_id`, `filter_tags`, `has_unread`, `hidden`, `muted`, `joined`

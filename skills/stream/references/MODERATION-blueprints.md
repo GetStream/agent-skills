@@ -1,4 +1,4 @@
-# Moderation - full component blueprints
+# Moderation — full component blueprints
 
 Setup, routes, and gotchas: [MODERATION.md](MODERATION.md). Rules: [../RULES.md](../RULES.md).
 
@@ -66,25 +66,25 @@ End-user dialog for reporting content or users. Triggered from message/activity 
 
 | Element | Read | Write | Property Path |
 |---|---|---|---|
-| Report message (Chat) | - | `client.flagMessage(message.id)` | Flags message for admin review |
-| Report user (Chat) | - | `client.flagUser(userId)` | Flags user |
-| Report activity (Feeds v1/v2) | - | `client.reactions.add('flag', activity.id, { reason, details })` | Legacy approach - reaction-based flagging |
-| Report activity (Feeds v3) | - | Use moderation API (e.g., `client.moderation.flag(...)`) or custom implementation | v3 does not use reaction-based flagging; handle through the moderation API or a custom endpoint |
-| Report reason | - | Pass as `reason` param or in custom data | Client-side value from radio selection |
-| Report details | - | Include in flag custom data | Optional text from textarea |
-| `--submit` enabled | At least one reason selected | - | Client-side validation |
+| Report message (Chat) | — | `client.flagMessage(message.id)` | Flags message for admin review |
+| Report user (Chat) | — | `client.flagUser(userId)` | Flags user |
+| Report activity (Feeds v1/v2) | — | `client.reactions.add('flag', activity.id, { reason, details })` | Legacy approach — reaction-based flagging |
+| Report activity (Feeds v3) | — | Use moderation API (e.g., `client.moderation.flag(...)`) or custom implementation | v3 does not use reaction-based flagging; handle through the moderation API or a custom endpoint |
+| Report reason | — | Pass as `reason` param or in custom data | Client-side value from radio selection |
+| Report details | — | Include in flag custom data | Optional text from textarea |
+| `--submit` enabled | At least one reason selected | — | Client-side validation |
 
 ### Requirements
 
 | Feature | Requirement | Default |
 |---|---|---|
-| Chat message flagging | - | Available - `client.flagMessage()` always available |
-| Chat user flagging | - | Available - `client.flagUser()` always available |
+| Chat message flagging | — | Available — `client.flagMessage()` always available |
+| Chat user flagging | — | Available — `client.flagUser()` always available |
 | Feeds flagging (v1/v2) | Reactions enabled on feed group | Use reaction kind `'flag'` or custom moderation API |
 | Feeds flagging (v3) | Moderation API or custom endpoint | v3 does not support reaction-based flagging |
-| Flag review | Dashboard -> Moderation dashboard | Available - flags appear in admin dashboard |
-| Custom reasons | Client-side | No config - include reason in flag custom data |
-| Webhook on flag | Dashboard -> Webhooks -> `message.flagged` / `user.flagged` events | Off - enable to notify external systems |
+| Flag review | Dashboard -> Moderation dashboard | Available — flags appear in admin dashboard |
+| Custom reasons | Client-side | No config — include reason in flag custom data |
+| Webhook on flag | Dashboard -> Webhooks -> `message.flagged` / `user.flagged` events | Off — enable to notify external systems |
 
 ---
 
@@ -122,31 +122,31 @@ End-user controls for blocking and muting other users or channels. Typically sur
 
 | Element | Read | Write | Property Path |
 |---|---|---|---|
-| Mute user (Chat) | `client.mutedUsers` | `client.muteUser(userId)` | `client.mutedUsers[]` - array of `{ target, created_at }` |
-| Unmute user (Chat) | `client.mutedUsers` | `client.unmuteUser(userId)` | - |
-| Block user (1:1) | - | `client.blockUser(userId)` | Hides DM channels, stops push notifications - for 1:1 blocking between end users |
-| Unblock user (1:1) | - | `client.unBlockUser(userId)` | Reverses `blockUser` - restores DM visibility |
-| Ban user (channel) | - | `channel.banUser(userId)` | Prevents posting in the channel - different from 1:1 blocking |
-| Unban user (channel) | - | `channel.unbanUser(userId)` | - |
-| Ban user (global) | - | `client.banUser(userId, { banned_by_id: currentUserId })` | Global ban across all channels |
-| Shadow ban (channel) | - | `channel.shadowBan(userId)` | User can post but messages only visible to them |
-| Remove shadow ban | - | `client.removeShadowBan(userId)` or `channel.removeShadowBan(userId)` | Reverses shadow ban |
+| Mute user (Chat) | `client.mutedUsers` | `client.muteUser(userId)` | `client.mutedUsers[]` — array of `{ target, created_at }` |
+| Unmute user (Chat) | `client.mutedUsers` | `client.unmuteUser(userId)` | — |
+| Block user (1:1) | — | `client.blockUser(userId)` | Hides DM channels, stops push notifications — for 1:1 blocking between end users |
+| Unblock user (1:1) | — | `client.unBlockUser(userId)` | Reverses `blockUser` — restores DM visibility |
+| Ban user (channel) | — | `channel.banUser(userId)` | Prevents posting in the channel — different from 1:1 blocking |
+| Unban user (channel) | — | `channel.unbanUser(userId)` | — |
+| Ban user (global) | — | `client.banUser(userId, { banned_by_id: currentUserId })` | Global ban across all channels |
+| Shadow ban (channel) | — | `channel.shadowBan(userId)` | User can post but messages only visible to them |
+| Remove shadow ban | — | `client.removeShadowBan(userId)` or `channel.removeShadowBan(userId)` | Reverses shadow ban |
 | Mute channel | `client.mutedChannels` | `channel.mute()` | `client.mutedChannels[]` |
-| Unmute channel | `client.mutedChannels` | `channel.unmute()` | - |
-| Check if muted | `client.mutedUsers.find(m => m.target.id === userId)` | - | Truthy = muted |
-| Check channel muted | `channel.muteStatus()` | - | Returns `{ muted, createdAt, expiresAt }` |
+| Unmute channel | `client.mutedChannels` | `channel.unmute()` | — |
+| Check if muted | `client.mutedUsers.find(m => m.target.id === userId)` | — | Truthy = muted |
+| Check channel muted | `channel.muteStatus()` | — | Returns `{ muted, createdAt, expiresAt }` |
 
 ### Requirements
 
 | Feature | Requirement | Default |
 |---|---|---|
-| User mute | - | Available - muted user's messages hidden client-side |
-| User block (1:1) | - | Available - `client.blockUser()` hides DM channels and stops push |
+| User mute | — | Available — muted user's messages hidden client-side |
+| User block (1:1) | — | Available — `client.blockUser()` hides DM channels and stops push |
 | User ban (channel) | User must have `'ban-members'` capability | Admins/moderators by default |
 | User ban (global) | Server-side only or admin user | Requires server auth |
-| Channel mute | - | Available - suppresses notifications, channel still accessible |
-| Shadow ban | `channel.shadowBan(userId)` | Available - user can post but messages only visible to them |
-| Remove shadow ban | `client.removeShadowBan(userId)` or `channel.removeShadowBan(userId)` | Available - reverses shadow ban |
+| Channel mute | — | Available — suppresses notifications, channel still accessible |
+| Shadow ban | `channel.shadowBan(userId)` | Available — user can post but messages only visible to them |
+| Remove shadow ban | `client.removeShadowBan(userId)` or `channel.removeShadowBan(userId)` | Available — reverses shadow ban |
 
 ---
 
@@ -195,19 +195,19 @@ Admin interface for reviewing flagged content. Shows all pending flags with cont
 
 | Element | Read | Write | Property Path |
 |---|---|---|---|
-| `review-queue__list` | `client.moderation.queryReviewQueue(filterConditions, sort, options)` | - | Returns review queue items. Example: `client.moderation.queryReviewQueue({ entity_type: "stream:chat:v1:message" }, [{ field: "created_at", direction: -1 }], { next: null })` |
-| `review-queue__filter--type` | Filter via `entity_type` in `filterConditions` | - | e.g. `"stream:chat:v1:message"` for messages, `"stream:user"` for users |
-| `review-queue__filter--status` | Filter via `status` in `filterConditions` | - | e.g. `{ status: "pending" }` or `{ status: "reviewed" }` |
-| `review-queue__pending-count` | Review queue response | - | Total count from query |
-| Pagination | `client.moderation.queryReviewQueue(filterConditions, sort, { next: cursor })` | - | Cursor-based pagination using `next` from previous response |
+| `review-queue__list` | `client.moderation.queryReviewQueue(filterConditions, sort, options)` | — | Returns review queue items. Example: `client.moderation.queryReviewQueue({ entity_type: "stream:chat:v1:message" }, [{ field: "created_at", direction: -1 }], { next: null })` |
+| `review-queue__filter--type` | Filter via `entity_type` in `filterConditions` | — | e.g. `"stream:chat:v1:message"` for messages, `"stream:user"` for users |
+| `review-queue__filter--status` | Filter via `status` in `filterConditions` | — | e.g. `{ status: "pending" }` or `{ status: "reviewed" }` |
+| `review-queue__pending-count` | Review queue response | — | Total count from query |
+| Pagination | `client.moderation.queryReviewQueue(filterConditions, sort, { next: cursor })` | — | Cursor-based pagination using `next` from previous response |
 
 ### Requirements
 
 | Feature | Requirement | Default |
 |---|---|---|
 | Review queue queries | Server-side auth (server token) or admin user | Requires elevated permissions |
-| Query review queue | `client.moderation.queryReviewQueue()` | Available - unified API for all flagged entity types |
-| Webhook integration | Dashboard -> Webhooks -> flag events | Optional - for external notification |
+| Query review queue | `client.moderation.queryReviewQueue()` | Available — unified API for all flagged entity types |
+| Webhook integration | Dashboard -> Webhooks -> flag events | Optional — for external notification |
 
 ---
 
@@ -293,36 +293,36 @@ Individual flagged content card in the review queue. Shows content, reporter inf
 
 | Element | Read | Write | Property Path |
 |---|---|---|---|
-| `flagged-item__time` | Flag data | - | `flag.created_at` - **nanosecond epoch** in review queue items, divide by `1e6` for `new Date()` |
-| `flagged-item__reporter` | Flag data | - | `flag.user.name` (reporter) |
-| `flagged-item__message-text` | Flag data | - | See content preview branching below |
-| `flagged-item__author-name` | Flag data | - | `flag.target_message.user.name` or `item.entity_creator_id` |
-| `flagged-item__user-name` | Flag data | - | `flag.target_user.name` |
-| `flagged-item__auto-reason` | Flag data | - | `flag.reason` or auto-mod result details |
+| `flagged-item__time` | Flag data | — | `flag.created_at` — **nanosecond epoch** in review queue items, divide by `1e6` for `new Date()` |
+| `flagged-item__reporter` | Flag data | — | `flag.user.name` (reporter) |
+| `flagged-item__message-text` | Flag data | — | See content preview branching below |
+| `flagged-item__author-name` | Flag data | — | `flag.target_message.user.name` or `item.entity_creator_id` |
+| `flagged-item__user-name` | Flag data | — | `flag.target_user.name` |
+| `flagged-item__auto-reason` | Flag data | — | `flag.reason` or auto-mod result details |
 
 **Content preview branching (review queue):** The review queue contains three different entity types with different content locations:
 - **Chat messages** (`entity_type` includes `"chat"`): content is in `item.message.text`
 - **Feed activities** (`entity_type` includes `"feed"` or other non-chat): content is in `item.moderation_payload.texts[0]`
-- **User entities** (`entity_type` includes `"user"`): no text content - show `User: ${item.entity_id}` as fallback
+- **User entities** (`entity_type` includes `"user"`): no text content — show `User: ${item.entity_id}` as fallback
 
 Use `entity_type.includes("chat")` to branch, NOT exact string matching (chat entity_type is `stream:chat:v1:message`, not `stream:chat:message`).
-| Context messages | `channel.query({ messages: { id_around: messageId, limit: 5 } })` | - | Surrounding messages |
-| Dismiss | - | `client.moderation.submitAction({ action_type: "mark_reviewed", item_id })` | Marks the flagged item as reviewed/dismissed |
-| Delete content | - | `client.moderation.submitAction({ action_type: "delete_message", item_id, delete_message: { hard_delete: false } })` | Soft delete via moderation action. Set `hard_delete: true` for permanent removal |
-| Warn user | - | Custom: send system message or notification to user | App-specific implementation |
-| Mute user | - | `client.muteUser(userId, null, { timeout: durationMinutes })` | Second arg is muter user ID (`null` for current user). Optional timeout |
-| Ban user | - | `client.moderation.submitAction({ action_type: "ban", item_id, ban: { reason, channel_ban_only } })` | Supports `delete_messages: "soft"` or `"hard"` to also delete the user's messages |
-| Shadow ban | - | `client.shadowBan(userId, { timeout: durationMinutes })` | User unaware of ban |
+| Context messages | `channel.query({ messages: { id_around: messageId, limit: 5 } })` | — | Surrounding messages |
+| Dismiss | — | `client.moderation.submitAction({ action_type: "mark_reviewed", item_id })` | Marks the flagged item as reviewed/dismissed |
+| Delete content | — | `client.moderation.submitAction({ action_type: "delete_message", item_id, delete_message: { hard_delete: false } })` | Soft delete via moderation action. Set `hard_delete: true` for permanent removal |
+| Warn user | — | Custom: send system message or notification to user | App-specific implementation |
+| Mute user | — | `client.muteUser(userId, null, { timeout: durationMinutes })` | Second arg is muter user ID (`null` for current user). Optional timeout |
+| Ban user | — | `client.moderation.submitAction({ action_type: "ban", item_id, ban: { reason, channel_ban_only } })` | Supports `delete_messages: "soft"` or `"hard"` to also delete the user's messages |
+| Shadow ban | — | `client.shadowBan(userId, { timeout: durationMinutes })` | User unaware of ban |
 
 ### Requirements
 
 | Feature | Requirement | Default |
 |---|---|---|
 | Flag queries | Server-side auth or admin user | Required |
-| Hard delete | Server-side auth | Required - client-side delete is soft delete |
-| Ban with duration | - | Available - `timeout` in minutes, `0` = permanent |
-| Shadow ban | - | Available - `client.shadowBan()` |
-| Auto-moderation | Dashboard -> Moderation -> AI moderation / Blocked words | Off - enable per channel type |
+| Hard delete | Server-side auth | Required — client-side delete is soft delete |
+| Ban with duration | — | Available — `timeout` in minutes, `0` = permanent |
+| Shadow ban | — | Available — `client.shadowBan()` |
+| Auto-moderation | Dashboard -> Moderation -> AI moderation / Blocked words | Off — enable per channel type |
 | Context loading | `channel.query()` with `id_around` | Available |
 
 ---
@@ -359,20 +359,20 @@ Indicator shown on messages that were auto-flagged or bounced by auto-moderation
 
 | Element | Read | Write | Property Path |
 |---|---|---|---|
-| Bounce state | Message state | - | `message.moderation_details.action === 'bounce'` - note: raw API may return this under `message.moderation`; SDK normalizes to `message.moderation_details` |
-| Pending state | Message state | - | `message.moderation_details.action === 'flag'` and `message.state === 'pending'` - same property path note as above |
-| Edit bounced message | - | `client.updateMessage({ id: message.id, text: editedText })` | Resubmits for moderation |
-| Delete bounced message | - | `client.deleteMessage(message.id)` | - |
-| Approve pending | - | `client.commitMessage(message.id)` | Makes message visible to all. **Requires server-side auth (server token)** - cannot be called from client-side SDKs |
-| Reject pending | - | `client.deleteMessage(message.id, { hardDelete: true })` | Permanently removes |
-| Auto-mod reason | Message state | - | `message.moderation_details.harms[].name` - e.g. `'toxicity'`, `'spam'` |
+| Bounce state | Message state | — | `message.moderation_details.action === 'bounce'` — note: raw API may return this under `message.moderation`; SDK normalizes to `message.moderation_details` |
+| Pending state | Message state | — | `message.moderation_details.action === 'flag'` and `message.state === 'pending'` — same property path note as above |
+| Edit bounced message | — | `client.updateMessage({ id: message.id, text: editedText })` | Resubmits for moderation |
+| Delete bounced message | — | `client.deleteMessage(message.id)` | — |
+| Approve pending | — | `client.commitMessage(message.id)` | Makes message visible to all. **Requires server-side auth (server token)** — cannot be called from client-side SDKs |
+| Reject pending | — | `client.deleteMessage(message.id, { hardDelete: true })` | Permanently removes |
+| Auto-mod reason | Message state | — | `message.moderation_details.harms[].name` — e.g. `'toxicity'`, `'spam'` |
 
 ### Requirements
 
 | Feature | Requirement | Default |
 |---|---|---|
 | Auto-moderation | Dashboard -> Channel Type -> Moderation -> enable AI or semantic filters | Off |
-| Bounce behavior | Dashboard -> Moderation -> "Bounce" action configured | Off - alternatives: "Flag" (send + flag) or "Block" (reject silently) |
+| Bounce behavior | Dashboard -> Moderation -> "Bounce" action configured | Off — alternatives: "Flag" (send + flag) or "Block" (reject silently) |
 | Pending review | "Flag" action configured with pre-publish moderation | Off |
 | Commit message | Server-side auth or moderator user | Required for approve action |
 
@@ -421,13 +421,13 @@ End-user settings page showing users they've blocked or muted, with unblock/unmu
 
 | Element | Read | Write | Property Path |
 |---|---|---|---|
-| Blocked users | `client.queryBannedUsers({ filter_conditions: { banned_by_id: currentUserId } })` | - | Returns `{ bans: [...] }` |
-| Muted users | `client.mutedUsers` | - | Available on `client.connectUser()` response |
-| Muted channels | `client.mutedChannels` | - | Available on `client.connectUser()` response |
-| `blocked-list__item-since` | Ban/mute data | - | `ban.created_at` or `mute.created_at` |
-| `blocked-list__item-expires` | Mute/ban data | - | `mute.expires` or `ban.expires` - null if permanent |
-| Unblock | - | `client.unbanUser(userId)` | - |
-| Unmute | - | `client.unmuteUser(userId)` | - |
+| Blocked users | `client.queryBannedUsers({ filter_conditions: { banned_by_id: currentUserId } })` | — | Returns `{ bans: [...] }` |
+| Muted users | `client.mutedUsers` | — | Available on `client.connectUser()` response |
+| Muted channels | `client.mutedChannels` | — | Available on `client.connectUser()` response |
+| `blocked-list__item-since` | Ban/mute data | — | `ban.created_at` or `mute.created_at` |
+| `blocked-list__item-expires` | Mute/ban data | — | `mute.expires` or `ban.expires` — null if permanent |
+| Unblock | — | `client.unbanUser(userId)` | — |
+| Unmute | — | `client.unmuteUser(userId)` | — |
 
 ### Requirements
 

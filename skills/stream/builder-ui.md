@@ -1,11 +1,11 @@
-# Builder - UI shell and theme (Step 4)
+# Builder — UI shell and theme (Step 4)
 
 Load when executing **Step 4** (after scaffold). Rules: [`RULES.md`](RULES.md) (login screen first, theme, reference authority).
 
 ### Step 4: Generate ALL code files
-Write every file sequentially. Follow the UI Guidelines below for all visual styling. See **RULES.md › Reference authority** - reference files are the only source of truth for SDK wiring. Before writing each component, load the relevant `references/<Product>-blueprints.md` section.
+Write every file sequentially. Follow the UI Guidelines below for all visual styling. See **RULES.md › Reference authority** — reference files are the only source of truth for SDK wiring. Before writing each component, load the relevant `references/<Product>-blueprints.md` section.
 
-#### Login Screen (required for every app - RULES.md › Login Screen first)
+#### Login Screen (required for every app — RULES.md › Login Screen first)
 
 Centered card on a neutral background. No sidebar, no nav — just the login form.
 
@@ -18,7 +18,7 @@ Centered card on a neutral background. No sidebar, no nav — just the login for
 
 **Behavior:**
 - Username input is **required**
-- On submit: `GET /api/token?user_id={username}` → store credentials in **React state** (not localStorage - each tab must be independent)
+- On submit: `GET /api/token?user_id={username}` → store credentials in **React state** (not localStorage — each tab must be independent)
 - After successful token fetch, render the main app UI (state gate, not redirect)
 - App name / use-case label above the input
 
@@ -39,16 +39,16 @@ This ensures the developer always knows which user they are operating as.
 
 ### Stack
 - Next.js 16, Tailwind v4, TypeScript (match scaffold defaults).
-- **Shadcn/ui with Base UI** - scaffolded via `shadcn init -t next -b base -p <preset>` (random preset per project — see builder.md Task A). Use Shadcn components (`Button`, `Input`, `Textarea`, `Card`, etc.) for all standard UI. Add more via `npx shadcn@latest add <component>` as needed.
+- **Shadcn/ui with Base UI** — scaffolded via `shadcn init -t next -b base -p <preset>` (random preset per project — see builder.md Task A). Use Shadcn components (`Button`, `Input`, `Textarea`, `Card`, etc.) for all standard UI. Add more via `npx shadcn@latest add <component>` as needed.
 - **Icons:** Use whichever icon package the scaffold installed (check `package.json`). If none present, `lucide-react` is installed during Step 3 Task C. Standard PascalCase imports:
   `import { Heart, Send, Bookmark, MoreHorizontal } from "lucide-react"`. If the project uses a different icon package (e.g. `@phosphor-icons/react`), use that one instead — do not mix icon packages.
-- Tailwind utility classes for custom styling beyond Shadcn components - never inline styles.
-- **Theme:** RULES.md › Theme - `next-themes` with system default (class-based dark mode, scaffolded automatically).
+- Tailwind utility classes for custom styling beyond Shadcn components — never inline styles.
+- **Theme:** RULES.md › Theme — `next-themes` with system default (class-based dark mode, scaffolded automatically).
 - `-webkit-font-smoothing: antialiased` on html (set by scaffold).
 
 ### Theme
 
-Use whatever `globals.css` Shadcn generates. Do not add custom variables, custom themes, or dark mode overrides. The scaffold includes `next-themes` with `ThemeProvider` (system default, class-based toggle) - use it as-is.
+Use whatever `globals.css` Shadcn generates. Do not add custom variables, custom themes, or dark mode overrides. The scaffold includes `next-themes` with `ThemeProvider` (system default, class-based toggle) — use it as-is.
 
 ### Design
 
@@ -58,7 +58,7 @@ Use Shadcn components, Tailwind utilities, and — if the user approved them in 
 
 - **Chat:** Import `stream-chat-react/dist/css/v2/index.css`. Match theme: `useTheme()` → `str-chat__theme-dark` or `str-chat__theme-light` to `<Chat>`.
 - **Video:** Import `@stream-io/video-react-sdk/dist/css/styles.css`.
-- **Feeds:** No CSS import - headless SDK. Wrap app in `<StreamFeeds client={client}>`, then per-feed in `<StreamFeed feed={feed}>`. Use `useCreateFeedsClient()` for client creation - **gate rendering on `client !== null`** (returns `null` until connected). Call `feed.getOrCreate({ watch: true })` inside `setTimeout(50ms)` + `mounted` guard (strict mode protection) before passing to `<StreamFeed>`. See `references/FEEDS.md` for complete patterns.
+- **Feeds:** No CSS import — headless SDK. Wrap app in `<StreamFeeds client={client}>`, then per-feed in `<StreamFeed feed={feed}>`. Use `useCreateFeedsClient()` for client creation — **gate rendering on `client !== null`** (returns `null` until connected). Call `feed.getOrCreate({ watch: true })` inside `setTimeout(50ms)` + `mounted` guard (strict mode protection) before passing to `<StreamFeed>`. See `references/FEEDS.md` for complete patterns.
 
 ### Moderation
 
