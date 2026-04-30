@@ -1,21 +1,29 @@
 ---
 name: stream-android
-description: "Build and integrate Stream Chat, Video, and Feeds in Android apps. Use for Jetpack Compose, classic Views (XML), Android Studio, and Gradle project work with Stream package setup, auth wiring, and screen blueprints."
+description: "Build and integrate Stream Chat, Video, and Feeds in Android apps. Use for Jetpack Compose, classic Views (XML), Android Studio, and Gradle project work — including Stream package setup, auth and token wiring, screen blueprints, and any follow-up Stream UI work such as adding screens, navigating between channel list and channel/message screens, channel tap handling, deep links, push routing, theming, and custom channel/message UI."
 license: See LICENSE in repository root
-compatibility: Requires an Android Studio / Gradle project (Kotlin). Stream CLI is the default path for Step 0.5 (API key fetch, token mint, optional channel seeding); only optional when the user pastes the API key and token themselves.
+compatibility: Requires an Android Studio / Gradle project (Kotlin). The `stream` CLI (binary name `stream`, installed from `getstream.io/cli/install.sh`) is the default path for the credentials flow (API key fetch, token mint, optional channel seeding — see `credentials.md`); only optional when the user pastes the API key and token themselves.
 metadata:
   author: GetStream
-allowed-tools: >-
-  Read, Write, Edit, Glob, Grep,
-  Bash(ls *),
-  Bash(grep *),
-  Bash(find . *),
-  Bash(cat **/settings.gradle), Bash(cat **/settings.gradle.kts),
-  Bash(cat **/build.gradle), Bash(cat **/build.gradle.kts),
-  Bash(cat gradle/libs.versions.toml),
-  Bash(stream token *),
-  Bash(stream chat *),
-  Bash(stream config *)
+allowed-tools:
+  - Read
+  - Write
+  - Edit
+  - Glob
+  - Grep
+  - Bash(ls *)
+  - Bash(grep *)
+  - Bash(find . *)
+  - Bash(cat **/settings.gradle)
+  - Bash(cat **/settings.gradle.kts)
+  - Bash(cat **/build.gradle)
+  - Bash(cat **/build.gradle.kts)
+  - Bash(cat gradle/libs.versions.toml)
+  - Bash(command -v stream)
+  - Bash(stream token *)
+  - Bash(stream config *)
+  - Bash(stream --safe api *)
+  - Bash(stream api *)
 ---
 
 # Stream Android - skill router + execution flow
@@ -57,74 +65,15 @@ If the request is ambiguous between **build/integrate** and **reference lookup**
 
 ## Step 0.5: Credentials, token, and seed data (tracks A, B, D only)
 
-Run this once per session, right after intent classification, before the Project signals probe.
+Run **once per session** for tracks A, B, and D, right after intent classification and before the Project signals probe. Skip for Track C.
 
-### Goal
+Follow [`credentials.md`](credentials.md) to:
 
-Collect the Stream **API key**, a **user token**, and optionally seed a few channels — all before touching code — so the app has real data to show from the first run.
+- collect the Stream API key from the dashboard (or from the user)
+- generate a user token via the Stream CLI (or accept one from the user)
+- optionally seed a few channels so the app has real data on first launch
 
-### Single upfront question (ask exactly once, then act immediately)
-
-Post **one message** asking all three things together. Do not split into multiple rounds:
-
-> To wire everything up with real data, I need a few quick answers:
->
-> 1. **Credentials** — Should I fetch your API key from the dashboard and generate a token via the Stream CLI, or will you paste them yourself?
-> 2. **Token expiry** — If I'm generating the token: should it expire? (e.g. `1h`, `1d`, `30m`) or never expire?
-> 3. **Seed channels** — Should I pre-create a few channels with random usernames so the app has something to show immediately?
->
-> If you want to handle everything yourself, just paste your API key and token and tell me whether to seed channels.
-
-### After the user replies — act without further prompting
-
-Once the user answers, execute all CLI steps in sequence **without pausing for confirmation between them**. Narrate each step briefly as you go (one line per action), but do not stop to ask "shall I continue?".
-
-#### Step A — API key
-
-```bash
-stream config get-app
-```
-
-Extract the `api_key` field. Hold it in context.
-
-#### Step B — Token
-
-```bash
-# Never-expiring
-stream token <user_id>
-
-# Expiring
-stream token <user_id> --ttl <duration>
-```
-
-Hold the token in context. Use it (and the API key) in every code snippet — no placeholder strings.
-
-#### Step C — Seed channels (only if the user said yes)
-
-Create 3–5 channels with random realistic usernames. Use `messaging` as the default channel type.
-
-```bash
-# Create a channel and add members (repeat for each channel)
-# IMPORTANT: include <token_user_id> in --members for every channel you want
-# the connected user to see on first launch.
-stream chat channel create --type messaging --id <channel-id> --members <token_user_id>,<user1>,<user2>
-```
-
-Generate short memorable channel IDs (e.g. `general`, `random`, `team-alpha`) and use a small set of random usernames (e.g. `alice`, `bob`, `carol`, `dave`, `eve`). The token user **must** appear in `--members` for at least one channel — without that, the channel list will render empty on first launch even though the seed succeeded.
-
-After seeding, print a brief summary:
-
-> Created channels: `general` (<token_user_id>, alice, bob), `random` (<token_user_id>, carol, dave), `team-alpha` (alice, eve)
-
-#### Step D — Proceed automatically
-
-After all CLI steps succeed, move straight to **Project signals** and then into `builder.md` — no additional prompt needed. If any CLI step fails, explain the error briefly and ask the user to paste the missing value manually before continuing.
-
-### What NOT to do
-
-- Never put the API **secret** in app code — the CLI uses it server-side only.
-- Never invent or fabricate credentials.
-- Never ask "should I continue?" between Step A, B, C, and D — execute the whole sequence once the user's upfront answers are in.
+Use the resulting API key and token in every code snippet — never placeholder strings. If a track A/B/D task reaches code work and credentials haven't been collected yet, return to `credentials.md` before continuing.
 
 ---
 
