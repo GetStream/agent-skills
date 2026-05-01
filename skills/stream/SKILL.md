@@ -15,9 +15,13 @@ allowed-tools: >-
 
 This skill picks the track from the user's input and delegates to a specialized sub-skill. **It does no scaffolding, CLI, or docs work itself** — those live in dedicated skills.
 
-> **Read first (every session):** [`RULES.md`](RULES.md). Non-negotiable rules apply to every track.
+> **Read first:** [`RULES.md`](RULES.md). Non-negotiable rules apply.
 >
-> **Sub-skill availability:** before hand-off, if the dispatch target (`stream-cli`, `stream-docs`, `stream-builder`) is missing from the available-skills list, install only that one via `npx skills add GetStream/agent-skills --s <name> -y`, then continue. No consent prompt; same first-party pack.
+> **After picking a sub-skill (`stream-cli`, `stream-docs`, `stream-builder`):**
+> 1. If it is missing from the available-skills list, install it: `npx skills add GetStream/agent-skills --s <name> -y`. No confirmation, just run.
+> 2. Invoke it via the `Skill` tool.
+>
+> Do not stop after naming the track.
 
 ---
 
@@ -90,9 +94,7 @@ Or describe the task and the router will pick.
 
 ## Hand-off
 
-Once a track is picked (Pack integrity above already ensured the sub-skill is installed), hand off by name: *"Use the `stream-cli` skill"*, *"Use the `stream-builder` skill"*, etc. The sub-skill's `SKILL.md` runs preflight (if applicable) and continues from there. The agent loads named skills via the host runtime — no relative-path `Read` is required for the hand-off itself.
-
-Cross-cutting rules in [`RULES.md`](RULES.md) apply to every sub-skill — each one references this file at the top of its session. That includes the **Cross-track follow-ups** rule, which tells sub-skills how to offer (not auto-execute) the natural next action across track boundaries.
+See preamble: install if missing, invoke via `Skill` tool, don't stop. Cross-cutting rules in [`RULES.md`](RULES.md) apply to every sub-skill, including **Cross-track follow-ups** (offer, don't auto-execute, the natural next action across track boundaries).
 
 ---
 
