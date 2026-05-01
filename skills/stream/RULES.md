@@ -55,22 +55,27 @@ Shadcn components use `@base-ui/react`, NOT `@radix-ui`. Key differences:
 
 ## CLI safety
 
+**No guessing.** Endpoint names, `--body` shapes, and filter operators must come from authoritative sources — never from training-data recall. Any `stream api …` invocation **must** be preceded by either (a) loading the `stream-cli` skill, or (b) reading `~/.stream/cache/API.md` to confirm the endpoint exists with the exact casing. If you find yourself typing a `stream api <Endpoint>` without having looked it up this turn, stop and look it up first. This rule applies to **every** sub-skill — including `stream-builder` follow-ups and one-off "let me just check" queries. A wrong guess that happens to succeed is still a guess; the next one will fail silently with the wrong shape.
+
+**Cross-skill CLI calls.** When a sub-skill other than `stream-cli` needs to run a `stream api` query (e.g. the builder verifying activities, the docs skill confirming a setting), route through `stream-cli` for endpoint discovery + `--body` shape **before** running the command. Do not inline-guess to save a step.
+
 - **First attempt always:** `stream --safe api <endpoint> [params]`.
 - **Exit 5** (safe mode refusal) → endpoint is mutating. Notify the user, then rerun **without** `--safe`.
 - **Exit 2** (auth error) → run `stream auth login` as its **own** Bash invocation (browser PKCE — never chain with `&&` or wrap in a heredoc), then retry. If `stream auth login` hangs past ~60s, run `stream auth logout` to clear stale state, then retry `stream auth login` **once**; if it hangs again, ask the user to run `! stream auth login` themselves.
 - **Exit 4** (spec stale) → run `stream api --refresh`, then retry.
 - **Exit 3** (API error) → report the error to the user with the response message.
-- **Endpoint discovery:** Read `~/.stream/cache/API.md` first - never `--list`. Refresh if missing.
+- **Endpoint discovery:** Read `~/.stream/cache/API.md` first — never `--list`, never recall from memory. Refresh if missing. If the endpoint isn't in the cache, the call doesn't exist under that name; do not run it.
+- **`--body` shapes and filter syntax:** Load the `stream-cli` skill's `cli-cookbook.md` for any non-trivial query (filter operators like `$in`/`$exists`, pagination cursors, JSON body shapes for `Query*` endpoints). Do not improvise from API.md alone — the cache lists endpoints, not body schemas.
 
 ## Preflight & phase order
 
-Tracks **A, B, C, E** must complete [`preflight.md`](preflight.md) once per session before any further work — project signals → CLI gate → credentials + auth check. **Track D (docs search) skips preflight entirely** and never runs shell commands except an on-demand read-only probe inside `docs-search.md` Step 1a when the SDK can't be resolved from user input.
+Preflight is owned by the `stream-cli` skill — it runs project signals → CLI gate → credentials + auth check, and reports `✓ Stream CLI vN.N.N · …` when ready. The `stream-builder` skill (both scaffold and enhance flows) **hands off** to `stream-cli` for preflight rather than reading its files inline; loading the skill primes its endpoint cache + cookbook for any ad-hoc CLI query later in the build. **The `stream-docs` skill skips preflight entirely** and never runs shell commands except an on-demand read-only probe inside its Step 1a when the SDK can't be resolved from user input.
 
-If the CLI is missing, follow [`bootstrap.md`](bootstrap.md): explain, **ask the user once** for permission to install, then install. Do not skip installation and proceed to scaffold, API calls, or Steps 0–7. If the user declines, follow `bootstrap.md` read-only paths or hand documentation questions to Track D.
+If the CLI is missing, the `stream-cli` skill runs the bootstrap flow itself (explain, **ask once** for permission to install, then install). Other sub-skills must not inline-install or skip installation to proceed to scaffold, API calls, or Steps 0–7. If the user declines, `stream-cli` falls back to read-only paths or hands documentation questions to `stream-docs`.
 
-- Do not load `references/*.md` until the user names the product(s).
-- Do not load `builder-ui.md` before Step 4.
-- Shadcn/ui is always installed during Step 3 — never skip. Third-party **frontend skills** (`vercel-labs/*`, `anthropics/*`) require one explicit user confirmation per session before install — see `builder.md` Task A.2.
+- Do not load `references/*.md` (in the `stream-builder` skill) until the user names the product(s).
+- Do not load `builder-ui.md` (in the `stream-builder` skill) before Step 4.
+- Shadcn/ui is always installed during Step 3 — never skip. Third-party **frontend skills** (`vercel-labs/*`, `anthropics/*`) require one explicit user confirmation per session before install — see the `stream-builder` skill's `SKILL.md` Task A.2.
 
 ## Shell discipline
 
