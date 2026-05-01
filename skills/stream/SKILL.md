@@ -6,22 +6,16 @@ metadata:
   author: GetStream
 allowed-tools: >-
   Read, Glob, Grep,
-  Bash(npx skills add GetStream/agent-skills --s stream-cli -y),
-  Bash(npx skills add GetStream/agent-skills --s stream-docs -y),
-  Bash(npx skills add GetStream/agent-skills --s stream-builder -y)
+  Bash(npx skills add GetStream/agent-skills *)
 ---
 
 # Stream — skill router
 
 This skill picks the track from the user's input and delegates to a specialized sub-skill. **It does no scaffolding, CLI, or docs work itself** — those live in dedicated skills.
 
-> **Read first:** [`RULES.md`](RULES.md). Non-negotiable rules apply.
+> **Read first:** [`RULES.md`](RULES.md). Non-negotiable rules apply, including the **Peer skills** table (Glob path + install command + Skill-vs-Read-inline rule).
 >
-> **After picking a sub-skill (`stream-cli`, `stream-docs`, `stream-builder`):**
-> 1. If it is missing from the available-skills list, install it: `npx skills add GetStream/agent-skills --s <name> -y`. No confirmation, just run.
-> 2. Invoke it via the `Skill` tool.
->
-> Do not stop after naming the track.
+> **After picking a sub-skill (`stream-cli`, `stream-docs`, `stream-builder`):** follow the **Peer skills** procedure from RULES.md — Glob the SKILL.md path, install if empty, then Skill tool (if listed) or Read inline. Do not call `Skill` before the Glob; it surfaces a confusing "Unknown skill" error. Do not stop after naming the track.
 
 ---
 

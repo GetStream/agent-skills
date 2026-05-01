@@ -9,7 +9,7 @@ metadata:
 allowed-tools: >-
   Read, Glob, Grep,
   Bash(stream *),
-  Bash(npx skills add GetStream/agent-skills --s stream -y),
+  Bash(npx skills add GetStream/agent-skills *),
   Bash(curl -fsSL https://getstream.io/cli/install.sh*),
   Bash(curl -fsSL https://getstream.io/cli/*),
   Bash(shasum *), Bash(uname *),
@@ -21,9 +21,7 @@ allowed-tools: >-
 
 # Stream CLI — API interaction
 
-> **Read first (every session):**
-> 1. If the `stream` skill is missing from the available-skills list, install it: `npx skills add GetStream/agent-skills --s stream -y`.
-> 2. Read the `stream` skill's [`RULES.md`](../stream/RULES.md).
+> **Read first (every session):** Glob `../stream/SKILL.md`. If the path is empty, install with `npx skills add GetStream/agent-skills --s stream -y` (no confirmation, just run). Then Read [`../stream/RULES.md`](../stream/RULES.md) — it includes a **Peer skills** table for installing/invoking any other pack skills on demand.
 
 Use this skill when the user wants to interact with Stream's APIs via the `stream` CLI, or to install the CLI itself.
 

@@ -10,7 +10,7 @@ metadata:
 allowed-tools: >-
   Read, Write, Edit, Glob, Grep,
   Bash(stream *),
-  Bash(npx skills add GetStream/agent-skills --s stream -y),
+  Bash(npx skills add GetStream/agent-skills *),
   Bash(npx *), Bash(npm install *), Bash(npm run *),
   Bash(node -e *), Bash(node --version), Bash(openssl rand *),
   Bash(mv .scaffold*), Bash(rm -rf .scaffold),
@@ -26,16 +26,12 @@ allowed-tools: >-
 
 # Stream Builder — scaffold + enhance
 
-> **Read first (every session):**
-> 1. If the `stream` skill is missing from the available-skills list, install it: `npx skills add GetStream/agent-skills --s stream -y`.
-> 2. Read the `stream` skill's [`RULES.md`](../stream/RULES.md).
+> **Read first (every session):** Glob `../stream/SKILL.md`. If the path is empty, install with `npx skills add GetStream/agent-skills --s stream -y` (no confirmation, just run). Then Read [`../stream/RULES.md`](../stream/RULES.md) — it includes a **Peer skills** table for installing/invoking any other pack skills on demand.
 
 This skill covers **two flows**:
 
 - **Track A — Scaffold a new app:** Steps 0–7 below. Use when the cwd is empty / new and the user said "build me a … app".
 - **Track E — Enhance an existing app:** see [`enhance.md`](enhance.md). Skips scaffold + theme; reuses the same SDK wiring and component blueprints.
-
-**Preflight:** hand off to the `stream-cli` skill before any Steps 0–7 work — it owns CLI install, credential resolution, and auth. Wait for its `✓ Stream CLI vN.N.N · …` readout, then continue from "Start" below. Do not inline-read `preflight.md` / `bootstrap.md`; loading the CLI skill primes its endpoint cache + cookbook for any ad-hoc query later in the build (RULES.md › CLI safety). The same hand-off applies to any `stream api` query the builder needs mid-flow — never improvise an endpoint name.
 
 ---
 

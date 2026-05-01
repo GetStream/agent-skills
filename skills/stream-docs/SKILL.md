@@ -7,7 +7,7 @@ metadata:
 allowed-tools: >-
   Read, Glob, Grep,
   WebFetch(domain:getstream.io),
-  Bash(npx skills add GetStream/agent-skills --s stream -y),
+  Bash(npx skills add GetStream/agent-skills *),
   Bash(grep *), Bash(ls *), Bash(test *),
   Bash(cat package.json), Bash(cat go.mod),
   Bash(cat requirements.txt), Bash(cat pyproject.toml)
@@ -15,9 +15,7 @@ allowed-tools: >-
 
 # Stream — Docs search (live SDK documentation)
 
-> **Read first (every session):**
-> 1. If the `stream` skill is missing from the available-skills list, install it: `npx skills add GetStream/agent-skills --s stream -y`.
-> 2. Read the `stream` skill's [`RULES.md`](../stream/RULES.md).
+> **Read first (every session):** Glob `../stream/SKILL.md`. If the path is empty, install with `npx skills add GetStream/agent-skills --s stream -y` (no confirmation, just run). Then Read [`../stream/RULES.md`](../stream/RULES.md) — it includes a **Peer skills** table for installing/invoking any other pack skills on demand.
 
 Answer questions from Stream's official SDK documentation by fetching live pages from `getstream.io`. Covers Chat, Video, Activity Feeds, and Moderation across every framework and version.
 

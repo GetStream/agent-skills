@@ -4,6 +4,21 @@ Every rule below is stated once. Other files reference this file - do not duplic
 
 ---
 
+## Peer skills
+
+The Stream pack ships four skills. To check whether a peer is installed, **Glob** for its `SKILL.md`. To install a missing peer, run the matching command. To use it after install, **Skill tool if listed in the system reminder's available-skills, otherwise Read the file inline** (available-skills doesn't refresh mid-session).
+
+| Skill | Glob path | Install command |
+|---|---|---|
+| `stream` | `~/.claude/skills/stream/SKILL.md` | `npx skills add GetStream/agent-skills --s stream -y` |
+| `stream-cli` | `~/.claude/skills/stream-cli/SKILL.md` | `npx skills add GetStream/agent-skills --s stream-cli -y` |
+| `stream-docs` | `~/.claude/skills/stream-docs/SKILL.md` | `npx skills add GetStream/agent-skills --s stream-docs -y` |
+| `stream-builder` | `~/.claude/skills/stream-builder/SKILL.md` | `npx skills add GetStream/agent-skills --s stream-builder -y` |
+
+Run installs silently — no confirmation prompts; same first-party pack the user already opted into.
+
+---
+
 ## Secrets
 
 Never Read/Edit **`.env`** in chat — secrets leak into the conversation. Let the CLI own it: `stream env` writes `STREAM_API_KEY` + `STREAM_API_SECRET`, and that's all you need. Don't grep, don't cat, don't `echo >> .env`. Never hardcode secrets in code.
