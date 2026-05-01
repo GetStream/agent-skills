@@ -1,6 +1,7 @@
 ---
 name: stream-builder
 description: "Build a new app or add Stream products (Chat, Video, Feeds, Moderation) to an existing app. Scaffold Next.js + Tailwind + Shadcn + Stream SDKs end-to-end with Steps 0–7. Add Chat/Video/Feeds/Moderation to an existing project (enhance flow). Triggers on 'build me a … app', 'scaffold', 'create a new …', 'add Chat to this app', 'integrate Video', 'drop Feeds into …'. Covers livestreaming, video conferencing, team messaging, direct messaging, social feed use cases."
+user-invocable: false
 license: See LICENSE in repository root
 metadata:
   author: GetStream

@@ -1,6 +1,7 @@
 ---
 name: stream-cli
 description: "Query Stream data and run CLI operations against Chat, Video, Feeds, and Moderation: list channels, list calls, show flagged messages, find users, query any Stream resource. Run stream api / stream config / stream auth commands. Install the Stream CLI binary. Use when the user gives operational verbs ('list', 'show', 'find', 'check', 'query') with Stream nouns, or invokes the CLI literally."
+user-invocable: false
 license: See LICENSE in repository root
 metadata:
   author: GetStream
