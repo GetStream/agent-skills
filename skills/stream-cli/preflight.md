@@ -34,7 +34,7 @@ Verify the `stream` executable is installed before any further work in this sess
 bash -c 'command -v stream >/dev/null 2>&1 && stream --version || echo "NOT_FOUND"'
 ```
 
-- **`NOT_FOUND` or non-zero exit** → **stop here.** Do not proceed to credentials, builder, `stream api`, or SDK wiring. Follow [`bootstrap.md`](bootstrap.md) (explain what the CLI is, ask the user once for permission to install, then run the install). Only after the user **declines** install may you offer read-only help from [`sdk.md`](sdk.md), or hand the user back to Track D (docs).
+- **`NOT_FOUND` or non-zero exit** → **stop here.** Do not proceed to credentials, builder, `stream api`, or SDK wiring. Follow [`bootstrap.md`](bootstrap.md) (explain what the CLI is, ask the user once for permission to install, then run the install). Only after the user **declines** install may you offer read-only help from the `stream-builder` skill's [`sdk.md`](../stream-builder/sdk.md), or hand the user back to the `stream-docs` skill.
 - **`stream --version` succeeds** → continue to step 3.
 - **Sandbox blocks the probe** → say so plainly and ask the user to confirm `stream` is installed before continuing.
 
@@ -64,7 +64,7 @@ stream api OrganizationRead
 Don't pipe through `head`/`tail`/`jq` here — the pipeline exit code is the last command's, which masks the auth failure. If output volume is a concern: `stream api OrganizationRead >/dev/null 2>&1; echo "exit=$?"`.
 
 - **Exit 0** → authenticated, continue. (Bonus: the output is reusable for builder Step 2's "check existing orgs".)
-- **Exit 2 / "not authenticated"** → run `stream auth login` per [`RULES.md`](RULES.md) › CLI safety (browser PKCE, standalone invocation, hang recovery).
+- **Exit 2 / "not authenticated"** → run `stream auth login` per [`RULES.md`](../stream/RULES.md) › CLI safety (browser PKCE, standalone invocation, hang recovery).
 
 ---
 

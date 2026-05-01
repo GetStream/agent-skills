@@ -1,10 +1,10 @@
-# Track E — Enhance an existing app
+# Enhance an existing app (Track E)
 
-For adding Stream products to an **existing Next.js project**. Reuses the references files and SDK patterns from Track A but skips the scaffold entirely.
+For adding Stream products to an **existing Next.js project**. Reuses the references files and SDK patterns from the scaffold flow but skips the scaffold entirely.
 
-**Rules:** [`RULES.md`](RULES.md) (secrets, no auto-seeding, login screen first, package manager).
-**Preflight:** complete [`preflight.md`](preflight.md) — CLI must be installed, credentials resolved — before npm installs, `stream api` setup, or token routes that depend on CLI-backed config.
-**SDK wiring (shared with builder):** [`sdk.md`](sdk.md) and the relevant `references/<Product>.md` — Track E uses the same wiring patterns as Track A; only the surrounding scaffold differs.
+**Rules:** the `stream` skill's [`RULES.md`](../stream/RULES.md) (secrets, no auto-seeding, login screen first, package manager).
+**Preflight:** hand off to the `stream-cli` skill before any npm installs, `stream api` setup, or token routes — it owns install, credentials, and auth. Wait for its `✓` readout, then continue here. Do not inline-read its files; the hand-off primes its endpoint cache + cookbook for any ad-hoc query you need later (RULES.md › CLI safety).
+**SDK wiring (shared with the scaffold flow):** [`sdk.md`](sdk.md) and the relevant [`references/<Product>.md`](references/) — enhance uses the same wiring patterns as scaffold; only the surrounding setup differs.
 
 ---
 
@@ -14,13 +14,13 @@ Before writing any code, understand what's already in place:
 
 1. **Packages:** check `package.json` for `stream-chat`, `stream-chat-react`, `@stream-io/video-react-sdk`, `@stream-io/node-sdk`.
 2. **Auth:** does the app already have a `/api/token` route? If so, **extend** it with the new product's token — don't create a second token route.
-3. **Credentials:** check for `.env` with `STREAM_API_KEY` / `STREAM_API_SECRET`. If missing, run credential resolution from [`cli.md`](cli.md).
+3. **Credentials:** check for `.env` with `STREAM_API_KEY` / `STREAM_API_SECRET`. If missing, hand off to the `stream-cli` skill to resolve them (it runs `stream env` against the active app), then resume here.
 4. **UI framework:** confirm Tailwind, Shadcn, or whatever the project uses. Do **not** install Shadcn or change the styling setup unless the user asks.
 5. **Directory structure:** note whether the project uses `app/` or `src/app/` — match the existing convention.
 
 ## E2: Install + configure
 
-1. **Install** only the new SDKs: `npm install <new-packages> --legacy-peer-deps` ([`RULES.md`](RULES.md) › Package manager).
+1. **Install** only the new SDKs: `npm install <new-packages> --legacy-peer-deps` (the `stream` skill's [`RULES.md`](../stream/RULES.md) › Package manager).
 2. **Configure via CLI:** run setup commands from the relevant `references/<Product>.md` (App Integration → Setup). Feeds needs feed groups created; Moderation needs blocklist + config.
 3. **Import CSS** if the product needs it (Chat: `stream-chat-react/dist/css/v2/index.css`, Video: `@stream-io/video-react-sdk/dist/css/styles.css`).
 

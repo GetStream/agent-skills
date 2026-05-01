@@ -1,7 +1,38 @@
-# Builder — scaffold execution (Track A)
+---
+name: stream-builder
+description: "Build a new app or add Stream products (Chat, Video, Feeds, Moderation) to an existing app. Scaffold Next.js + Tailwind + Shadcn + Stream SDKs end-to-end with Steps 0–7. Add Chat/Video/Feeds/Moderation to an existing project (enhance flow). Triggers on 'build me a … app', 'scaffold', 'create a new …', 'add Chat to this app', 'integrate Video', 'drop Feeds into …'. Covers livestreaming, video conferencing, team messaging, direct messaging, social feed use cases."
+license: See LICENSE in repository root
+metadata:
+  author: GetStream
+  requires:
+    bins: ["stream", "node", "npm"]
+    skills: ["stream-cli"]
+allowed-tools: >-
+  Read, Write, Edit, Glob, Grep,
+  Bash(stream *),
+  Bash(npx *), Bash(npm install *), Bash(npm run *),
+  Bash(node -e *), Bash(node --version), Bash(openssl rand *),
+  Bash(mv .scaffold*), Bash(rm -rf .scaffold),
+  Bash(ls *), Bash(test *),
+  Bash(grep *),
+  Bash(cat package.json), Bash(cat pubspec.yaml),
+  Bash(cat go.mod), Bash(cat requirements.txt), Bash(cat pyproject.toml),
+  Bash(echo .env*),
+  WebFetch(domain:getstream.io),
+  WebFetch(domain:www.npmjs.com),
+  WebFetch(domain:github.com)
+---
 
-Rules: [`RULES.md`](RULES.md) (secrets, no auto-seeding, login screen first, package manager, shell discipline).
-Preflight: [`preflight.md`](preflight.md) must pass before this file runs — CLI installed, credentials resolved, auth live.
+# Stream Builder — scaffold + enhance
+
+> **Read first (every session):** the `stream` skill's [`RULES.md`](../stream/RULES.md) — non-negotiable rules apply, especially **Secrets**, **No auto-seeding**, **Login Screen first**, **Strict mode protection**, **Package manager**, **Theme**, **Reference authority**, **Base UI**, and **Moderation is Dashboard-only**.
+
+This skill covers **two flows**:
+
+- **Track A — Scaffold a new app:** Steps 0–7 below. Use when the cwd is empty / new and the user said "build me a … app".
+- **Track E — Enhance an existing app:** see [`enhance.md`](enhance.md). Skips scaffold + theme; reuses the same SDK wiring and component blueprints.
+
+**Preflight:** hand off to the `stream-cli` skill before any Steps 0–7 work — it owns CLI install, credential resolution, and auth. Wait for its `✓ Stream CLI vN.N.N · …` readout, then continue from "Start" below. Do not inline-read `preflight.md` / `bootstrap.md`; loading the CLI skill primes its endpoint cache + cookbook for any ad-hoc query later in the build (RULES.md › CLI safety). The same hand-off applies to any `stream api` query the builder needs mid-flow — never improvise an endpoint name.
 
 ---
 
@@ -28,7 +59,7 @@ Shadcn/ui is always installed during Step 3. Third-party **frontend skills** (`v
 
 ## Install trust & integrity
 
-The builder runs three classes of network-touching commands. Each is listed here so a reviewer can audit before approving. The full CLI installer audit (SHA-256 verification, TTY confirmation, scoped platform) lives in [`bootstrap.md`](bootstrap.md#what-the-installer-does).
+The builder runs three classes of network-touching commands. Each is listed here so a reviewer can audit before approving. The full CLI installer audit (SHA-256 verification, TTY confirmation, scoped platform) lives in the `stream-cli` skill's [`bootstrap.md`](../stream-cli/bootstrap.md#what-the-installer-does).
 
 | Command | Publisher | Why unpinned | What it writes |
 |---|---|---|---|
@@ -36,7 +67,7 @@ The builder runs three classes of network-touching commands. Each is listed here
 | `npx shadcn@latest add …` (Task A.1) | Vercel — same source as above | Same scaffolder; component sync depends on registry parity. | Component files under `components/ui/`. |
 | `npm install <stream-packages> --legacy-peer-deps` (Task C) | GetStream (npm) for `@stream-io/*` and `stream-chat-react`; transitive deps via standard npm trust | Latest published versions of GetStream's own SDKs — same trust model as the CLI itself. | Modules under `node_modules/`. Runtime SDKs + transitive deps. |
 | `npx skills add <github>` (Task A.2) | `vercel-labs/agent-skills` and `anthropics/skills` | Optional. Markdown-only skill packs; `npx skills add` is the published install path. | Markdown files in the user's skills directory. **Gated by explicit user consent in Task A.2** — never runs without an affirmative answer. |
-| `stream env` (Task B) | GetStream — installed via [`bootstrap.md`](bootstrap.md) (SHA-256 verified) | n/a (local CLI, no network at this step) | `.env` in the project root with `STREAM_API_KEY` + `STREAM_API_SECRET`. Task B verifies `.gitignore` covers `.env*` before writing (Next.js scaffold's default already does). The agent never reads `.env` (RULES.md › Secrets). |
+| `stream env` (Task B) | GetStream — installed via the `stream-cli` skill's [`bootstrap.md`](../stream-cli/bootstrap.md) (SHA-256 verified) | n/a (local CLI, no network at this step) | `.env` in the project root with `STREAM_API_KEY` + `STREAM_API_SECRET`. Task B verifies `.gitignore` covers `.env*` before writing (Next.js scaffold's default already does). The agent never reads `.env` (RULES.md › Secrets). |
 
 **Reviewer checklist:**
 
@@ -49,7 +80,7 @@ The builder runs three classes of network-touching commands. Each is listed here
 
 ## Builder Steps
 
-Execute phases **in order** (later steps depend on earlier ones). Do **not** run independent phases in parallel. Shell discipline (one `bash -c` per phase, no `bash -ce`, `stream auth login` standalone) lives in [`RULES.md`](RULES.md) › Shell discipline.
+Execute phases **in order** (later steps depend on earlier ones). Do **not** run independent phases in parallel. Shell discipline (one `bash -c` per phase, no `bash -ce`, `stream auth login` standalone) lives in the `stream` skill's [`RULES.md`](../stream/RULES.md) › Shell discipline.
 
 **Two-call exception:** If you must Read JSON (e.g. `OrganizationRead`) and then choose IDs, use one call for the read, one batched call for all creates + `stream config set`.
 
@@ -153,7 +184,7 @@ Do **not** modify `layout.tsx` or `globals.css` after scaffold — use Shadcn's 
 
 **Task B: .env** — run AFTER scaffold so the `.env` lands inside the project directory.
 
-**First, verify `.env*` is gitignored** ([`RULES.md`](RULES.md) › Secrets). The Next.js scaffold's default already includes it; this is a safety net for projects whose `.gitignore` was hand-edited or doesn't yet exist:
+**First, verify `.env*` is gitignored** (the `stream` skill's [`RULES.md`](../stream/RULES.md) › Secrets). The Next.js scaffold's default already includes it; this is a safety net for projects whose `.gitignore` was hand-edited or doesn't yet exist:
 
 ```bash
 bash -c 'test -f .gitignore && grep -qE "^\.env" .gitignore || echo ".env*" >> .gitignore'
@@ -319,4 +350,4 @@ If not authenticated:
 
 ## Reference file paths
 
-Blueprint files live under `agent-skills/skills/stream/references/` inside the Stream skill. Reference them as `agent-skills/skills/stream/references/FEEDS.md` from the **root of this repository**. Do not use machine-specific absolute paths.
+Blueprint files live under `agent-skills/skills/stream-builder/references/` inside the Stream skill pack. Reference them as `agent-skills/skills/stream-builder/references/FEEDS.md` from the **root of this repository**. Do not use machine-specific absolute paths.

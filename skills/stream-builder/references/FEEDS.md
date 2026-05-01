@@ -2,7 +2,7 @@
 
 Stream Feeds v3 is a **headless** SDK — hooks, providers, and state management with **zero pre-built UI components**. All UI is built with your own components (Tailwind/Shadcn). For full component structure and wiring, see [FEEDS-blueprints.md](FEEDS-blueprints.md).
 
-Rules: [../RULES.md](../RULES.md) (secrets, no auto-seeding, login screen first, strict mode protection).
+Rules: [../../stream/RULES.md](../../stream/RULES.md) (secrets, no auto-seeding, login screen first, strict mode protection).
 
 - **Blueprint** — HTML with BEM classes defining structure and conditional rendering
 - **Wiring** — API calls to read/write each element, exact property paths

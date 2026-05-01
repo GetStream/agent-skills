@@ -20,7 +20,7 @@ Never auto-create demo users (alex, maya, jake, sarah) or sample posts/channels/
 
 ## Login Screen first
 
-Every app opens with a **Login Screen** as its root page (`app/page.tsx`). The app never auto-connects or hardcodes a user. Credentials (token, apiKey, userId) live in **React state** - not localStorage - so each browser tab can operate as an independent user. Layout and behavior details: [`builder-ui.md`](builder-ui.md) > Login Screen.
+Every app opens with a **Login Screen** as its root page (`app/page.tsx`). The app never auto-connects or hardcodes a user. Credentials (token, apiKey, userId) live in **React state** - not localStorage - so each browser tab can operate as an independent user. Layout and behavior details: the `stream-builder` skill's [`builder-ui.md`](../stream-builder/builder-ui.md) > Login Screen.
 
 ## Strict mode protection
 
@@ -80,14 +80,14 @@ If the CLI is missing, follow [`bootstrap.md`](bootstrap.md): explain, **ask the
 
 ## Cross-track follow-ups
 
-The tracks share a single skill so a result from one can naturally enable an action in another. Surface a follow-up offer when it genuinely helps the user — not as boilerplate on every turn.
+A result from one sub-skill can naturally enable an action in another. Surface a follow-up offer when it genuinely helps the user — not as boilerplate on every turn.
 
-- **D → B:** a docs answer that names a runnable operation can offer "want me to run that now via CLI?" (only if read-safe or clearly operational intent).
-- **B → D:** a CLI result that has a relevant docs page can offer "want the page that explains this?" (link only — don't fetch unprompted).
-- **A/E → D:** after scaffold or integration completes, mention that the SDK + version is preloaded and ask-anything is available.
-- **D → A/E:** a docs answer that describes a setup-heavy flow can mention scaffold / integrate is available — without running it.
+- **`stream-docs` → `stream-cli`:** a docs answer that names a runnable operation can offer "want me to run that now via CLI?" (only if read-safe or clearly operational intent).
+- **`stream-cli` → `stream-docs`:** a CLI result that has a relevant docs page can offer "want the page that explains this?" (link only — don't fetch unprompted).
+- **`stream-builder` → `stream-docs`:** after scaffold or integration completes, mention that the SDK + version is preloaded and ask-anything is available.
+- **`stream-docs` → `stream-builder`:** a docs answer that describes a setup-heavy flow can mention scaffold / integrate is available — without running it.
 
-**Do not auto-execute a cross-track action.** Offer, then wait for the user to confirm. The track switch happens through the user's reply, which re-enters the router.
+**Do not auto-execute a cross-skill action.** Offer, then wait for the user to confirm. The skill switch happens through the user's reply, which re-enters the `stream` router or jumps straight to the named sub-skill.
 
 ## Theme
 

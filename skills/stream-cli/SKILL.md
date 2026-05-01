@@ -1,8 +1,32 @@
+---
+name: stream-cli
+description: "Query Stream data and run CLI operations against Chat, Video, Feeds, and Moderation: list channels, list calls, show flagged messages, find users, query any Stream resource. Run stream api / stream config / stream auth commands. Install the Stream CLI binary. Use when the user gives operational verbs ('list', 'show', 'find', 'check', 'query') with Stream nouns, or invokes the CLI literally."
+license: See LICENSE in repository root
+metadata:
+  author: GetStream
+  requires:
+    bins: ["stream"]
+allowed-tools: >-
+  Read, Glob, Grep,
+  Bash(stream *),
+  Bash(curl -fsSL https://getstream.io/cli/install.sh*),
+  Bash(curl -fsSL https://getstream.io/cli/*),
+  Bash(shasum *), Bash(uname *),
+  Bash(command -v *), Bash(less *), Bash(bash /tmp/stream-install.sh*),
+  Bash(grep *), Bash(ls *), Bash(test *),
+  Bash(cat package.json), Bash(cat go.mod),
+  Bash(python3 -c *), Bash(pbpaste)
+---
+
 # Stream CLI — API interaction
 
-Rules: [`RULES.md`](RULES.md) (CLI safety). Use this when the user wants to interact with Stream's APIs via the `stream` CLI.
+> **Read first (every session):** the `stream` skill's [`RULES.md`](../stream/RULES.md) — non-negotiable rules apply, especially **CLI safety**, **Secrets**, and **Shell discipline**.
+
+Use this skill when the user wants to interact with Stream's APIs via the `stream` CLI, or to install the CLI itself.
 
 **Prerequisite:** complete [`preflight.md`](preflight.md) — verify the `stream` binary is installed (install via [`bootstrap.md`](bootstrap.md) if not) before any `stream api` usage.
+
+**Install only (Track C):** if the user asked to install the CLI / set up Stream with no project context, jump straight to [`bootstrap.md`](bootstrap.md). The bootstrap module is self-contained.
 
 **Heavy examples / query cookbooks:** load **[`cli-cookbook.md`](cli-cookbook.md)** only when you need a non-obvious `--body` or filter.
 

@@ -1,6 +1,6 @@
 # Chat — full component blueprints
 
-Setup, routes, and gotchas: [CHAT.md](CHAT.md). Rules: [../RULES.md](../RULES.md).
+Setup, routes, and gotchas: [CHAT.md](CHAT.md). Rules: [../../stream/RULES.md](../../stream/RULES.md).
 
 ---
 

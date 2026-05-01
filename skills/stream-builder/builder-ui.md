@@ -1,6 +1,6 @@
 # Builder — UI shell and theme (Step 4)
 
-Load when executing **Step 4** (after scaffold). Rules: [`RULES.md`](RULES.md) (login screen first, theme, reference authority).
+Load when executing **Step 4** (after scaffold). Rules: the `stream` skill's [`RULES.md`](../stream/RULES.md) (login screen first, theme, reference authority).
 
 ### Step 4: Generate ALL code files
 Write every file sequentially. Follow the UI Guidelines below for all visual styling. See **RULES.md › Reference authority** — reference files are the only source of truth for SDK wiring. Before writing each component, load the relevant `references/<Product>-blueprints.md` section.

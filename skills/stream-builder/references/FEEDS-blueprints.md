@@ -1,6 +1,6 @@
 # Feeds v3 — Full Component Blueprints
 
-Setup, routes, and gotchas: [FEEDS.md](FEEDS.md). Rules: [../RULES.md](../RULES.md).
+Setup, routes, and gotchas: [FEEDS.md](FEEDS.md). Rules: [../../stream/RULES.md](../../stream/RULES.md).
 
 The Feeds SDK is **headless** — all components below are built entirely with your own UI (Shadcn/Tailwind). The SDK provides hooks and state management only.
 

@@ -1,7 +1,7 @@
 # SDK reference — cross-cutting patterns
 
-Rules: [`RULES.md`](RULES.md) (secrets, strict mode protection, package manager). **CLI:** complete [`preflight.md`](preflight.md) before any workflow that needs the `stream` CLI.
-Product-specific SDK wiring, gotchas, and client patterns: see `references/*.md` App Integration sections.
+Rules: the `stream` skill's [`RULES.md`](../stream/RULES.md) (secrets, strict mode protection, package manager). **CLI:** complete the `stream-cli` skill's [`preflight.md`](../stream-cli/preflight.md) before any workflow that needs the `stream` CLI.
+Product-specific SDK wiring, gotchas, and client patterns: see [`references/*.md`](references/) App Integration sections.
 
 ---
 

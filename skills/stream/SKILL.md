@@ -1,30 +1,45 @@
 ---
 name: stream
-description: "The fastest way to build with Stream: Chat, Video, Feeds, and Moderation."
+description: "Stream router for Chat, Video, Feeds, and Moderation. Use when the user wants to build a new app with Stream, scaffold a project, add Chat/Video/Feeds/Moderation to an existing app, integrate Stream, query Stream data, list channels, list calls, show flagged messages, find users, run stream api / stream config / stream auth commands, install the Stream CLI, set up Stream, search Stream SDK documentation, look up Stream React/iOS/Android/Node/Flutter/Unity SDK methods, ask how-to questions about Stream hooks/components/methods, configure moderation blocklists or automod, set up webhooks, or anything tagged Chat React, Video iOS, Feeds Node, Moderation, etc. Routes to the right sub-skill based on the task."
 license: See LICENSE in repository root
-compatibility: Requires Node.js, npm, and the stream CLI binary (see bootstrap.md). Docs-search mode requires only WebFetch — no CLI binary needed.
 metadata:
   author: GetStream
-allowed-tools: >-
-  Read, Write, Edit, Glob, Grep,
-  Bash(stream *),
-  Bash(npx *), Bash(npm install *),
-  Bash(node -e *), Bash(openssl rand *),
-  Bash(mv .scaffold*), Bash(rm -rf .scaffold),
-  Bash(ls *),
-  Bash(grep *),
-  Bash(cat package.json), Bash(cat pubspec.yaml),
-  Bash(cat go.mod), Bash(cat requirements.txt), Bash(cat pyproject.toml),
-  WebFetch(domain:getstream.io)
+allowed-tools: Read, Glob, Grep
 ---
 
 # Stream — skill router
 
-This file does one job: pick the track from the user's input. Everything else lives in dedicated files.
+This skill picks the track from the user's input and delegates to a specialized sub-skill. **It does no scaffolding, CLI, or docs work itself** — those live in dedicated skills.
 
-- **Rules:** read [`RULES.md`](RULES.md) once per session — every non-negotiable rule is stated there.
-- **Preflight (tracks A, B, C, E only):** [`preflight.md`](preflight.md) — project signals, CLI gate, credentials + auth check, status line.
-- **Install:** skill pack via `npx skills add GetStream/agent-skills` ([skills.sh](https://skills.sh/docs/cli)); CLI binary via [`bootstrap.md`](bootstrap.md). A git-clone alternative is in the [README](../../README.md#install--direct-from-github-no-third-party-cli).
+- **Rules (every session):** read [`RULES.md`](RULES.md) — the non-negotiable rules apply to every track.
+- **Install:** the full skill pack via `npx skills add GetStream/agent-skills` ([skills.sh](https://skills.sh/docs/cli)). A git-clone alternative is in the [README](../../README.md#install--direct-from-github-no-third-party-cli). Sub-skills can also be installed individually via the Claude Code plugin marketplace — see the README.
+
+---
+
+## By task
+
+**Build a new app with Stream** → use the `stream-builder` skill
+- Empty/new directory + "build me a Chat/Video/Feeds app", "scaffold", "create a new …"
+- Covers Steps 0–7 (scaffold, theme, auth, env, SDK install, component generation)
+
+**Add Stream to an existing app** → use the `stream-builder` skill
+- Existing project + "add Chat to this app", "integrate Video", "drop Feeds into …"
+- Same SDK wiring as scaffold; skips Next.js init and theme pick
+
+**Query Stream data via the CLI** → use the `stream-cli` skill
+- "list calls", "show channels", "any flagged", "find users"
+- Literal CLI: `stream api …`, `stream config …`, `stream auth …`
+- Tricky bodies and filter syntax live in the sub-skill's cookbook
+- **Required for every `stream api` call** — including ad-hoc "let me check" queries from inside other sub-skills. No guessing endpoint names from training data; route through `stream-cli` (or read `~/.stream/cache/API.md`) first. See [`RULES.md`](RULES.md) › CLI safety.
+
+**Install the Stream CLI** → use the `stream-cli` skill
+- "install the CLI", "set up stream" with no project context
+- Bootstrap (binary install, SHA-256 verification, TTY confirmation) ships with the CLI sub-skill
+
+**Search Stream SDK documentation** → use the `stream-docs` skill
+- "docs", "documentation", explicit SDK token (`Chat React`, `Video iOS`, `Feeds Node`, `Moderation`)
+- "how do I … in <framework>", "how does <hook/component/method> work?", "what does <SDK thing> do?"
+- No CLI needed — answers come from getstream.io with citations
 
 ---
 
@@ -32,19 +47,19 @@ This file does one job: pick the track from the user's input. Everything else li
 
 Scan the user's input for the signals below in order. The classifier is deterministic — no probes, no fetches, no CLI checks at this stage.
 
-| Signal in user input | Track |
+| Signal in user input | Sub-skill |
 |---|---|
-| Explicit SDK/framework token: `Chat React`, `Video iOS`, `Feeds Node`, `Moderation`, etc. (with or without version) | **D — Docs** |
-| Words "docs" or "documentation" | **D** |
-| "How do I {X} in {framework}?", "How does {hook/component/method} work?", "What does {SDK thing} do?" | **D** |
-| Operational verbs + Stream noun: "list calls", "show channels", "any flagged", "find users", "check {anything}" | **B — CLI** |
-| `stream api`, `stream config`, `stream auth` (literal CLI invocation) | **B** |
-| "Build me a … app", "scaffold", "create a new …" + Stream product, in an empty/new directory | **A — Builder** |
-| "Add Chat/Video/Feeds to this app", "integrate Stream into" — existing project | **E — Enhance** |
-| "Install the CLI", "set up stream" with no project context | **C — Bootstrap** |
+| Explicit SDK/framework token: `Chat React`, `Video iOS`, `Feeds Node`, `Moderation`, etc. (with or without version) | `stream-docs` |
+| Words "docs" or "documentation" | `stream-docs` |
+| "How do I {X} in {framework}?", "How does {hook/component/method} work?", "What does {SDK thing} do?" | `stream-docs` |
+| Operational verbs + Stream noun: "list calls", "show channels", "any flagged", "find users", "check {anything}" | `stream-cli` |
+| `stream api`, `stream config`, `stream auth` (literal CLI invocation) | `stream-cli` |
+| "Install the CLI", "set up stream" with no project context | `stream-cli` |
+| "Build me a … app", "scaffold", "create a new …" + Stream product, in an empty/new directory | `stream-builder` |
+| "Add Chat/Video/Feeds to this app", "integrate Stream into" — existing project | `stream-builder` |
 | Operational verb wrapped in how-to phrasing (e.g. "how do I list my calls?" — docs *or* CLI) | **Ask one disambiguator** |
 
-**Track D carve-out.** Track D answers from documentation only — no preflight, no shell commands, no project inspection. A small read-only probe runs on demand inside `docs-search.md` Step 1a only when the SDK can't be resolved from explicit input.
+**Track D carve-out.** `stream-docs` answers from documentation only — no preflight, no shell commands, no project inspection. Every other sub-skill runs preflight before doing real work.
 
 **Disambiguator.** If the input fits more than one row (typically operational verb + how-to phrasing), ask one short question and wait. Don't probe before the answer:
 
@@ -52,34 +67,27 @@ Scan the user's input for the signals below in order. The classifier is determin
 
 After the answer, route as if the user had given that signal directly.
 
-**Bare `/stream` with no args.** List the tracks below briefly and wait for input. No shell execution.
+**Bare `/stream` with no args.** List the four sub-skills under "Quick navigation" briefly and wait for input. No shell execution.
 
 ---
 
-## Tracks
+## Quick navigation
 
-| When | Track | Module |
-|---|---|---|
-| empty dir, "build me a … app" | A — Build new app | [`builder.md`](builder.md) + [`builder-ui.md`](builder-ui.md) |
-| "list calls", `stream api …` | B — CLI / data query | [`cli.md`](cli.md); tricky bodies → [`cli-cookbook.md`](cli-cookbook.md) |
-| install the CLI / skill pack | C — Bootstrap | [`bootstrap.md`](bootstrap.md) |
-| explicit SDK token, "how do I … in <framework>" | D — Docs search | [`docs-search.md`](docs-search.md) |
-| "add Chat to this app", existing project | E — Enhance existing app | [`enhance.md`](enhance.md) (uses [`sdk.md`](sdk.md) + [`references/`](references/)) |
+If the user already knows what they want, skip the router and invoke a sub-skill directly:
 
-SDK wiring shared by tracks A and E lives in [`sdk.md`](sdk.md).
+- `/stream-builder` — scaffold a new app, or add Chat/Video/Feeds/Moderation to an existing one
+- `/stream-cli` — query Stream data via CLI, install the CLI, run `stream api / config / auth`
+- `/stream-docs` — search live Stream SDK documentation (no CLI needed)
+
+Or describe the task and the router will pick.
 
 ---
 
-## Reference blueprints
+## Hand-off
 
-Loaded only after the user names the product (tracks A and E):
+Once a track is picked, hand off by name: *"Use the `stream-cli` skill"*, *"Use the `stream-builder` skill"*, etc. The sub-skill's `SKILL.md` runs preflight (if applicable) and continues from there. The agent loads named skills via the host runtime — no relative-path `Read` is required for the hand-off itself.
 
-| Product | Header (setup + gotchas) | Full blueprints (load per component) |
-|---------|--------------------------|--------------------------------------|
-| Chat | [`references/CHAT.md`](references/CHAT.md) | [`references/CHAT-blueprints.md`](references/CHAT-blueprints.md) |
-| Feeds | [`references/FEEDS.md`](references/FEEDS.md) | [`references/FEEDS-blueprints.md`](references/FEEDS-blueprints.md) |
-| Video | [`references/VIDEO.md`](references/VIDEO.md) | [`references/VIDEO-blueprints.md`](references/VIDEO-blueprints.md) |
-| Moderation | [`references/MODERATION.md`](references/MODERATION.md) | [`references/MODERATION-blueprints.md`](references/MODERATION-blueprints.md) |
+Cross-cutting rules in [`RULES.md`](RULES.md) apply to every sub-skill — each one references this file at the top of its session. That includes the **Cross-track follow-ups** rule, which tells sub-skills how to offer (not auto-execute) the natural next action across track boundaries.
 
 ---
 

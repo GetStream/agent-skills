@@ -1,10 +1,26 @@
-# Track D — Docs search (live SDK documentation)
+---
+name: stream-docs
+description: "Search live Stream SDK documentation for Chat, Video, Feeds, and Moderation. Look up how a Stream React/iOS/Android/Node/Flutter/Unity/Angular hook, component, or method works. Answer how-to questions about any Stream SDK across every framework and version. Triggers on 'docs', 'documentation', explicit SDK tokens (Chat React, Video iOS, Feeds Node, Moderation), and 'how do I … in <framework>' phrasing. Answers come verbatim from getstream.io with citations — no CLI required."
+license: See LICENSE in repository root
+metadata:
+  author: GetStream
+allowed-tools: >-
+  Read, Glob, Grep,
+  WebFetch(domain:getstream.io),
+  Bash(grep *), Bash(ls *), Bash(test *),
+  Bash(cat package.json), Bash(cat go.mod),
+  Bash(cat requirements.txt), Bash(cat pyproject.toml)
+---
 
-Loaded by **[`SKILL.md`](SKILL.md)** when the intent classifier routes to Track D. Answers questions from Stream's official SDK documentation by fetching live pages from `getstream.io`. Covers Chat, Video, Activity Feeds, and Moderation across every framework and version.
+# Stream — Docs search (live SDK documentation)
+
+> **Read first (every session):** the `stream` skill's [`RULES.md`](../stream/RULES.md) — the **Reference authority**, **Secrets**, and **Cross-track follow-ups** sections apply.
+
+Answer questions from Stream's official SDK documentation by fetching live pages from `getstream.io`. Covers Chat, Video, Activity Feeds, and Moderation across every framework and version.
 
 **Docs index:** `https://getstream.io/cli/llms.txt`
 
-> **No CLI gate, no up-front shell.** Track D never invokes Write, Edit, npm, scaffold tools, or `Bash(stream *)`. Pure docs questions with an explicit SDK reach `WebFetch` without running *any* shell command. A small read-only probe runs **only on demand** — inside Step 1a below — when the SDK can't be resolved from the user's input. If the user's question requires running the CLI or building code, hand back to **[`SKILL.md`](SKILL.md)** for re-routing to Track A/B/E.
+> **No CLI gate, no up-front shell.** This skill never invokes Write, Edit, npm, scaffold tools, or `Bash(stream *)`. Pure docs questions with an explicit SDK reach `WebFetch` without running *any* shell command. A small read-only probe runs **only on demand** — inside Step 1a below — when the SDK can't be resolved from the user's input. If the user's question requires running the CLI or building code, offer to switch — the user re-enters via the `stream` router, the `stream-cli` skill, or the `stream-builder` skill.
 
 ---
 
@@ -101,12 +117,12 @@ These rules are non-negotiable. Read them before every response.
 
 ## Invocation
 
-Track D is reached through `/stream`. The same input shapes work:
+This skill is reached through `/stream` (router routes here based on signals) or directly via `/stream-docs`. The same input shapes work either way:
 
 ```
 /stream <Product> <Framework> [Version]    Load a specific SDK
 /stream <question about the SDK>           Answer from the docs
-/stream                                    Triggers SKILL.md routing
+/stream-docs <Product> <Framework>          Direct invocation (skips router)
 ```
 
 Examples that route here:
@@ -116,6 +132,7 @@ Examples that route here:
 /stream Video iOS
 /stream Moderation
 /stream how do I add reactions to messages?
+/stream-docs Feeds Node
 ```
 
 ### Shortcut: SDK named with no question
@@ -124,7 +141,7 @@ If the user invokes `/stream Chat React v14` (or any product/framework/version) 
 
 ### Shortcut: bare `/stream` with no args
 
-That's handled by **[`SKILL.md`](SKILL.md)** (it shows the available tracks). Don't intercept it here.
+That's handled by the `stream` router (it lists the sub-skills). Don't intercept it here.
 
 ---
 
@@ -147,7 +164,7 @@ Stop at the first step that gives a confident answer:
 
 ### Step 1a — Project detection
 
-**Check project signals first.** [`preflight.md`](preflight.md) › Project signals runs once per session for tracks A, B, C, E and populates `PKG` (Stream npm packages with versions) and `NATIVE` (non-npm project files). If those signals are already in conversation context, use them directly — no extra probe.
+**Check project signals first.** The `stream-cli` skill's [`preflight.md`](../stream-cli/preflight.md) › Project signals runs once per session for the CLI and builder skills, populating `PKG` (Stream npm packages with versions) and `NATIVE` (non-npm project files). If those signals are already in conversation context, use them directly — no extra probe.
 
 Only run a fresh probe if:
 - project signals hasn't run yet in this conversation (rare — usually means you're answering before the router classified)
@@ -389,9 +406,9 @@ You can browse the full index at https://getstream.io/cli/docs/{slug}.md or try:
 
 ---
 
-## Cross-references to other tracks
+## Cross-references to other skills
 
-Full guidance lives in [`RULES.md`](RULES.md) › Cross-track follow-ups. Track D's specific guarantee: **never execute a cross-track action from inside Track D** — only offer. The user re-routes by asking, which re-enters the router. This keeps Track D's no-side-effects promise intact even when a docs answer naturally enables a CLI run, scaffold, or integration.
+Full guidance lives in the `stream` skill's [`RULES.md`](../stream/RULES.md) › Cross-track follow-ups. This skill's specific guarantee: **never execute a cross-skill action from inside docs search** — only offer. The user re-routes by asking, which re-enters the router (or jumps to the named sub-skill). This keeps the no-side-effects promise intact even when a docs answer naturally enables a CLI run, scaffold, or integration.
 
 ---
 
@@ -432,7 +449,7 @@ Don't invent cross-references. Say: "That specific topic isn't in the {SDK} inde
 
 **User:** `/stream how do I add reactions?` (in a React project with `stream-chat-react@^13.2.0`)
 
-**Step 0 (in SKILL.md):** intent classifier — "how do I" + no operational verb + project context likely → Track D, no CLI gate.
+**Step 0 (in the `stream` router):** intent classifier — "how do I" + no operational verb + project context likely → docs search, no CLI gate.
 
 **Step 1 — Identify the SDK:**
 - No explicit SDK → Case B.
