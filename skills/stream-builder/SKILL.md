@@ -220,7 +220,7 @@ If `NO_ICONS`, install `lucide-react`: `npm install lucide-react --legacy-peer-d
 
 ### Step 4: Generate code and UI
 
-**Load [`builder-ui.md`](builder-ui.md)** and **only** the relevant `references/<Product>.md` header + `references/<Product>-blueprints.md` for the sections you are implementing — not every reference file.
+**Load [`builder-ui.md`](builder-ui.md)** and **only** the relevant [`references/<Product>.md`](references/) header + `references/<Product>-blueprints.md` for the sections you are implementing — not every reference file. **For multi-product apps (Chat + Video, Chat + Feeds, Video + Feeds, etc.), also load [`references/CROSS-PRODUCT.md`](references/CROSS-PRODUCT.md) before writing AppShell** — it has the canonical multi-client provider hierarchy and an error → cause → fix table.
 
 ### Step 5: Verify
 

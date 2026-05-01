@@ -56,9 +56,11 @@ Use Shadcn components, Tailwind utilities, and — if the user approved them in 
 
 ### Stream SDK CSS & Providers
 
-- **Chat:** Import `stream-chat-react/dist/css/v2/index.css`. Match theme: `useTheme()` → `str-chat__theme-dark` or `str-chat__theme-light` to `<Chat>`.
-- **Video:** Import `@stream-io/video-react-sdk/dist/css/styles.css`.
+- **Chat:** Import `stream-chat-react/dist/css/index.css` (v14+; v13 used `dist/css/v2/index.css`). Use `useCreateChatClient` from `stream-chat-react` to instantiate. Match theme: `useTheme()` → `str-chat__theme-dark` or `str-chat__theme-light` to `<Chat>`.
+- **Video:** Import `@stream-io/video-react-sdk/dist/css/styles.css`. Instantiate `StreamVideoClient` with the canonical `useState` + `useEffect` pattern (NOT `useMemo` — see `references/VIDEO.md`).
 - **Feeds:** No CSS import — headless SDK. Wrap app in `<StreamFeeds client={client}>`, then per-feed in `<StreamFeed feed={feed}>`. Use `useCreateFeedsClient()` for client creation — **gate rendering on `client !== null`** (returns `null` until connected). Call `feed.getOrCreate({ watch: true })` inside `setTimeout(50ms)` + `mounted` guard (strict mode protection) before passing to `<StreamFeed>`. See `references/FEEDS.md` for complete patterns.
+
+**Provider hierarchy:** mount **all** Stream providers — `<Chat>`, `<StreamVideo>`, `<StreamFeeds>` — once at AppShell, in any order. Per-screen components render `<Channel>`, `<StreamCall>`, or `<StreamFeed>` from the existing root providers. **Never re-instantiate Stream clients per screen** — the cleanup of one screen's effect will disconnect a client another screen is still using. For multi-product apps, see [`references/CROSS-PRODUCT.md`](references/CROSS-PRODUCT.md) for the full skeleton.
 
 ### Moderation
 
