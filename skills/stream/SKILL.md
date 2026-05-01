@@ -6,17 +6,18 @@ metadata:
   author: GetStream
 allowed-tools: >-
   Read, Glob, Grep,
-  Bash(npx skills add https://github.com/GetStream/agent-skills --skill stream-cli -y),
-  Bash(npx skills add https://github.com/GetStream/agent-skills --skill stream-docs -y),
-  Bash(npx skills add https://github.com/GetStream/agent-skills --skill stream-builder -y)
+  Bash(npx skills add GetStream/agent-skills --s stream-cli -y),
+  Bash(npx skills add GetStream/agent-skills --s stream-docs -y),
+  Bash(npx skills add GetStream/agent-skills --s stream-builder -y)
 ---
 
 # Stream — skill router
 
 This skill picks the track from the user's input and delegates to a specialized sub-skill. **It does no scaffolding, CLI, or docs work itself** — those live in dedicated skills.
 
-- **Rules (every session):** read [`RULES.md`](RULES.md) — the non-negotiable rules apply to every track.
-- **Install:** the full skill pack via `npx skills add GetStream/agent-skills` ([skills.sh](https://skills.sh/docs/cli)). A git-clone alternative is in the [README](../../README.md#install--direct-from-github-no-third-party-cli). Sub-skills can also be installed individually via the Claude Code plugin marketplace — see the README.
+> **Read first (every session):** [`RULES.md`](RULES.md). Non-negotiable rules apply to every track.
+>
+> **Sub-skill availability:** before hand-off, if the dispatch target (`stream-cli`, `stream-docs`, `stream-builder`) is missing from the available-skills list, install only that one via `npx skills add GetStream/agent-skills --s <name> -y`, then continue. No consent prompt; same first-party pack.
 
 ---
 
@@ -87,30 +88,9 @@ Or describe the task and the router will pick.
 
 ---
 
-## Sub-skill availability
-
-Before hand-off, verify the chosen sub-skill is present in the host's available-skills list (the system reminder lists installed skills by name).
-
-**If the sub-skill is missing**, install it from the same first-party pack — no consent prompt needed, since the user already opted in by installing the router and these are markdown-only files from the same publisher (GetStream) and same repo. Announce the install in one line, run it, then continue with hand-off:
-
-```bash
-# stream-cli
-npx skills add https://github.com/GetStream/agent-skills --skill stream-cli -y
-
-# stream-docs
-npx skills add https://github.com/GetStream/agent-skills --skill stream-docs -y
-
-# stream-builder
-npx skills add https://github.com/GetStream/agent-skills --skill stream-builder -y
-```
-
-If install fails, surface the error and ask the user how they'd like to proceed (manual install via `/plugin install <name>@stream-skills`, or skip).
-
----
-
 ## Hand-off
 
-Once a track is picked (and the sub-skill is installed), hand off by name: *"Use the `stream-cli` skill"*, *"Use the `stream-builder` skill"*, etc. The sub-skill's `SKILL.md` runs preflight (if applicable) and continues from there. The agent loads named skills via the host runtime — no relative-path `Read` is required for the hand-off itself.
+Once a track is picked (Pack integrity above already ensured the sub-skill is installed), hand off by name: *"Use the `stream-cli` skill"*, *"Use the `stream-builder` skill"*, etc. The sub-skill's `SKILL.md` runs preflight (if applicable) and continues from there. The agent loads named skills via the host runtime — no relative-path `Read` is required for the hand-off itself.
 
 Cross-cutting rules in [`RULES.md`](RULES.md) apply to every sub-skill — each one references this file at the top of its session. That includes the **Cross-track follow-ups** rule, which tells sub-skills how to offer (not auto-execute) the natural next action across track boundaries.
 

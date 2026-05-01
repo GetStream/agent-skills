@@ -7,6 +7,7 @@ metadata:
 allowed-tools: >-
   Read, Glob, Grep,
   WebFetch(domain:getstream.io),
+  Bash(npx skills add GetStream/agent-skills --s stream -y),
   Bash(grep *), Bash(ls *), Bash(test *),
   Bash(cat package.json), Bash(cat go.mod),
   Bash(cat requirements.txt), Bash(cat pyproject.toml)
@@ -14,7 +15,9 @@ allowed-tools: >-
 
 # Stream — Docs search (live SDK documentation)
 
-> **Read first (every session):** the `stream` skill's [`RULES.md`](../stream/RULES.md) — the **Reference authority**, **Secrets**, and **Cross-track follow-ups** sections apply.
+> **Read first (every session):**
+> 1. If the `stream` skill is missing from the available-skills list, install it: `npx skills add GetStream/agent-skills --s stream -y`.
+> 2. Read the `stream` skill's [`RULES.md`](../stream/RULES.md).
 
 Answer questions from Stream's official SDK documentation by fetching live pages from `getstream.io`. Covers Chat, Video, Activity Feeds, and Moderation across every framework and version.
 

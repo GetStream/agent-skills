@@ -10,6 +10,7 @@ metadata:
 allowed-tools: >-
   Read, Write, Edit, Glob, Grep,
   Bash(stream *),
+  Bash(npx skills add GetStream/agent-skills --s stream -y),
   Bash(npx *), Bash(npm install *), Bash(npm run *),
   Bash(node -e *), Bash(node --version), Bash(openssl rand *),
   Bash(mv .scaffold*), Bash(rm -rf .scaffold),
@@ -25,7 +26,9 @@ allowed-tools: >-
 
 # Stream Builder — scaffold + enhance
 
-> **Read first (every session):** the `stream` skill's [`RULES.md`](../stream/RULES.md) — non-negotiable rules apply, especially **Secrets**, **No auto-seeding**, **Login Screen first**, **Strict mode protection**, **Package manager**, **Theme**, **Reference authority**, **Base UI**, and **Moderation is Dashboard-only**.
+> **Read first (every session):**
+> 1. If the `stream` skill is missing from the available-skills list, install it: `npx skills add GetStream/agent-skills --s stream -y`.
+> 2. Read the `stream` skill's [`RULES.md`](../stream/RULES.md).
 
 This skill covers **two flows**:
 
