@@ -9,46 +9,46 @@ allowed-tools: >-
   Bash(npx skills add GetStream/agent-skills *)
 ---
 
-# Stream — skill router
+# Stream - skill router
 
-This skill picks the track from the user's input and delegates to a specialized sub-skill. **It does no scaffolding, CLI, or docs work itself** — those live in dedicated skills.
+This skill picks the track from the user's input and delegates to a specialized sub-skill. **It does no scaffolding, CLI, or docs work itself** - those live in dedicated skills.
 
 > **Read first:** [`RULES.md`](RULES.md). Non-negotiable rules apply, including the **Peer skills** table (Glob path + install command + Skill-vs-Read-inline rule).
 >
-> **After picking a sub-skill (`stream-cli`, `stream-docs`, `stream-builder`):** follow the **Peer skills** procedure from RULES.md — Glob the SKILL.md path, install if empty, then Skill tool (if listed) or Read inline. Do not call `Skill` before the Glob; it surfaces a confusing "Unknown skill" error. Do not stop after naming the track.
+> **After picking a sub-skill (`stream-cli`, `stream-docs`, `stream-builder`):** follow the **Peer skills** procedure from RULES.md - Glob the SKILL.md path, install if empty, then Skill tool (if listed) or Read inline. Do not call `Skill` before the Glob; it surfaces a confusing "Unknown skill" error. Do not stop after naming the track.
 
 ---
 
 ## By task
 
-**Build a new app with Stream** → use the `stream-builder` skill
-- Empty/new directory + "build me a Chat/Video/Feeds app", "scaffold", "create a new …"
-- Covers Steps 0–7 (scaffold, theme, auth, env, SDK install, component generation)
+**Build a new app with Stream** -> use the `stream-builder` skill
+- Empty/new directory + "build me a Chat/Video/Feeds app", "scaffold", "create a new ..."
+- Covers Steps 0-7 (scaffold, theme, auth, env, SDK install, component generation)
 
-**Add Stream to an existing app** → use the `stream-builder` skill
-- Existing project + "add Chat to this app", "integrate Video", "drop Feeds into …"
+**Add Stream to an existing app** -> use the `stream-builder` skill
+- Existing project + "add Chat to this app", "integrate Video", "drop Feeds into ..."
 - Same SDK wiring as scaffold; skips Next.js init and theme pick
 
-**Query Stream data via the CLI** → use the `stream-cli` skill
+**Query Stream data via the CLI** -> use the `stream-cli` skill
 - "list calls", "show channels", "any flagged", "find users"
-- Literal CLI: `stream api …`, `stream config …`, `stream auth …`
+- Literal CLI: `stream api ...`, `stream config ...`, `stream auth ...`
 - Tricky bodies and filter syntax live in the sub-skill's cookbook
-- **Required for every `stream api` call** — including ad-hoc "let me check" queries from inside other sub-skills. No guessing endpoint names from training data; route through `stream-cli` (or read `~/.stream/cache/API.md`) first. See [`RULES.md`](RULES.md) › CLI safety.
+- **Required for every `stream api` call** - including ad-hoc "let me check" queries from inside other sub-skills. No guessing endpoint names from training data; route through `stream-cli` (or read `~/.stream/cache/API.md`) first. See [`RULES.md`](RULES.md) > CLI safety.
 
-**Install the Stream CLI** → use the `stream-cli` skill
+**Install the Stream CLI** -> use the `stream-cli` skill
 - "install the CLI", "set up stream" with no project context
 - Bootstrap (binary install, SHA-256 verification, TTY confirmation) ships with the CLI sub-skill
 
-**Search Stream SDK documentation** → use the `stream-docs` skill
+**Search Stream SDK documentation** -> use the `stream-docs` skill
 - "docs", "documentation", explicit SDK token (`Chat React`, `Video iOS`, `Feeds Node`, `Moderation`)
-- "how do I … in <framework>", "how does <hook/component/method> work?", "what does <SDK thing> do?"
-- No CLI needed — answers come from getstream.io with citations
+- "how do I ... in <framework>", "how does <hook/component/method> work?", "what does <SDK thing> do?"
+- No CLI needed - answers come from getstream.io with citations
 
 ---
 
 ## Pick a track
 
-Scan the user's input for the signals below in order. The classifier is deterministic — no probes, no fetches, no CLI checks at this stage.
+Scan the user's input for the signals below in order. The classifier is deterministic - no probes, no fetches, no CLI checks at this stage.
 
 | Signal in user input | Sub-skill |
 |---|---|
@@ -58,11 +58,11 @@ Scan the user's input for the signals below in order. The classifier is determin
 | Operational verbs + Stream noun: "list calls", "show channels", "any flagged", "find users", "check {anything}" | `stream-cli` |
 | `stream api`, `stream config`, `stream auth` (literal CLI invocation) | `stream-cli` |
 | "Install the CLI", "set up stream" with no project context | `stream-cli` |
-| "Build me a … app", "scaffold", "create a new …" + Stream product, in an empty/new directory | `stream-builder` |
-| "Add Chat/Video/Feeds to this app", "integrate Stream into" — existing project | `stream-builder` |
-| Operational verb wrapped in how-to phrasing (e.g. "how do I list my calls?" — docs *or* CLI) | **Ask one disambiguator** |
+| "Build me a ... app", "scaffold", "create a new ..." + Stream product, in an empty/new directory | `stream-builder` |
+| "Add Chat/Video/Feeds to this app", "integrate Stream into" - existing project | `stream-builder` |
+| Operational verb wrapped in how-to phrasing (e.g. "how do I list my calls?" - docs *or* CLI) | **Ask one disambiguator** |
 
-**Track D carve-out.** `stream-docs` answers from documentation only — no preflight, no shell commands, no project inspection. Every other sub-skill runs preflight before doing real work.
+**Track D carve-out.** `stream-docs` answers from documentation only - no preflight, no shell commands, no project inspection. Every other sub-skill runs preflight before doing real work.
 
 **Disambiguator.** If the input fits more than one row (typically operational verb + how-to phrasing), ask one short question and wait. Don't probe before the answer:
 
@@ -78,9 +78,9 @@ After the answer, route as if the user had given that signal directly.
 
 If the user already knows what they want, skip the router and invoke a sub-skill directly:
 
-- `/stream-builder` — scaffold a new app, or add Chat/Video/Feeds/Moderation to an existing one
-- `/stream-cli` — query Stream data via CLI, install the CLI, run `stream api / config / auth`
-- `/stream-docs` — search live Stream SDK documentation (no CLI needed)
+- `/stream-builder` - scaffold a new app, or add Chat/Video/Feeds/Moderation to an existing one
+- `/stream-cli` - query Stream data via CLI, install the CLI, run `stream api / config / auth`
+- `/stream-docs` - search live Stream SDK documentation (no CLI needed)
 
 Or describe the task and the router will pick.
 

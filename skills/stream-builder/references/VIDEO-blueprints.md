@@ -1,4 +1,4 @@
-# Video — full component blueprints
+# Video - full component blueprints
 
 Setup, routes, and gotchas: [VIDEO.md](VIDEO.md). Rules: [../../stream/RULES.md](../../stream/RULES.md).
 
@@ -21,7 +21,7 @@ Pre-join screen where users preview their camera/mic and set preferences before 
       <img class="lobby__avatar" src="" alt="" />
       <span class="lobby__name"></span>
     </div>
-    <!-- CONDITIONAL: mic is on — show audio level visualization -->
+    <!-- CONDITIONAL: mic is on - show audio level visualization -->
     <div class="lobby__audio-level">
       <div class="lobby__audio-level-bar"></div>
     </div>
@@ -71,11 +71,11 @@ Pre-join screen where users preview their camera/mic and set preferences before 
 | `lobby__device-select--camera` | `call.camera.listDevices()` | `call.camera.select(deviceId)` | RxJS Observable of `MediaDeviceInfo[]` |
 | `lobby__device-select--mic` | `call.microphone.listDevices()` | `call.microphone.select(deviceId)` | RxJS Observable of `MediaDeviceInfo[]` |
 | `lobby__device-select--speaker` | `call.speaker.listDevices()` | `call.speaker.select(deviceId)` | RxJS Observable of `MediaDeviceInfo[]` |
-| `lobby__call-title` | `call.state.custom.title` or `call.id` | — | Set during `call.getOrCreate({ data: { custom: { title } } })` |
-| `lobby__participants-preview` | `call.state.participants` | — | Participants already joined |
-| `lobby__join` | — | `call.join()` | Transitions to call layout |
-| `lobby__cancel` | — | `call.leave()` | Navigates away |
-| `lobby__audio-level` | `call.microphone.state.mediaStream` | — | Use `AudioContext` + `AnalyserNode` on the stream |
+| `lobby__call-title` | `call.state.custom.title` or `call.id` | - | Set during `call.getOrCreate({ data: { custom: { title } } })` |
+| `lobby__participants-preview` | `call.state.participants` | - | Participants already joined |
+| `lobby__join` | - | `call.join()` | Transitions to call layout |
+| `lobby__cancel` | - | `call.leave()` | Navigates away |
+| `lobby__audio-level` | `call.microphone.state.mediaStream` | - | Use `AudioContext` + `AnalyserNode` on the stream |
 
 ### Requirements
 
@@ -124,7 +124,7 @@ Container for the active call. Manages participant arrangement in different layo
     </div>
   </div>
 
-  <!-- CONDITIONAL: screen share active — auto-switch to spotlight layout -->
+  <!-- CONDITIONAL: screen share active - auto-switch to spotlight layout -->
   <div class="call-layout__screen-share">
     <video class="call-layout__screen-share-video" autoplay playsinline></video>
     <div class="call-layout__screen-share-label">
@@ -158,22 +158,22 @@ Container for the active call. Manages participant arrangement in different layo
 
 | Element | Read | Write | Property Path |
 |---|---|---|---|
-| Participant list | `call.state.participants` | — | Array of `StreamVideoParticipant` objects |
-| Dominant speaker | `call.state.dominantSpeaker` | — | Updates in real-time |
-| Screen share track | `participant.screenShareStream` | — | Non-null when participant is screen sharing |
+| Participant list | `call.state.participants` | - | Array of `StreamVideoParticipant` objects |
+| Dominant speaker | `call.state.dominantSpeaker` | - | Updates in real-time |
+| Screen share track | `participant.screenShareStream` | - | Non-null when participant is screen sharing |
 | `call-layout__screen-share-video` | Screen share participant's video track | Assign to `srcObject` | `participant.screenShareStream` |
-| Layout mode | Client-side state | — | Auto-switch to spotlight when screen share starts |
-| Self-view | `call.state.localParticipant` | — | Current user's participant object |
-| Join request | `call.on('call.permission_request', cb)` | `call.grantPermissions(userId)` / `call.revokePermissions(userId)` | — |
+| Layout mode | Client-side state | - | Auto-switch to spotlight when screen share starts |
+| Self-view | `call.state.localParticipant` | - | Current user's participant object |
+| Join request | `call.on('call.permission_request', cb)` | `call.grantPermissions(userId)` / `call.revokePermissions(userId)` | - |
 
 ### Requirements
 
 | Feature | Requirement | Default |
 |---|---|---|
-| Call joined | `call.join()` completed | — |
-| Dominant speaker | Automatic | Available — determined server-side from audio levels |
-| Screen sharing | `call.screenShare.enable()` | Available — browser `getDisplayMedia` |
-| Layout modes | Client-side | No config — implement layout logic based on participant count and screen share state |
+| Call joined | `call.join()` completed | - |
+| Dominant speaker | Automatic | Available - determined server-side from audio levels |
+| Screen sharing | `call.screenShare.enable()` | Available - browser `getDisplayMedia` |
+| Layout modes | Client-side | No config - implement layout logic based on participant count and screen share state |
 | Join requests | Call type configured with `join_ahead_time_seconds` or backstage mode | Off |
 
 ---
@@ -203,7 +203,7 @@ Individual participant's video/audio in the call. Used inside call layouts.
       <span class="participant-tile__muted-icon" aria-label="Muted"></span>
     </div>
 
-    <!-- CONDITIONAL: speaking — audio level border/ring -->
+    <!-- CONDITIONAL: speaking - audio level border/ring -->
     <div class="participant-tile__speaking-border"></div>
 
     <!-- CONDITIONAL: network quality degraded -->
@@ -230,24 +230,24 @@ Individual participant's video/audio in the call. Used inside call layouts.
 | Element | Read | Write | Property Path |
 |---|---|---|---|
 | `participant-tile__video` | Participant's video track | Assign to `srcObject` | `participant.videoStream` |
-| `participant-tile__avatar` | Participant data | — | `participant.image` |
-| `participant-tile__name` | Participant data | — | `participant.name` or `participant.userId` |
-| `--speaking` modifier | Participant audio state | — | `participant.isSpeaking` (boolean) |
-| `--muted` modifier | Participant audio state | — | `participant.audioStream` is null or `!hasAudio(participant)` (import `hasAudio` from `@stream-io/video-client`) |
-| `--video-off` modifier | Participant video state | — | `participant.videoStream` is null or `!hasVideo(participant)` (import `hasVideo` from `@stream-io/video-client`) |
-| `--dominant` modifier | `call.state.dominantSpeaker` | — | `participant.isDominantSpeaker` |
-| Network quality | Participant stats | — | `participant.connectionQuality` — `ConnectionQuality.EXCELLENT`, `.GOOD`, `.POOR`, `.UNSPECIFIED` |
-| Pin | — | Client-side state | Layout prioritizes pinned participant |
-| Mute participant | — | `call.muteUser(userId, 'audio')` | Host/admin only |
-| Remove participant | — | `call.blockUser(userId)` | Host/admin only |
+| `participant-tile__avatar` | Participant data | - | `participant.image` |
+| `participant-tile__name` | Participant data | - | `participant.name` or `participant.userId` |
+| `--speaking` modifier | Participant audio state | - | `participant.isSpeaking` (boolean) |
+| `--muted` modifier | Participant audio state | - | `participant.audioStream` is null or `!hasAudio(participant)` (import `hasAudio` from `@stream-io/video-client`) |
+| `--video-off` modifier | Participant video state | - | `participant.videoStream` is null or `!hasVideo(participant)` (import `hasVideo` from `@stream-io/video-client`) |
+| `--dominant` modifier | `call.state.dominantSpeaker` | - | `participant.isDominantSpeaker` |
+| Network quality | Participant stats | - | `participant.connectionQuality` - `ConnectionQuality.EXCELLENT`, `.GOOD`, `.POOR`, `.UNSPECIFIED` |
+| Pin | - | Client-side state | Layout prioritizes pinned participant |
+| Mute participant | - | `call.muteUser(userId, 'audio')` | Host/admin only |
+| Remove participant | - | `call.blockUser(userId)` | Host/admin only |
 
 ### Requirements
 
 | Feature | Requirement | Default |
 |---|---|---|
-| Video rendering | Participant has granted camera permission and is publishing | — |
-| Audio rendering | Attach `participant.audioStream` to an `<audio>` element (not in tile HTML — managed globally) | — |
-| Network quality | Automatic | Available — tracked by SDK |
+| Video rendering | Participant has granted camera permission and is publishing | - |
+| Audio rendering | Attach `participant.audioStream` to an `<audio>` element (not in tile HTML - managed globally) | - |
+| Network quality | Automatic | Available - tracked by SDK |
 | Host controls (mute/remove) | User has `call.state.ownCapabilities` including `'mute-users'`, `'block-users'` | Depends on call type role |
 
 ---
@@ -324,22 +324,22 @@ Bottom bar with call action buttons: mic, camera, screen share, participants, re
 | `--mic` | `call.microphone.state.status` | `call.microphone.toggle()` | `'enabled'` or `'disabled'` |
 | `--camera` | `call.camera.state.status` | `call.camera.toggle()` | `'enabled'` or `'disabled'` |
 | `--screen-share` | `call.screenShare.state.status` | `call.screenShare.toggle()` | `'enabled'` or `'disabled'` |
-| Mic device select | `call.microphone.listDevices()` | `call.microphone.select(deviceId)` | — |
-| Camera device select | `call.camera.listDevices()` | `call.camera.select(deviceId)` | — |
-| `--participants` badge | `call.state.participants` | — | `call.state.participants.length` |
+| Mic device select | `call.microphone.listDevices()` | `call.microphone.select(deviceId)` | - |
+| Camera device select | `call.camera.listDevices()` | `call.camera.select(deviceId)` | - |
+| `--participants` badge | `call.state.participants` | - | `call.state.participants.length` |
 | `--record` | `call.state.recording` | `call.startRecording()` / `call.stopRecording()` | Boolean |
-| `--reactions` | — | `call.sendReaction({ type: 'raised-hand' })` | Custom reaction types |
-| `--leave` | — | `call.leave()` | Leaves call, keeps it running for others |
-| End call | — | `call.endCall()` | Ends for all participants — host only |
-| `--chat` badge | Unread count in associated chat channel | — | Cross-product: Stream Chat channel linked to call |
+| `--reactions` | - | `call.sendReaction({ type: 'raised-hand' })` | Custom reaction types |
+| `--leave` | - | `call.leave()` | Leaves call, keeps it running for others |
+| End call | - | `call.endCall()` | Ends for all participants - host only |
+| `--chat` badge | Unread count in associated chat channel | - | Cross-product: Stream Chat channel linked to call |
 
 ### Requirements
 
 | Feature | Requirement | Default |
 |---|---|---|
 | Screen sharing | Browser `getDisplayMedia` support | Available in desktop browsers |
-| Recording | Dashboard -> Call Types -> Recording enabled | Off — requires plan support |
-| In-call reactions | — | Available — `call.sendReaction()` |
+| Recording | Dashboard -> Call Types -> Recording enabled | Off - requires plan support |
+| In-call reactions | - | Available - `call.sendReaction()` |
 | End call (for all) | User must have `'end-call'` capability | Host/admin role only |
 | In-call chat | Chat product integrated, channel linked to call | Separate setup |
 
@@ -356,7 +356,7 @@ Ringing UI when another user initiates a call. Shown as overlay or notification.
 
   <div class="incoming-call__info">
     <img class="incoming-call__avatar" src="" alt="" />
-    <!-- CONDITIONAL: group call — show multiple avatars or group name -->
+    <!-- CONDITIONAL: group call - show multiple avatars or group name -->
     <span class="incoming-call__caller-name"></span>
     <span class="incoming-call__type">
       <!-- "Video call" or "Audio call" based on call type -->
@@ -381,21 +381,21 @@ Ringing UI when another user initiates a call. Shown as overlay or notification.
 
 | Element | Read | Write | Property Path |
 |---|---|---|---|
-| `incoming-call__avatar` | Ring event | — | `call.state.createdBy.image` or caller's user image |
-| `incoming-call__caller-name` | Ring event | — | `call.state.createdBy.name` |
-| `incoming-call__type` | Call metadata | — | `call.type` — `'default'`, `'audio_room'`, `'livestream'` etc. |
-| `--accept` | — | `call.join()` | Transitions to call layout |
-| `--reject` | — | `call.leave({ reject: true })` | Dismisses the ring |
-| Ring event | Subscribe to `client.state.calls$` and filter by `call.state.callingState === CallingState.RINGING` | — | Fires when another user rings |
-| Auto-dismiss | Client-side timeout | — | Dismiss after ~30s if no action |
+| `incoming-call__avatar` | Ring event | - | `call.state.createdBy.image` or caller's user image |
+| `incoming-call__caller-name` | Ring event | - | `call.state.createdBy.name` |
+| `incoming-call__type` | Call metadata | - | `call.type` - `'default'`, `'audio_room'`, `'livestream'` etc. |
+| `--accept` | - | `call.join()` | Transitions to call layout |
+| `--reject` | - | `call.leave({ reject: true })` | Dismisses the ring |
+| Ring event | Subscribe to `client.state.calls$` and filter by `call.state.callingState === CallingState.RINGING` | - | Fires when another user rings |
+| Auto-dismiss | Client-side timeout | - | Dismiss after ~30s if no action |
 
 ### Requirements
 
 | Feature | Requirement | Default |
 |---|---|---|
 | Ringing | Call type supports ringing | Available on `'default'` call type |
-| Ring initiation | Caller uses `call.getOrCreate({ ring: true, data: { members: [...] } })` for initial ring, or `call.ring({ members_ids: [...] })` to ring specific members | — |
-| Push notifications | Mobile SDKs + push provider configured | Optional — for ringing when app is backgrounded |
+| Ring initiation | Caller uses `call.getOrCreate({ ring: true, data: { members: [...] } })` for initial ring, or `call.ring({ members_ids: [...] })` to ring specific members | - |
+| Push notifications | Mobile SDKs + push provider configured | Optional - for ringing when app is backgrounded |
 
 ---
 
@@ -450,16 +450,16 @@ Side panel showing all participants in the current call with their status.
 
 | Element | Read | Write | Property Path |
 |---|---|---|---|
-| `participant-list__items` | `call.state.participants` | — | Array of participants |
-| `participant-list__count` | `call.state.participants` | — | `.length` |
-| `participant-list__item-avatar` | Participant data | — | `participant.image` |
-| `participant-list__item-name` | Participant data | — | `participant.name` |
-| `participant-list__item-role` | Participant data | — | `participant.roles` — check for `'host'`, `'admin'` |
-| Mic status | Participant state | — | `hasAudio(participant)` (import from `@stream-io/video-client`) |
-| Camera status | Participant state | — | `hasVideo(participant)` (import from `@stream-io/video-client`) |
-| Mute participant | — | `call.muteUser(userId, 'audio')` | Host/admin only |
-| Remove participant | — | `call.blockUser(userId)` | Host/admin only |
-| Invite | — | `call.updateCallMembers({ members: [{ user_id: id }] })` then ring or notify | — |
+| `participant-list__items` | `call.state.participants` | - | Array of participants |
+| `participant-list__count` | `call.state.participants` | - | `.length` |
+| `participant-list__item-avatar` | Participant data | - | `participant.image` |
+| `participant-list__item-name` | Participant data | - | `participant.name` |
+| `participant-list__item-role` | Participant data | - | `participant.roles` - check for `'host'`, `'admin'` |
+| Mic status | Participant state | - | `hasAudio(participant)` (import from `@stream-io/video-client`) |
+| Camera status | Participant state | - | `hasVideo(participant)` (import from `@stream-io/video-client`) |
+| Mute participant | - | `call.muteUser(userId, 'audio')` | Host/admin only |
+| Remove participant | - | `call.blockUser(userId)` | Host/admin only |
+| Invite | - | `call.updateCallMembers({ members: [{ user_id: id }] })` then ring or notify | - |
 
 ### Requirements
 
@@ -467,4 +467,4 @@ Side panel showing all participants in the current call with their status.
 |---|---|---|
 | Participant list | `call.join()` completed | Available |
 | Host controls | User has host/admin role on call type | Depends on call type config |
-| Invite | — | Available — add members to call |
+| Invite | - | Available - add members to call |

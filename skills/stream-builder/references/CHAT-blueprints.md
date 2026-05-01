@@ -1,4 +1,4 @@
-# Chat — full component blueprints
+# Chat - full component blueprints
 
 Setup, routes, and gotchas: [CHAT.md](CHAT.md). Rules: [../../stream/RULES.md](../../stream/RULES.md).
 
@@ -62,26 +62,26 @@ Sidebar listing channels the user belongs to. Shows last message preview, unread
 
 | Element | Read | Write | Property Path |
 |---|---|---|---|
-| `channel-list__items` | `client.queryChannels(filter, sort, { watch: true, state: true })` | — | Returns array of `channel` objects |
-| `channel-list__item-avatar` (1:1) | Channel members | — | Other member's `user.image` |
+| `channel-list__items` | `client.queryChannels(filter, sort, { watch: true, state: true })` | - | Returns array of `channel` objects |
+| `channel-list__item-avatar` (1:1) | Channel members | - | Other member's `user.image` |
 | `channel-list__item-avatar` (group) | `channel.data.image` | `channel.update({ image })` | `channel.data.image` |
-| `channel-list__item-name` (1:1) | Channel members | — | Other member's `user.name` |
+| `channel-list__item-name` (1:1) | Channel members | - | Other member's `user.name` |
 | `channel-list__item-name` (group) | `channel.data.name` | `channel.update({ name })` | `channel.data.name` |
-| `channel-list__item-preview` | Channel state | — | `channel.state.messages[last].text` — truncated |
-| `channel-list__item-time` | Channel state | — | `channel.state.messages[last].created_at` |
+| `channel-list__item-preview` | Channel state | - | `channel.state.messages[last].text` - truncated |
+| `channel-list__item-time` | Channel state | - | `channel.state.messages[last].created_at` |
 | `channel-list__item-unread` | `channel.countUnread()` | `channel.markRead()` | Returns integer |
-| `channel-list__item-presence` | User presence events | — | `user.online` (boolean) |
-| `--active` modifier | Client-side selection state | — | Set when user clicks channel |
-| New channel | — | `client.channel(type, id, { name, members })` then `channel.watch()` | — |
+| `channel-list__item-presence` | User presence events | - | `user.online` (boolean) |
+| `--active` modifier | Client-side selection state | - | Set when user clicks channel |
+| New channel | - | `client.channel(type, id, { name, members })` then `channel.watch()` | - |
 
 ### Requirements
 
 | Feature | Requirement | Default |
 |---|---|---|
 | Channel queries | `client.queryChannels(filter, sort, options)` | Available |
-| Real-time updates | `{ watch: true }` in query options | On by default — both `watch` and `state` default to `true` in `queryChannels` |
+| Real-time updates | `{ watch: true }` in query options | On by default - both `watch` and `state` default to `true` in `queryChannels` |
 | Presence | Dashboard -> Channel Type -> "Connect Events" enabled | Off per channel type |
-| Unread counts | `channel.countUnread()` | Available — relies on `channel.markRead()` being called |
+| Unread counts | `channel.countUnread()` | Available - relies on `channel.markRead()` being called |
 | Search | `client.search(filter, query)` or `client.queryChannels` with name filter | Available |
 
 ---
@@ -122,11 +122,11 @@ Top bar of an active channel. Shows channel identity, members, and actions.
 
 | Element | Read | Write | Property Path |
 |---|---|---|---|
-| `channel-header__avatar` | `channel.data` or member data | — | `channel.data.image` (group) or other member's `user.image` (1:1) |
-| `channel-header__name` | `channel.data` or member data | — | `channel.data.name` (group) or other member's `user.name` (1:1) |
-| `channel-header__status` (1:1) | Presence events | — | `user.online` -> "Online"; `user.last_active` -> "Last seen X ago" |
-| `channel-header__status` (group) | `channel.state.members`, `channel.state.watcher_count` | — | Count members + online watchers |
-| `channel-header__action--call` | — | Initiates Stream Video call (see VIDEO.md) | Cross-product integration |
+| `channel-header__avatar` | `channel.data` or member data | - | `channel.data.image` (group) or other member's `user.image` (1:1) |
+| `channel-header__name` | `channel.data` or member data | - | `channel.data.name` (group) or other member's `user.name` (1:1) |
+| `channel-header__status` (1:1) | Presence events | - | `user.online` -> "Online"; `user.last_active` -> "Last seen X ago" |
+| `channel-header__status` (group) | `channel.state.members`, `channel.state.watcher_count` | - | Count members + online watchers |
+| `channel-header__action--call` | - | Initiates Stream Video call (see VIDEO.md) | Cross-product integration |
 
 ### Requirements
 
@@ -193,15 +193,15 @@ Scrollable container for messages. Handles date separators, scroll-to-bottom, an
 
 | Element | Read | Write | Property Path |
 |---|---|---|---|
-| Messages (initial) | `channel.watch()` or `channel.query({ messages: { limit: 25 } })` | — | `channel.state.messages` |
-| Messages (older) | `channel.query({ messages: { limit: 25, id_lt: oldestMessageId } })` | — | Prepend to message list |
-| Messages (real-time) | `channel.on('message.new', callback)` | — | Append new message to list |
-| Message groups | Client-side grouping | — | Group consecutive messages by `message.user.id` within a time window |
-| Date separators | Client-side | — | Insert when `message.created_at` crosses a day boundary |
-| System events | `channel.on('member.added', ...)`, `channel.on('member.removed', ...)` | — | Render as `message-list__event` |
-| Typing indicator | `channel.on('typing.start', ...)`, `channel.on('typing.stop', ...)` | — | `channel.state.typing` — map of userId -> event |
-| Scroll to bottom | Client-side scroll position tracking | — | Show when `scrollTop < threshold` |
-| `message-list__new-count` | Track messages received while scrolled up | — | Client-side counter |
+| Messages (initial) | `channel.watch()` or `channel.query({ messages: { limit: 25 } })` | - | `channel.state.messages` |
+| Messages (older) | `channel.query({ messages: { limit: 25, id_lt: oldestMessageId } })` | - | Prepend to message list |
+| Messages (real-time) | `channel.on('message.new', callback)` | - | Append new message to list |
+| Message groups | Client-side grouping | - | Group consecutive messages by `message.user.id` within a time window |
+| Date separators | Client-side | - | Insert when `message.created_at` crosses a day boundary |
+| System events | `channel.on('member.added', ...)`, `channel.on('member.removed', ...)` | - | Render as `message-list__event` |
+| Typing indicator | `channel.on('typing.start', ...)`, `channel.on('typing.stop', ...)` | - | `channel.state.typing` - map of userId -> event |
+| Scroll to bottom | Client-side scroll position tracking | - | Show when `scrollTop < threshold` |
+| `message-list__new-count` | Track messages received while scrolled up | - | Client-side counter |
 
 ### Requirements
 
@@ -341,33 +341,33 @@ The core content unit in chat. A single message with author info, text, attachme
 
 | Element | Read | Write | Property Path |
 |---|---|---|---|
-| `message__avatar` | In message payload | — | `message.user.image` |
-| `message__author` | In message payload | — | `message.user.name` |
-| `message__time` | In message payload | — | `message.created_at` |
-| `message__text` | In message payload | — | `message.text` |
-| `message__pinned-badge` | In message payload | — | `message.pinned`, `message.pinned_by.name` |
-| `message__quoted` | In message payload | — | `message.quoted_message.user.name`, `message.quoted_message.text` |
-| `message__image-item` | In message payload | — | `message.attachments[].image_url` where `type === 'image'` |
-| `message__video-player` | In message payload | — | `message.attachments[].asset_url` where `type === 'video'` |
-| `message__file` | In message payload | — | `message.attachments[].asset_url`, `.title`, `.file_size` where `type === 'file'` |
-| `message__og-*` | In message payload | — | `message.attachments[].og_scrape_url`, `.title`, `.text`, `.image_url` |
-| `message__deleted` | In message payload | — | `message.deleted_at` (truthy = deleted) |
-| `message__reaction` | In message payload | — | `message.reaction_groups` (keyed by type; each has `count`, `sum_scores`, `first_reaction_at`, `last_reaction_at`) — recommended. `message.reaction_counts` still works but is deprecated. Also `message.own_reactions[]` |
-| Reaction — add | — | `channel.sendReaction(message.id, { type: 'like' })` | Supports `{ enforce_unique: true }` option as third arg to replace all user's existing reactions |
-| Reaction — remove | — | `channel.deleteReaction(message.id, 'like')` | Removes current user's reaction of that type |
-| `message__thread-count` | In message payload | — | `message.reply_count` |
-| `message__thread-avatars` | In message payload | — | `message.thread_participants[].image` |
-| `message__thread-last` | In message payload | — | `message.latest_reactions` or thread's last reply timestamp |
-| `message__status` (read) | `channel.state.read` | — | Map of `userId -> { last_read, user }` — compare with `message.created_at` |
-| Edit | — | `client.updateMessage({ id: message.id, text: newText })` | — |
-| Delete | — | `client.deleteMessage(message.id)` | Sets `message.deleted_at`. Pass `{ hardDelete: true }` for permanent deletion |
-| Pin | — | `client.pinMessage(message, timeoutOrExpiration)` | Takes message object (not ID). Second arg is optional: timeout in seconds, expiration date, or null for no expiry |
-| Unpin | — | `client.unpinMessage(message)` | Takes message object (not ID) |
-| `message__reaction-groups` | In message payload | — | `message.reaction_groups` — keyed by type, each has `count`, `sum_scores`, `first_reaction_at`, `last_reaction_at`. Recommended replacement for `reaction_counts` |
-| `message__mentioned-users` | In message payload | — | `message.mentioned_users` — enriched user objects for @mentions in the message |
-| Flag | — | `client.flagMessage(message.id)` | See MODERATION.md |
-| Mute user | — | `client.muteUser(userId, null, { timeout: 60 })` | Three args: userId, null, options object. `timeout` is in minutes |
-| Quote | — | Send new message with `quoted_message_id: message.id` | — |
+| `message__avatar` | In message payload | - | `message.user.image` |
+| `message__author` | In message payload | - | `message.user.name` |
+| `message__time` | In message payload | - | `message.created_at` |
+| `message__text` | In message payload | - | `message.text` |
+| `message__pinned-badge` | In message payload | - | `message.pinned`, `message.pinned_by.name` |
+| `message__quoted` | In message payload | - | `message.quoted_message.user.name`, `message.quoted_message.text` |
+| `message__image-item` | In message payload | - | `message.attachments[].image_url` where `type === 'image'` |
+| `message__video-player` | In message payload | - | `message.attachments[].asset_url` where `type === 'video'` |
+| `message__file` | In message payload | - | `message.attachments[].asset_url`, `.title`, `.file_size` where `type === 'file'` |
+| `message__og-*` | In message payload | - | `message.attachments[].og_scrape_url`, `.title`, `.text`, `.image_url` |
+| `message__deleted` | In message payload | - | `message.deleted_at` (truthy = deleted) |
+| `message__reaction` | In message payload | - | `message.reaction_groups` (keyed by type; each has `count`, `sum_scores`, `first_reaction_at`, `last_reaction_at`) - recommended. `message.reaction_counts` still works but is deprecated. Also `message.own_reactions[]` |
+| Reaction - add | - | `channel.sendReaction(message.id, { type: 'like' })` | Supports `{ enforce_unique: true }` option as third arg to replace all user's existing reactions |
+| Reaction - remove | - | `channel.deleteReaction(message.id, 'like')` | Removes current user's reaction of that type |
+| `message__thread-count` | In message payload | - | `message.reply_count` |
+| `message__thread-avatars` | In message payload | - | `message.thread_participants[].image` |
+| `message__thread-last` | In message payload | - | `message.latest_reactions` or thread's last reply timestamp |
+| `message__status` (read) | `channel.state.read` | - | Map of `userId -> { last_read, user }` - compare with `message.created_at` |
+| Edit | - | `client.updateMessage({ id: message.id, text: newText })` | - |
+| Delete | - | `client.deleteMessage(message.id)` | Sets `message.deleted_at`. Pass `{ hardDelete: true }` for permanent deletion |
+| Pin | - | `client.pinMessage(message, timeoutOrExpiration)` | Takes message object (not ID). Second arg is optional: timeout in seconds, expiration date, or null for no expiry |
+| Unpin | - | `client.unpinMessage(message)` | Takes message object (not ID) |
+| `message__reaction-groups` | In message payload | - | `message.reaction_groups` - keyed by type, each has `count`, `sum_scores`, `first_reaction_at`, `last_reaction_at`. Recommended replacement for `reaction_counts` |
+| `message__mentioned-users` | In message payload | - | `message.mentioned_users` - enriched user objects for @mentions in the message |
+| Flag | - | `client.flagMessage(message.id)` | See MODERATION.md |
+| Mute user | - | `client.muteUser(userId, null, { timeout: 60 })` | Three args: userId, null, options object. `timeout` is in minutes |
+| Quote | - | Send new message with `quoted_message_id: message.id` | - |
 
 ### Requirements
 
@@ -377,11 +377,11 @@ The core content unit in chat. A single message with author info, text, attachme
 | Reactions | "Reactions" enabled on channel type in Dashboard | On |
 | Replies/threads | "Replies" enabled on channel type | On |
 | Read receipts | "Read Events" enabled on channel type | On for most types |
-| URL enrichment | "URL Enrichment" enabled on channel type | On — auto-scrapes OG data server-side |
+| URL enrichment | "URL Enrichment" enabled on channel type | On - auto-scrapes OG data server-side |
 | Pinning | "Pinning" enabled on channel type | Off |
-| Quoting | `quoted_message_id` on `sendMessage` | Available — no config needed |
-| Message editing | — | Available — own messages by default, admin can edit any |
-| Message deletion | — | Available — own messages by default, admin can delete any |
+| Quoting | `quoted_message_id` on `sendMessage` | Available - no config needed |
+| Message editing | - | Available - own messages by default, admin can edit any |
+| Message deletion | - | Available - own messages by default, admin can delete any |
 
 ---
 
@@ -460,18 +460,18 @@ Text input for composing and sending messages. Handles attachments, mentions, sl
 
 | Element | Read | Write | Property Path |
 |---|---|---|---|
-| `message-input__text` | — (user input) | Becomes `message.text` | — |
-| `message-input__mention-dropdown` | `channel.queryMembers({ name: { $autocomplete: query } })` | — | Match typed query against channel members |
-| `message-input__command-dropdown` | `channel.getConfig()` | — | `channel.config.commands[]` — name + description |
+| `message-input__text` | - (user input) | Becomes `message.text` | - |
+| `message-input__mention-dropdown` | `channel.queryMembers({ name: { $autocomplete: query } })` | - | Match typed query against channel members |
+| `message-input__command-dropdown` | `channel.getConfig()` | - | `channel.config.commands[]` - name + description |
 | `message-input__attachment` (image) | Local blob preview | `channel.sendImage(file)` -> CDN URL | Collect into `message.attachments[]` with `type: 'image'` |
 | `message-input__attachment` (file) | Local blob preview | `channel.sendFile(file)` -> CDN URL | Collect into `message.attachments[]` with `type: 'file'` |
-| Attachment remove (image) | — | `channel.deleteImage(url)` | Deletes uploaded image from CDN when user removes before sending |
-| Attachment remove (file) | — | `channel.deleteFile(url)` | Deletes uploaded file from CDN when user removes before sending |
-| Send (new) | — | `channel.sendMessage({ text, attachments, quoted_message_id?, mentioned_users? })` | `mentioned_users` is an array of user IDs referenced via @mentions in the text |
-| Send (edit) | — | `client.updateMessage({ id, text, attachments })` | — |
-| Send (thread) | — | `channel.sendMessage({ text, parent_id: parentMessage.id })` | — |
-| Typing events | — | `channel.keystroke()` on input, `channel.stopTyping()` on pause | Debounced — SDK handles interval |
-| `--disabled` | `channel.data.own_capabilities` | — | Check if `'send-message'` is in capabilities array |
+| Attachment remove (image) | - | `channel.deleteImage(url)` | Deletes uploaded image from CDN when user removes before sending |
+| Attachment remove (file) | - | `channel.deleteFile(url)` | Deletes uploaded file from CDN when user removes before sending |
+| Send (new) | - | `channel.sendMessage({ text, attachments, quoted_message_id?, mentioned_users? })` | `mentioned_users` is an array of user IDs referenced via @mentions in the text |
+| Send (edit) | - | `client.updateMessage({ id, text, attachments })` | - |
+| Send (thread) | - | `channel.sendMessage({ text, parent_id: parentMessage.id })` | - |
+| Typing events | - | `channel.keystroke()` on input, `channel.stopTyping()` on pause | Debounced - SDK handles interval |
+| `--disabled` | `channel.data.own_capabilities` | - | Check if `'send-message'` is in capabilities array |
 
 ### Requirements
 
@@ -479,10 +479,10 @@ Text input for composing and sending messages. Handles attachments, mentions, sl
 |---|---|---|
 | File uploads | "Uploads" enabled on channel type | On |
 | Slash commands | Commands configured on channel type in Dashboard | `/giphy` available by default |
-| @Mentions | Channel members queryable | Available — searches channel members |
+| @Mentions | Channel members queryable | Available - searches channel members |
 | Typing indicators | "Typing Events" enabled on channel type | On for most |
 | Message length | `channel.config.max_message_length` | 5000 chars default |
-| Slow mode | `channel.data.cooldown` (seconds) | Off — set per channel |
+| Slow mode | `channel.data.cooldown` (seconds) | Off - set per channel |
 
 ---
 
@@ -534,14 +534,14 @@ Reply thread on a specific message. Opens as a side panel or overlay.
 
 | Element | Read | Write | Property Path |
 |---|---|---|---|
-| `thread__parent` | Already in message list | — | The message with `reply_count > 0` |
-| `thread__replies` | `channel.getReplies(parentMessage.id, { limit: 25 })` | — | Returns `{ messages: [...] }` |
-| `thread__replies` (older) | `channel.getReplies(parentId, { limit: 25, id_lt: oldestReplyId })` | — | Cursor pagination |
-| `thread__replies` (real-time) | `channel.on('message.new', cb)` — filter where `message.parent_id === parentId` | — | Append to reply list |
-| `thread__reply-count` | Parent message | — | `parentMessage.reply_count` |
-| Reply — send | — | `channel.sendMessage({ text, parent_id: parentMessage.id })` | — |
-| Reply — send to channel | — | `channel.sendMessage({ text, parent_id: parentMessage.id, show_in_channel: true })` | Shows reply in main channel too |
-| All threads | `client.queryThreads()` | — | Lists all threads the current user participates in — supports pagination and filtering |
+| `thread__parent` | Already in message list | - | The message with `reply_count > 0` |
+| `thread__replies` | `channel.getReplies(parentMessage.id, { limit: 25 })` | - | Returns `{ messages: [...] }` |
+| `thread__replies` (older) | `channel.getReplies(parentId, { limit: 25, id_lt: oldestReplyId })` | - | Cursor pagination |
+| `thread__replies` (real-time) | `channel.on('message.new', cb)` - filter where `message.parent_id === parentId` | - | Append to reply list |
+| `thread__reply-count` | Parent message | - | `parentMessage.reply_count` |
+| Reply - send | - | `channel.sendMessage({ text, parent_id: parentMessage.id })` | - |
+| Reply - send to channel | - | `channel.sendMessage({ text, parent_id: parentMessage.id, show_in_channel: true })` | Shows reply in main channel too |
+| All threads | `client.queryThreads()` | - | Lists all threads the current user participates in - supports pagination and filtering |
 
 ### Requirements
 
@@ -582,9 +582,9 @@ Shows who is currently typing in the channel.
 
 | Element | Read | Write | Property Path |
 |---|---|---|---|
-| Typing users | `channel.on('typing.start', cb)`, `channel.on('typing.stop', cb)` | `channel.keystroke()` / `channel.stopTyping()` | `channel.state.typing` — map of userId -> `{ user }`, excludes current user. For threads: `channel.keystroke(threadId)` sends thread-specific typing events |
-| `typing-indicator__avatar` | In typing event | — | `event.user.image` |
-| Auto-expiry | Client-side | — | Remove user from typing state after ~7s with no new `typing.start` event |
+| Typing users | `channel.on('typing.start', cb)`, `channel.on('typing.stop', cb)` | `channel.keystroke()` / `channel.stopTyping()` | `channel.state.typing` - map of userId -> `{ user }`, excludes current user. For threads: `channel.keystroke(threadId)` sends thread-specific typing events |
+| `typing-indicator__avatar` | In typing event | - | `event.user.image` |
+| Auto-expiry | Client-side | - | Remove user from typing state after ~7s with no new `typing.start` event |
 
 ### Requirements
 
@@ -620,9 +620,9 @@ Overlay for selecting a reaction to add to a message. Typically triggered from m
 
 | Element | Read | Write | Property Path |
 |---|---|---|---|
-| Emoji click | — | `channel.sendReaction(message.id, { type: 'like' })` | Type is the `data-type` attribute. Pass `{ enforce_unique: true }` as third arg to replace user's existing reactions |
-| Toggle off | Check `message.own_reactions` for existing reaction of same type | `channel.deleteReaction(message.id, 'like')` | — |
-| Available types | — | Any string works as reaction type | No configuration needed for custom types |
+| Emoji click | - | `channel.sendReaction(message.id, { type: 'like' })` | Type is the `data-type` attribute. Pass `{ enforce_unique: true }` as third arg to replace user's existing reactions |
+| Toggle off | Check `message.own_reactions` for existing reaction of same type | `channel.deleteReaction(message.id, 'like')` | - |
+| Available types | - | Any string works as reaction type | No configuration needed for custom types |
 
 ### Requirements
 
@@ -674,13 +674,13 @@ Search messages across channels or within a specific channel.
 
 | Element | Read | Write | Property Path |
 |---|---|---|---|
-| `search__results` | `client.search({ members: { $in: [userId] } }, query, { limit: 20 })` | — | Returns `{ results: [{ message }] }` |
-| `search__results` (in-channel) | `client.search({ cid: channel.cid }, query, { limit: 20 })` | — | Filter by specific channel |
-| `search__result-avatar` | In result | — | `result.message.user.image` |
-| `search__result-author` | In result | — | `result.message.user.name` |
-| `search__result-channel` | In result | — | `result.message.channel.name` or `result.message.channel.id` |
-| `search__result-text` | In result | — | `result.message.text` — add highlights client-side |
-| Result click | — | Navigate to message in channel | `result.message.channel` + `result.message.id` |
+| `search__results` | `client.search({ members: { $in: [userId] } }, query, { limit: 20 })` | - | Returns `{ results: [{ message }] }` |
+| `search__results` (in-channel) | `client.search({ cid: channel.cid }, query, { limit: 20 })` | - | Filter by specific channel |
+| `search__result-avatar` | In result | - | `result.message.user.image` |
+| `search__result-author` | In result | - | `result.message.user.name` |
+| `search__result-channel` | In result | - | `result.message.channel.name` or `result.message.channel.id` |
+| `search__result-text` | In result | - | `result.message.text` - add highlights client-side |
+| Result click | - | Navigate to message in channel | `result.message.channel` + `result.message.id` |
 
 ### Requirements
 

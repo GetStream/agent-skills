@@ -1,6 +1,6 @@
-# Cross-product AppShell — canonical pattern
+# Cross-product AppShell - canonical pattern
 
-When using two or more of Chat / Video / Feeds in the same app, mount all clients **once** at AppShell and provide them at the root. Per-screen components only render `<Channel>`, `<StreamCall>`, or `<StreamFeed>` from the existing providers — never re-instantiate the clients.
+When using two or more of Chat / Video / Feeds in the same app, mount all clients **once** at AppShell and provide them at the root. Per-screen components only render `<Channel>`, `<StreamCall>`, or `<StreamFeed>` from the existing providers - never re-instantiate the clients.
 
 Source of truth: `video/react/10-advanced/06-chat-with-video.md` from the Stream docs (the messenger-clone reference app).
 
@@ -34,21 +34,21 @@ type Auth = {
 export default function AppShell({ auth, children }: { auth: Auth; children: React.ReactNode }) {
   const { resolvedTheme } = useTheme();
 
-  // CHAT — official hook handles strict-mode + lifecycle
+  // CHAT - official hook handles strict-mode + lifecycle
   const chatClient = useCreateChatClient({
     apiKey: auth.apiKey,
     tokenOrProvider: auth.chatToken,
     userData: { id: auth.userId, name: auth.name },
   });
 
-  // FEEDS — official hook handles strict-mode + lifecycle
+  // FEEDS - official hook handles strict-mode + lifecycle
   const feedsClient = useCreateFeedsClient({
     apiKey: auth.apiKey,
     tokenOrProvider: auth.feedToken,
     userData: { id: auth.userId, name: auth.name },
   });
 
-  // VIDEO — canonical useState + useEffect (NOT useMemo)
+  // VIDEO - canonical useState + useEffect (NOT useMemo)
   const [videoClient, setVideoClient] = useState<StreamVideoClient>();
   useEffect(() => {
     const c = new StreamVideoClient({
@@ -77,7 +77,7 @@ export default function AppShell({ auth, children }: { auth: Auth; children: Rea
 }
 ```
 
-The order of `<Chat>` / `<StreamVideo>` / `<StreamFeeds>` doesn't matter — they don't depend on each other. Each provides a context that the per-screen components read.
+The order of `<Chat>` / `<StreamVideo>` / `<StreamFeeds>` doesn't matter - they don't depend on each other. Each provides a context that the per-screen components read.
 
 ## Per-screen pattern
 
@@ -111,15 +111,15 @@ function WatchScreen({ callId }: { callId: string }) {
 - Call: `call.leave()` (NEVER `videoClient.disconnectUser()`).
 - Feed: usually no cleanup needed; the `<StreamFeeds>` provider keeps state alive.
 
-## Common error → cause → fix
+## Common error -> cause -> fix
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| `User token is not set… disconnect was called` (video) | `useMemo` for `StreamVideoClient`; strict-mode disconnects the same instance reused on remount | useState + useEffect with empty cleanup; `setClient(undefined)` |
+| `User token is not set... disconnect was called` (video) | `useMemo` for `StreamVideoClient`; strict-mode disconnects the same instance reused on remount | useState + useEffect with empty cleanup; `setClient(undefined)` |
 | `You can't use a channel after client.disconnect was called` (chat) | `new StreamChat()` created per screen; cleanup races with `channel.watch()` | Hoist `<Chat>` to root via `useCreateChatClient`; per-screen only does `client.channel(...).watch()` + `stopWatching()` |
 | `user_id is required for server side requests` | Server-side `client.feeds.*` mutation missing `user_id` | Pass acting user's id; required for `addActivity`, `updateActivity`, `addComment`, etc (NOT `deleteActivity`). See `FEEDS.md` |
 | `No permission to publish VIDEO` / `AUDIO` (livestream) | `livestream` `call_member`/`host` roles default to `*-owner` grants only | Grant unrestricted `send-video` + `send-audio` to **`user`, `call_member`, AND `host`** roles; join with `data: { members: [{ user_id, role: "host" }] }`. See `VIDEO.md` |
-| "Setting up your camera…" never clears | useEffect bails on strict-mode remount due to `useRef` lock | Use mounted-flag cleanup; setCall after join, then enable camera/mic in independent try/catch blocks |
+| "Setting up your camera..." never clears | useEffect bails on strict-mode remount due to `useRef` lock | Use mounted-flag cleanup; setCall after join, then enable camera/mic in independent try/catch blocks |
 | `MessageInput` undefined import (chat) | Renamed in stream-chat-react v14 | Use `MessageComposer` from `stream-chat-react` |
 | `Module not found: stream-chat-react/dist/css/v2/index.css` | v14 removed the `/v2/` subpath | Import `stream-chat-react/dist/css/index.css` |
 
@@ -159,4 +159,4 @@ export async function GET(req: NextRequest) {
 }
 ```
 
-Only upsert the requesting user — never seed demo users (RULES.md › No auto-seeding).
+Only upsert the requesting user - never seed demo users (RULES.md > No auto-seeding).

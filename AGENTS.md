@@ -1,9 +1,9 @@
-# AGENTS.md — Codex entrypoint for the Stream skill pack
+# AGENTS.md - Codex entrypoint for the Stream skill pack
 
 The pack splits across four skills under `skills/`. The `stream` skill is the router; the rest are specialists.
 
-**Router (start here):** [`skills/stream/SKILL.md`](skills/stream/SKILL.md) — classifies intent, dispatches to a sub-skill.
-**Rules (read once per session):** [`skills/stream/RULES.md`](skills/stream/RULES.md) — every non-negotiable rule, applies to every sub-skill.
+**Router (start here):** [`skills/stream/SKILL.md`](skills/stream/SKILL.md) - classifies intent, dispatches to a sub-skill.
+**Rules (read once per session):** [`skills/stream/RULES.md`](skills/stream/RULES.md) - every non-negotiable rule, applies to every sub-skill.
 
 ## Sub-skills
 
@@ -17,12 +17,13 @@ The pack splits across four skills under `skills/`. The `stream` skill is the ro
 
 ## Codex-specific
 
-- **`stream` CLI first:** For the CLI and builder skills, run [`skills/stream-cli/preflight.md`](skills/stream-cli/preflight.md) before any other Stream skill step — if the CLI is missing, follow [`skills/stream-cli/bootstrap.md`](skills/stream-cli/bootstrap.md) and get user approval to install; do not skip install or continue builder/API work without it. The `stream-docs` skill does not need the CLI.
-- **Batch shell** commands into single `bash -ce 'set -euo pipefail; …'` invocations to minimize approval prompts.
+- **`stream` CLI first:** For the CLI and builder skills, run [`skills/stream-cli/preflight.md`](skills/stream-cli/preflight.md) before any other Stream skill step - if the CLI is missing, follow [`skills/stream-cli/bootstrap.md`](skills/stream-cli/bootstrap.md) and get user approval to install; do not skip install or continue builder/API work without it. The `stream-docs` skill does not need the CLI.
+- **Batch shell** commands into single `bash -ce 'set -euo pipefail; ...'` invocations to minimize approval prompts.
 - **`stream auth login`** needs a **separate** terminal invocation so the browser can open (PKCE).
-- **Network:** scaffold (`npx`, `npm`, `stream` install) needs network — approve **once** per session when prompted.
+- **Network:** scaffold (`npx`, `npm`, `stream` install) needs network - approve **once** per session when prompted.
 - **If terminal is denied:** print commands for the user to run locally; continue with Read/file work only.
-- **Builder flow:** preflight (CLI probe) then immediately execute Steps 0–7 from [`skills/stream-builder/SKILL.md`](skills/stream-builder/SKILL.md). No prompts needed.
+- **Builder flow:** preflight (CLI probe) then immediately execute Steps 0-7 from [`skills/stream-builder/SKILL.md`](skills/stream-builder/SKILL.md). No prompts needed.
+- **ASCII only:** all files in this repo must contain ASCII characters only. No em/en dashes, smart quotes, ellipsis chars, arrows, checkmarks, or other non-ASCII glyphs - use plain ASCII equivalents (`-`, `'`, `"`, `...`, `->`, `OK`, etc.).
 
 ## Install
 
