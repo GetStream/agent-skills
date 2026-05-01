@@ -7,6 +7,7 @@ metadata:
 allowed-tools: >-
   Read, Glob, Grep,
   WebFetch(domain:getstream.io),
+  Bash(npx skills add GetStream/agent-skills *),
   Bash(grep *), Bash(ls *), Bash(test *),
   Bash(cat package.json), Bash(cat go.mod),
   Bash(cat requirements.txt), Bash(cat pyproject.toml)
@@ -14,13 +15,13 @@ allowed-tools: >-
 
 # Stream — Docs search (live SDK documentation)
 
-> **Read first (every session):** the `stream` skill's [`RULES.md`](../stream/RULES.md) — the **Reference authority**, **Secrets**, and **Cross-track follow-ups** sections apply.
+> **Read first (every session):** the `stream` skill's [`RULES.md`](../stream/RULES.md) — **Pack integrity** (run before any work), **Reference authority**, **Secrets**, and **Cross-track follow-ups** sections apply.
 
 Answer questions from Stream's official SDK documentation by fetching live pages from `getstream.io`. Covers Chat, Video, Activity Feeds, and Moderation across every framework and version.
 
 **Docs index:** `https://getstream.io/cli/llms.txt`
 
-> **No CLI gate, no up-front shell.** This skill never invokes Write, Edit, npm, scaffold tools, or `Bash(stream *)`. Pure docs questions with an explicit SDK reach `WebFetch` without running *any* shell command. A small read-only probe runs **only on demand** — inside Step 1a below — when the SDK can't be resolved from the user's input. If the user's question requires running the CLI or building code, offer to switch — the user re-enters via the `stream` router, the `stream-cli` skill, or the `stream-builder` skill.
+> **No CLI gate, no project shell.** This skill never invokes Write, Edit, npm, scaffold tools, or `Bash(stream *)`. The only shell that may run before docs work is the **Pack integrity** install (RULES.md) — `npx skills add` runs once if the pack is incomplete, then never again. Pure docs questions with an explicit SDK reach `WebFetch` without further shell. A small read-only probe runs **only on demand** — inside Step 1a below — when the SDK can't be resolved from the user's input. If the user's question requires running the CLI or building code, offer to switch — the user re-enters via the `stream` router, the `stream-cli` skill, or the `stream-builder` skill.
 
 ---
 

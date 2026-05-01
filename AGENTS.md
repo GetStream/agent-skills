@@ -27,5 +27,7 @@ The pack splits across four skills under `skills/`. The `stream` skill is the ro
 ## Install
 
 ```bash
-npx skills add GetStream/agent-skills
+npx skills add GetStream/agent-skills --skill '*'
 ```
+
+`--skill '*'` selects all four skills (router + three specialists) without the per-skill picker; without `-y` the CLI still walks you through agent selection. The router auto-installs any missing sub-skill on first use, so a partial install will self-heal.

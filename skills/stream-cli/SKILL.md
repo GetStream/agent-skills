@@ -9,6 +9,7 @@ metadata:
 allowed-tools: >-
   Read, Glob, Grep,
   Bash(stream *),
+  Bash(npx skills add GetStream/agent-skills *),
   Bash(curl -fsSL https://getstream.io/cli/install.sh*),
   Bash(curl -fsSL https://getstream.io/cli/*),
   Bash(shasum *), Bash(uname *),
@@ -20,7 +21,7 @@ allowed-tools: >-
 
 # Stream CLI — API interaction
 
-> **Read first (every session):** the `stream` skill's [`RULES.md`](../stream/RULES.md) — non-negotiable rules apply, especially **CLI safety**, **Secrets**, and **Shell discipline**.
+> **Read first (every session):** the `stream` skill's [`RULES.md`](../stream/RULES.md) — non-negotiable rules apply, especially **Pack integrity** (run before any work), **CLI safety**, **Secrets**, and **Shell discipline**.
 
 Use this skill when the user wants to interact with Stream's APIs via the `stream` CLI, or to install the CLI itself.
 

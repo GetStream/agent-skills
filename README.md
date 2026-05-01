@@ -5,10 +5,12 @@ Give your AI coding agent the ability to build, query, and manage [Stream](https
 ## Install
 
 ```bash
-npx skills add GetStream/agent-skills
+npx skills add GetStream/agent-skills --skill '*'
 ```
 
-That installs all four skills below — a router (`stream`) plus three specialists (`stream-cli`, `stream-docs`, `stream-builder`). Use `/stream` and the agent picks the right one for the task, or invoke a sub-skill directly with `/stream-cli`, `/stream-docs`, or `/stream-builder`.
+The pack ships as four skills — a router (`stream`) plus three specialists (`stream-cli`, `stream-docs`, `stream-builder`) — and is meant to be installed as a whole. `--skill '*'` selects all four without the per-skill picker; the CLI still walks you through agent selection. (Bare `npx skills add GetStream/agent-skills` is interactive and lets you skip skills, but the router will auto-install missing ones on first use anyway.)
+
+Use `/stream` and the agent picks the right sub-skill for the task, or invoke one directly with `/stream-cli`, `/stream-docs`, or `/stream-builder`.
 
 ### Install — direct from GitHub (no third-party CLI)
 
@@ -23,20 +25,6 @@ curl -L https://github.com/GetStream/agent-skills/archive/refs/heads/main.tar.gz
 ```
 
 This is byte-for-byte the same content `npx skills add` installs, fetched directly from GitHub.
-
-### Install one skill at a time (Claude Code plugin marketplace)
-
-The pack is registered as a Claude Code plugin marketplace, so you can install a single sub-skill if that's all you need:
-
-```bash
-/plugin marketplace add GetStream/agent-skills
-/plugin install cli@stream-skills        # just the CLI sub-skill
-/plugin install docs@stream-skills       # just the docs sub-skill
-/plugin install builder@stream-skills    # just the builder sub-skill
-/plugin install core@stream-skills       # just the router + RULES
-```
-
-The `npx skills add` install always pulls everything; the plugin marketplace path lets you opt in granularly.
 
 ## Skills
 
@@ -62,7 +50,7 @@ This pack is **markdown only** — no code, no postinstall scripts, no binaries.
 
 | Step | Trigger | What it does | Source |
 |---|---|---|---|
-| `npx skills add GetStream/agent-skills` | Manual, by you | Fetches this repo's markdown into your skills directory via the [`skills.sh` CLI](https://skills.sh/docs/cli) ([source](https://github.com/skills-sh/skills-cli)). | GitHub (`GetStream/agent-skills`) |
+| `npx skills add GetStream/agent-skills --skill '*'` | Manual, by you | Fetches this repo's markdown into your skills directory via the [`skills.sh` CLI](https://skills.sh/docs/cli) ([source](https://github.com/skills-sh/skills-cli)). | GitHub (`GetStream/agent-skills`) |
 | `curl -sSL https://getstream.io/cli/install.sh \| bash` | Agent runs only after you approve | Installs the `stream` CLI binary. Skipped entirely for docs-only usage (`/stream-docs`). Full audit of what the installer does — including SHA-256 verification and TTY confirmation — in [`skills/stream-cli/bootstrap.md`](skills/stream-cli/bootstrap.md#what-the-installer-does). | `getstream.io/cli/` |
 | Frontend skill installs (builder only) | Agent asks first, then runs | Installs three third-party skill packs for UI scaffolding — see below. | GitHub (listed) |
 
@@ -120,4 +108,3 @@ Cross-cutting rules (secrets, login screen, strict mode, package manager, base U
   - [`enhance.md`](skills/stream-builder/enhance.md) — add Stream to an existing app
   - [`sdk.md`](skills/stream-builder/sdk.md) — cross-cutting SDK wiring patterns
   - [`references/`](skills/stream-builder/references/) — per-product setup, gotchas, and component blueprints
-- [`.claude-plugin/marketplace.json`](.claude-plugin/marketplace.json) — Claude Code plugin manifest for granular installs
