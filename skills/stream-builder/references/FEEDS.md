@@ -69,20 +69,48 @@ const feedToken = client.generateUserToken({ user_id: userId });
 
 All feed operations on the server-side `StreamClient` are namespaced under `client.feeds.*` — NOT `client.*` directly. This is different from the client-side `FeedsClient` where methods are on the client directly.
 
+#### Server-side mutations require `user_id`
+
+**Every** `client.feeds.*` mutation requires a `user_id` field naming the acting user (the activity/comment/reaction author). Forgetting it returns:
+
+```
+Stream error code 4: <Method> failed with error: "user_id is required for server side requests"
+```
+
+This applies to (Node SDK):
+- `addActivity` (required)
+- `updateActivity` / `updateActivityPartial` (required)
+- `restoreActivity` (required)
+- `addComment` / `deleteComment` (required for ownership)
+- `addActivityReaction` / `deleteActivityReaction` (required for ownership)
+- `addBookmark` / `deleteBookmark` (required for ownership)
+- `pinActivity` / `unpinActivity` (required)
+- `upsertActivities` (each activity needs `user_id`)
+- `deleteActivities` (batch — `user_id` at request level)
+
+**Exception:** `client.feeds.deleteActivity({ id, hard_delete })` does NOT take `user_id` in the Node SDK type — admin clients delete by activity ID directly. (The OpenAPI docs show `user_id` for some other language SDKs, but the TypeScript SDK omits it.)
+
 ```ts
-// Add activity (server-side)
+// Add activity (server-side) — user_id REQUIRED
 const result = await client.feeds.addActivity({
+  user_id: userId,                    // ← REQUIRED
   feeds: [`user:${userId}`],
   type: 'post',
   text: 'Hello world',
-  custom: { callId: '...' },  // optional custom fields
+  custom: { callId: '...' },
 });
 // result.activity.id — the created activity's ID
 
-// Delete activity (server-side)
+// Delete activity (server-side) — admin delete, no user_id
 await client.feeds.deleteActivity({ id: activityId });
-// Hard delete:
 await client.feeds.deleteActivity({ id: activityId, hard_delete: true });
+
+// Update activity (server-side) — user_id REQUIRED
+await client.feeds.updateActivityPartial({
+  id: activityId,
+  user_id: userId,                    // ← REQUIRED
+  set: { text: 'Updated' },
+});
 ```
 
 **Key difference from client-side API:** On the server, `addActivity` requires a `feeds` array specifying target feeds. The client-side `feed.addActivity()` implicitly targets the feed it's called on.
@@ -379,3 +407,4 @@ client.on('moderation.flagged', (event) => { /* content flagged */ });
 - **`AggregatedActivityResponse` has no `.id` or `.verb`** — use `.group` as React key, derive verb from `.activities[0].type`. See Key Types above.
 - **`feed.follow()` vs `client.follow()` in UI code** — always use `timelineFeed.follow('user:targetId')` in components. `client.follow({ source, target })` updates the server but does NOT trigger hook re-renders — the timeline will stay empty until a manual refresh. The feed instance method keeps `useFeedActivities()` and other hooks in sync.
 - **Server-side `StreamClient` vs client-side `FeedsClient`** — on the server (`@stream-io/node-sdk`), all feed operations are namespaced under `client.feeds.*` (e.g. `client.feeds.addActivity()`, `client.feeds.deleteActivity()`). Do NOT use `client.addActivity()` or `client.deleteActivity()` directly — those don't exist on `StreamClient`. The client-side `FeedsClient` (from `@stream-io/feeds-react-sdk`) has methods directly on the client (e.g. `client.addActivity()`).
+- **Server-side mutations require `user_id`** — every `client.feeds.*` mutation (addActivity, updateActivity, addComment, addActivityReaction, addBookmark, pinActivity, etc.) needs a `user_id` field. Exception: `deleteActivity` is admin-by-id only. See "Server-side mutations require `user_id`" above for the full list.
