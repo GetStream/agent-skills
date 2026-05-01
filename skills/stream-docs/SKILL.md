@@ -1,6 +1,7 @@
 ---
 name: stream-docs
 description: "Search live Stream SDK documentation for Chat, Video, Feeds, and Moderation. Look up how a Stream React/iOS/Android/Node/Flutter/Unity/Angular hook, component, or method works. Answer how-to questions about any Stream SDK across every framework and version. Triggers on 'docs', 'documentation', explicit SDK tokens (Chat React, Video iOS, Feeds Node, Moderation), and 'how do I … in <framework>' phrasing. Answers come verbatim from getstream.io with citations — no CLI required."
+user-invocable: false
 license: See LICENSE in repository root
 metadata:
   author: GetStream
