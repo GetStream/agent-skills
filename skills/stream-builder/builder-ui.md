@@ -13,7 +13,7 @@ Centered card on a neutral background. No sidebar, no nav - just the login form.
 - App icon / logo
 - App name (use-case label)
 - Single `username` input (required, full card width)
-- `Continue ->` primary button
+- `Continue` primary button (no arrow glyph in label - see UI Guidelines > Button labels)
 - Hint text below the button, in `text-muted-foreground text-sm`: "Open this URL in another tab with a different username to test multi-user features."
 
 **Behavior:**
@@ -53,6 +53,10 @@ Use whatever `globals.css` Shadcn generates. Do not add custom variables, custom
 ### Design
 
 Use Shadcn components, Tailwind utilities, and - if the user approved them in Step 3 Task A.2 - the frontend skills to build a polished UI. No further opinions; use your best judgement. Stream references provide structure and wiring; frontend skills (when present) provide generic design guidance.
+
+### Button labels
+
+**Never put arrow characters in button text** - no ASCII arrow sequences (like `->`, `>>`) and no unicode arrow glyphs (any codepoint that renders as an arrow or chevron) in the label. If a button needs an arrow visually, use a proper icon component (e.g. `lucide-react`'s `<ArrowRight />`, `<ChevronRight />`) rendered alongside the label. Otherwise, leave the label plain (e.g. `Continue`, not `Continue ->`).
 
 ### Stream SDK CSS & Providers
 
