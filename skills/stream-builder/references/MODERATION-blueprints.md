@@ -1,6 +1,6 @@
 # Moderation - full component blueprints
 
-Setup, routes, and gotchas: [MODERATION.md](MODERATION.md). Rules: [../RULES.md](../RULES.md).
+Setup, routes, and gotchas: [MODERATION.md](MODERATION.md). Rules: [../../stream/RULES.md](../../stream/RULES.md).
 
 ---
 

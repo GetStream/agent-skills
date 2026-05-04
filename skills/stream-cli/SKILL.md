@@ -1,16 +1,41 @@
-# Stream CLI - API Interaction
+---
+name: stream-cli
+description: "Query Stream data and run CLI operations against Chat, Video, Feeds, and Moderation: list channels, list calls, show flagged messages, find users, query any Stream resource. Run stream api / stream config / stream auth commands. Install the Stream CLI binary. Use when the user gives operational verbs ('list', 'show', 'find', 'check', 'query') with Stream nouns, or invokes the CLI literally."
+license: See LICENSE in repository root
+metadata:
+  author: GetStream
+  requires:
+    bins: ["stream"]
+allowed-tools: >-
+  Read, Glob, Grep,
+  Bash(stream *),
+  Bash(npx skills add GetStream/agent-skills *),
+  Bash(curl -fsSL https://getstream.io/cli/install.sh*),
+  Bash(curl -fsSL https://getstream.io/cli/*),
+  Bash(shasum *), Bash(uname *),
+  Bash(command -v *), Bash(less *), Bash(bash /tmp/stream-install.sh*),
+  Bash(grep *), Bash(ls *), Bash(test *),
+  Bash(cat package.json), Bash(cat go.mod),
+  Bash(python3 -c *), Bash(pbpaste)
+---
 
-Rules: [`RULES.md`](RULES.md) (CLI safety). Use this when the user wants to interact with Stream's APIs via the `stream` CLI.
+# Stream CLI - API interaction
 
-**Prerequisite:** **[`SKILL.md`](SKILL.md) › CLI gate** - verify the `stream` binary is installed (install via **`bootstrap.md`** if not) before any `stream api` usage.
+> **Read first (every session):** Glob `../stream/SKILL.md`. If the path is empty, install with `npx skills add GetStream/agent-skills --s stream -y` (no confirmation, just run). Then Read [`../stream/RULES.md`](../stream/RULES.md) - it includes a **Peer skills** table for installing/invoking any other pack skills on demand.
+
+Use this skill when the user wants to interact with Stream's APIs via the `stream` CLI, or to install the CLI itself.
+
+**Prerequisite:** complete [`preflight.md`](preflight.md) - verify the `stream` binary is installed (install via [`bootstrap.md`](bootstrap.md) if not) before any `stream api` usage.
+
+**Install only (Track C):** if the user asked to install the CLI / set up Stream with no project context, jump straight to [`bootstrap.md`](bootstrap.md). The bootstrap module is self-contained.
 
 **Heavy examples / query cookbooks:** load **[`cli-cookbook.md`](cli-cookbook.md)** only when you need a non-obvious `--body` or filter.
 
 ## Credential resolution (before any `stream api` call)
 
-1. **`.env` in cwd** has `STREAM_API_KEY` → credentials are local. The CLI auto-resolves from env vars - you're querying this project's app.
-2. **No `.env`** → check `stream config list` for configured org/app → use those. Mention which app you're querying: "Querying app `<name>` (configured via CLI)."
-3. **Nothing** → tell the user: "No Stream credentials found. Run `stream auth login` to connect, or `cd` into a project with a `.env`."
+1. **`.env` in cwd** has `STREAM_API_KEY` -> credentials are local. The CLI auto-resolves from env vars - you're querying this project's app.
+2. **No `.env`** -> check `stream config list` for configured org/app -> use those. Mention which app you're querying: "Querying app `<name>` (configured via CLI)."
+3. **Nothing** -> tell the user: "No Stream credentials found. Run `stream auth login` to connect, or `cd` into a project with a `.env`."
 
 Do credential resolution **silently** when `.env` or config exists - don't ask the user, just resolve and proceed.
 
@@ -74,5 +99,5 @@ Set defaults: `stream config set org <id>` and `stream config set app <id>`.
 2. **Help:** **`stream --safe api <endpoint> --help`** for parameters after you know the endpoint name.
 3. **Lazy auth** - if exit code **2**, **`stream auth login`** then retry.
 4. **Missing params** - ask; never invent IDs.
-5. **First attempt always `--safe`** - exit **5** → explain mutating op → retry without **`--safe`**.
+5. **First attempt always `--safe`** - exit **5** -> explain mutating op -> retry without **`--safe`**.
 6. **Summarize** API responses concisely for the user.

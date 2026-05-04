@@ -1,13 +1,13 @@
 # SDK reference - cross-cutting patterns
 
-Rules: [`RULES.md`](RULES.md) (secrets, strict mode protection, package manager). **CLI:** complete **[`SKILL.md`](SKILL.md) › CLI gate** before any workflow that needs the `stream` CLI.
-Product-specific SDK wiring, gotchas, and client patterns: see `references/*.md` App Integration sections.
+Rules: the `stream` skill's [`RULES.md`](../stream/RULES.md) (secrets, strict mode protection, package manager). **CLI:** complete the `stream-cli` skill's [`preflight.md`](../stream-cli/preflight.md) before any workflow that needs the `stream` CLI.
+Product-specific SDK wiring, gotchas, and client patterns: see [`references/*.md`](references/) App Integration sections.
 
 ---
 
 ## Token endpoint pattern (all products)
 
-`GET /api/token?user_id=xxx` - upsert the requesting user only (RULES.md › No auto-seeding), return per-product tokens.
+`GET /api/token?user_id=xxx` - upsert the requesting user only (RULES.md > No auto-seeding), return per-product tokens.
 
 **Combined token route** when multiple products are used:
 
@@ -28,7 +28,7 @@ Product-specific SDK wiring, gotchas, and client patterns: see `references/*.md`
 
 | Product | Package | Instantiation |
 |---------|---------|---------------|
-| Chat | `stream-chat` + `stream-chat-react` | `new StreamChat(apiKey)` - never `getInstance()` on client (RULES.md › Strict mode protection) |
+| Chat | `stream-chat` + `stream-chat-react` | `new StreamChat(apiKey)` - never `getInstance()` on client (RULES.md > Strict mode protection) |
 | Video | `@stream-io/video-react-sdk` | `new StreamVideoClient({ apiKey, user: { id, name }, token })` |
 | Feeds v3 | `@stream-io/feeds-react-sdk` | `useCreateFeedsClient({ apiKey, tokenOrProvider, userData })` - returns `FeedsClient \| null` (null until connected). All feed mutations happen client-side. |
 
@@ -83,4 +83,4 @@ See `references/FEEDS.md` for complete type reference.
 
 ## Moderation - CLI setup only
 
-Moderation is configured via CLI during scaffold - NOT built as in-app UI. Review happens in the [Stream Dashboard](https://beta.dashboard.getstream.io). CLI commands: see `references/MODERATION.md` (App Integration → Setup).
+Moderation is configured via CLI during scaffold - NOT built as in-app UI. Review happens in the [Stream Dashboard](https://beta.dashboard.getstream.io). CLI commands: see `references/MODERATION.md` (App Integration -> Setup).

@@ -1,6 +1,6 @@
 # Feeds v3 - Full Component Blueprints
 
-Setup, routes, and gotchas: [FEEDS.md](FEEDS.md). Rules: [../RULES.md](../RULES.md).
+Setup, routes, and gotchas: [FEEDS.md](FEEDS.md). Rules: [../../stream/RULES.md](../../stream/RULES.md).
 
 The Feeds SDK is **headless** - all components below are built entirely with your own UI (Shadcn/Tailwind). The SDK provides hooks and state management only.
 
@@ -35,7 +35,7 @@ Text input for creating new activities. Includes avatar, textarea, and post butt
 | `--avatar` | Current user | - | `userId` from auth state (first letter for fallback) |
 | `--input` | - | Local state | Controlled textarea. **Use the Shadcn `<Textarea>` component with its default styling (border, focus ring, background).** Do NOT strip defaults with `border-0`, `bg-transparent`, `shadow-none`, or `focus-visible:ring-0` - the textarea should look like a standard input inside the card. |
 | `--submit` enabled | Text is non-empty | `feed.addActivity({ type: 'post', text })` | Returns `StreamResponse<AddActivityResponse>` - created activity at `result.activity` |
-| `--attach` (optional) | - | `client.uploadImage({ file })` or `client.uploadFile({ file })` → include URL in `attachments` | `FeedsClient.uploadImage()` / `FeedsClient.uploadFile()` |
+| `--attach` (optional) | - | `client.uploadImage({ file })` or `client.uploadFile({ file })` -> include URL in `attachments` | `FeedsClient.uploadImage()` / `FeedsClient.uploadFile()` |
 
 ### Requirements
 
@@ -260,7 +260,7 @@ Toggle button to follow/unfollow a user's feed.
 | Element | Read | Write | Property Path |
 |---|---|---|---|
 | Is following | `useOwnFollows(feed)` | - | `own_follows?.some(f => f.target === targetFid)` - check if any of current user's feeds follow this one |
-| Follow | - | `feed.follow('user:targetId')` | On the current user's **timeline feed instance**. Do NOT use `client.follow()` — it won't update reactive hook state. |
+| Follow | - | `feed.follow('user:targetId')` | On the current user's **timeline feed instance**. Do NOT use `client.follow()` - it won't update reactive hook state. |
 | Unfollow | - | `feed.unfollow('user:targetId')` | On the current user's **timeline feed instance**. Do NOT use `client.unfollow()`. |
 | Follower count | `useFeedMetadata(feed)` | - | `follower_count` |
 | Following count | `useFeedMetadata(feed)` | - | `following_count` |
@@ -403,9 +403,9 @@ Used in livestreaming apps (Video + Feeds). A live activity represents an active
 | `live-card__title` | Activity data | - | `activity.text` |
 | `live-card__watch` | - | Navigate to watch view | `activity.custom.callId` |
 | Go Live (create, client-side) | - | `feed.addActivity({ type: 'live', text: title, custom: { callId } })` | Returns `StreamResponse<AddActivityResponse>` - save `result.activity.id` for cleanup |
-| Go Live (create, server-side) | - | `client.feeds.addActivity({ feeds: ['user:' + userId], type: 'live', text: title, custom: { callId } })` | Server route (`/api/feed/live`). `client.feeds.*` — NOT `client.*` directly. Returns `{ activity: { id } }` |
+| Go Live (create, server-side) | - | `client.feeds.addActivity({ feeds: ['user:' + userId], type: 'live', text: title, custom: { callId } })` | Server route (`/api/feed/live`). `client.feeds.*` - NOT `client.*` directly. Returns `{ activity: { id } }` |
 | End Stream (remove, client-side) | - | `client.deleteActivity({ id: liveActivityId })` | Use the activity ID saved from Go Live |
-| End Stream (remove, server-side) | - | `client.feeds.deleteActivity({ id: liveActivityId })` | Server route. `client.feeds.*` — NOT `client.*` directly |
+| End Stream (remove, server-side) | - | `client.feeds.deleteActivity({ id: liveActivityId })` | Server route. `client.feeds.*` - NOT `client.*` directly |
 
 ### Requirements
 

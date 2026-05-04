@@ -2,7 +2,7 @@
 
 Stream Feeds v3 is a **headless** SDK - hooks, providers, and state management with **zero pre-built UI components**. All UI is built with your own components (Tailwind/Shadcn). For full component structure and wiring, see [FEEDS-blueprints.md](FEEDS-blueprints.md).
 
-Rules: [../RULES.md](../RULES.md) (secrets, no auto-seeding, login screen first, strict mode protection).
+Rules: [../../stream/RULES.md](../../stream/RULES.md) (secrets, no auto-seeding, login screen first, strict mode protection).
 
 - **Blueprint** - HTML with BEM classes defining structure and conditional rendering
 - **Wiring** - API calls to read/write each element, exact property paths
@@ -12,8 +12,8 @@ Rules: [../RULES.md](../RULES.md) (secrets, no auto-seeding, login screen first,
 
 - **Packages:** `@stream-io/feeds-react-sdk` (client - re-exports `@stream-io/feeds-client` + React bindings), `@stream-io/node-sdk` (server - token generation + user upsert only)
 - **No CSS import** - SDK is headless, all styling is yours
-- **First:** **App Integration** → **Setup** (CLI / feed groups) before UI.
-- **Per feature:** Jump to section (Feed List, Post Card, …) when implementing that screen.
+- **First:** **App Integration** -> **Setup** (CLI / feed groups) before UI.
+- **Per feature:** Jump to section (Feed List, Post Card, ...) when implementing that screen.
 
 Full component blueprints: [FEEDS-blueprints.md](FEEDS-blueprints.md) - load only the section you are implementing.
 
@@ -52,7 +52,7 @@ Most feed mutations (post, react, comment, bookmark) happen **client-side** via 
 |---|---|---|---|---|
 | `/api/token` | GET | `?user_id=xxx` | `client.upsertUsers([{ id, name, role: 'user' }])`, `client.generateUserToken({ user_id })` | `{ feedToken, apiKey, userId }` |
 
-See RULES.md › No auto-seeding.
+See RULES.md > No auto-seeding.
 
 ```ts
 import { StreamClient } from '@stream-io/node-sdk';
@@ -67,30 +67,58 @@ const feedToken = client.generateUserToken({ user_id: userId });
 
 **Server-side feed mutations** (via `@stream-io/node-sdk`):
 
-All feed operations on the server-side `StreamClient` are namespaced under `client.feeds.*` — NOT `client.*` directly. This is different from the client-side `FeedsClient` where methods are on the client directly.
+All feed operations on the server-side `StreamClient` are namespaced under `client.feeds.*` - NOT `client.*` directly. This is different from the client-side `FeedsClient` where methods are on the client directly.
+
+#### Server-side mutations require `user_id`
+
+**Every** `client.feeds.*` mutation requires a `user_id` field naming the acting user (the activity/comment/reaction author). Forgetting it returns:
+
+```
+Stream error code 4: <Method> failed with error: "user_id is required for server side requests"
+```
+
+This applies to (Node SDK):
+- `addActivity` (required)
+- `updateActivity` / `updateActivityPartial` (required)
+- `restoreActivity` (required)
+- `addComment` / `deleteComment` (required for ownership)
+- `addActivityReaction` / `deleteActivityReaction` (required for ownership)
+- `addBookmark` / `deleteBookmark` (required for ownership)
+- `pinActivity` / `unpinActivity` (required)
+- `upsertActivities` (each activity needs `user_id`)
+- `deleteActivities` (batch - `user_id` at request level)
+
+**Exception:** `client.feeds.deleteActivity({ id, hard_delete })` does NOT take `user_id` in the Node SDK type - admin clients delete by activity ID directly. (The OpenAPI docs show `user_id` for some other language SDKs, but the TypeScript SDK omits it.)
 
 ```ts
-// Add activity (server-side)
+// Add activity (server-side) - user_id REQUIRED
 const result = await client.feeds.addActivity({
+  user_id: userId,                    // <- REQUIRED
   feeds: [`user:${userId}`],
   type: 'post',
   text: 'Hello world',
-  custom: { callId: '...' },  // optional custom fields
+  custom: { callId: '...' },
 });
-// result.activity.id — the created activity's ID
+// result.activity.id - the created activity's ID
 
-// Delete activity (server-side)
+// Delete activity (server-side) - admin delete, no user_id
 await client.feeds.deleteActivity({ id: activityId });
-// Hard delete:
 await client.feeds.deleteActivity({ id: activityId, hard_delete: true });
+
+// Update activity (server-side) - user_id REQUIRED
+await client.feeds.updateActivityPartial({
+  id: activityId,
+  user_id: userId,                    // <- REQUIRED
+  set: { text: 'Updated' },
+});
 ```
 
 **Key difference from client-side API:** On the server, `addActivity` requires a `feeds` array specifying target feeds. The client-side `feed.addActivity()` implicitly targets the feed it's called on.
 
 ### Client Patterns
 
-- **Login Screen first:** See RULES.md › Login Screen first + [builder-ui.md](../builder-ui.md) > Login Screen.
-- **App Header:** Show the current username + avatar (initial letter) + "Switch User" in a persistent header. See [`builder-ui.md`](../builder-ui.md) → App Header.
+- **Login Screen first:** See RULES.md > Login Screen first + [builder-ui.md](../builder-ui.md) > Login Screen.
+- **App Header:** Show the current username + avatar (initial letter) + "Switch User" in a persistent header. See [`builder-ui.md`](../builder-ui.md) -> App Header.
 - **Instantiate:** Use `useCreateFeedsClient()` hook - it handles `connectUser()` internally.
 - **Provider pattern:**
 
@@ -115,19 +143,19 @@ if (!client) return <Loading />;  // null until connected
 
 - **Feed initialization - must call `getOrCreate()`:**
 
-Each user posts to their **own** `user:<userId>` feed and reads from `timeline:<userId>` (which aggregates posts from followed users). Do NOT use a shared feed like `user:community` — users don't have permission to post to feeds they don't own.
+Each user posts to their **own** `user:<userId>` feed and reads from `timeline:<userId>` (which aggregates posts from followed users). Do NOT use a shared feed like `user:community` - users don't have permission to post to feeds they don't own.
 
 ```tsx
 // User's own feed (post here)
 const userFeed = client.feed('user', userId);
 await userFeed.getOrCreate({ watch: true });
 
-// User's timeline (read here — shows posts from followed users)
+// User's timeline (read here - shows posts from followed users)
 const timelineFeed = client.feed('timeline', userId);
 await timelineFeed.getOrCreate({ watch: true });
 ```
 
-- **Strict mode:** `useCreateFeedsClient()` handles connection internally. But `feed.getOrCreate()` must be wrapped in `setTimeout(50ms)` + `mounted` guard pattern (RULES.md › Strict mode protection).
+- **Strict mode:** `useCreateFeedsClient()` handles connection internally. But `feed.getOrCreate()` must be wrapped in `setTimeout(50ms)` + `mounted` guard pattern (RULES.md > Strict mode protection).
 - **Gate rendering** on `client !== null` - `useCreateFeedsClient()` returns `null` until connected.
 - **Context hooks:**
   - `useFeedsClient()` - returns `FeedsClient | undefined` (undefined if no `<StreamFeeds>` parent). Always guard: `if (!client) return null;`
@@ -276,16 +304,16 @@ await client.addBookmark({ activity_id: activityId });
 await client.addBookmark({ activity_id: activityId, folder_id: 'saved' });
 await client.deleteBookmark({ activity_id: activityId });
 
-// Follows (via Feed instance) — PREFERRED for UI code
+// Follows (via Feed instance) - PREFERRED for UI code
 // Calling follow/unfollow on the feed instance keeps the SDK's reactive state
 // (useFeedActivities, useOwnFollows, etc.) in sync so the timeline updates immediately.
 await timelineFeed.follow('user:tom');
 await timelineFeed.unfollow('user:tom');
 
-// Follows (via FeedsClient) — server-side or non-reactive contexts only
+// Follows (via FeedsClient) - server-side or non-reactive contexts only
 // WARNING: client.follow() updates the server but does NOT notify hooks/providers.
 // The timeline feed's useFeedActivities() will NOT refresh. Do NOT use this in
-// components that display feed data — use feed.follow() instead.
+// components that display feed data - use feed.follow() instead.
 await client.follow({ source: 'timeline:alice', target: 'user:tom' });
 await client.unfollow({ source: 'timeline:alice', target: 'user:tom' });
 
@@ -377,5 +405,6 @@ client.on('moderation.flagged', (event) => { /* content flagged */ });
 - **`useActivityComments()` does NOT auto-load** - `comments` starts as `undefined`. You MUST call `loadNextPage()` once on mount (via `useEffect` + ref guard) to trigger the initial fetch. Without this, comments will never appear.
 - **`upsertUsers` takes an array:** `client.upsertUsers([{ id, name, role }])` - NOT keyed by ID.
 - **`AggregatedActivityResponse` has no `.id` or `.verb`** - use `.group` as React key, derive verb from `.activities[0].type`. See Key Types above.
-- **`feed.follow()` vs `client.follow()` in UI code** - always use `timelineFeed.follow('user:targetId')` in components. `client.follow({ source, target })` updates the server but does NOT trigger hook re-renders — the timeline will stay empty until a manual refresh. The feed instance method keeps `useFeedActivities()` and other hooks in sync.
-- **Server-side `StreamClient` vs client-side `FeedsClient`** - on the server (`@stream-io/node-sdk`), all feed operations are namespaced under `client.feeds.*` (e.g. `client.feeds.addActivity()`, `client.feeds.deleteActivity()`). Do NOT use `client.addActivity()` or `client.deleteActivity()` directly — those don't exist on `StreamClient`. The client-side `FeedsClient` (from `@stream-io/feeds-react-sdk`) has methods directly on the client (e.g. `client.addActivity()`).
+- **`feed.follow()` vs `client.follow()` in UI code** - always use `timelineFeed.follow('user:targetId')` in components. `client.follow({ source, target })` updates the server but does NOT trigger hook re-renders - the timeline will stay empty until a manual refresh. The feed instance method keeps `useFeedActivities()` and other hooks in sync.
+- **Server-side `StreamClient` vs client-side `FeedsClient`** - on the server (`@stream-io/node-sdk`), all feed operations are namespaced under `client.feeds.*` (e.g. `client.feeds.addActivity()`, `client.feeds.deleteActivity()`). Do NOT use `client.addActivity()` or `client.deleteActivity()` directly - those don't exist on `StreamClient`. The client-side `FeedsClient` (from `@stream-io/feeds-react-sdk`) has methods directly on the client (e.g. `client.addActivity()`).
+- **Server-side mutations require `user_id`** - every `client.feeds.*` mutation (addActivity, updateActivity, addComment, addActivityReaction, addBookmark, pinActivity, etc.) needs a `user_id` field. Exception: `deleteActivity` is admin-by-id only. See "Server-side mutations require `user_id`" above for the full list.

@@ -1,6 +1,6 @@
 # Video - full component blueprints
 
-Setup, routes, and gotchas: [VIDEO.md](VIDEO.md). Rules: [../RULES.md](../RULES.md).
+Setup, routes, and gotchas: [VIDEO.md](VIDEO.md). Rules: [../../stream/RULES.md](../../stream/RULES.md).
 
 ---
 
