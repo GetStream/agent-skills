@@ -8,6 +8,16 @@ Every rule below is stated once. Other files reference this file - do not duplic
 
 Target Stream Chat Android SDK **v7+** (`io.getstream:stream-chat-android-compose:7.x` and matching `stream-chat-android-client` / `stream-chat-android-ui-components`). v7 changed plugin wiring, theme APIs, and several Composable signatures vs. v6. If a pattern in your training data conflicts with this skill's blueprints or the [v7 docs](https://getstream.io/chat/docs/sdk/android/), trust the docs - do not fall back to remembered v6 shapes.
 
+### Version lookup
+
+When you need the current Stream artifact version, use one of these sources:
+
+- Maven Central (Sonatype): `https://central.sonatype.com/artifact/io.getstream/stream-chat-android-compose/versions` (or `/stream-chat-android-ui-components/versions`)
+- GitHub releases: `https://github.com/GetStream/stream-chat-android/releases`
+- Stream Android docs landing page: `https://getstream.io/chat/docs/sdk/android/`
+
+**Do not use `search.maven.org`** — it is deprecated and its index is stale; it does not surface v7 releases and will lead you to ship v6 versions by mistake. If a tool result shows `search.maven.org` as the source, discard it and re-query one of the sources above.
+
 ---
 
 ## Secrets and auth
