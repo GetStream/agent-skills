@@ -12,7 +12,7 @@ The pack splits across five skills under `skills/`. The `stream` skill is the ro
 | [`skills/stream-cli/SKILL.md`](skills/stream-cli/SKILL.md) | Query Stream data, run `stream api / config / auth`, install the CLI binary |
 | [`skills/stream-docs/SKILL.md`](skills/stream-docs/SKILL.md) | Search live SDK documentation from getstream.io (no CLI required) |
 | [`skills/stream-builder/SKILL.md`](skills/stream-builder/SKILL.md) | Scaffold a new app, or add Chat/Video/Feeds/Moderation to an existing one |
-| [`skills/stream-react-native/SKILL.md`](skills/stream-react-native/SKILL.md) | Build or integrate Stream Chat React Native v9 in RN CLI or Expo apps |
+| [`skills/stream-react-native/SKILL.md`](skills/stream-react-native/SKILL.md) | Create, build, or integrate Stream Chat React Native v9 in RN CLI or Expo apps |
 
 ---
 

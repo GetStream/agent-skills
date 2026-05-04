@@ -1,10 +1,10 @@
 # Stream React Native - credentials, token, and seed data
 
-Run this once per session for tracks A, B, and D, right after intent classification and before the Project signals probe. Track C does not need credentials.
+Run this once per session for tracks A, B, and D before writing connected Chat code or seeding data. Track C does not need credentials.
 
 ## Goal
 
-Collect the Stream API key, user id, user token, and optional seed channels before touching code so the app can connect to real Chat data on first run.
+Collect the Stream API key, user id, user token, and optional seed channels so the app can connect to real Chat data on first run. For a brand-new app, scaffolding may happen before this file if the runtime or target directory must be resolved first.
 
 This flow uses the **`stream`** CLI (binary name `stream`). It is the same CLI used by [`../stream-cli`](../stream-cli/SKILL.md). If the CLI is missing, use [`../stream-cli/bootstrap.md`](../stream-cli/bootstrap.md) for the install flow.
 
@@ -108,7 +108,7 @@ After seeding, summarize without secrets:
 
 ### Step D - Proceed automatically
 
-After credentials and optional seeding succeed, return to [`SKILL.md`](SKILL.md) -> Project signals, then continue into [`builder.md`](builder.md). No additional prompt is needed.
+After credentials and optional seeding succeed, return to [`SKILL.md`](SKILL.md) and continue into [`builder.md`](builder.md). No additional prompt is needed.
 
 If any CLI step fails and cannot be recovered, ask the user to paste the missing API key or token manually before editing code.
 

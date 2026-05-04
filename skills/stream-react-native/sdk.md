@@ -302,7 +302,7 @@ Expo Go cannot use offline support; use Expo dev client or prebuild.
 
 ## Push notifications
 
-`Chat` defaults `closeConnectionOnBackground` to `true`, which disconnects the WebSocket on background. Push notifications require the user to not have an active WebSocket connection. If the user asks for push, read the local push guide before editing: `05-advanced-guides/13-push-notifications.md`.
+If the user asks for push notifications, use [references/DOCS.md](references/DOCS.md) to fetch the manifest-selected push notification docs before editing. Do not assume background WebSocket behavior, provider registration steps, or default prop values from memory.
 
 ---
 

@@ -12,7 +12,7 @@ Target **Stream Chat React Native v9**.
 - The general New Architecture guide says SDK New Architecture support starts at React Native >=0.75.4, but for v9 migrations use the stricter v9 requirement.
 - This skill is Chat-only in v1. Do not implement or document React Native Video, Feeds, or Moderation UI from memory.
 
-If training data conflicts with this skill, the local docs under `~/Projects/docs/data/docs/chat-sdk/react-native/v9-latest` and SDK source under `~/Projects/stream-chat-react-native/package/src` win.
+Use Stream `llms.txt` manifests as the docs authority. Start from [`references/DOCS.md`](references/DOCS.md), fetch the appropriate manifest, then fetch the selected markdown page before coding. Do not maintain or rely on hardcoded individual docs URLs. If a symbol must be verified in source, inspect the installed package in the target app's `node_modules` after install.
 
 ---
 
@@ -34,14 +34,26 @@ Prefer not to commit static user tokens. If the user wants a local-only demo and
 
 ## Runtime lane ownership
 
-Choose exactly one lane from the project:
+Choose exactly one lane from the project or request:
 
 - **RN CLI:** use `stream-chat-react-native`.
 - **Expo:** use `stream-chat-expo`.
 
 Do not install both packages unless the existing project already has a documented reason. Preserve the project's package manager (`npm`, `yarn`, `pnpm`) and navigation style.
 
-If there is no React Native or Expo project, do not scaffold from this skill. Tell the user to create the app first with their preferred tooling, then continue.
+For new app requests, default to Expo if the user did not choose a lane. Use RN CLI when the user asks for it or when native project constraints require it. Do not turn a non-empty unrelated directory into a new app without asking; create a child app directory instead when a name can be inferred.
+
+---
+
+## Package version and docs discipline
+
+Before installing Stream Chat RN packages:
+
+1. Use [`references/DOCS.md`](references/DOCS.md) to fetch the primary manifest and the manifest-selected `Installation` markdown page.
+2. Run or consult `npm view stream-chat-react-native version dist-tags --json` and/or `npm view stream-chat-expo version dist-tags --json`.
+3. Install `@latest` when the latest major is v9. If `latest` is not v9, use the manifest-selected docs' v9 tag or version.
+
+Before changing an existing Chat UI, fetch the manifest-selected markdown page that matches the requested change. Choose the implementation path from the docs and the existing app: theme for style-only changes, component overrides for UI slots, documented props/hooks for behavior, and optional native packages only for requested native capabilities.
 
 ---
 
@@ -60,6 +72,8 @@ For Chat RN v9, required setup includes:
 The Reanimated or Worklets Babel plugin must be the last Babel plugin. Wrap the app entry point in `GestureHandlerRootView`.
 
 `react-native-teleport` is required in v9 because `OverlayProvider` uses it for portal-hosted UI.
+
+Optional native dependencies are capability-owned. Install them only for requested capabilities or when manifest-selected docs require them. The package matrix and install notes live in [`builder.md`](builder.md) and [`references/CHAT-REACT-NATIVE.md`](references/CHAT-REACT-NATIVE.md).
 
 ---
 
@@ -113,6 +127,7 @@ For offline-first boot, read the offline section in [`sdk.md`](sdk.md) before co
 
 Load only the React Native Chat files that match the request:
 
+- [`references/DOCS.md`](references/DOCS.md) for `llms.txt` manifests and docs lookup routing
 - [`sdk.md`](sdk.md) for shared RN/Expo, auth, provider, navigation, offline, and sign-out patterns
 - [`references/CHAT-REACT-NATIVE.md`](references/CHAT-REACT-NATIVE.md) for Chat v9 setup and gotchas
 - [`references/CHAT-REACT-NATIVE-blueprints.md`](references/CHAT-REACT-NATIVE-blueprints.md) for concrete screen/component structure
@@ -122,18 +137,6 @@ Load only the React Native Chat files that match the request:
 Before writing or editing any Stream Chat React Native screen, navigation handler, thread flow, theming override, offline flow, or component customization, open the matching section of [`references/CHAT-REACT-NATIVE-blueprints.md`](references/CHAT-REACT-NATIVE-blueprints.md) and follow its structure.
 
 Use the **Request -> Blueprint section** table at the top of the blueprints file. If no section matches, say so before improvising. Do not rely on a blueprint read earlier in the session; re-read the relevant section before each Stream screen edit.
-
----
-
-## Source verification
-
-Before using a v9 symbol, prop, or export path that is not already in this skill, verify it in one of:
-
-- `~/Projects/docs/data/docs/chat-sdk/react-native/v9-latest`
-- `~/Projects/stream-chat-react-native/package/src/index.ts`
-- the specific SDK source file under `~/Projects/stream-chat-react-native/package/src`
-
-The SDK source lives in the package source, not only in wrapper package names.
 
 ---
 

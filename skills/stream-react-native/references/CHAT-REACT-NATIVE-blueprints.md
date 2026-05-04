@@ -1,6 +1,6 @@
 # Chat React Native v9 - Screen and Component Blueprints
 
-Load only the section you are implementing. For setup, packages, and gotchas, see [CHAT-REACT-NATIVE.md](CHAT-REACT-NATIVE.md).
+Load only the section you are implementing. For `llms.txt` manifest search, see [DOCS.md](DOCS.md). For setup, packages, and gotchas, see [CHAT-REACT-NATIVE.md](CHAT-REACT-NATIVE.md).
 
 Expo lane: change imports from `"stream-chat-react-native"` to `"stream-chat-expo"` unless the symbol comes from React Navigation, React Native, or `stream-chat`.
 
@@ -11,18 +11,18 @@ Expo lane: change imports from `"stream-chat-react-native"` to `"stream-chat-exp
 | Request | Read section |
 |---|---|
 | root setup, providers, auth gate, login | App Provider and Auth Gate |
-| brand new React Native or Expo app | Fresh App Handoff |
+| brand new React Native or Expo app | Fresh App Scaffold |
 | channel list, conversation list, channel tap | Channel List Screen |
 | message list, message composer, chat screen | Channel Screen |
-| attachment picker, gallery picker, file picker, camera upload | Attachment Picker Feature |
-| thread navigation, replies | Thread Screen |
-| thread inbox/list | Thread List Screen |
+| optional native capability | DOCS.md -> primary manifest lookup, then Optional Native Capability Blueprint |
+| thread navigation, replies, thread list | Thread Screen or Thread List Screen |
 | React Navigation or Expo Router shell | Navigation Shell |
 | theme, dark mode, colors, design tokens | Theming Blueprint |
-| custom message, avatar, send button, composer slots | Component Override Blueprint |
+| message styling, message layout, per-message visual changes | Message Styling and Layout Blueprint |
+| UI slot, component, behavior, or composer customization | DOCS.md -> primary manifest lookup, then Component Override Blueprint |
 | offline support or sign-out cleanup | Offline and Sign-out Blueprint |
 
-If no row matches, read [CHAT-REACT-NATIVE.md](CHAT-REACT-NATIVE.md) first and verify symbols in local docs/source before coding.
+If no row matches, read [DOCS.md](DOCS.md) and [CHAT-REACT-NATIVE.md](CHAT-REACT-NATIVE.md) first, then verify symbols in manifest-selected docs or the installed package before coding.
 
 ---
 
@@ -128,46 +128,54 @@ Wiring:
 
 ---
 
-## Fresh App Handoff
+## Fresh App Scaffold
 
-Use this only when the current directory is empty or not a React Native/Expo app. Do not cover full React Native setup. Give the user a minimal handoff and stop.
+Use this when the current directory is empty or the user asks for a brand-new React Native or Expo Chat app. Do not cover full React Native environment setup. Scaffold the app, install Stream Chat and mandatory peers, wire the root providers, and create the first Chat screens.
 
 Expo:
 
+Replace `MyChatApp` with the target directory, or use `.` only when the current directory is empty and the user asked to scaffold in place.
+
 ```bash
-npx create-expo-app MyChatApp
+npx create-expo-app@latest MyChatApp
 cd MyChatApp
+npm view stream-chat-expo version dist-tags --json
+npx expo install stream-chat-expo@latest @react-native-community/netinfo expo-image-manipulator react-native-gesture-handler react-native-reanimated react-native-svg react-native-teleport
+npx expo install react-native-safe-area-context
 ```
 
 RN CLI:
 
+Replace `MyChatApp` with the target directory, or use `.` only when the current directory is empty and the selected RN CLI supports in-place init.
+
 ```bash
-npx @react-native-community/cli init MyChatApp
+npx @react-native-community/cli@latest init MyChatApp
 cd MyChatApp
+npm view stream-chat-react-native version dist-tags --json
+npm install stream-chat-react-native@latest @react-native-community/netinfo react-native-gesture-handler react-native-reanimated react-native-teleport react-native-worklets react-native-svg
+npm install react-native-safe-area-context
+npx pod-install
 ```
 
-Then tell the user to re-run the Stream Chat request from inside the created project. Once the app exists, use this skill to install the mandatory Chat peer dependencies, optional feature dependencies, root providers, auth/token flow, and Chat screens.
+After scaffolding, continue with these sections in order: App Provider and Auth Gate, Navigation Shell if navigation is present or desired, Channel List Screen, and Channel Screen. Optional native capabilities stay opt-in and use the dependency map in [CHAT-REACT-NATIVE.md](CHAT-REACT-NATIVE.md).
 
 ---
 
-## Attachment Picker Feature
+## Optional Native Capability Blueprint
 
-Use this when the user asks for attachment picker, image upload, camera capture, file picker, or attachment sharing.
+Use this when the user asks for a capability that needs extra native packages beyond the required Stream Chat peers.
 
-### Dependency choice
+### Dependency choice and install flow
 
-| Requested behavior | RN CLI packages | Expo packages |
-|---|---|---|
-| Built-in image gallery picker in `MessageComposer` | `@react-native-camera-roll/camera-roll` | `expo-media-library` |
-| Native image picker / camera capture | `react-native-image-picker` | `expo-image-picker` |
-| File picker | `@react-native-documents/picker` | `expo-document-picker` |
-| Share attachments outside app | `react-native-blob-util react-native-share` | `expo-sharing` |
-
-Install only the packages needed for the requested behavior. Add camera, photo library, media library, or Expo config-plugin permissions as required by the chosen packages.
+1. Use [DOCS.md](DOCS.md) to fetch the manifest-selected docs for the requested capability.
+2. Read [CHAT-REACT-NATIVE.md](CHAT-REACT-NATIVE.md) > **Optional dependency map**.
+3. Install only the packages needed for the requested capability.
+4. Add the permissions, config plugins, pods, or prebuild steps required by those packages.
+5. Verify the capability in the screen that uses it.
 
 ### Screen wiring
 
-The default `MessageComposer` owns the attachment picker UI. Keep the composer inside `Channel`, and use insets so the picker aligns with the current screen.
+Keep optional UI inside the same provider and `Channel` hierarchy as the core Chat screen unless the manifest-selected docs require otherwise.
 
 ```tsx
 import React, { useMemo } from "react";
@@ -180,7 +188,7 @@ import {
   useChatContext,
 } from "stream-chat-react-native";
 
-export const AttachmentChannelScreen = ({ route }) => {
+export const ChannelScreenWithNativeCapability = ({ route }) => {
   const { channelCid } = route.params;
   const { client } = useChatContext();
   const headerHeight = useHeaderHeight();
@@ -207,10 +215,9 @@ export const AttachmentChannelScreen = ({ route }) => {
 
 Wiring:
 
-- `disableAttachmentPicker` on `Channel` hides the picker.
-- `bottomInset` controls space below `MessageComposer` when the picker opens.
-- `topInset` controls how far the attachment picker can expand upward.
-- Use `WithComponents` for custom attach button, previews, or file/gallery rendering.
+- Keep `MessageComposer` inside `Channel`.
+- Use `topInset` and `bottomInset` for optional UI that opens above or below the composer.
+- Use `WithComponents` for custom buttons, previews, rows, or capability-specific UI slots.
 
 ---
 
@@ -512,38 +519,77 @@ Wiring:
 
 ---
 
+## Message Styling and Layout Blueprint
+
+Use this for message-level visual or layout changes. Use [DOCS.md](DOCS.md) to fetch the manifest-selected theming/customization pages before editing.
+
+Prefer theme overrides first:
+
+```tsx
+import React, { useMemo } from "react";
+import type { DeepPartial, Theme } from "stream-chat-react-native";
+import { Chat, OverlayProvider } from "stream-chat-react-native";
+
+export const MessageStyledChat = ({ chatClient, children }) => {
+  const chatTheme = useMemo<DeepPartial<Theme>>(
+    () => ({
+      messageItemView: {
+        content: {
+          markdown: {
+            text: {
+              fontSize: 16,
+            },
+          },
+        },
+      },
+    }),
+    [],
+  );
+
+  return (
+    <OverlayProvider value={{ style: chatTheme }}>
+      <Chat client={chatClient} style={chatTheme}>
+        {children}
+      </Chat>
+    </OverlayProvider>
+  );
+};
+```
+
+Wiring:
+
+- Keep the theme object stable with `useMemo`.
+- Apply the style at both `OverlayProvider` and `Chat` when message overlays or galleries must match.
+- If the requested visual change cannot be expressed through theme keys, use `WithComponents` with a focused subcomponent override.
+- Replace a core message component only when the manifest-selected customization docs show that smaller overrides cannot satisfy the request.
+- If replacing the row structure, use [DOCS.md](DOCS.md) to fetch the manifest-selected context docs and preserve long-press overlay anchor behavior.
+
+---
+
 ## Component Override Blueprint
 
 Use `WithComponents` for custom subcomponents. Keep custom message rows memoized and use SDK context hooks.
 
 ```tsx
 import React, { memo } from "react";
-import { Image, Text, View } from "react-native";
 import {
   Channel,
   MessageComposer,
   MessageList,
   WithComponents,
-  useMessageContext,
 } from "stream-chat-react-native";
 
-const CustomAuthor = memo(() => {
-  const { message } = useMessageContext();
-  const image = message.user?.image;
-  const name = message.user?.name ?? message.user?.id ?? "User";
-
-  return (
-    <View style={{ alignItems: "center", marginRight: 8 }}>
-      {image ? (
-        <Image source={{ uri: image }} style={{ borderRadius: 12, height: 24, width: 24 }} />
-      ) : null}
-      <Text numberOfLines={1}>{name}</Text>
-    </View>
-  );
+const CustomSlotComponent = memo(() => {
+  // Use the context hook documented for the selected slot.
+  return null;
 });
 
+const overrides = {
+  DocumentedSlotName: CustomSlotComponent,
+};
+
 export const CustomChannel = ({ channel }) => (
-  <WithComponents overrides={{ MessageAuthor: CustomAuthor }}>
+  <WithComponents overrides={overrides}>
     <Channel channel={channel}>
       <MessageList />
       <MessageComposer />
@@ -554,9 +600,9 @@ export const CustomChannel = ({ channel }) => (
 
 Wiring:
 
-- Prefer specific overrides such as `MessageAuthor`, `MessageText`, `SendButton`, or `MessageContentTopView`.
-- Avoid replacing `MessageItemView` unless required.
-- If replacing message row structure and still using the long-press overlay, preserve overlay anchor behavior by consulting local source/docs for `contextMenuAnchorRef`.
+- Prefer the smallest documented override that satisfies the requested customization.
+- Avoid replacing core message components unless required.
+- If replacing message row structure and still using the long-press overlay, preserve overlay anchor behavior by reading the manifest-selected context docs.
 
 ---
 
