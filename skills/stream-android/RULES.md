@@ -10,12 +10,14 @@ Target Stream Chat Android SDK **v7+** (`io.getstream:stream-chat-android-compos
 
 For Stream Video, target the latest published `io.getstream:stream-video-android-ui-compose` (and its transitive `-core`). Verify any signature you are about to write against the bundled `VIDEO-COMPOSE.md` reference or the [Video Android docs](https://getstream.io/video/docs/android/).
 
+For Stream Feeds (V3), target the latest published `io.getstream:stream-feeds-android-client`. Feeds V3 is in closed alpha — public APIs may shift between versions, and there is no pre-built UI artifact. Verify any signature against the bundled `FEEDS-COMPOSE.md` reference, the [Feeds Android docs](https://getstream.io/activity-feeds/docs/android/), or the source on [`GetStream/stream-feeds-android`](https://github.com/GetStream/stream-feeds-android).
+
 ### Version lookup
 
 When you need the current Stream artifact version, use one of these sources:
 
-- Maven Central (Sonatype): `https://central.sonatype.com/artifact/io.getstream/stream-chat-android-compose/versions` (or `/stream-chat-android-ui-components/versions`, `/stream-video-android-ui-compose/versions`)
-- GitHub releases: `https://github.com/GetStream/stream-chat-android/releases`, `https://github.com/GetStream/stream-video-android/releases`
+- Maven Central (Sonatype): `https://central.sonatype.com/artifact/io.getstream/stream-chat-android-compose/versions` (or `/stream-chat-android-ui-components/versions`, `/stream-video-android-ui-compose/versions`, `/stream-feeds-android-client/versions`)
+- GitHub releases: `https://github.com/GetStream/stream-chat-android/releases`, `https://github.com/GetStream/stream-video-android/releases`, `https://github.com/GetStream/stream-feeds-android/releases`
 
 **Do not use `search.maven.org`** — it is deprecated and its index is stale; it does not surface v7 (Chat) or recent Video releases and will lead you to ship outdated versions by mistake. If a tool result shows `search.maven.org` as the source, discard it and re-query one of the sources above.
 
@@ -85,12 +87,14 @@ Load only the product/UI-layer reference files that match the request.
 - `CHAT-COMPOSE-blueprints.md` for concrete Composable screen structure
 - `VIDEO-COMPOSE.md` for Video + Jetpack Compose
 - `VIDEO-COMPOSE-blueprints.md` for concrete call-screen structure
+- `FEEDS-COMPOSE.md` for Feeds + Jetpack Compose (headless data SDK — no pre-built UI)
+- `FEEDS-COMPOSE-blueprints.md` for custom Composable scaffolding driven by `FeedState` / `ActivityState`
 
-Do not invent missing Feeds or XML/UI-Components API details. If a requested reference is not bundled yet, say so plainly and fall back to shared guidance from [`sdk.md`](sdk.md) or live docs only when the user wants that.
+Do not invent missing XML / UI-Components API details. If a requested reference is not bundled yet, say so plainly and fall back to shared guidance from [`sdk.md`](sdk.md) or live docs only when the user wants that.
 
 ### Blueprints are mandatory, on every turn
 
-Before writing or editing **any** Stream Chat or Stream Video screen, Composable, navigation handler, deep-link route, theming override, ringing handler, or channel/message/call UI customization, you **must** open the matching section of the corresponding `<PRODUCT>-<UI_LAYER>-blueprints.md` file (e.g. [`references/CHAT-COMPOSE-blueprints.md`](references/CHAT-COMPOSE-blueprints.md), [`references/VIDEO-COMPOSE-blueprints.md`](references/VIDEO-COMPOSE-blueprints.md)) and follow its structure. This applies on **every turn**, not just the first time the skill is invoked in a session — follow-up requests like *"add navigation to the channel screen"*, *"open a channel on tap"*, *"add a button to start a call"*, *"customize the call controls"*, or *"theme the call screen"* count as new screen work and require a fresh blueprint read.
+Before writing or editing **any** Stream Chat, Stream Video, or Stream Feeds screen, Composable, navigation handler, deep-link route, theming override, ringing handler, or channel/message/call/feed UI customization, you **must** open the matching section of the corresponding `<PRODUCT>-<UI_LAYER>-blueprints.md` file (e.g. [`references/CHAT-COMPOSE-blueprints.md`](references/CHAT-COMPOSE-blueprints.md), [`references/VIDEO-COMPOSE-blueprints.md`](references/VIDEO-COMPOSE-blueprints.md), [`references/FEEDS-COMPOSE-blueprints.md`](references/FEEDS-COMPOSE-blueprints.md)) and follow its structure. This applies on **every turn**, not just the first time the skill is invoked in a session — follow-up requests like *"add navigation to the channel screen"*, *"open a channel on tap"*, *"add a button to start a call"*, *"customize the call controls"*, *"theme the call screen"*, *"add a comments sheet"*, or *"add a follow button"* count as new screen work and require a fresh blueprint read.
 
 Use the **Request → Blueprint section** table at the top of each blueprints file to resolve which section to read. If no section matches, say so explicitly before improvising — do not silently fall back to remembered SDK shapes from training data.
 

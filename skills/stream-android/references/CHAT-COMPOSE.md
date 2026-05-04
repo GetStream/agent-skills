@@ -1,6 +1,6 @@
 # Chat - Compose SDK Setup & Integration
 
-Stream Chat Compose provides pre-built Jetpack Compose components for building rich messaging UIs. This file covers package installation, client setup, authentication, customization, and gotchas. For screen blueprints, see [CHAT-COMPOSE-blueprints.md](CHAT-COMPOSE-blueprints.md).
+Stream Chat Compose provides pre-built Jetpack Compose components for building rich messaging UIs. This file covers Gradle setup, client setup, authentication, customization, and gotchas. For screen blueprints, see [CHAT-COMPOSE-blueprints.md](CHAT-COMPOSE-blueprints.md).
 
 Rules: [../RULES.md](../RULES.md) (secrets, no dev tokens in production, proper logout).
 
@@ -67,6 +67,7 @@ Initialize once in your `Application` class. **Never** create `ChatClient` in a 
 
 ```kotlin
 import android.app.Application
+import android.content.pm.ApplicationInfo
 import io.getstream.chat.android.client.ChatClient
 import io.getstream.chat.android.client.logger.ChatLogLevel
 
@@ -74,7 +75,7 @@ class App : Application() {
     override fun onCreate() {
         super.onCreate()
 
-        val logLevel = if (BuildConfig.DEBUG) ChatLogLevel.ALL else ChatLogLevel.NOTHING
+        val logLevel = if ((applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0) ChatLogLevel.ALL else ChatLogLevel.NOTHING
 
         ChatClient.Builder("your_api_key", applicationContext)
             .logLevel(logLevel)
@@ -401,7 +402,7 @@ Disabled by default. Enable on the Builder, ideally only in debug builds:
 
 ```kotlin
 ChatClient.Builder(apiKey, context)
-    .logLevel(if (BuildConfig.DEBUG) ChatLogLevel.ALL else ChatLogLevel.NOTHING)
+    .logLevel(if ((context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0) ChatLogLevel.ALL else ChatLogLevel.NOTHING)
     .build()
 ```
 

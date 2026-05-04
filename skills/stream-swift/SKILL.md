@@ -102,10 +102,16 @@ Once the user answers, execute all CLI steps in sequence **without pausing for c
 #### Step A - API key
 
 ```bash
-stream config get-app
+stream --safe keys
 ```
 
-Extract the `api_key` field. Hold it in context.
+`stream keys` auto-resolves the org and app and prints the API key on a line shaped `API Key:  <key>`. Output format is fixed — `-o json` is ignored. Extract with:
+
+```bash
+api_key=$(stream --safe keys | awk '/^API Key:/ {print $3}')
+```
+
+Note: `stream keys` also auto-copies the **app secret** to the system clipboard. The SDK never needs the secret — discard with `pbcopy </dev/null` if that's a concern.
 
 #### Step B - Token
 

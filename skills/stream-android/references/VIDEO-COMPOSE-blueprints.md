@@ -37,6 +37,7 @@ Build `StreamVideo` once in `Application.onCreate()`. The builder registers a pr
 package com.example.streamvideo
 
 import android.app.Application
+import android.content.pm.ApplicationInfo
 import io.getstream.log.Priority
 import io.getstream.video.android.core.StreamVideoBuilder
 import io.getstream.video.android.core.logging.LoggingLevel
@@ -58,7 +59,7 @@ class App : Application() {
             user = user,
             token = "your_static_token_here",
             loggingLevel = LoggingLevel(
-                priority = if (BuildConfig.DEBUG) Priority.DEBUG else Priority.NONE,
+                priority = if ((applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0) Priority.DEBUG else Priority.NONE,
             ),
         ).build()
     }
@@ -142,6 +143,8 @@ fun LoginScreen(onConnected: () -> Unit) {
             onClick = {
                 error = null
                 runCatching {
+                    // Demo wiring only. In production, fetch the token from your backend and pass
+                    // a tokenProvider into StreamVideoBuilder instead of a static string.
                     StreamVideoBuilder(
                         context = applicationContext,
                         apiKey = "your_api_key",

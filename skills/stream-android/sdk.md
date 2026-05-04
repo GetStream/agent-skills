@@ -2,6 +2,8 @@
 
 This file holds the shared Android patterns that cut across Chat, Video, and Feeds. Load it before product-specific references when you need lifecycle, auth, or architecture guidance.
 
+> **Client model: one-per-process vs one-per-user.** Chat and Video run **one client per process**: `ChatClient.Builder(...).build()` and `StreamVideoBuilder(...).build()` register process-wide singletons (`ChatClient.instance()` / `StreamVideo.instance()`), and you swap the **identity** on that single client via `connectUser` / `disconnect` (Chat) or `logOut` + `StreamVideo.removeClient` + a fresh builder (Video). Feeds is different: `FeedsClient` is constructed with the `User` and `tokenProvider` baked in, there is no `instance()` accessor, and there is no `connectUser` call to change identity afterwards. **The Feeds client is bound to one user for its lifetime** — to operate as a different user you must `disconnect()` the current `FeedsClient` and build a new one with the new `User` + `tokenProvider`. Hold the reference yourself (lateinit on `Application`, Hilt `@Singleton`, Koin `single`); the SDK won't keep it alive for you.
+
 ---
 
 ## App shapes

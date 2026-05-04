@@ -37,6 +37,7 @@ Build `ChatClient` once in `Application.onCreate()`. The Builder registers a sin
 package com.example.streamchat
 
 import android.app.Application
+import android.content.pm.ApplicationInfo
 import io.getstream.chat.android.client.ChatClient
 import io.getstream.chat.android.client.logger.ChatLogLevel
 
@@ -44,7 +45,7 @@ class App : Application() {
     override fun onCreate() {
         super.onCreate()
 
-        val logLevel = if (BuildConfig.DEBUG) ChatLogLevel.ALL else ChatLogLevel.NOTHING
+        val logLevel = if ((applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0) ChatLogLevel.ALL else ChatLogLevel.NOTHING
 
         ChatClient.Builder("your_api_key", applicationContext)
             .logLevel(logLevel)
@@ -134,6 +135,8 @@ fun LoginScreen(onConnected: () -> Unit) {
                 isConnecting = true
                 error = null
                 val user = User(id = userId, name = name.ifBlank { userId })
+                // Demo wiring only. In production, fetch the token from your backend and pass
+                // a TokenProvider to connectUser instead of a static string.
                 ChatClient.instance()
                     .connectUser(user, token = "your_static_token_here")
                     .enqueue { result ->

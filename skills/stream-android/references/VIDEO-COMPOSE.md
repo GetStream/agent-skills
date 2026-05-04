@@ -1,6 +1,6 @@
 # Video - Compose SDK Setup & Integration
 
-Stream Video Compose provides pre-built Jetpack Compose components for building video and audio calling experiences. This file covers package installation, client setup, authentication, call flows, customization, and gotchas. For screen blueprints, see [VIDEO-COMPOSE-blueprints.md](VIDEO-COMPOSE-blueprints.md).
+Stream Video Compose provides pre-built Jetpack Compose components for building video and audio calling experiences. This file covers Gradle setup, client setup, authentication, call flows, customization, and gotchas. For screen blueprints, see [VIDEO-COMPOSE-blueprints.md](VIDEO-COMPOSE-blueprints.md).
 
 Rules: [../RULES.md](../RULES.md) (secrets, no fake credentials, client lifetime).
 
@@ -68,6 +68,7 @@ Build the `StreamVideo` client **once** at app launch via `StreamVideoBuilder(..
 
 ```kotlin
 import android.app.Application
+import android.content.pm.ApplicationInfo
 import io.getstream.video.android.core.StreamVideo
 import io.getstream.video.android.core.StreamVideoBuilder
 import io.getstream.video.android.core.logging.LoggingLevel
@@ -88,7 +89,7 @@ class App : Application() {
             apiKey = "your_api_key",
             user = user,
             token = "your_static_token_here",
-            loggingLevel = LoggingLevel(if (BuildConfig.DEBUG) Priority.DEBUG else Priority.NONE),
+            loggingLevel = LoggingLevel(if ((applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0) Priority.DEBUG else Priority.NONE),
         ).build()
     }
 }
@@ -487,7 +488,7 @@ A failed WebSocket connection prevents calls from being established.
 Pass `loggingLevel` to `StreamVideoBuilder` to surface socket and SFU events in Logcat:
 
 ```kotlin
-loggingLevel = LoggingLevel(priority = if (BuildConfig.DEBUG) Priority.DEBUG else Priority.NONE)
+loggingLevel = LoggingLevel(priority = if ((applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0) Priority.DEBUG else Priority.NONE)
 ```
 
 Levels: `Priority.VERBOSE`, `DEBUG`, `INFO`, `WARN`, `ERROR`, `ASSERT`, `NONE`. Configure it before `build()` returns; setting it after has no effect on existing connections.

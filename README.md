@@ -1,6 +1,6 @@
 # Stream Agent Skills
 
-Give your AI coding agent the ability to build, query, and manage [Stream](https://getstream.io) - Chat, Video, Feeds, Moderation, Swift/iOS integrations, and React Native Chat.
+Give your AI coding agent the ability to build, query, and manage [Stream](https://getstream.io) - Chat, Video, Feeds, Moderation, Swift/iOS and Android integrations, and React Native Chat.
 
 ## Install
 
@@ -85,6 +85,7 @@ Decline and the builder still runs - Stream reference files cover the SDK wiring
 - **Scaffold a full app** - Next.js + Tailwind + Stream SDKs, wired end-to-end in one shot (`/stream-builder`)
 - **Add products to existing apps** - drop Chat, Video, or Feeds into a project that's already running (`/stream-builder`)
 - **Build and extend Swift apps** - wire Stream into SwiftUI or UIKit Xcode projects with iOS-specific setup patterns (`/stream-swift`)
+- **Build and extend Android apps** - wire Stream into Jetpack Compose Android Studio / Gradle projects with Android-specific setup patterns (`/stream-android`)
 - **Build and extend React Native apps** - wire Stream Chat into Expo or RN CLI projects (`/stream-react-native`)
 - **Query live data** - "any active calls?", "show flagged messages", "list my channels" - natural language to CLI (`/stream-cli`)
 - **Set up moderation** - blocklists, automod config, and content policies via the Stream CLI (`/stream-cli`)
@@ -105,6 +106,7 @@ The skill pack is markdown only - no code, no build step. The generic `/stream` 
 | Build or integrate a React Native CLI/Expo app        | `stream-react-native` + its `sdk.md` and `references/*.md` |
 | Search the official SDK documentation (no CLI needed) | `stream-docs` (Track D) |
 | Build or integrate a Swift/iOS app                    | `stream-swift` + its `builder.md`, `sdk.md`, and `references/*.md` |
+| Build or integrate an Android app                     | `stream-android` + its `builder.md`, `sdk.md`, and `references/*.md` |
 
 Cross-cutting rules (secrets, login screen, strict mode, package manager, base UI, moderation Dashboard-only, ...) live once in [`skills/stream/RULES.md`](skills/stream/RULES.md) and apply to every sub-skill.
 
@@ -137,4 +139,9 @@ Cross-cutting rules (secrets, login screen, strict mode, package manager, base U
   - [`credentials.md`](skills/stream-react-native/credentials.md) - API key, token, and optional requested demo-data flow
   - [`builder.md`](skills/stream-react-native/builder.md) + [`sdk.md`](skills/stream-react-native/sdk.md) - shared RN CLI and Expo integration flow
   - [`references/`](skills/stream-react-native/references/) - `llms.txt` docs lookup, Chat RN setup, gotchas, and screen blueprints
+- [`skills/stream-android/`](skills/stream-android/) - **Android sub-skill**
+  - [`SKILL.md`](skills/stream-android/SKILL.md) - entrypoint: intent classifier, local project detection, module pointers
+  - [`RULES.md`](skills/stream-android/RULES.md) - Android non-negotiable rules
+  - [`builder.md`](skills/stream-android/builder.md) + [`sdk.md`](skills/stream-android/sdk.md) - shared Android app integration flow and SDK ownership patterns
+  - [`references/`](skills/stream-android/references/) - product/framework-specific Android references and blueprints
 - [`.claude-plugin/marketplace.json`](.claude-plugin/marketplace.json) - Claude Code plugin manifest for granular installs
