@@ -1,18 +1,18 @@
 # Video - UIKit SDK Setup & Integration
 
-`StreamVideoUIKit` is a thin UIKit wrapper around the same `StreamVideo` core used by the SwiftUI SDK. `CallViewModel` (from `StreamVideoSwiftUI`) is the central state object — it is used directly in UIKit apps. This file covers package setup, client initialization, `CallViewController`, and call state observation. For view controller blueprints, see [VIDEO-UIKIT-blueprints.md](VIDEO-UIKIT-blueprints.md).
+`StreamVideoUIKit` is a thin UIKit wrapper around the same `StreamVideo` core used by the SwiftUI SDK. `CallViewModel` (from `StreamVideoSwiftUI`) is the central state object - it is used directly in UIKit apps. This file covers package setup, client initialization, `CallViewController`, and call state observation. For view controller blueprints, see [VIDEO-UIKIT-blueprints.md](VIDEO-UIKIT-blueprints.md).
 
 Rules: [../RULES.md](../RULES.md) (secrets, no dev tokens in production).
 
-> **Combining Chat + Video?** File isolation is required — the same collision rules as SwiftUI apply because `StreamVideoUIKit` depends on `StreamVideoSwiftUI`. See [`COMBINED-CHAT-VIDEO.md`](COMBINED-CHAT-VIDEO.md).
+> **Combining Chat + Video?** File isolation is required - the same collision rules as SwiftUI apply because `StreamVideoUIKit` depends on `StreamVideoSwiftUI`. See [`COMBINED-CHAT-VIDEO.md`](COMBINED-CHAT-VIDEO.md).
 
 ## Quick ref
 
-- **Packages:** `StreamVideo` + `StreamVideoSwiftUI` + `StreamVideoUIKit` via SPM — `https://github.com/getstream/stream-video-swift`
-- **First:** Installation → Info.plist → Client init → `StreamVideoUI` → `CallViewModel` → `CallViewController`
+- **Packages:** `StreamVideo` + `StreamVideoSwiftUI` + `StreamVideoUIKit` via SPM - `https://github.com/getstream/stream-video-swift`
+- **First:** Installation -> Info.plist -> Client init -> `StreamVideoUI` -> `CallViewModel` -> `CallViewController`
 - **Docs:** `https://getstream.io/video/docs/ios/`
 
-Full view blueprints: [VIDEO-UIKIT-blueprints.md](VIDEO-UIKIT-blueprints.md) — load only the section you are implementing.
+Full view blueprints: [VIDEO-UIKIT-blueprints.md](VIDEO-UIKIT-blueprints.md) - load only the section you are implementing.
 
 ---
 
@@ -21,13 +21,13 @@ Full view blueprints: [VIDEO-UIKIT-blueprints.md](VIDEO-UIKIT-blueprints.md) —
 ### Installation (Swift Package Manager)
 
 Add from `https://github.com/getstream/stream-video-swift` to the app target:
-- `StreamVideo` — core client and models
-- `StreamVideoSwiftUI` — `CallViewModel`, `CallModifier`, `ViewFactory`
-- `StreamVideoUIKit` — `CallViewController`
+- `StreamVideo` - core client and models
+- `StreamVideoSwiftUI` - `CallViewModel`, `CallModifier`, `ViewFactory`
+- `StreamVideoUIKit` - `CallViewController`
 
 ### Client Initialization
 
-Initialize `StreamVideo` and `StreamVideoUI` **once** in `AppDelegate`. The setup is identical to the SwiftUI `AppDelegate` path — `StreamVideoUI` must be created before any call view renders.
+Initialize `StreamVideo` and `StreamVideoUI` **once** in `AppDelegate`. The setup is identical to the SwiftUI `AppDelegate` path - `StreamVideoUI` must be created before any call view renders.
 
 ```swift
 import UIKit
@@ -57,7 +57,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 
 ## User Authentication
 
-Same as the SwiftUI SDK — `StreamVideo` is the same core client.
+Same as the SwiftUI SDK - `StreamVideo` is the same core client.
 
 ### Static token
 
@@ -101,7 +101,7 @@ import StreamVideoSwiftUI
 let callViewModel = CallViewModel()
 ```
 
-Use it to start, join, and leave calls — same API as in SwiftUI:
+Use it to start, join, and leave calls - same API as in SwiftUI:
 
 ```swift
 // Join an existing call (no ringing)
@@ -120,7 +120,7 @@ callViewModel.hangUp()
 
 `CallViewController` is the main UIKit call screen. It wraps a `CallViewModel` and manages its own full-screen layout.
 
-> **Always subclass `CallViewController` — do not use it directly.** The default `setupVideoView()` creates a `UIHostingController` for the SwiftUI call UI but immediately discards it. ARC releases the hosting controller while its view is still on screen, tearing down SwiftUI's gesture recognizers and making all buttons untappable. See the `VideoCallViewController` blueprint in [VIDEO-UIKIT-blueprints.md](VIDEO-UIKIT-blueprints.md).
+> **Always subclass `CallViewController` - do not use it directly.** The default `setupVideoView()` creates a `UIHostingController` for the SwiftUI call UI but immediately discards it. ARC releases the hosting controller while its view is still on screen, tearing down SwiftUI's gesture recognizers and making all buttons untappable. See the `VideoCallViewController` blueprint in [VIDEO-UIKIT-blueprints.md](VIDEO-UIKIT-blueprints.md).
 
 ### Creating
 
@@ -147,7 +147,7 @@ To join an existing call without ringing, pass `ring: false` (the default):
 callVC.startCall(callType: "default", callId: existingCallId, members: [])
 ```
 
-There is no separate `joinCall` method on `CallViewController` — `startCall` with `ring: false` both creates and joins.
+There is no separate `joinCall` method on `CallViewController` - `startCall` with `ring: false` both creates and joins.
 
 ### Observing call state and dismissing
 
@@ -195,13 +195,13 @@ callViewModel.$callingState
 
 ## Gotchas
 
-- **`StreamVideoUI` must be initialized before any call view renders.** Same rule as SwiftUI — create it in `AppDelegate` before presenting `CallViewController`.
-- **Never use `CallViewController` directly — always subclass it and override `setupVideoView()`.** The default implementation discards the `UIHostingController` immediately after creation; ARC releases it, making all call screen buttons untappable. The `VideoCallViewController` blueprint in [VIDEO-UIKIT-blueprints.md](VIDEO-UIKIT-blueprints.md) fixes this with `addChild`/`didMove(toParent:)` and a retained `callHostingController` property.
-- **`CallViewModel()` must not be a stored `let` or eagerly initialized `var` property.** `CallViewModel.init()` accesses `@Injected(\.streamVideo)` immediately — if `StreamVideoUI` hasn't been set up yet, it crashes with "Video client was not setup". Always declare it `private lazy var callViewModel = CallViewModel()` so creation is deferred until first access.
+- **`StreamVideoUI` must be initialized before any call view renders.** Same rule as SwiftUI - create it in `AppDelegate` before presenting `CallViewController`.
+- **Never use `CallViewController` directly - always subclass it and override `setupVideoView()`.** The default implementation discards the `UIHostingController` immediately after creation; ARC releases it, making all call screen buttons untappable. The `VideoCallViewController` blueprint in [VIDEO-UIKIT-blueprints.md](VIDEO-UIKIT-blueprints.md) fixes this with `addChild`/`didMove(toParent:)` and a retained `callHostingController` property.
+- **`CallViewModel()` must not be a stored `let` or eagerly initialized `var` property.** `CallViewModel.init()` accesses `@Injected(\.streamVideo)` immediately - if `StreamVideoUI` hasn't been set up yet, it crashes with "Video client was not setup". Always declare it `private lazy var callViewModel = CallViewModel()` so creation is deferred until first access.
 - **`CallViewModel` is from `StreamVideoSwiftUI`, not `StreamVideoUIKit`.** Import `StreamVideoSwiftUI` in files that declare or use `CallViewModel`.
-- **Always `import UIKit`** in any file that uses `UIViewController`, `UIApplicationDelegate`, `UIApplication`, or other UIKit types — even when Stream imports are present, `import UIKit` is still required.
+- **Always `import UIKit`** in any file that uses `UIViewController`, `UIApplicationDelegate`, `UIApplication`, or other UIKit types - even when Stream imports are present, `import UIKit` is still required.
 - **There is no `CallViewControllerDelegate`.** Use Combine to subscribe to `callViewModel.$callingState` for lifecycle events.
-- **Handle `.incoming` state by presenting `CallViewController` modally.** If you only observe `.idle` and ignore `.incoming`, the SDK renders the incoming call UI without a backing `UIViewController` — buttons will not receive touches. Check `presentedViewController == nil` before presenting to avoid stacking duplicate call screens.
+- **Handle `.incoming` state by presenting `CallViewController` modally.** If you only observe `.idle` and ignore `.incoming`, the SDK renders the incoming call UI without a backing `UIViewController` - buttons will not receive touches. Check `presentedViewController == nil` before presenting to avoid stacking duplicate call screens.
 - **There is no `joinCall` on `CallViewController`.** Use `startCall` with `ring: false` (the default) to join an existing call.
 - **Call `startCall` before presenting the view controller**, not after.
 - **Never use dev tokens in production.** `devToken()` disables token auth.

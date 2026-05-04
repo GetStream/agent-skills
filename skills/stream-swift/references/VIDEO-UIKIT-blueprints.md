@@ -6,7 +6,7 @@ Load only the section you are implementing. For setup, client initialization, an
 
 ## CallViewController Subclass (Required)
 
-The default `CallViewController.setupVideoView()` creates a `UIHostingController` for the SwiftUI call UI but immediately discards it — ARC releases the hosting controller while its view is still on screen. This tears down SwiftUI's gesture recognizers, making all buttons in the call screen untappable.
+The default `CallViewController.setupVideoView()` creates a `UIHostingController` for the SwiftUI call UI but immediately discards it - ARC releases the hosting controller while its view is still on screen. This tears down SwiftUI's gesture recognizers, making all buttons in the call screen untappable.
 
 **Always use this subclass instead of `CallViewController` directly:**
 
@@ -71,8 +71,8 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 ```
 
 **Wiring:**
-- `streamVideo` must be a stored strong reference — if it goes out of scope the client disconnects
-- `StreamVideoUI` must be created before any call view renders; the `_` discard is intentional — it registers itself globally
+- `streamVideo` must be a stored strong reference - if it goes out of scope the client disconnects
+- `StreamVideoUI` must be created before any call view renders; the `_` discard is intentional - it registers itself globally
 - Use `@UIApplicationDelegateAdaptor(AppDelegate.self)` in your `App` struct if the project is SwiftUI-hosted
 
 ---
@@ -162,11 +162,11 @@ final class HomeViewController: UIViewController {
 ```
 
 **Wiring:**
-- `callViewModel` is owned here as a stored property — one instance per call flow
+- `callViewModel` is owned here as a stored property - one instance per call flow
 - `CallViewController(viewModel:)` shares the same `CallViewModel`; never create a second one
-- `startCall` with no `ring:` argument defaults to `false` — joins or creates the call without ringing
+- `startCall` with no `ring:` argument defaults to `false` - joins or creates the call without ringing
 - The Combine sink dismisses `CallViewController` automatically when the call ends (`.idle`)
-- `callIdField` left empty → generates a fresh UUID, creating a new call room
+- `callIdField` left empty -> generates a fresh UUID, creating a new call room
 
 ---
 
@@ -186,6 +186,6 @@ Start an outgoing ringing call to specific members.
 ```
 
 **Wiring:**
-- `ring: true` sends push notifications to all members — requires APNs and Stream's push integration
-- Always use a fresh call ID per ringing attempt — reusing an ID silently skips the ring
+- `ring: true` sends push notifications to all members - requires APNs and Stream's push integration
+- Always use a fresh call ID per ringing attempt - reusing an ID silently skips the ring
 - Caller and callee must be different users

@@ -6,7 +6,7 @@ Load only the section you are implementing. For setup, client initialization, an
 
 ## ChatService.swift Blueprint (Combined Chat + Video Apps)
 
-Use this pattern when the app also integrates `StreamVideo`. `ViewFactory`, `@Injected`, `InjectionKey`, and `InjectedValues` collide between `StreamChatSwiftUI` and `StreamVideoSwiftUI` — file isolation is required. See [`COMBINED-CHAT-VIDEO.md`](COMBINED-CHAT-VIDEO.md) for the full collision table and UIKit patterns.
+Use this pattern when the app also integrates `StreamVideo`. `ViewFactory`, `@Injected`, `InjectionKey`, and `InjectedValues` collide between `StreamChatSwiftUI` and `StreamVideoSwiftUI` - file isolation is required. See [`COMBINED-CHAT-VIDEO.md`](COMBINED-CHAT-VIDEO.md) for the full collision table and UIKit patterns.
 
 ```swift
 // ChatService.swift
@@ -34,10 +34,10 @@ final class ChatService {
 }
 ```
 
-Call from the app entry point — which imports **neither** Stream SDK:
+Call from the app entry point - which imports **neither** Stream SDK:
 
 ```swift
-// MyApp.swift — no Stream imports here
+// MyApp.swift - no Stream imports here
 @main
 struct MyApp: App {
     init() {

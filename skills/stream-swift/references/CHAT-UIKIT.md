@@ -32,7 +32,7 @@ Initialize `ChatClient` once at app launch in `AppDelegate`. **Never** create `C
 
 > **No `StreamChat` wrapper in UIKit.** Unlike the SwiftUI SDK, the UIKit layer does not require a `StreamChat` wrapper type. Use `ChatClient` directly; there is no equivalent of `StreamChat(chatClient:)` for UIKit apps.
 
-> **Combining Chat + Video?** Importing `StreamChat` and `StreamVideo` in the same file causes "Ambiguous use of 'init'" for `User` and `Token` types. File isolation is required — same rule as SwiftUI. See [`COMBINED-CHAT-VIDEO.md`](COMBINED-CHAT-VIDEO.md) for the type-name mapping table and UIKit service file blueprints.
+> **Combining Chat + Video?** Importing `StreamChat` and `StreamVideo` in the same file causes "Ambiguous use of 'init'" for `User` and `Token` types. File isolation is required - same rule as SwiftUI. See [`COMBINED-CHAT-VIDEO.md`](COMBINED-CHAT-VIDEO.md) for the type-name mapping table and UIKit service file blueprints.
 
 ```swift
 import StreamChat
@@ -60,7 +60,7 @@ let appDelegate = UIApplication.shared.delegate as! AppDelegate
 let chatClient = appDelegate.chatClient
 ```
 
-Or inject it into view controllers at creation time — prefer injection over `UIApplication.shared.delegate` casts in production code.
+Or inject it into view controllers at creation time - prefer injection over `UIApplication.shared.delegate` casts in production code.
 
 ### User Authentication
 
@@ -76,7 +76,7 @@ chatClient.connectUser(userInfo: userInfo, token: token) { error in
 }
 ```
 
-**Token provider (expiring tokens — use only if the user asks for it):**
+**Token provider (expiring tokens - use only if the user asks for it):**
 
 ```swift
 let userInfo = UserInfo(id: currentUser.id, name: currentUser.name)
@@ -114,7 +114,7 @@ let nav = UINavigationController(rootViewController: channelListVC)
 window?.rootViewController = nav
 ```
 
-Use the static `make(with:)` factory method — it wires the controller and delegate correctly. You can also assign the controller directly via `channelListVC.controller = controller`, but the factory method is the preferred path. The VC calls `synchronize()` automatically on `viewDidLoad`.
+Use the static `make(with:)` factory method - it wires the controller and delegate correctly. You can also assign the controller directly via `channelListVC.controller = controller`, but the factory method is the preferred path. The VC calls `synchronize()` automatically on `viewDidLoad`.
 
 ---
 
@@ -271,10 +271,10 @@ chatClient.logout { [weak self] in
 
 ## Gotchas
 
-- **No `StreamChat` wrapper in UIKit.** The SwiftUI layer requires `StreamChat(chatClient:)` — UIKit does not. Use `ChatClient` directly.
+- **No `StreamChat` wrapper in UIKit.** The SwiftUI layer requires `StreamChat(chatClient:)` - UIKit does not. Use `ChatClient` directly.
 - **`Appearance.default` and `Components.default` must be configured before any SDK view loads.** Changes after the first view controller appears may not take effect.
 - **Always wait for `logout` completion before connecting another user.** The SDK uses persistent storage; connecting while logout is in progress risks state corruption and crashes.
-- **Never use `ChatClient.shared` when you manage the client yourself.** If you initialize `ChatClient` in `AppDelegate`, access it via your stored reference, not `ChatClient.shared` — that requires the SDK to have registered the instance, which is not guaranteed in all configurations.
+- **Never use `ChatClient.shared` when you manage the client yourself.** If you initialize `ChatClient` in `AppDelegate`, access it via your stored reference, not `ChatClient.shared` - that requires the SDK to have registered the instance, which is not guaranteed in all configurations.
 - **`ChatChannelListVC` must be embedded in a `UINavigationController`.** The SDK router pushes `ChatMessageListVC` onto the navigation stack automatically. Without a navigation controller, this push will silently fail.
 - **Never call `synchronize()` on controllers already managed by a VC.** `ChatChannelListVC` calls `synchronize()` automatically on `viewDidLoad`. Calling it again externally causes duplicate fetches.
 - **Never use dev tokens in production.** `devToken()` disables token auth and allows any client to impersonate any user.

@@ -1,6 +1,6 @@
 # Feeds - Swift SDK Setup & Integration
 
-Stream Feeds Swift provides a headless data SDK — **there are no pre-built UI components**. You build all views yourself. The SDK gives you observable state objects (`FeedState`, `ActivityState`) that drive your SwiftUI or UIKit UI. This file covers package installation, client setup, authentication, and all major data operations. For view blueprints, see [FEEDS-SWIFTUI-blueprints.md](FEEDS-SWIFTUI-blueprints.md).
+Stream Feeds Swift provides a headless data SDK - **there are no pre-built UI components**. You build all views yourself. The SDK gives you observable state objects (`FeedState`, `ActivityState`) that drive your SwiftUI or UIKit UI. This file covers package installation, client setup, authentication, and all major data operations. For view blueprints, see [FEEDS-SWIFTUI-blueprints.md](FEEDS-SWIFTUI-blueprints.md).
 
 Rules: [../RULES.md](../RULES.md) (secrets, no dev tokens in production, proper logout).
 
@@ -12,11 +12,11 @@ Rules: [../RULES.md](../RULES.md) (secrets, no dev tokens in production, proper 
 
 - **Package:** `StreamFeeds` via SPM - `https://github.com/GetStream/stream-feeds-swift`
 - **Imports:** `import StreamFeeds` + `import StreamCore` (for `APIKey`, `UserToken`, `User`, `LogConfig`)
-- **First:** Installation → Client init → `connect()` → Create `Feed` objects → Observe `FeedState` → Build UI
+- **First:** Installation -> Client init -> `connect()` -> Create `Feed` objects -> Observe `FeedState` -> Build UI
 - **Per feature:** Jump to the relevant section or blueprint when implementing a screen
 - **Docs:** `https://getstream.io/activity-feeds/docs/sdk/swift/`
 
-Full view blueprints: [FEEDS-SWIFTUI-blueprints.md](FEEDS-SWIFTUI-blueprints.md) — load only the section you are implementing.
+Full view blueprints: [FEEDS-SWIFTUI-blueprints.md](FEEDS-SWIFTUI-blueprints.md) - load only the section you are implementing.
 
 ---
 
@@ -32,7 +32,7 @@ Initialize `FeedsClient` **once** at app launch. **Never** create it in a SwiftU
 
 Unlike Chat/Video, Feeds has no wrapper class (`StreamChat`, `StreamVideoUI`). The client is held directly.
 
-**Option A — App struct `init()` with `@StateObject AppState`:**
+**Option A - App struct `init()` with `@StateObject AppState`:**
 
 ```swift
 import StreamCore
@@ -82,7 +82,7 @@ final class AppState: ObservableObject {
 }
 ```
 
-**Option B — `AppDelegate` (required for push notifications):**
+**Option B - `AppDelegate` (required for push notifications):**
 
 ```swift
 import StreamCore
@@ -174,7 +174,7 @@ Always `await` disconnect before connecting another user or releasing the client
 
 ## Feeds and FeedId
 
-A **feed** is identified by a `FeedId(group:id:)` — a group (e.g. `"user"`, `"timeline"`, `"notification"`) plus a user or entity ID.
+A **feed** is identified by a `FeedId(group:id:)` - a group (e.g. `"user"`, `"timeline"`, `"notification"`) plus a user or entity ID.
 
 ```swift
 let userFeedId       = FeedId(group: "user", id: client.user.id)       // "user:alice"
@@ -182,7 +182,7 @@ let timelineFeedId   = FeedId(group: "timeline", id: client.user.id)    // "time
 let notificationFeedId = FeedId(group: "notification", id: client.user.id)
 ```
 
-**Get a Feed object from the client — two forms:**
+**Get a Feed object from the client - two forms:**
 
 ```swift
 // Simple lookup by FeedId
@@ -231,10 +231,10 @@ let feed: Feed = client.feed(for: query)
 ## Fetching Activities
 
 ```swift
-// Initial load — creates the feed if it doesn't exist
+// Initial load - creates the feed if it doesn't exist
 try await feed.getOrCreate()
 
-// Refresh (same call — always idempotent)
+// Refresh (same call - always idempotent)
 try await feed.getOrCreate()
 
 // Pagination
@@ -253,8 +253,8 @@ Iterate `feed.state.activities` in your SwiftUI list after calling `getOrCreate(
 ```swift
 try await feed.addActivity(
     request: .init(
-        attachmentUploads: attachments,          // [AnyAttachmentPayload] — optional
-        mentionedUserIds: mentionedUserIds,       // [String] — optional
+        attachmentUploads: attachments,          // [AnyAttachmentPayload] - optional
+        mentionedUserIds: mentionedUserIds,       // [String] - optional
         text: "Hello world",
         type: "post"
     )
@@ -322,7 +322,7 @@ The central data model for a single activity post:
 | `bookmarkCount` | `Int` | Total bookmark count |
 | `commentCount` | `Int` | Total comment count |
 | `shareCount` | `Int` | Total share count |
-| `expiresAt` | `String?` | ISO8601 expiry — `nil` for posts, set for stories |
+| `expiresAt` | `String?` | ISO8601 expiry - `nil` for posts, set for stories |
 | `visibility` | `ActivityDataVisibility` | `.public` / `.private` |
 | `mentionedUsers` | `[UserData]` | Tagged users |
 | `custom` | `[String: RawJSON]` | Custom extra data |
@@ -450,9 +450,9 @@ try await feed.removeFollower(FeedId(group: "user", id: followerUserId))
 **Read follow state from `FeedState`:**
 
 ```swift
-feed.state.following       // [FollowData] — feeds this user follows
-feed.state.followers       // [FollowData] — feeds following this user
-feed.state.followRequests  // [FollowData] — pending incoming requests
+feed.state.following       // [FollowData] - feeds this user follows
+feed.state.followers       // [FollowData] - feeds following this user
+feed.state.followRequests  // [FollowData] - pending incoming requests
 ```
 
 **`FollowData`** key properties: `sourceFeed: FeedData`, `targetFeed: FeedData`, `status: FollowStatus` (`.accepted` / `.pending`), `isFollowing`, `isFollower`, `isFollowRequest`.
@@ -476,8 +476,8 @@ try await notificationFeed.getOrCreate()
 // Observe
 @ObservedObject var state: FeedState = notificationFeed.state
 // state.aggregatedActivities: [AggregatedActivityData]
-// state.notificationStatus?.unread — badge count
-// state.notificationStatus?.readActivities — Set<String> of read activity IDs
+// state.notificationStatus?.unread - badge count
+// state.notificationStatus?.readActivities - Set<String> of read activity IDs
 ```
 
 **Mark activities as read:**
@@ -544,10 +544,10 @@ let category = activity.custom["category"]?.stringValue
 
 ## Gotchas
 
-- **No pre-built UI.** `StreamFeeds` is headless — there is no `FeedListView`, `ActivityView`, or similar. Build all UI yourself against `FeedState` and `ActivityState`.
+- **No pre-built UI.** `StreamFeeds` is headless - there is no `FeedListView`, `ActivityView`, or similar. Build all UI yourself against `FeedState` and `ActivityState`.
 - **Always `await client.connect()` before any feed operations.** Calling `feed.getOrCreate()` before `connect()` throws.
 - **Always `await client.disconnect()` before connecting another user.** Like Chat, skip this and you risk state corruption.
-- **`feed.state` is the same instance across calls.** Never replace it — just keep an `@ObservedObject` reference to the instance returned by `feed.state`.
+- **`feed.state` is the same instance across calls.** Never replace it - just keep an `@ObservedObject` reference to the instance returned by `feed.state`.
 - **Use `@StateObject` at the ownership site, `@ObservedObject` in child views.** `FeedState` and `ActivityState` are reference types; `@StateObject` keeps them alive, `@ObservedObject` observes the same instance without owning it.
 - **`FeedId` group names are case-sensitive and must match your dashboard feed group configuration.** Using `"User"` when the group is `"user"` silently creates a new feed group.
 - **Stories vs posts are the same activity type, differentiated by `expiresAt`.** Use `FeedQuery(activityFilter: .exists(.expiresAt, false))` for posts and `.exists(.expiresAt, true)` for stories so they don't mix.

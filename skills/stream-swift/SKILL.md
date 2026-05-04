@@ -59,7 +59,7 @@ Run this once per session, right after intent classification, before the Project
 
 ### Goal
 
-Collect the Stream **API key**, a **user token**, and optionally seed a few channels — all before touching code — so the app has real data to show from the first run.
+Collect the Stream **API key**, a **user token**, and optionally seed a few channels - all before touching code - so the app has real data to show from the first run.
 
 ### Single upfront question (ask exactly once, then act immediately)
 
@@ -69,36 +69,36 @@ Post **one message** asking all relevant things together. Do not split into mult
 
 > To wire everything up with real data, I need a few quick answers:
 >
-> 1. **Credentials** — Should I fetch your API key from the dashboard and generate a token via the Stream CLI, or will you paste them yourself?
-> 2. **Token expiry** — If I'm generating the token: should it expire? (e.g. `1h`, `1d`, `30m`) or never expire?
-> 3. **Seed channels** — Should I pre-create a few channels with random usernames so the app has something to show immediately?
+> 1. **Credentials** - Should I fetch your API key from the dashboard and generate a token via the Stream CLI, or will you paste them yourself?
+> 2. **Token expiry** - If I'm generating the token: should it expire? (e.g. `1h`, `1d`, `30m`) or never expire?
+> 3. **Seed channels** - Should I pre-create a few channels with random usernames so the app has something to show immediately?
 >
 > If you want to handle everything yourself, just paste your API key and token and tell me whether to seed channels.
 
-**For Feeds projects** (no channel seeding — feed groups are configured in the dashboard):
+**For Feeds projects** (no channel seeding - feed groups are configured in the dashboard):
 
 > To wire everything up with real data, I need a couple of quick answers:
 >
-> 1. **Credentials** — Should I fetch your API key from the dashboard and generate a token via the Stream CLI, or will you paste them yourself?
-> 2. **Token expiry** — If I'm generating the token: should it expire? (e.g. `1h`, `1d`, `30m`) or never expire?
-> 3. **Feed groups** — What feed groups do you need? (defaults: `user`, `timeline`, `notification` — tell me if you want different names)
+> 1. **Credentials** - Should I fetch your API key from the dashboard and generate a token via the Stream CLI, or will you paste them yourself?
+> 2. **Token expiry** - If I'm generating the token: should it expire? (e.g. `1h`, `1d`, `30m`) or never expire?
+> 3. **Feed groups** - What feed groups do you need? (defaults: `user`, `timeline`, `notification` - tell me if you want different names)
 >
 > If you want to handle everything yourself, just paste your API key and token and confirm the feed group names.
 
-**For Video projects** (calls are ephemeral — no seeding needed):
+**For Video projects** (calls are ephemeral - no seeding needed):
 
 > To wire everything up, I need a couple of quick answers:
 >
-> 1. **Credentials** — Should I fetch your API key from the dashboard and generate a token via the Stream CLI, or will you paste them yourself?
-> 2. **Token expiry** — If I'm generating the token: should it expire? (e.g. `1h`, `1d`, `30m`) or never expire?
+> 1. **Credentials** - Should I fetch your API key from the dashboard and generate a token via the Stream CLI, or will you paste them yourself?
+> 2. **Token expiry** - If I'm generating the token: should it expire? (e.g. `1h`, `1d`, `30m`) or never expire?
 >
 > If you want to handle everything yourself, just paste your API key and token.
 
-### After the user replies — act without further prompting
+### After the user replies - act without further prompting
 
 Once the user answers, execute all CLI steps in sequence **without pausing for confirmation between them**. Narrate each step briefly as you go (one line per action), but do not stop to ask "shall I continue?".
 
-#### Step A — API key
+#### Step A - API key
 
 ```bash
 stream config get-app
@@ -106,7 +106,7 @@ stream config get-app
 
 Extract the `api_key` field. Hold it in context.
 
-#### Step B — Token
+#### Step B - Token
 
 ```bash
 # Never-expiring
@@ -116,11 +116,11 @@ stream token <user_id>
 stream token <user_id> --ttl <duration>
 ```
 
-Hold the token in context. Use it (and the API key) in every code snippet — no placeholder strings.
+Hold the token in context. Use it (and the API key) in every code snippet - no placeholder strings.
 
-#### Step C — Seed channels (Chat projects only; only if the user said yes)
+#### Step C - Seed channels (Chat projects only; only if the user said yes)
 
-Create 3–5 channels with random realistic usernames. Use `messaging` as the default channel type.
+Create 3-5 channels with random realistic usernames. Use `messaging` as the default channel type.
 
 ```bash
 # Create a channel and add members (repeat for each channel)
@@ -133,15 +133,15 @@ After seeding, print a brief summary:
 
 > Created channels: `general` (alice, bob), `random` (carol, dave), `team-alpha` (alice, eve)
 
-#### Step D — Proceed automatically
+#### Step D - Proceed automatically
 
-After all CLI steps succeed, move straight to **Project signals** and then into `builder.md` — no additional prompt needed. If any CLI step fails, explain the error briefly and ask the user to paste the missing value manually before continuing.
+After all CLI steps succeed, move straight to **Project signals** and then into `builder.md` - no additional prompt needed. If any CLI step fails, explain the error briefly and ask the user to paste the missing value manually before continuing.
 
 ### What NOT to do
 
-- Never put the API **secret** in app code — the CLI uses it server-side only.
+- Never put the API **secret** in app code - the CLI uses it server-side only.
 - Never invent or fabricate credentials.
-- Never ask "should I continue?" between Step A, B, C, and D — execute the whole sequence once the user's upfront answers are in.
+- Never ask "should I continue?" between Step A, B, C, and D - execute the whole sequence once the user's upfront answers are in.
 
 ---
 
@@ -192,7 +192,7 @@ Current extracted modules:
 - **Combined Chat + Video (SwiftUI or UIKit):** [`references/COMBINED-CHAT-VIDEO.md`](references/COMBINED-CHAT-VIDEO.md)
 - **Feeds (SwiftUI or UIKit):** [`references/FEEDS-SWIFTUI.md`](references/FEEDS-SWIFTUI.md) + [`references/FEEDS-SWIFTUI-blueprints.md`](references/FEEDS-SWIFTUI-blueprints.md)
 
-> **Feeds has no pre-built UI components.** `FEEDS-SWIFTUI.md` covers SDK patterns for both SwiftUI and UIKit — only the view layer differs. Load both files for any Feeds request.
+> **Feeds has no pre-built UI components.** `FEEDS-SWIFTUI.md` covers SDK patterns for both SwiftUI and UIKit - only the view layer differs. Load both files for any Feeds request.
 
 Future Swift product coverage should stay in this naming family instead of creating more top-level skills.
 

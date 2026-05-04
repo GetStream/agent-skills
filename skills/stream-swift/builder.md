@@ -43,16 +43,16 @@ Install only the packages needed for the requested Stream products.
 
 ## 4. Wire the shared app setup
 
-**Before writing any code**, confirm that Step 0.5 in [`SKILL.md`](SKILL.md) has completed — API key, token, and optional seed channels should already be in context. If not, run that step now before continuing.
+**Before writing any code**, confirm that Step 0.5 in [`SKILL.md`](SKILL.md) has completed - API key, token, and optional seed channels should already be in context. If not, run that step now before continuing.
 
 Follow [`sdk.md`](sdk.md) for:
 
 - client lifetime and app ownership
-- auth and token transport — use the real API key and token from Step 0.5, never placeholder strings
+- auth and token transport - use the real API key and token from Step 0.5, never placeholder strings
 - state management and main-actor boundaries
 - disconnect/reconnect rules when changing users
 
-If seed channels were created in Step 0.5, the app should render them on first launch without any extra setup — no additional sample data or hardcoded channel IDs needed in the code.
+If seed channels were created in Step 0.5, the app should render them on first launch without any extra setup - no additional sample data or hardcoded channel IDs needed in the code.
 
 Keep the existing app shell intact. Add the minimum composition points needed for Stream.
 

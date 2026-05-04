@@ -8,7 +8,7 @@ Load only the section you are implementing. For setup, client initialization, an
 
 No wrapper class is needed for Video-only apps. Initialize `StreamVideo` and `StreamVideoUI` directly in the app entry point.
 
-### Option A — App struct `init()` (pure SwiftUI, default choice)
+### Option A - App struct `init()` (pure SwiftUI, default choice)
 
 ```swift
 import SwiftUI
@@ -41,7 +41,7 @@ struct VideoApp: App {
 }
 ```
 
-### Option B — `AppDelegate` (required for CallKit, push notifications, background tasks)
+### Option B - `AppDelegate` (required for CallKit, push notifications, background tasks)
 
 ```swift
 import SwiftUI
@@ -77,19 +77,19 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 ```
 
 **Wiring (both options):**
-- `@State` is required in Option A — `App` is a value type; `@State` pins both instances across SwiftUI re-creations
-- `StreamVideoUI` must be alive before any call view renders — initialize before showing `RootView`
+- `@State` is required in Option A - `App` is a value type; `@State` pins both instances across SwiftUI re-creations
+- `StreamVideoUI` must be alive before any call view renders - initialize before showing `RootView`
 - Use `_streamVideo = State(wrappedValue:)` syntax to set `@State` properties from `init()`
-- Do **not** introduce a `VideoCallBridge`, `CallManager`, `StreamService`, or any other wrapper — the SDK types are the ownership layer
+- Do **not** introduce a `VideoCallBridge`, `CallManager`, `StreamService`, or any other wrapper - the SDK types are the ownership layer
 
 ---
 
 ## Combined Chat + Video: File Isolation Blueprint
 
-Only needed when the app imports **both** `StreamChatSwiftUI` and `StreamVideoSwiftUI`. `ViewFactory`, `@Injected`, `InjectionKey`, and `InjectedValues` exist in both modules — importing both in the same file causes an "ambiguous use" compiler error. The fix is file isolation — one file per SDK. See [`COMBINED-CHAT-VIDEO.md`](COMBINED-CHAT-VIDEO.md) for the full guide including UIKit patterns.
+Only needed when the app imports **both** `StreamChatSwiftUI` and `StreamVideoSwiftUI`. `ViewFactory`, `@Injected`, `InjectionKey`, and `InjectedValues` exist in both modules - importing both in the same file causes an "ambiguous use" compiler error. The fix is file isolation - one file per SDK. See [`COMBINED-CHAT-VIDEO.md`](COMBINED-CHAT-VIDEO.md) for the full guide including UIKit patterns.
 
 ```swift
-// VideoService.swift — import isolation only, no logic
+// VideoService.swift - import isolation only, no logic
 import StreamVideo
 import StreamVideoSwiftUI
 
@@ -114,7 +114,7 @@ final class VideoService {
 ```
 
 ```swift
-// MyApp.swift — no Stream imports needed here
+// MyApp.swift - no Stream imports needed here
 @main
 struct MyApp: App {
     init() {
@@ -129,8 +129,8 @@ struct MyApp: App {
 ```
 
 **Wiring:**
-- `streamVideoUI` is `private` — callers never touch it; it just needs to stay alive
-- `streamVideo` is `let` — set once at init, never mutated
+- `streamVideoUI` is `private` - callers never touch it; it just needs to stay alive
+- `streamVideo` is `let` - set once at init, never mutated
 - No `setUp()` method, no optional properties, no two-phase init
 - The same JWT token and API key work for both Chat and Video
 
@@ -138,7 +138,7 @@ struct MyApp: App {
 
 ## Root / Call Gate Blueprint
 
-The SDK ships a `CallModifier` that handles all call-state overlays — incoming, outgoing, joining, and active call — without manual state switching. Apply it once at the root of your content view.
+The SDK ships a `CallModifier` that handles all call-state overlays - incoming, outgoing, joining, and active call - without manual state switching. Apply it once at the root of your content view.
 
 ```swift
 import SwiftUI
@@ -157,7 +157,7 @@ struct RootView: View {
 To use a custom `ViewFactory`, pass it to the modifier:
 
 ```swift
-// VideoViewFactory.swift — import StreamVideoSwiftUI only
+// VideoViewFactory.swift - import StreamVideoSwiftUI only
 import StreamVideoSwiftUI
 
 class VideoViewFactory: ViewFactory {
@@ -167,7 +167,7 @@ class VideoViewFactory: ViewFactory {
 ```
 
 ```swift
-// RootView — import StreamVideoSwiftUI only
+// RootView - import StreamVideoSwiftUI only
 import StreamVideoSwiftUI
 
 struct RootView: View {
@@ -180,11 +180,11 @@ struct RootView: View {
 }
 ```
 
-> **Combining Chat + Video?** `ViewFactory` is defined in both `StreamChatSwiftUI` and `StreamVideoSwiftUI`. Put `VideoViewFactory` in its own file (`VideoViewFactory.swift`) that imports only `StreamVideoSwiftUI`, and `ChatViewFactory` in its own file that imports only `StreamChatSwiftUI`. Same rule applies to `@Injected` and `InjectionKey` — they exist in both modules. See `sdk.md` → "Combined Chat + Video apps".
+> **Combining Chat + Video?** `ViewFactory` is defined in both `StreamChatSwiftUI` and `StreamVideoSwiftUI`. Put `VideoViewFactory` in its own file (`VideoViewFactory.swift`) that imports only `StreamVideoSwiftUI`, and `ChatViewFactory` in its own file that imports only `StreamChatSwiftUI`. Same rule applies to `@Injected` and `InjectionKey` - they exist in both modules. See `sdk.md` -> "Combined Chat + Video apps".
 
 **Wiring:**
-- `CallModifier` is the recommended integration point — it manages all `callingState` transitions internally so you don't switch on them manually
-- `CallViewModel` must be `@StateObject` — it owns call lifecycle for the entire session
+- `CallModifier` is the recommended integration point - it manages all `callingState` transitions internally so you don't switch on them manually
+- `CallViewModel` must be `@StateObject` - it owns call lifecycle for the entire session
 - Verify the exact `CallModifier` initializer against the [SDK docs](https://getstream.io/video/docs/ios/) if the signature differs from above
 
 ---
@@ -244,7 +244,7 @@ struct HomeView: View {
 ```
 
 **Wiring:**
-- `@ObservedObject` here — `HomeView` observes but does not own `callViewModel`
+- `@ObservedObject` here - `HomeView` observes but does not own `callViewModel`
 - `joinCall` joins an existing call or creates one if it does not exist
 - `startCall` with `ring: false` (default) creates and joins immediately without ringing anyone
 - The `.alert` clears `callViewModel.error` on dismiss so the same error does not reappear
@@ -255,7 +255,7 @@ struct HomeView: View {
 
 `CallContainer` is the complete in-call screen with participant grid, controls, and camera feed. Use it unless you are building a fully custom layout.
 
-`ActiveCallView` receives the `CallViewModel` that was created at the root — it must **not** create a second instance. Creating a new `CallViewModel` here discards the call state that `joinCall`/`startCall` already established.
+`ActiveCallView` receives the `CallViewModel` that was created at the root - it must **not** create a second instance. Creating a new `CallViewModel` here discards the call state that `joinCall`/`startCall` already established.
 
 ```swift
 import SwiftUI
@@ -286,9 +286,9 @@ struct ActiveCallView: View {
 ```
 
 **Wiring:**
-- `@ObservedObject` — `ActiveCallView` observes the same instance that owns the call session
+- `@ObservedObject` - `ActiveCallView` observes the same instance that owns the call session
 - `DefaultViewFactory.shared` provides all default UI slots; substitute a custom `ViewFactory` to replace individual slots
-- Do not embed `CallContainer` inside a `ScrollView` or `NavigationStack` — it manages its own layout
+- Do not embed `CallContainer` inside a `ScrollView` or `NavigationStack` - it manages its own layout
 - The `.alert` here catches errors that arise during the active call (e.g. network loss, permission denial)
 
 ---
@@ -402,9 +402,9 @@ struct ParticipantTileView: View {
 ```
 
 **Wiring:**
-- `VideoCallParticipantView` renders the participant's `RTCVideoTrack` — pass their current track via `participant`
+- `VideoCallParticipantView` renders the participant's `RTCVideoTrack` - pass their current track via `participant`
 - `availableFrame` sets the rendering resolution; read it from a `GeometryReader` on the tile's container
-- `onChangeTrackVisibility` fires when the tile enters/leaves the viewport — pause tracks for offscreen participants to save bandwidth
+- `onChangeTrackVisibility` fires when the tile enters/leaves the viewport - pause tracks for offscreen participants to save bandwidth
 
 ---
 
@@ -472,8 +472,8 @@ struct CustomIncomingCallView: View {
 **Wiring:**
 - `callInfo.caller` exposes `name`, `imageURL`, `userId` of the person calling
 - `rejectCall` sends a rejection notification to the caller and transitions state to `.idle`
-- `acceptCall` joins the call and transitions state to `.joining` → `.inCall`
-- Replace this view in your `ViewFactory` by overriding the incoming call slot — check the [customization docs](https://getstream.io/video/docs/ios/ui-components/overview/) for the exact method signature
+- `acceptCall` joins the call and transitions state to `.joining` -> `.inCall`
+- Replace this view in your `ViewFactory` by overriding the incoming call slot - check the [customization docs](https://getstream.io/video/docs/ios/ui-components/overview/) for the exact method signature
 
 ---
 
@@ -524,6 +524,6 @@ struct ParticipantGridView: View {
 ```
 
 **Wiring:**
-- `remoteParticipants` excludes the local user — avoids showing your own video in the grid
+- `remoteParticipants` excludes the local user - avoids showing your own video in the grid
 - Pass the tile's rendered size as `availableFrame` so the SDK can request the correct track resolution
 - The local PiP is positioned with `ZStack` alignment; adjust placement as needed

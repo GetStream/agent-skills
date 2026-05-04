@@ -41,7 +41,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
 **Wiring:**
 - `Appearance.default` and `Components.default` must be configured before `ChatClient` is created and before any SDK view loads
-- `chatClient` is a stored strong reference — never let it go out of scope
+- `chatClient` is a stored strong reference - never let it go out of scope
 
 ---
 
@@ -104,7 +104,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
 **Wiring:**
 - `chatClient.currentUserId` is non-nil when a user is still connected from a previous session
-- `switchToChannelList` replaces the root view controller after login — no navigation push needed
+- `switchToChannelList` replaces the root view controller after login - no navigation push needed
 
 ---
 
@@ -235,10 +235,10 @@ func makeChannelListVC(chatClient: ChatClient) -> UINavigationController {
 ```
 
 **Wiring:**
-- `ChatChannelListVC.make(with:)` wires the controller and delegate correctly. The VC calls `synchronize()` automatically on `viewDidLoad` — do not call it again manually.
+- `ChatChannelListVC.make(with:)` wires the controller and delegate correctly. The VC calls `synchronize()` automatically on `viewDidLoad` - do not call it again manually.
 - You can also assign via `channelListVC.controller = controller` if you cannot use the factory (e.g. storyboard instantiation)
 - Navigation to `ChatMessageListVC` on cell tap is handled by the SDK's built-in `ChatChannelListRouter`
-- Always embed `ChatChannelListVC` in a `UINavigationController` — the SDK router pushes message VCs onto it
+- Always embed `ChatChannelListVC` in a `UINavigationController` - the SDK router pushes message VCs onto it
 
 ---
 
@@ -266,9 +266,9 @@ func configureAppearance() {
 ```
 
 **Wiring:**
-- All `Appearance.default` changes are global — they apply to every SDK component automatically
+- All `Appearance.default` changes are global - they apply to every SDK component automatically
 - Changes after the first SDK view has loaded may not take effect
-- Verify available property names against [theming docs](https://getstream.io/chat/docs/sdk/ios/uikit/theming/) — do not guess
+- Verify available property names against [theming docs](https://getstream.io/chat/docs/sdk/ios/uikit/theming/) - do not guess
 
 ---
 
@@ -310,9 +310,9 @@ final class CustomChannelListItemView: ChatChannelListItemView {
 ```
 
 **Wiring:**
-- `content` is `ChatChannel?` — access channel properties directly (e.g. `content?.unreadCount`, `content?.name`)
-- `updateContent()` is called by the SDK whenever the cell needs to refresh — always call `super.updateContent()` first
-- Register via `Components.default.channelContentView` — not `channelCell` (which is the collection cell wrapper)
+- `content` is `ChatChannel?` - access channel properties directly (e.g. `content?.unreadCount`, `content?.name`)
+- `updateContent()` is called by the SDK whenever the cell needs to refresh - always call `super.updateContent()` first
+- Register via `Components.default.channelContentView` - not `channelCell` (which is the collection cell wrapper)
 
 ---
 
@@ -320,7 +320,7 @@ final class CustomChannelListItemView: ChatChannelListItemView {
 
 Subclass `ChatChannelListRouter` to intercept or replace the default navigation from the channel list to the message list.
 
-**Pattern A — navigate to a `ChatMessageListVC` subclass (most common):**
+**Pattern A - navigate to a `ChatMessageListVC` subclass (most common):**
 
 ```swift
 import UIKit
@@ -337,7 +337,7 @@ final class CustomChannelListRouter: ChatChannelListRouter {
 }
 
 final class CustomMessageListVC: ChatMessageListVC {
-    // channelController is inherited — it must be set before the VC is pushed, not after viewDidLoad
+    // channelController is inherited - it must be set before the VC is pushed, not after viewDidLoad
     // Override SDK methods as needed
 }
 
@@ -345,7 +345,7 @@ final class CustomMessageListVC: ChatMessageListVC {
 // Components.default.channelListRouter = CustomChannelListRouter.self
 ```
 
-**Pattern B — navigate to a completely custom `UIViewController`:**
+**Pattern B - navigate to a completely custom `UIViewController`:**
 
 ```swift
 import UIKit
@@ -377,11 +377,11 @@ final class MyChannelViewController: UIViewController {
 ```
 
 **Wiring:**
-- `rootViewController` is typed `ChatChannelListVC?` — `rootViewController?.controller.client` compiles correctly; `client` is a stored `let` property on the controller
-- Pattern A: `channelController` is inherited from `ChatMessageListVC` — assign it before the push; the SDK reads it in `viewWillAppear`
+- `rootViewController` is typed `ChatChannelListVC?` - `rootViewController?.controller.client` compiles correctly; `client` is a stored `let` property on the controller
+- Pattern A: `channelController` is inherited from `ChatMessageListVC` - assign it before the push; the SDK reads it in `viewWillAppear`
 - Pattern B: pass `client` and `cid` to your custom VC at init time rather than accessing them later through the router
 - Override `showChannel(for cid: ChannelId, at messageId: MessageId?)` to also handle deep-links to specific messages
-- The router is instantiated by the SDK — do not create it manually
+- The router is instantiated by the SDK - do not create it manually
 - Other overridable methods: `showCurrentUserProfile()`, `didTapMoreButton(for:)`, `didTapDeleteButton(for:)`
 
 ---
@@ -409,7 +409,7 @@ final class CustomMessageContentView: ChatMessageContentView {
 ```
 
 **Wiring:**
-- `content` is the `ChatMessage?` for this view — always guard for nil
+- `content` is the `ChatMessage?` for this view - always guard for nil
 - `isSentByCurrentUser` is a convenience property on `ChatMessage`
 - Call `super.updateContent()` first to let the SDK set base state, then apply your overrides
 
@@ -429,7 +429,7 @@ func logout(chatClient: ChatClient, completion: @escaping () -> Void) {
     }
 }
 
-// Usage — switch to login screen after logout:
+// Usage - switch to login screen after logout:
 logout(chatClient: chatClient) { [weak self] in
     let loginVC = LoginViewController(chatClient: chatClient) {
         // reconnect flow
@@ -439,5 +439,5 @@ logout(chatClient: chatClient) { [weak self] in
 ```
 
 **Wiring:**
-- `logout` completion fires on a background thread — always dispatch UI work to main
+- `logout` completion fires on a background thread - always dispatch UI work to main
 - Do not call `connectUser` inside `logout`'s closure: wait for `logout` to complete first, then call connect in the `completion` block

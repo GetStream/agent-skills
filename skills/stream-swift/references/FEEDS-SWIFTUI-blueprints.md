@@ -2,7 +2,7 @@
 
 Load only the section you are implementing. For SDK setup, client initialization, and gotchas, see [FEEDS-SWIFTUI.md](FEEDS-SWIFTUI.md).
 
-Stream Feeds has **no pre-built UI components** — every screen is custom SwiftUI built against the SDK's observable state objects.
+Stream Feeds has **no pre-built UI components** - every screen is custom SwiftUI built against the SDK's observable state objects.
 
 ---
 
@@ -79,14 +79,14 @@ struct RootView: View {
 
 **Wiring:**
 - `@StateObject` in the `App` keeps `AppState` alive across SwiftUI re-creations
-- Pass `client` into child views — don't store it in `@EnvironmentObject` directly
+- Pass `client` into child views - don't store it in `@EnvironmentObject` directly
 - `connect()` is fully async; call it from a `.task` or button action
 
 ---
 
 ## Main Feed View Blueprint (Twitter-style timeline)
 
-Three `Feed` objects are created once in `init` — regular posts, stories, and notifications. Hold them as `@State` so SwiftUI doesn't recreate them.
+Three `Feed` objects are created once in `init` - regular posts, stories, and notifications. Hold them as `@State` so SwiftUI doesn't recreate them.
 
 ```swift
 import StreamCore
@@ -104,7 +104,7 @@ struct FeedsRootView: View {
     init(client: FeedsClient) {
         self.client = client
 
-        // Posts feed — excludes stories
+        // Posts feed - excludes stories
         let postsQuery = FeedQuery(
             feed: FeedId(group: "user", id: client.user.id),
             activityFilter: .exists(.expiresAt, false),
@@ -113,7 +113,7 @@ struct FeedsRootView: View {
         let postsFeed = client.feed(for: postsQuery)
         _feed = State(initialValue: postsFeed)
 
-        // Stories feed — only activities with expiresAt set
+        // Stories feed - only activities with expiresAt set
         let storiesQuery = FeedQuery(
             feed: FeedId(group: "user", id: client.user.id),
             activityFilter: .exists(.expiresAt, true),
@@ -255,7 +255,7 @@ struct ActivityListView: View {
 ```
 
 **Wiring:**
-- `state = feed.state` in `init` — never replace it after init
+- `state = feed.state` in `init` - never replace it after init
 - Pagination: check `state.canLoadMoreActivities` before calling `queryMoreActivities`
 - `refreshable` reruns `getOrCreate()` which resets and reloads
 
@@ -627,7 +627,7 @@ struct CommentInputBar: View {
 ```
 
 **Wiring:**
-- `@StateObject` owns `ActivityState` — `@StateObject` keeps it alive for the lifetime of the sheet
+- `@StateObject` owns `ActivityState` - `@StateObject` keeps it alive for the lifetime of the sheet
 - `activity.get()` loads both the activity data and its comments into `activityState.comments`
 - `parentId` on `addComment` drives reply threading; `nil` = top-level comment
 
@@ -816,7 +816,7 @@ extension AggregatedActivityData {
 **Wiring:**
 - `state.aggregatedActivities` is the correct property for notification feeds, not `state.activities`
 - `state.notificationStatus?.unread` drives the badge count in the bell icon
-- `markActivity(request: .init(markAllRead: true))` clears all unread — individual mark uses `readActivities: [id]`
+- `markActivity(request: .init(markAllRead: true))` clears all unread - individual mark uses `readActivities: [id]`
 
 ---
 
@@ -858,4 +858,4 @@ struct StoriesStripView: View {
 
 **Wiring:**
 - Stories come from a separate `Feed` with `activityFilter: .exists(.expiresAt, true)`
-- `activity.expiresAt` is the ISO8601 string — use `ISO8601DateFormatter` to check remaining time
+- `activity.expiresAt` is the ISO8601 string - use `ISO8601DateFormatter` to check remaining time

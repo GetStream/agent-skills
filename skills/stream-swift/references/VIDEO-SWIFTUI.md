@@ -10,13 +10,13 @@ Rules: [../RULES.md](../RULES.md) (secrets, no dev tokens in production).
 
 ## Quick ref
 
-- **Package (SwiftUI):** `StreamVideoSwiftUI` via SPM — `https://github.com/getstream/stream-video-swift`
-- **Package (core only):** `StreamVideo` via SPM — same repo
-- **First:** Installation → Info.plist → Client init → CallViewModel → Make/join call
+- **Package (SwiftUI):** `StreamVideoSwiftUI` via SPM - `https://github.com/getstream/stream-video-swift`
+- **Package (core only):** `StreamVideo` via SPM - same repo
+- **First:** Installation -> Info.plist -> Client init -> CallViewModel -> Make/join call
 - **Per feature:** Jump to the relevant section or blueprint when implementing a screen
 - **Docs:** If you can't find information here, check the docs: `https://getstream.io/video/docs/ios/`
 
-Full view blueprints: [VIDEO-SWIFTUI-blueprints.md](VIDEO-SWIFTUI-blueprints.md) — load only the section you are implementing.
+Full view blueprints: [VIDEO-SWIFTUI-blueprints.md](VIDEO-SWIFTUI-blueprints.md) - load only the section you are implementing.
 
 ---
 
@@ -27,18 +27,18 @@ Full view blueprints: [VIDEO-SWIFTUI-blueprints.md](VIDEO-SWIFTUI-blueprints.md)
 Check if the SDK is already installed in the project. If not, ask the user to follow the [installation guide](https://getstream.io/video/docs/ios/basics/installation/).
 
 Add **both** packages from `https://github.com/getstream/stream-video-swift` to the app target:
-- `StreamVideo` — core (required for non-UI work)
-- `StreamVideoSwiftUI` — SwiftUI component layer (already depends on `StreamVideo`)
+- `StreamVideo` - core (required for non-UI work)
+- `StreamVideoSwiftUI` - SwiftUI component layer (already depends on `StreamVideo`)
 
 ### Client Initialization
 
-Initialize `StreamVideo` **once** at app launch. **Never** create it in a SwiftUI `View` body or computed property — doing so creates a new instance on every redraw.
+Initialize `StreamVideo` **once** at app launch. **Never** create it in a SwiftUI `View` body or computed property - doing so creates a new instance on every redraw.
 
-Wrap it with `StreamVideoUI` before any SDK view renders. Two patterns — pick one:
+Wrap it with `StreamVideoUI` before any SDK view renders. Two patterns - pick one:
 
 > **Combining Chat + Video?** `ViewFactory`, `@Injected`, `InjectionKey`, and `InjectedValues` collide between `StreamVideoSwiftUI` and `StreamChatSwiftUI`. Never import both in the same file. See [`COMBINED-CHAT-VIDEO.md`](COMBINED-CHAT-VIDEO.md) for the full collision table and file isolation blueprints. The `VideoService.swift` blueprint is in `VIDEO-SWIFTUI-blueprints.md`.
 
-**Option A — App struct `init()` (pure SwiftUI, no UIKit dependency):**
+**Option A - App struct `init()` (pure SwiftUI, no UIKit dependency):**
 
 ```swift
 import StreamVideo
@@ -70,9 +70,9 @@ struct MyApp: App {
 }
 ```
 
-`@State` is required — `App` is a value type and SwiftUI can recreate it; `@State` ensures both instances survive those re-creations.
+`@State` is required - `App` is a value type and SwiftUI can recreate it; `@State` ensures both instances survive those re-creations.
 
-**Option B — `AppDelegate` (required for CallKit, push notifications, background tasks):**
+**Option B - `AppDelegate` (required for CallKit, push notifications, background tasks):**
 
 ```swift
 import StreamVideo
@@ -110,7 +110,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 
 ## User Authentication
 
-The API key and secret are shared between Stream Chat and Video — one project, one key.
+The API key and secret are shared between Stream Chat and Video - one project, one key.
 
 ### Static token (no expiry)
 
@@ -129,7 +129,7 @@ Token generation: `stream token <user_id>` (same CLI as Chat).
 
 ### Token provider (expiring tokens)
 
-Pass a `tokenProvider` closure — called automatically when the token expires:
+Pass a `tokenProvider` closure - called automatically when the token expires:
 
 ```swift
 let streamVideo = StreamVideo(
@@ -174,13 +174,13 @@ let streamVideo = StreamVideo(
 
 ## CallViewModel
 
-`CallViewModel` is the central state manager for call UI. Create **one instance** at the root of the call flow, owned via `@StateObject`. Pass it down the view hierarchy as `@ObservedObject`. Never create a second instance for the same call session — doing so loses all state.
+`CallViewModel` is the central state manager for call UI. Create **one instance** at the root of the call flow, owned via `@StateObject`. Pass it down the view hierarchy as `@ObservedObject`. Never create a second instance for the same call session - doing so loses all state.
 
 ```swift
-// Root view — owns the single instance
+// Root view - owns the single instance
 @StateObject var callViewModel = CallViewModel()
 
-// Child views — observe the same instance, never create a new one
+// Child views - observe the same instance, never create a new one
 @ObservedObject var callViewModel: CallViewModel
 ```
 
@@ -191,7 +191,7 @@ let streamVideo = StreamVideo(
 callViewModel.call?.state.participants
 callViewModel.call?.state.localParticipant
 
-// Wrong — bypasses the owned CallViewModel, state goes stale
+// Wrong - bypasses the owned CallViewModel, state goes stale
 CallState.shared.participants
 ```
 
@@ -315,10 +315,10 @@ callViewModel.callSettings.speakerOn    // speaker phone on
 ```swift
 let call = callViewModel.call
 
-call?.state.participants         // [CallParticipant] — local + remote
+call?.state.participants         // [CallParticipant] - local + remote
 call?.state.localParticipant     // CallParticipant?
 call?.state.remoteParticipants   // [CallParticipant]
-call?.state.dominantSpeaker      // CallParticipant? — loudest active audio
+call?.state.dominantSpeaker      // CallParticipant? - loudest active audio
 ```
 
 **`CallParticipant` key properties:**
@@ -339,7 +339,7 @@ call?.state.dominantSpeaker      // CallParticipant? — loudest active audio
 
 ## Info.plist Requirements
 
-Add both keys before any call attempt — missing them causes a silent crash on first camera or mic access:
+Add both keys before any call attempt - missing them causes a silent crash on first camera or mic access:
 
 ```xml
 <key>NSCameraUsageDescription</key>
@@ -361,7 +361,7 @@ class CustomVideoViewFactory: ViewFactory {
     static let shared = CustomVideoViewFactory()
     private init() {}
 
-    // Override slots below — all unoverridden slots use SDK defaults
+    // Override slots below - all unoverridden slots use SDK defaults
 }
 ```
 
@@ -395,13 +395,13 @@ Source: [getstream.io/video/docs/ios/advanced/troubleshooting-calls/](https://ge
 
 A failed WebSocket connection prevents calls from being established.
 
-**Expired token** — tokens have an expiry date. Verify at [jwt.io](https://jwt.io). When using expiring tokens always supply a `tokenProvider` so the SDK can refresh automatically without a manual reconnect.
+**Expired token** - tokens have an expiry date. Verify at [jwt.io](https://jwt.io). When using expiring tokens always supply a `tokenProvider` so the SDK can refresh automatically without a manual reconnect.
 
-**Wrong secret for token generation** — each Stream app has its own secret. Tokens from the docs examples are signed with demo app secrets; yours will be rejected. Generate tokens from your own dashboard secret or via `stream token <user_id>`.
+**Wrong secret for token generation** - each Stream app has its own secret. Tokens from the docs examples are signed with demo app secrets; yours will be rejected. Generate tokens from your own dashboard secret or via `stream token <user_id>`.
 
-**User–token mismatch** — the token must be signed for the same user ID passed to `StreamVideo(user:)`. Mismatched IDs produce an auth error even if both values look valid. Verify at [jwt.io](https://jwt.io).
+**User-token mismatch** - the token must be signed for the same user ID passed to `StreamVideo(user:)`. Mismatched IDs produce an auth error even if both values look valid. Verify at [jwt.io](https://jwt.io).
 
-**Third-party network debuggers** — tools such as Wormholy can intercept and block WebSocket traffic. Exclude Stream's hosts from any network debugger you have installed.
+**Third-party network debuggers** - tools such as Wormholy can intercept and block WebSocket traffic. Exclude Stream's hosts from any network debugger you have installed.
 
 ### Ringing Call Issues
 
@@ -410,19 +410,19 @@ A ringing failure means the callee's incoming call screen never appears. Two sce
 - **App in foreground:** the SDK shows an in-app screen via the active WebSocket. Fix connection issues first.
 - **App in background or killed:** requires CallKit + APNs VoIP push. Without it, no incoming call screen appears.
 
-**Calling yourself** — caller and callee must be different users. A user cannot receive a ringing notification for their own call.
+**Calling yourself** - caller and callee must be different users. A user cannot receive a ringing notification for their own call.
 
-**Unknown member** — the callee must have connected to Stream at least once so the platform knows their device token. Ensure all ring targets have signed in before testing.
+**Unknown member** - the callee must have connected to Stream at least once so the platform knows their device token. Ensure all ring targets have signed in before testing.
 
-**Reused call ID** — ringing fires only once per call ID. Always use a fresh `UUID().uuidString` for every ringing call. Reusing an ID silently skips the ring.
+**Reused call ID** - ringing fires only once per call ID. Always use a fresh `UUID().uuidString` for every ringing call. Reusing an ID silently skips the ring.
 
 **CallKit checklist:**
 - VoIP certificate bundle ID matches the dashboard setting
 - App bundle ID is correct
 - Push providers are created and their names match what is passed to the SDK
-- Device is registered — confirm it appears in the `me` response of the `connection.ok` event
+- Device is registered - confirm it appears in the `me` response of the `connection.ok` event
 - Check "Webhook & Push Logs" in the dashboard for push failures
-- If VoIP notifications stop arriving entirely, reinstall the app — iOS stops delivering them if the app fails to report a VoIP push to CallKit
+- If VoIP notifications stop arriving entirely, reinstall the app - iOS stops delivering them if the app fails to report a VoIP push to CallKit
 
 ### Logging
 
@@ -440,11 +440,11 @@ Levels: `.debug`, `.info`, `.warning`, `.error`. Setting the level after init ha
 
 - **`StreamVideoUI` must be initialized before any SDK view renders.** Accessing call views before setup causes a crash.
 - **Never store `StreamVideo` or `StreamVideoUI` as computed properties or in a view body.** They are recreated on every redraw.
-- **`CallViewModel` must be `@StateObject` at the ownership site, `@ObservedObject` in child views.** Never create a second `CallViewModel` for the same call — pass the owned instance down.
+- **`CallViewModel` must be `@StateObject` at the ownership site, `@ObservedObject` in child views.** Never create a second `CallViewModel` for the same call - pass the owned instance down.
 - **Never use `CallState.shared`.** Always access call state through `callViewModel.call?.state`. Singleton access bypasses the published state and leaves the UI stale.
-- **Always `import StreamVideo` in files that use low-level types** (`User`, `UserToken`, `Call`, `CallParticipant`, `RTCVideoTrack`, `Member`, `LogConfig`). `StreamVideoSwiftUI` alone is not sufficient for these types — omitting the import causes a "cannot find type" build error.
+- **Always `import StreamVideo` in files that use low-level types** (`User`, `UserToken`, `Call`, `CallParticipant`, `RTCVideoTrack`, `Member`, `LogConfig`). `StreamVideoSwiftUI` alone is not sufficient for these types - omitting the import causes a "cannot find type" build error.
 - **Always handle `callViewModel.error`.** Use a `.alert` bound to `callViewModel.error` in every view that triggers call actions. Unhandled errors leave the user with no feedback and the UI stuck in a non-idle state.
 - **`callViewModel.hangUp()` is the correct leave path.** Calling `call.leave()` directly bypasses `CallViewModel` state cleanup and leaves the UI stale.
 - **Always add `NSCameraUsageDescription` and `NSMicrophoneUsageDescription` to Info.plist.** Without them the permission dialog never appears and the call fails silently.
-- **The API key is shared between Chat and Video.** One Stream project, one API key and one secret — token generation is identical for both products.
+- **The API key is shared between Chat and Video.** One Stream project, one API key and one secret - token generation is identical for both products.
 - **Never use dev tokens in production.** `devToken()` disables token auth and allows any client to impersonate any user.

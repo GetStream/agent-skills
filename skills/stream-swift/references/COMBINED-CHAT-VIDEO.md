@@ -20,11 +20,11 @@ Both SDKs model the same domain concepts, but with different type names. Some na
 
 ### Which collisions actually cause compiler errors
 
-**`User` / `Token` (both layers)** — importing `StreamChat` and `StreamVideo` in the same file causes **"Ambiguous use of 'init'"** for `User` and `Token`. Fix: never construct `User` or `Token`/`UserToken` instances in the same file as their Chat counterparts.
+**`User` / `Token` (both layers)** - importing `StreamChat` and `StreamVideo` in the same file causes **"Ambiguous use of 'init'"** for `User` and `Token`. Fix: never construct `User` or `Token`/`UserToken` instances in the same file as their Chat counterparts.
 
-**SwiftUI layer** — `ViewFactory`, `@Injected`, `InjectionKey`, `InjectedValues` exist in **both** `StreamChatSwiftUI` and `StreamVideoSwiftUI`. Importing both in the same file produces an "ambiguous use" compiler error.
+**SwiftUI layer** - `ViewFactory`, `@Injected`, `InjectionKey`, `InjectedValues` exist in **both** `StreamChatSwiftUI` and `StreamVideoSwiftUI`. Importing both in the same file produces an "ambiguous use" compiler error.
 
-**UIKit layer** — `StreamVideoUIKit` depends on `StreamVideoSwiftUI`, so the SwiftUI-layer collisions apply to UIKit apps too if `StreamChatSwiftUI` is also present. Additionally, the `User`/`Token` core collisions apply whenever both `StreamChat` and `StreamVideo` are imported together.
+**UIKit layer** - `StreamVideoUIKit` depends on `StreamVideoSwiftUI`, so the SwiftUI-layer collisions apply to UIKit apps too if `StreamChatSwiftUI` is also present. Additionally, the `User`/`Token` core collisions apply whenever both `StreamChat` and `StreamVideo` are imported together.
 
 **Fix for all cases: file isolation.** Never import both SDKs in the same file. Keep all SDK-specific construction in its own service file.
 
@@ -37,11 +37,11 @@ Both SDKs model the same domain concepts, but with different type names. Some na
 File layout:
 
 ```
-ChatService.swift        → import StreamChat, StreamChatSwiftUI   (only)
-ChatViewFactory.swift    → import StreamChatSwiftUI                (only)
-VideoService.swift       → import StreamVideo, StreamVideoSwiftUI  (only)
-VideoViewFactory.swift   → import StreamVideoSwiftUI               (only)
-MyApp.swift              → no Stream imports — calls both services
+ChatService.swift        -> import StreamChat, StreamChatSwiftUI   (only)
+ChatViewFactory.swift    -> import StreamChatSwiftUI                (only)
+VideoService.swift       -> import StreamVideo, StreamVideoSwiftUI  (only)
+VideoViewFactory.swift   -> import StreamVideoSwiftUI               (only)
+MyApp.swift              -> no Stream imports - calls both services
 ```
 
 **ChatService.swift:**
@@ -94,7 +94,7 @@ final class VideoService {
 }
 ```
 
-**MyApp.swift — no Stream imports:**
+**MyApp.swift - no Stream imports:**
 
 ```swift
 @main
@@ -123,9 +123,9 @@ Additionally, importing `StreamChat` and `StreamVideo` in the same file causes *
 File layout:
 
 ```
-ChatService.swift     → import StreamChat, StreamChatUI            (only)
-VideoService.swift    → import StreamVideo, StreamVideoSwiftUI, StreamVideoUIKit  (only)
-AppDelegate.swift     → no Stream imports — calls both services
+ChatService.swift     -> import StreamChat, StreamChatUI            (only)
+VideoService.swift    -> import StreamVideo, StreamVideoSwiftUI, StreamVideoUIKit  (only)
+AppDelegate.swift     -> no Stream imports - calls both services
 ```
 
 **ChatService.swift (UIKit):**
@@ -175,7 +175,7 @@ final class VideoService {
 }
 ```
 
-**AppDelegate.swift — no Stream imports:**
+**AppDelegate.swift - no Stream imports:**
 
 ```swift
 import UIKit
@@ -199,6 +199,6 @@ Access the clients elsewhere via `ChatService.shared.client` and `VideoService.s
 
 ## Shared resources
 
-- **Same API key** — one Stream project covers both Chat and Video.
-- **Same JWT format** — `stream token <user_id>` generates a token valid for both products. The CLI uses the app's secret server-side; only the API key and token go into the app.
-- **Same user ID** — the user ID must match in both SDK initializations if the same person is using both Chat and Video.
+- **Same API key** - one Stream project covers both Chat and Video.
+- **Same JWT format** - `stream token <user_id>` generates a token valid for both products. The CLI uses the app's secret server-side; only the API key and token go into the app.
+- **Same user ID** - the user ID must match in both SDK initializations if the same person is using both Chat and Video.
