@@ -8,15 +8,16 @@ Every rule below is stated once. Other files reference this file - do not duplic
 
 Target Stream Chat Android SDK **v7+** (`io.getstream:stream-chat-android-compose:7.x` and matching `stream-chat-android-client` / `stream-chat-android-ui-components`). v7 changed plugin wiring, theme APIs, and several Composable signatures vs. v6. If a pattern in your training data conflicts with this skill's blueprints or the [v7 docs](https://getstream.io/chat/docs/sdk/android/), trust the docs - do not fall back to remembered v6 shapes.
 
+For Stream Video, target the latest published `io.getstream:stream-video-android-ui-compose` (and its transitive `-core`). Verify any signature you are about to write against the bundled `VIDEO-COMPOSE.md` reference or the [Video Android docs](https://getstream.io/video/docs/android/).
+
 ### Version lookup
 
 When you need the current Stream artifact version, use one of these sources:
 
-- Maven Central (Sonatype): `https://central.sonatype.com/artifact/io.getstream/stream-chat-android-compose/versions` (or `/stream-chat-android-ui-components/versions`)
-- GitHub releases: `https://github.com/GetStream/stream-chat-android/releases`
-- Stream Android docs landing page: `https://getstream.io/chat/docs/sdk/android/`
+- Maven Central (Sonatype): `https://central.sonatype.com/artifact/io.getstream/stream-chat-android-compose/versions` (or `/stream-chat-android-ui-components/versions`, `/stream-video-android-ui-compose/versions`)
+- GitHub releases: `https://github.com/GetStream/stream-chat-android/releases`, `https://github.com/GetStream/stream-video-android/releases`
 
-**Do not use `search.maven.org`** — it is deprecated and its index is stale; it does not surface v7 releases and will lead you to ship v6 versions by mistake. If a tool result shows `search.maven.org` as the source, discard it and re-query one of the sources above.
+**Do not use `search.maven.org`** — it is deprecated and its index is stale; it does not surface v7 (Chat) or recent Video releases and will lead you to ship outdated versions by mistake. If a tool result shows `search.maven.org` as the source, discard it and re-query one of the sources above.
 
 ---
 
@@ -51,16 +52,16 @@ If there is **no Android project**, do not try to scaffold one from the CLI. Tel
 
 ## Client lifetime
 
-Initialize `ChatClient` once at app launch via the `Application` class (or an equivalent app-scoped owner like a Hilt/Koin singleton). Never create a `ChatClient` in:
+Initialize Stream SDK clients once at app launch via the `Application` class (or an equivalent app-scoped owner like a Hilt/Koin singleton). Never create a client in:
 
 - a `@Composable` function body
 - a `remember { ... }` factory that re-runs on recomposition
 - an `Activity.onCreate` that runs every time the activity is recreated
 - a transient callback or coroutine with no stored owner
 
-Stateful SDK objects (`ChannelListViewModel`, `MessageListViewModel`, `MessageComposerViewModel`, `AttachmentsPickerViewModel`, query controllers) must be obtained via `viewModels { factory }` or `hiltViewModel()` - never instantiated in a Composable body or recreated on each recomposition.
+Stateful SDK objects (the Stream-provided `ViewModel`s, query controllers, and the `Call` returned by `streamVideo.call(type, id)`) must live in owned scopes (`viewModels { factory }`, `hiltViewModel()`, an Activity or ViewModel field), not in a Composable body or `remember { ... }`.
 
-If the user switches accounts, call `ChatClient.disconnect()` and wait for it to complete before calling `connectUser` for the next user.
+If the user switches accounts, tear down the current session before starting the next one — see the matching reference file for the exact disconnect / logout calls.
 
 ---
 
@@ -82,13 +83,15 @@ Load only the product/UI-layer reference files that match the request.
 
 - `CHAT-COMPOSE.md` for Chat + Jetpack Compose
 - `CHAT-COMPOSE-blueprints.md` for concrete Composable screen structure
+- `VIDEO-COMPOSE.md` for Video + Jetpack Compose
+- `VIDEO-COMPOSE-blueprints.md` for concrete call-screen structure
 
-Do not invent missing Video, Feeds, or XML/UI-Components API details. If a requested reference is not bundled yet, say so plainly and fall back to shared guidance from [`sdk.md`](sdk.md) or live docs only when the user wants that.
+Do not invent missing Feeds or XML/UI-Components API details. If a requested reference is not bundled yet, say so plainly and fall back to shared guidance from [`sdk.md`](sdk.md) or live docs only when the user wants that.
 
 ### Blueprints are mandatory, on every turn
 
-Before writing or editing **any** Stream Chat screen, Composable, navigation handler, deep-link route, theming override, or channel/message UI customization, you **must** open the matching section of [`references/CHAT-COMPOSE-blueprints.md`](references/CHAT-COMPOSE-blueprints.md) (or the equivalent `<PRODUCT>-<UI_LAYER>-blueprints.md` file) and follow its structure. This applies on **every turn**, not just the first time the skill is invoked in a session — follow-up requests like *"add navigation to the channel screen"*, *"open a channel on tap"*, *"customize the channel header"*, or *"theme the message list"* count as new screen work and require a fresh blueprint read.
+Before writing or editing **any** Stream Chat or Stream Video screen, Composable, navigation handler, deep-link route, theming override, ringing handler, or channel/message/call UI customization, you **must** open the matching section of the corresponding `<PRODUCT>-<UI_LAYER>-blueprints.md` file (e.g. [`references/CHAT-COMPOSE-blueprints.md`](references/CHAT-COMPOSE-blueprints.md), [`references/VIDEO-COMPOSE-blueprints.md`](references/VIDEO-COMPOSE-blueprints.md)) and follow its structure. This applies on **every turn**, not just the first time the skill is invoked in a session — follow-up requests like *"add navigation to the channel screen"*, *"open a channel on tap"*, *"add a button to start a call"*, *"customize the call controls"*, or *"theme the call screen"* count as new screen work and require a fresh blueprint read.
 
-Use the **Request → Blueprint section** table at the top of `CHAT-COMPOSE-blueprints.md` to resolve which section to read. If no section matches, say so explicitly before improvising — do not silently fall back to remembered SDK shapes from training data.
+Use the **Request → Blueprint section** table at the top of each blueprints file to resolve which section to read. If no section matches, say so explicitly before improvising — do not silently fall back to remembered SDK shapes from training data.
 
 Do **not** assume that because a blueprint section was read earlier in the session, its content is still in working context. Re-read the relevant section before each Stream screen edit.

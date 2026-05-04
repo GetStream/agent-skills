@@ -1,6 +1,6 @@
 ---
 name: stream-android
-description: "Build and integrate Stream Chat, Video, and Feeds in Android apps. Use for Jetpack Compose, classic Views (XML), Android Studio, and Gradle project work — including Stream package setup, auth and token wiring, screen blueprints, and any follow-up Stream UI work such as adding screens, navigating between channel list and channel/message screens, channel tap handling, deep links, push routing, theming, and custom channel/message UI."
+description: "Build and integrate Stream Chat, Video, and Feeds in Android apps. Use for Jetpack Compose, Android Studio, and Gradle project work — including Stream package setup, auth and token wiring, screen blueprints, and any follow-up Stream UI work such as adding screens, navigating between channel list and channel/message screens, channel tap handling, deep links, push routing, theming, custom channel/message UI, and video calling flows (joining/starting calls, ringing, custom call controls and participant tiles)."
 license: See LICENSE in repository root
 compatibility: Requires an Android Studio / Gradle project (Kotlin). The `stream` CLI (binary name `stream`, installed from `getstream.io/cli/install.sh`) is the default path for the credentials flow (API key fetch, token mint, optional channel seeding — see `credentials.md`); only optional when the user pastes the API key and token themselves.
 metadata:
@@ -116,17 +116,12 @@ Product and UI-layer specifics live under **`references/`** using a flat naming 
 - **Reference:** `references/<PRODUCT>-<UI_LAYER>.md`
 - **Blueprints:** `references/<PRODUCT>-<UI_LAYER>-blueprints.md`
 
-Current extracted module:
+Current extracted modules:
 
 - **Chat + Compose:** [`references/CHAT-COMPOSE.md`](references/CHAT-COMPOSE.md) + [`references/CHAT-COMPOSE-blueprints.md`](references/CHAT-COMPOSE-blueprints.md)
+- **Video + Compose:** [`references/VIDEO-COMPOSE.md`](references/VIDEO-COMPOSE.md) + [`references/VIDEO-COMPOSE-blueprints.md`](references/VIDEO-COMPOSE-blueprints.md)
 
-Future Android product coverage should stay in this naming family instead of creating more top-level skills:
-
-- `CHAT-XML.md`
-- `VIDEO-COMPOSE.md`
-- `VIDEO-XML.md`
-- `FEEDS-COMPOSE.md`
-- `FEEDS-XML.md`
+Future Android product coverage should stay in this naming family instead of creating more top-level skills.
 
 If the requested product/UI layer file is not bundled yet, say so plainly, use `sdk.md` for the shared Android patterns, and only switch to live docs if the user asks.
 
@@ -165,8 +160,10 @@ Load only the relevant files for the requested product and UI layer.
 - Shared lifecycle / auth / state patterns -> [`sdk.md`](sdk.md)
 - Chat Compose setup and gotchas -> [`references/CHAT-COMPOSE.md`](references/CHAT-COMPOSE.md)
 - Chat Compose screen structure -> [`references/CHAT-COMPOSE-blueprints.md`](references/CHAT-COMPOSE-blueprints.md)
+- Video Compose setup and gotchas -> [`references/VIDEO-COMPOSE.md`](references/VIDEO-COMPOSE.md)
+- Video Compose call/screen structure -> [`references/VIDEO-COMPOSE-blueprints.md`](references/VIDEO-COMPOSE-blueprints.md)
 
-If the user asks for an exact Video, Feeds, or XML module that is not bundled yet, say that clearly instead of inventing API details.
+If the user asks for an exact Feeds or XML module that is not bundled yet, say that clearly instead of inventing API details.
 
 ---
 
