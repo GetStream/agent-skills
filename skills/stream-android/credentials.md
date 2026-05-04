@@ -82,23 +82,32 @@ Hold the token in context. Use it (and the API key from Step A) in every code sn
 
 ### Step C — Seed channels (only if the user said yes)
 
-Create 3–5 channels with random realistic usernames. Use `messaging` as the channel type. The token user **must** end up as a member of at least one channel — otherwise the channel list will render empty on first launch even though the seed succeeded.
+Create 3–5 channels with random realistic usernames. Use `messaging` as the channel type. The token user **must** end up as a member of at least one channel — otherwise the channel list will render empty on first launch even though the seed succeeded. `created_by_id` records who created the channel; it does **not** add that user to the members list. Membership is a separate concept and must be set explicitly.
 
 These calls are mutating. Run them without `--safe` (the user's upfront "yes" covers the consent). Announce briefly: *"Seeding channels (mutating operations)…"* before the first call.
 
-For each channel:
+#### C1 — Create user records (once, upfront)
+
+User records must exist before they can be added to a channel; otherwise `GetOrCreateChannel` rejects the call with `users ... don't exist`. Create the token user and all seed members in a single `UpdateUsers` batch:
 
 ```bash
-# 1. Create (or fetch) the channel — token user is the creator and an automatic member
-stream api GetOrCreateChannel type=messaging id=<channel-id> --body '{"data":{"name":"<display name>","created_by_id":"<token_user_id>"}}'
-
-# 2. Add additional members
-stream api UpdateChannel type=messaging id=<channel-id> --body '{"add_members":["<user1>","<user2>"]}'
+stream api UpdateUsers --body '{"users":{"<token_user_id>":{"id":"<token_user_id>","name":"Token User"},"alice":{"id":"alice","name":"Alice"},"bob":{"id":"bob","name":"Bob"},"carol":{"id":"carol","name":"Carol"}}}'
 ```
 
-Generate short memorable channel IDs (e.g. `general`, `random`, `team-alpha`) and a small set of random usernames (e.g. `alice`, `bob`, `carol`, `dave`, `eve`). Easiest pattern: pass the **token user id** as `created_by_id` (they become the creator and an automatic member), then `UpdateChannel` to add the others.
+Pick a small set of random realistic usernames (e.g. `alice`, `bob`, `carol`, `dave`, `eve`) and include the token user id explicitly.
 
-If a call fails with a parameter error, fall back to `stream --safe api GetOrCreateChannel --help` (or `UpdateChannel --help`) to confirm the exact signature, then retry.
+#### C2 — Create each channel with members in one call
+
+`data.members` accepts an array of `{"user_id": "..."}` objects (not bare strings) and adds them as channel members during creation. Top-level `members` on this endpoint is a pagination shape — do not use it for membership. Include the token user explicitly.
+
+```bash
+stream api GetOrCreateChannel type=messaging id=<channel-id> \
+  --body '{"data":{"name":"<display name>","created_by_id":"<token_user_id>","members":[{"user_id":"<token_user_id>"},{"user_id":"alice"},{"user_id":"bob"}]}}'
+```
+
+Generate short memorable channel IDs (e.g. `general`, `random`, `team-alpha`). Make sure the **token user id** appears in `data.members` for at least one channel — otherwise the channel list renders empty on first launch.
+
+If a call fails with a parameter error, fall back to `stream --safe api GetOrCreateChannel --help` to confirm the exact signature, then retry.
 
 After seeding, print a brief summary:
 
@@ -115,3 +124,6 @@ After all CLI steps succeed, return to [`SKILL.md`](SKILL.md) → **Project sign
 - Never ask "should I continue?" between Step A, B, C, and D — execute the whole sequence once the user's upfront answers are in.
 - Never use `stream-cli` (the public Go CLI from `GetStream/stream-cli`) commands here — that is a different binary with a different command surface (`stream-cli chat get-app`, `stream-cli chat create-token`, etc.). This skill targets the `stream` binary only.
 - Never run `CreateChannel` — the correct endpoint is `GetOrCreateChannel`. Same for users (`UpdateUsers`, not `CreateUser`) and calls (`GetOrCreateCall`, not `CreateCall`).
+- Never assume `created_by_id` adds the creator to the channel's members — it only records who created the channel. Membership must be set explicitly via `data.members`.
+- Never pass bare user-id strings as members (`["alice","bob"]`). The correct shape is `[{"user_id":"alice"},{"user_id":"bob"}]` — both for `data.members` on creation and `add_members` on `UpdateChannel`.
+- Never put `members` at the top level of the `GetOrCreateChannel` body — that field is a pagination shape (`PaginationParams`) for the read response, not a membership setter. Channel members go inside `data.members`.
