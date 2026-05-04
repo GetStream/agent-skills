@@ -75,6 +75,16 @@ Post **one message** asking all relevant things together. Do not split into mult
 >
 > If you want to handle everything yourself, just paste your API key and token and tell me whether to seed channels.
 
+**For Feeds projects** (no channel seeding — feed groups are configured in the dashboard):
+
+> To wire everything up with real data, I need a couple of quick answers:
+>
+> 1. **Credentials** — Should I fetch your API key from the dashboard and generate a token via the Stream CLI, or will you paste them yourself?
+> 2. **Token expiry** — If I'm generating the token: should it expire? (e.g. `1h`, `1d`, `30m`) or never expire?
+> 3. **Feed groups** — What feed groups do you need? (defaults: `user`, `timeline`, `notification` — tell me if you want different names)
+>
+> If you want to handle everything yourself, just paste your API key and token and confirm the feed group names.
+
 **For Video projects** (calls are ephemeral — no seeding needed):
 
 > To wire everything up, I need a couple of quick answers:
@@ -180,13 +190,11 @@ Current extracted modules:
 - **Video + SwiftUI:** [`references/VIDEO-SWIFTUI.md`](references/VIDEO-SWIFTUI.md) + [`references/VIDEO-SWIFTUI-blueprints.md`](references/VIDEO-SWIFTUI-blueprints.md)
 - **Video + UIKit:** [`references/VIDEO-UIKIT.md`](references/VIDEO-UIKIT.md) + [`references/VIDEO-UIKIT-blueprints.md`](references/VIDEO-UIKIT-blueprints.md)
 - **Combined Chat + Video (SwiftUI or UIKit):** [`references/COMBINED-CHAT-VIDEO.md`](references/COMBINED-CHAT-VIDEO.md)
+- **Feeds (SwiftUI or UIKit):** [`references/FEEDS-SWIFTUI.md`](references/FEEDS-SWIFTUI.md) + [`references/FEEDS-SWIFTUI-blueprints.md`](references/FEEDS-SWIFTUI-blueprints.md)
 
-Future Swift product coverage should stay in this naming family instead of creating more top-level skills:
+> **Feeds has no pre-built UI components.** `FEEDS-SWIFTUI.md` covers SDK patterns for both SwiftUI and UIKit — only the view layer differs. Load both files for any Feeds request.
 
-- `FEEDS-SWIFTUI.md`
-- `FEEDS-UIKIT.md`
-
-If the requested product/framework file is not bundled yet, say so plainly, use `sdk.md` for the shared iOS patterns, and only switch to live docs if the user asks.
+Future Swift product coverage should stay in this naming family instead of creating more top-level skills.
 
 ---
 
@@ -230,8 +238,8 @@ Load only the relevant files for the requested product and UI layer.
 - Video UIKit setup and gotchas -> [`references/VIDEO-UIKIT.md`](references/VIDEO-UIKIT.md)
 - Video UIKit view controller structure -> [`references/VIDEO-UIKIT-blueprints.md`](references/VIDEO-UIKIT-blueprints.md)
 - Combined Chat + Video (collision table, file isolation, UIKit + SwiftUI blueprints) -> [`references/COMBINED-CHAT-VIDEO.md`](references/COMBINED-CHAT-VIDEO.md)
-
-If the user asks for a Feeds module that is not bundled yet, say that clearly instead of inventing API details.
+- Feeds SDK patterns (setup, FeedState, activities, reactions, comments, follow, notifications) -> [`references/FEEDS-SWIFTUI.md`](references/FEEDS-SWIFTUI.md)
+- Feeds SwiftUI view blueprints (timeline, row, composer, comments, profile, notifications) -> [`references/FEEDS-SWIFTUI-blueprints.md`](references/FEEDS-SWIFTUI-blueprints.md)
 
 ---
 
