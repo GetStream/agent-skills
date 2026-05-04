@@ -15,15 +15,27 @@ Start by understanding what kind of React Native project is in front of you:
 - `babel.config.js` -> required place for Reanimated/Worklets plugin
 - no `package.json`, no Expo config, and `EMPTY_CWD` -> tell the user to create an RN/Expo app first
 
-Do **not** scaffold React Native or Expo apps from this skill. If no project exists, stop with a concise instruction such as:
+Do **not** scaffold React Native or Expo apps from this skill. If no project exists, use the fresh app handoff below and stop.
+
+### Fresh app handoff
+
+Give the user only the minimal creation commands and the next Stream-specific action. Do not explain full React Native, Expo, Xcode, Android Studio, simulator, device, or account setup.
+
+Expo:
 
 ```bash
 npx create-expo-app MyChatApp
-# or
-npx @react-native-community/cli init MyChatApp
+cd MyChatApp
 ```
 
-Then ask the user to open that project directory and re-run the request.
+RN CLI:
+
+```bash
+npx @react-native-community/cli init MyChatApp
+cd MyChatApp
+```
+
+Then ask the user to re-run the Stream Chat request from inside that project. After the project exists, this skill owns Stream package install, peer dependencies, provider placement, auth/token wiring, and Chat UI screens.
 
 ---
 
@@ -76,14 +88,25 @@ npx expo prebuild
 
 Do not run prebuild for a managed Expo app unless the project already uses native builds or the requested feature requires it.
 
-### Optional packages
+### Optional packages by feature
 
-Install only when requested:
+Install optional packages only when the user asks for that feature or when an implemented blueprint needs it. Use the project's package manager for RN CLI and `npx expo install` for Expo.
 
-- Navigation safe area: `react-native-safe-area-context`
-- Offline storage: `@op-engineering/op-sqlite`
-- High-performance messages: `@shopify/flash-list`
-- Media/audio/file features: follow the optional dependency list in [`references/CHAT-REACT-NATIVE.md`](references/CHAT-REACT-NATIVE.md)
+| User asks for | RN CLI packages | Expo packages | Notes |
+|---|---|---|---|
+| React Navigation examples / safe areas | `react-native-safe-area-context` | `react-native-safe-area-context` | Needed for `SafeAreaProvider` and `useSafeAreaInsets`; navigation itself may already be installed |
+| Attachment picker with built-in image media library | `@react-native-camera-roll/camera-roll` | `expo-media-library` | Enables gallery images in the SDK attachment picker |
+| Native image picker / camera image upload | `react-native-image-picker` | `expo-image-picker` | Use for camera capture and native picker flows |
+| File attachments / document picker | `@react-native-documents/picker` | `expo-document-picker` | Required for file picking |
+| Attachment sharing outside the app | `react-native-blob-util react-native-share` | `expo-sharing` | Share downloaded attachments |
+| Video playback / video attachments | `react-native-video` | `expo-video` | Optional media playback |
+| Voice recording and audio attachments | `react-native-audio-recorder-player react-native-blob-util` | `expo-av` or `expo-audio` | Add microphone permissions/config plugins |
+| Copy message | `@react-native-clipboard/clipboard` | `expo-clipboard` | Clipboard action support |
+| Haptic feedback | `react-native-haptic-feedback` | `expo-haptics` | Optional tactile feedback |
+| Offline support | `@op-engineering/op-sqlite` | `@op-engineering/op-sqlite` | Expo Go cannot use this; dev client/prebuild required |
+| High-performance message list | `@shopify/flash-list` | `@shopify/flash-list` | Use when large channels need FlashList |
+
+After adding native optional packages, follow their platform permission steps. For Expo prebuild/native builds, add the needed config plugins and run `npx expo prebuild` only when the project already uses native builds or the feature requires custom native code.
 
 ---
 
@@ -148,6 +171,8 @@ Load the matching blueprint section from:
 - [`references/CHAT-REACT-NATIVE-blueprints.md`](references/CHAT-REACT-NATIVE-blueprints.md)
 
 Per [`RULES.md`](RULES.md), re-open the relevant blueprint section before every Stream Chat screen, navigation handler, thread flow, theming override, offline flow, or component customization edit.
+
+For feature-specific installs such as attachment picker, camera upload, file picker, audio recording, sharing, offline support, or FlashList, read [`references/CHAT-REACT-NATIVE.md`](references/CHAT-REACT-NATIVE.md) > **Optional feature dependency map** before installing packages.
 
 ---
 

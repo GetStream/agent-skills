@@ -51,15 +51,36 @@ Expo:
 npx expo install stream-chat-expo @react-native-community/netinfo expo-image-manipulator react-native-gesture-handler react-native-reanimated react-native-svg react-native-teleport
 ```
 
-Optional packages:
+### Optional feature dependency map
 
 | Feature | Packages |
 |---|---|
-| React Navigation safe areas | `react-native-safe-area-context` |
-| Offline support | `@op-engineering/op-sqlite` |
-| High-performance message list | `@shopify/flash-list` |
-| RN CLI media/audio/files | `@react-native-camera-roll/camera-roll`, `react-native-video`, `react-native-blob-util`, `react-native-share`, `@react-native-clipboard/clipboard`, `@react-native-documents/picker`, `react-native-image-picker` |
-| Expo media/audio/files | `expo-av`, `expo-video`, `expo-file-system`, `expo-media-library`, `expo-sharing`, `expo-haptics`, `expo-clipboard`, `expo-document-picker`, `expo-image-picker` |
+| React Navigation safe areas | RN CLI: `react-native-safe-area-context`; Expo: `npx expo install react-native-safe-area-context` |
+| Attachment picker with built-in image media library | RN CLI: `@react-native-camera-roll/camera-roll`; Expo: `expo-media-library` |
+| Native image picker / camera image upload | RN CLI: `react-native-image-picker`; Expo: `expo-image-picker` |
+| File attachments / document picker | RN CLI: `@react-native-documents/picker`; Expo: `expo-document-picker` |
+| Attachment sharing outside the app | RN CLI: `react-native-blob-util react-native-share`; Expo: `expo-sharing` |
+| Video playback / video attachments | RN CLI: `react-native-video`; Expo: `expo-video` |
+| Voice recording and audio attachments | RN CLI: `react-native-audio-recorder-player react-native-blob-util`; Expo: `expo-av` or `expo-audio` |
+| Copy message | RN CLI: `@react-native-clipboard/clipboard`; Expo: `expo-clipboard` |
+| Haptic feedback | RN CLI: `react-native-haptic-feedback`; Expo: `expo-haptics` |
+| Offline support | RN CLI: `@op-engineering/op-sqlite`; Expo: `@op-engineering/op-sqlite` |
+| High-performance message list | RN CLI: `@shopify/flash-list`; Expo: `@shopify/flash-list` |
+
+Install optional packages only for requested features. Add required permissions as features are enabled:
+
+- Camera/image picker: camera and photo library permissions where required.
+- Built-in media library: photo/media library permissions.
+- Audio recording: microphone permission.
+- Expo native features: config plugins in `app.json` / `app.config.*` when the package requires them.
+
+If a user asks for "attachment picker", decide which picker behavior they mean:
+
+- Built-in gallery picker -> install `@react-native-camera-roll/camera-roll` or `expo-media-library`.
+- Native image picker or camera capture -> install `react-native-image-picker` or `expo-image-picker`.
+- File picker -> install `@react-native-documents/picker` or `expo-document-picker`.
+
+The default `MessageComposer` and `Channel` own the attachment picker UI. After dependencies are installed, keep the picker aligned with `Channel` `topInset` and `bottomInset`.
 
 ### Babel and entry point
 

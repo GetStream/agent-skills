@@ -1,6 +1,6 @@
 ---
 name: stream-react-native
-description: "Build and integrate Stream Chat React Native v9 in React Native Community CLI and Expo apps. Use for React Native, Expo, Stream Chat RN, stream-chat-react-native, stream-chat-expo, v9 migration/setup, channel list, message list, MessageComposer, threads, thread list, React Navigation, Expo Router, theming, offline support, push notifications, and Chat customization. Chat only in v1; not for Stream Video, Feeds, or Moderation UI."
+description: "Build and integrate Stream Chat React Native v9 in React Native Community CLI and Expo apps. Use for React Native, Expo, Stream Chat RN, stream-chat-react-native, stream-chat-expo, v9 migration/setup, channel list, message list, MessageComposer, attachment picker, image/file attachments, media picker, camera upload, audio messages, threads, thread list, React Navigation, Expo Router, theming, offline support, push notifications, and Chat customization. Chat only in v1; not for Stream Video, Feeds, or Moderation UI."
 license: See LICENSE in repository root
 compatibility: Requires an existing React Native CLI or Expo project with React Native New Architecture enabled for Chat RN v9. The `stream` CLI is the default credentials path; pasted API key and token are accepted as fallback.
 metadata:
@@ -136,6 +136,8 @@ If the requested product file is not bundled yet, say so plainly and only switch
 | **A2** | Choose lane | Resolve Expo vs RN CLI from project files; do not mix packages. |
 | **A3** | Install + wire | Follow [`builder.md`](builder.md) + [`sdk.md`](sdk.md), then load Chat references. |
 | **A4** | Verify | Confirm install, Babel plugin, root providers, auth, and first rendered Chat screen. |
+
+For empty directories, use [`builder.md`](builder.md) > **Fresh app handoff**. Give only minimal app-creation commands and ask the user to re-run from inside the created project. Do not cover full React Native, Expo, Xcode, Android Studio, simulator, or device setup.
 
 ---
 

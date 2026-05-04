@@ -11,8 +11,10 @@ Expo lane: change imports from `"stream-chat-react-native"` to `"stream-chat-exp
 | Request | Read section |
 |---|---|
 | root setup, providers, auth gate, login | App Provider and Auth Gate |
+| brand new React Native or Expo app | Fresh App Handoff |
 | channel list, conversation list, channel tap | Channel List Screen |
 | message list, message composer, chat screen | Channel Screen |
+| attachment picker, gallery picker, file picker, camera upload | Attachment Picker Feature |
 | thread navigation, replies | Thread Screen |
 | thread inbox/list | Thread List Screen |
 | React Navigation or Expo Router shell | Navigation Shell |
@@ -123,6 +125,92 @@ Wiring:
 - Clearing `session` unmounts `ConnectedChat` and lets the hook disconnect.
 - For production, fetch tokens from the app backend.
 - For local demos, session values can come from CLI-generated credentials.
+
+---
+
+## Fresh App Handoff
+
+Use this only when the current directory is empty or not a React Native/Expo app. Do not cover full React Native setup. Give the user a minimal handoff and stop.
+
+Expo:
+
+```bash
+npx create-expo-app MyChatApp
+cd MyChatApp
+```
+
+RN CLI:
+
+```bash
+npx @react-native-community/cli init MyChatApp
+cd MyChatApp
+```
+
+Then tell the user to re-run the Stream Chat request from inside the created project. Once the app exists, use this skill to install the mandatory Chat peer dependencies, optional feature dependencies, root providers, auth/token flow, and Chat screens.
+
+---
+
+## Attachment Picker Feature
+
+Use this when the user asks for attachment picker, image upload, camera capture, file picker, or attachment sharing.
+
+### Dependency choice
+
+| Requested behavior | RN CLI packages | Expo packages |
+|---|---|---|
+| Built-in image gallery picker in `MessageComposer` | `@react-native-camera-roll/camera-roll` | `expo-media-library` |
+| Native image picker / camera capture | `react-native-image-picker` | `expo-image-picker` |
+| File picker | `@react-native-documents/picker` | `expo-document-picker` |
+| Share attachments outside app | `react-native-blob-util react-native-share` | `expo-sharing` |
+
+Install only the packages needed for the requested behavior. Add camera, photo library, media library, or Expo config-plugin permissions as required by the chosen packages.
+
+### Screen wiring
+
+The default `MessageComposer` owns the attachment picker UI. Keep the composer inside `Channel`, and use insets so the picker aligns with the current screen.
+
+```tsx
+import React, { useMemo } from "react";
+import { useHeaderHeight } from "@react-navigation/elements";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import {
+  Channel,
+  MessageComposer,
+  MessageList,
+  useChatContext,
+} from "stream-chat-react-native";
+
+export const AttachmentChannelScreen = ({ route }) => {
+  const { channelCid } = route.params;
+  const { client } = useChatContext();
+  const headerHeight = useHeaderHeight();
+  const { bottom } = useSafeAreaInsets();
+
+  const channel = useMemo(() => {
+    const [type, id] = channelCid.split(":");
+    return client.channel(type, id);
+  }, [channelCid, client]);
+
+  return (
+    <Channel
+      bottomInset={bottom}
+      channel={channel}
+      keyboardVerticalOffset={headerHeight}
+      topInset={headerHeight}
+    >
+      <MessageList />
+      <MessageComposer />
+    </Channel>
+  );
+};
+```
+
+Wiring:
+
+- `disableAttachmentPicker` on `Channel` hides the picker.
+- `bottomInset` controls space below `MessageComposer` when the picker opens.
+- `topInset` controls how far the attachment picker can expand upward.
+- Use `WithComponents` for custom attach button, previews, or file/gallery rendering.
 
 ---
 

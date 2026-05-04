@@ -312,6 +312,8 @@ Before calling the work done, confirm:
 
 - imports match the runtime package lane
 - `react-native-teleport` is installed for v9
+- mandatory peer dependencies are installed for the selected lane
+- optional dependencies are installed only for requested capabilities
 - Babel plugin is last
 - app entry is wrapped in `GestureHandlerRootView`
 - `OverlayProvider` and `Chat` are stable and high in the tree
