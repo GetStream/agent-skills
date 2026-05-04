@@ -18,7 +18,7 @@ Do not rewrite the app into a different UI framework unless the user asks.
 
 ## Client ownership
 
-Create the `ChatClient` once via `ChatClient.Builder("API_KEY", context).build()`, store it in an owned object, and pass or inject it from there.
+Create each Stream client once, store it in an owned object, and pass or inject it from there.
 
 Good ownership points:
 
@@ -32,7 +32,7 @@ Bad ownership points:
 - inside a `remember { ... }` factory
 - inside a leaf `Activity` or `Fragment` that does not own app lifecycle
 
-After build time, retrieve the client anywhere via `ChatClient.instance()` - the Builder registers the singleton automatically.
+Exact builder shapes and singleton accessors live in the matching reference file.
 
 ---
 
@@ -40,16 +40,16 @@ After build time, retrieve the client anywhere via `ChatClient.instance()` - the
 
 Use the simplest token shape that matches the user's environment:
 
-- **Backend exists:** prefer a backend-issued Stream token via a `TokenProvider` - the SDK will call it again automatically when the token expires.
+- **Backend exists:** prefer a backend-issued Stream token via a `TokenProvider` — the SDK will call it again automatically when the token expires.
 - **No backend / demo flow:** generate a token with the Stream CLI (binary is `stream` — see [`credentials.md`](credentials.md)). Never-expiring: `stream token <user_id>`. Expiring: `stream token <user_id> --ttl 1h` (units: `s`/`m`/`h`/`d`).
-- **User pastes their own:** accept it and pass it directly to `client.connectUser(user, token)`.
+- **User pastes their own:** accept it and pass it to the client.
 
 Keep the split clear:
 
 - **client:** API key, `User` (`id`, `name`, `image`), user token
 - **server:** API secret and token minting (the CLI handles this automatically)
 
-If the app already has its own auth system, extend that flow instead of adding a second login model beside it. Call `connectUser` once per user session, not on every screen entry.
+If the app already has its own auth system, extend that flow instead of adding a second login model beside it. Connect / build once per user session, not on every screen entry.
 
 ---
 
@@ -60,28 +60,21 @@ Stateful SDK helpers should have explicit ownership:
 - **Compose:** obtain ViewModels via `viewModels { factory }` (Activity / Fragment) or `hiltViewModel()` (Hilt). Pass them into Composables; never `remember { SomeViewModel(...) }`.
 - **Views:** retain ViewModels via `ViewModelProvider` or DI; collect SDK `Flow`s in `repeatOnLifecycle(Lifecycle.State.STARTED)`.
 
-Standard Stream Compose ViewModels and their factories:
-
-- `ChannelListViewModelFactory` -> `ChannelListViewModel`
-- `ChannelViewModelFactory` -> `MessageListViewModel`, `MessageComposerViewModel`, `AttachmentsPickerViewModel`
-
-Use the factory once per screen and let `viewModels { factory }` reuse the instances across configuration changes.
-
-Avoid creating query objects, channel controllers, or message lists inside Composables - hoist them into a ViewModel.
+Avoid creating query objects, channel controllers, message lists, or call objects inside Composables — hoist them into a ViewModel.
 
 ---
 
 ## Main-dispatcher boundaries
 
-Keep UI updates on the main dispatcher. When an SDK callback (`enqueue { ... }`) or coroutine returns data, hop back to `Dispatchers.Main` (or a Compose-scoped state holder) before mutating UI state.
-
-Preferred patterns:
-
-- collect `Flow` state with `collectAsStateWithLifecycle()` in Compose
-- use `lifecycleScope.launch { repeatOnLifecycle(STARTED) { ... } }` in Activities / Fragments
-- bridge `enqueue { result -> ... }` to coroutines via `await()` (provided by the SDK) when convenient
+Keep UI updates on the main dispatcher. In Compose, collect `Flow` state with `collectAsStateWithLifecycle()`; in Activities / Fragments, use `lifecycleScope.launch { repeatOnLifecycle(STARTED) { ... } }`.
 
 Preserve the project's concurrency style. If the app already uses coroutines + `Flow`, stay there. If parts of it still use callbacks, bridge carefully instead of rewriting unrelated code.
+
+---
+
+## Combined Chat + Video apps
+
+The Android Chat and Video modules don't collide at the type level (unlike iOS — `User`, theming, and DI primitives live under different package names). Build both clients in `Application.onCreate()` with the same API key and JWT token. See [`references/VIDEO-COMPOSE.md`](references/VIDEO-COMPOSE.md) → *Gotchas* (the "Chat + Video coexist" bullet) for the package-path detail.
 
 ---
 
@@ -90,8 +83,9 @@ Preserve the project's concurrency style. If the app already uses coroutines + `
 Before calling the work done, confirm:
 
 - the right Stream artifact is added to the right module's `build.gradle.kts` (e.g. `:app`, not `:core`)
-- `ChatClient` is built in `Application.onCreate()` (or an equivalent app-scoped owner) before any Stream UI renders
+- each Stream client is built before any Stream UI renders
 - `INTERNET` permission is present in `AndroidManifest.xml`
+- for Video, `CAMERA` / `RECORD_AUDIO` are requested at runtime before the first `call.join(...)`
 - the requested user can connect without leaking the API secret
 - the edited flow works within the existing navigation structure (Compose `NavHost`, Navigation Component, or Fragment back stack)
-- user switching or logout calls `disconnect()` and waits for completion before connecting the next user
+- user switching or logout tears down the previous session cleanly
