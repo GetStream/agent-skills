@@ -1,6 +1,6 @@
 # Video - Compose SDK Setup & Integration
 
-Stream Video Compose provides pre-built Jetpack Compose components for building video and audio calling experiences. This file covers package installation, client setup, authentication, call flows, customization, and gotchas. For screen blueprints, see [VIDEO-COMPOSE-blueprints.md](VIDEO-COMPOSE-blueprints.md).
+Stream Video Compose provides pre-built Jetpack Compose components for building video and audio calling experiences. This file covers Gradle setup, client setup, authentication, call flows, customization, and gotchas. For screen blueprints, see [VIDEO-COMPOSE-blueprints.md](VIDEO-COMPOSE-blueprints.md).
 
 Rules: [../RULES.md](../RULES.md) (secrets, no fake credentials, client lifetime).
 

@@ -10,7 +10,9 @@ This skill uses the **`stream`** CLI (binary name `stream`, installed from `http
 
 ## Single upfront question (ask exactly once, then act immediately)
 
-Post **one message** asking all three things together. Do not split into multiple rounds:
+Post **one message** asking all relevant things together. Do not split into multiple rounds.
+
+**For Chat projects:**
 
 > To wire everything up with real data, I need a few quick answers:
 >
@@ -19,6 +21,25 @@ Post **one message** asking all three things together. Do not split into multipl
 > 3. **Seed channels** — Should I pre-create a few channels with random usernames so the app has something to show immediately?
 >
 > If you want to handle everything yourself, just paste your API key and token and tell me whether to seed channels.
+
+**For Feeds projects** (no channel seeding — feed groups are configured in the Stream dashboard):
+
+> To wire everything up with real data, I need a couple of quick answers:
+>
+> 1. **Credentials** — Should I fetch your API key via the Stream CLI and generate a token, or will you paste them yourself?
+> 2. **Token expiry** — If I'm generating the token: should it expire? (e.g. `1h`, `1d`, `30m`) or never expire?
+> 3. **Feed groups** — What feed groups do you need? (defaults: `user`, `timeline`, `notification` — tell me if you want different names)
+>
+> If you want to handle everything yourself, just paste your API key and token and confirm the feed group names.
+
+**For Video projects** (calls are ephemeral — no seeding needed):
+
+> To wire everything up, I need a couple of quick answers:
+>
+> 1. **Credentials** — Should I fetch your API key via the Stream CLI and generate a token, or will you paste them yourself?
+> 2. **Token expiry** — If I'm generating the token: should it expire? (e.g. `1h`, `1d`, `30m`) or never expire?
+>
+> If you want to handle everything yourself, just paste your API key and token.
 
 ## After the user replies — act without further prompting
 
@@ -80,7 +101,10 @@ stream token <user_id> --ttl 1h
 
 Hold the token in context. Use it (and the API key from Step A) in every code snippet — no placeholder strings.
 
-### Step C — Seed channels (only if the user said yes)
+### Step C — Seed channels (Chat projects only; only if the user said yes)
+
+> **Skip this step entirely for Feeds and Video projects.** Feeds groups are configured on the Stream dashboard (not via the CLI), and Video calls are ephemeral — neither needs CLI-side seeding. Move directly to Step D after Steps A and B.
+
 
 Create 3–5 channels with random realistic usernames. Use `messaging` as the channel type. The token user **must** end up as a member of at least one channel — otherwise the channel list will render empty on first launch even though the seed succeeded. `created_by_id` records who created the channel; it does **not** add that user to the members list. Membership is a separate concept and must be set explicitly.
 

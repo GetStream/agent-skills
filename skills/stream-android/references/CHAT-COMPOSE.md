@@ -1,6 +1,6 @@
 # Chat - Compose SDK Setup & Integration
 
-Stream Chat Compose provides pre-built Jetpack Compose components for building rich messaging UIs. This file covers package installation, client setup, authentication, customization, and gotchas. For screen blueprints, see [CHAT-COMPOSE-blueprints.md](CHAT-COMPOSE-blueprints.md).
+Stream Chat Compose provides pre-built Jetpack Compose components for building rich messaging UIs. This file covers Gradle setup, client setup, authentication, customization, and gotchas. For screen blueprints, see [CHAT-COMPOSE-blueprints.md](CHAT-COMPOSE-blueprints.md).
 
 Rules: [../RULES.md](../RULES.md) (secrets, no dev tokens in production, proper logout).
 
