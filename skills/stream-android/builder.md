@@ -42,6 +42,8 @@ Prefer the project's existing dependency strategy:
 - **XML / Views project:** add `io.getstream:stream-chat-android-ui-components:<version>`.
 - **Both UIs side-by-side:** add both artifacts; the underlying client (`stream-chat-android-client`) is brought in transitively.
 
+When you need the current artifact version, follow [`RULES.md`](RULES.md) → *Version lookup*. Never query `search.maven.org` — its index is stale and does not list v7 releases.
+
 After editing, sync Gradle (Android Studio "Sync Now" or `./gradlew help`) and confirm the dependency resolves before continuing.
 
 Make sure `<uses-permission android:name="android.permission.INTERNET" />` is in the app's `AndroidManifest.xml`.
