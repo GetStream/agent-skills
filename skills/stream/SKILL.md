@@ -1,6 +1,6 @@
 ---
 name: stream
-description: "Stream router for Chat, Video, Feeds, and Moderation. Use when the user wants to build a new app with Stream, scaffold a project, add Chat/Video/Feeds/Moderation to an existing app, integrate Stream, query Stream data, list channels, list calls, show flagged messages, find users, run stream api / stream config / stream auth commands, install the Stream CLI, set up Stream, search Stream SDK documentation, look up Stream React/iOS/Android/Node/Flutter/Unity SDK methods, ask how-to questions about Stream hooks/components/methods, configure moderation blocklists or automod, set up webhooks, or anything tagged Chat React, Video iOS, Feeds Node, Moderation, etc. Routes to the right sub-skill based on the task."
+description: "Stream router for Chat, Video, Feeds, Moderation, and React Native Chat. Use when the user wants to build a new app with Stream, scaffold a project, add Chat/Video/Feeds/Moderation to an existing app, integrate Stream, integrate Stream Chat in React Native or Expo, query Stream data, list channels, list calls, show flagged messages, find users, run stream api / stream config / stream auth commands, install the Stream CLI, set up Stream, search Stream SDK documentation, look up Stream React/React Native/iOS/Android/Node/Flutter/Unity SDK methods, ask how-to questions about Stream hooks/components/methods, configure moderation blocklists or automod, set up webhooks, or anything tagged Chat React Native, Chat React, Video iOS, Feeds Node, Moderation, etc. Routes to the right sub-skill based on the task."
 license: See LICENSE in repository root
 metadata:
   author: GetStream
@@ -11,7 +11,7 @@ allowed-tools: >-
 
 # Stream - skill router
 
-This skill picks the track from the user's input and delegates to a specialized sub-skill. **It does no scaffolding, CLI, or docs work itself** - those live in dedicated skills.
+This skill picks the track from the user's input and delegates to a specialized sub-skill. **It does no scaffolding, CLI, React Native, or docs work itself** - those live in dedicated skills.
 
 > **Read first:** [`RULES.md`](RULES.md). Non-negotiable rules apply, including the **Peer skills** table (Glob path + install command + Skill-vs-Read-inline rule).
 >
@@ -28,6 +28,11 @@ This skill picks the track from the user's input and delegates to a specialized 
 **Add Stream to an existing app** -> use the `stream-builder` skill
 - Existing project + "add Chat to this app", "integrate Video", "drop Feeds into ..."
 - Same SDK wiring as scaffold; skips Next.js init and theme pick
+
+**Build or integrate Stream Chat in React Native / Expo** -> use the `stream-react-native` skill
+- React Native Community CLI, Expo, Expo Router, `stream-chat-react-native`, `stream-chat-expo`
+- Covers Chat RN v9 setup, migration, ChannelList, MessageList, MessageComposer, threads, theming, offline support, and Chat customization
+- Chat-only in v1; Video/Feeds requests should be rejected by that skill or handed to live docs if the user wants docs
 
 **Query Stream data via the CLI** -> use the `stream-cli` skill
 - "list calls", "show channels", "any flagged", "find users"
@@ -52,6 +57,7 @@ Scan the user's input for the signals below in order. The classifier is determin
 
 | Signal in user input | Sub-skill |
 |---|---|
+| React Native / Expo Chat token: `React Native`, `Expo`, `Expo Router`, `stream-chat-react-native`, `stream-chat-expo`, `Stream Chat RN`, `Chat React Native`, v9 migration/setup | `stream-react-native` |
 | Explicit SDK/framework token: `Chat React`, `Video iOS`, `Feeds Node`, `Moderation`, etc. (with or without version) | `stream-docs` |
 | Words "docs" or "documentation" | `stream-docs` |
 | "How do I {X} in {framework}?", "How does {hook/component/method} work?", "What does {SDK thing} do?" | `stream-docs` |
@@ -79,6 +85,7 @@ After the answer, route as if the user had given that signal directly.
 If the user already knows what they want, skip the router and invoke a sub-skill directly:
 
 - `/stream-builder` - scaffold a new app, or add Chat/Video/Feeds/Moderation to an existing one
+- `/stream-react-native` - build or integrate Stream Chat React Native v9 in RN CLI or Expo apps
 - `/stream-cli` - query Stream data via CLI, install the CLI, run `stream api / config / auth`
 - `/stream-docs` - search live Stream SDK documentation (no CLI needed)
 

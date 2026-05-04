@@ -1,6 +1,6 @@
 # Stream Agent Skills
 
-Give your AI coding agent the ability to build, query, and manage [Stream](https://getstream.io) - Chat, Video, Feeds, and Moderation.
+Give your AI coding agent the ability to build, query, and manage [Stream](https://getstream.io) - Chat, Video, Feeds, Moderation, and React Native Chat.
 
 ## Install
 
@@ -8,7 +8,7 @@ Give your AI coding agent the ability to build, query, and manage [Stream](https
 npx skills add GetStream/agent-skills
 ```
 
-That installs all four skills below - a router (`stream`) plus three specialists (`stream-cli`, `stream-docs`, `stream-builder`). Use `/stream` and the agent picks the right one for the task, or invoke a sub-skill directly with `/stream-cli`, `/stream-docs`, or `/stream-builder`.
+That installs all five skills below - a router (`stream`) plus four specialists (`stream-cli`, `stream-docs`, `stream-builder`, `stream-react-native`). Use `/stream` and the agent picks the right one for the task, or invoke a sub-skill directly with `/stream-cli`, `/stream-docs`, `/stream-builder`, or `/stream-react-native`.
 
 ### Install - direct from GitHub (no third-party CLI)
 
@@ -33,6 +33,7 @@ The pack is registered as a Claude Code plugin marketplace, so you can install a
 /plugin install cli@stream-skills        # just the CLI sub-skill
 /plugin install docs@stream-skills       # just the docs sub-skill
 /plugin install builder@stream-skills    # just the builder sub-skill
+/plugin install react-native@stream-skills # just the React Native Chat sub-skill
 /plugin install core@stream-skills       # just the router + RULES
 ```
 
@@ -55,16 +56,18 @@ The router skill at [`skills/stream/`](skills/stream/) also owns the cross-cutti
 | `/stream-cli` | Query Stream data, run `stream api / config / auth`, install the CLI binary | "list channels", "show flagged", "find users", `stream api ...`, "install the CLI" |
 | `/stream-docs` | Search live SDK documentation from getstream.io | Explicit SDK token (Chat React, Video iOS, ...), "docs", "how do I ... in <framework>" |
 | `/stream-builder` | Scaffold a new app, or add Chat/Video/Feeds/Moderation to an existing one | "build me a ... app", "scaffold", "add Chat to this app", "integrate Video" |
+| `/stream-react-native` | Build or integrate Stream Chat React Native v9 in RN CLI or Expo apps | React Native, Expo, `stream-chat-react-native`, `stream-chat-expo`, v9 migration, ChannelList, MessageList, threads, theming, offline |
 
 ## What gets installed
 
-This pack is **markdown only** - no code, no postinstall scripts, no binaries. Two install paths touch the network; each is listed below so you can audit before running.
+This pack is **markdown only** - no code, no postinstall scripts, no binaries. Network-touching install paths are listed below so you can audit before running.
 
 | Step | Trigger | What it does | Source |
 |---|---|---|---|
 | `npx skills add GetStream/agent-skills` | Manual, by you | Fetches this repo's markdown into your skills directory via the [`skills.sh` CLI](https://skills.sh/docs/cli) ([source](https://github.com/skills-sh/skills-cli)). | GitHub (`GetStream/agent-skills`) |
-| `curl -sSL https://getstream.io/cli/install.sh \| bash` | Agent runs only after you approve | Installs the `stream` CLI binary. Skipped entirely for docs-only usage (`/stream-docs`). Full audit of what the installer does - including SHA-256 verification and TTY confirmation - in [`skills/stream-cli/bootstrap.md`](skills/stream-cli/bootstrap.md#what-the-installer-does). | `getstream.io/cli/` |
+| `curl -sSL https://getstream.io/cli/install.sh \| bash` | Agent runs only after you approve | Installs the `stream` CLI binary. Skipped entirely for docs-only usage (`/stream-docs`) and React Native reference lookup (`/stream-react-native` Track C). Full audit of what the installer does - including SHA-256 verification and TTY confirmation - in [`skills/stream-cli/bootstrap.md`](skills/stream-cli/bootstrap.md#what-the-installer-does). | `getstream.io/cli/` |
 | Frontend skill installs (builder only) | Agent asks first, then runs | Installs three third-party skill packs for UI scaffolding - see below. | GitHub (listed) |
+| React Native package installs (`/stream-react-native`) | Agent runs only while wiring an existing RN/Expo app | Installs `stream-chat-react-native` or `stream-chat-expo` plus required peer dependencies for Chat RN v9, using the project's package manager or `npx expo install`. | npm / Expo package registry |
 
 ### Frontend skills (builder only)
 
@@ -82,6 +85,7 @@ Decline and the builder still runs - Stream reference files cover the SDK wiring
 
 - **Scaffold a full app** - Next.js + Tailwind + Stream SDKs, wired end-to-end in one shot (`/stream-builder`)
 - **Add products to existing apps** - drop Chat, Video, or Feeds into a project that's already running (`/stream-builder`)
+- **Build and extend React Native Chat apps** - wire Stream Chat RN v9 into React Native CLI or Expo apps, including ChannelList, MessageList, threads, theming, offline support, and v9 migration (`/stream-react-native`)
 - **Query live data** - "any active calls?", "show flagged messages", "list my channels" - natural language to CLI (`/stream-cli`)
 - **Set up moderation** - blocklists, automod config, and content policies via the Stream CLI (`/stream-cli`)
 - **Answer SDK questions** - token patterns, strict mode, client/server instantiation, theme wiring (`/stream-builder` or `/stream-docs`)
@@ -98,9 +102,10 @@ The skill pack is markdown only - no code, no build step. The agent reads the `s
 | Data queries and CLI operations | `stream-cli` (Track B) |
 | Install the Stream CLI | `stream-cli` (Track C) |
 | SDK wiring during builder/enhance | `stream-builder` + its `sdk.md` and `references/*.md` |
+| React Native or Expo Chat v9 setup/integration | `stream-react-native` + its `sdk.md` and `references/*.md` |
 | Search the official SDK documentation (no CLI needed) | `stream-docs` (Track D) |
 
-Cross-cutting rules (secrets, login screen, strict mode, package manager, base UI, moderation Dashboard-only, ...) live once in [`skills/stream/RULES.md`](skills/stream/RULES.md) and apply to every sub-skill.
+Cross-cutting web/router rules (secrets, login screen, strict mode, package manager, base UI, moderation Dashboard-only, ...) live once in [`skills/stream/RULES.md`](skills/stream/RULES.md). React Native-specific non-negotiables live in [`skills/stream-react-native/RULES.md`](skills/stream-react-native/RULES.md).
 
 ## Contents
 
@@ -120,4 +125,10 @@ Cross-cutting rules (secrets, login screen, strict mode, package manager, base U
   - [`enhance.md`](skills/stream-builder/enhance.md) - add Stream to an existing app
   - [`sdk.md`](skills/stream-builder/sdk.md) - cross-cutting SDK wiring patterns
   - [`references/`](skills/stream-builder/references/) - per-product setup, gotchas, and component blueprints
+- [`skills/stream-react-native/`](skills/stream-react-native/) - **React Native Chat sub-skill**
+  - [`SKILL.md`](skills/stream-react-native/SKILL.md) - RN/Expo intent classifier, project detection, module pointers
+  - [`RULES.md`](skills/stream-react-native/RULES.md) - Chat RN v9 non-negotiable rules
+  - [`credentials.md`](skills/stream-react-native/credentials.md) - API key, token, and optional channel seeding flow
+  - [`builder.md`](skills/stream-react-native/builder.md) + [`sdk.md`](skills/stream-react-native/sdk.md) - shared RN CLI and Expo integration flow
+  - [`references/`](skills/stream-react-native/references/) - Chat RN v9 setup, gotchas, and screen blueprints
 - [`.claude-plugin/marketplace.json`](.claude-plugin/marketplace.json) - Claude Code plugin manifest for granular installs
