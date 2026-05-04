@@ -52,8 +52,8 @@ This pack is **markdown only** - no code, no postinstall scripts, no binaries. N
 | `npx skills add GetStream/agent-skills` | Manual, by you | Fetches this repo's markdown into your skills directory via the [`skills.sh` CLI](https://skills.sh/docs/cli) ([source](https://github.com/skills-sh/skills-cli)). | GitHub (`GetStream/agent-skills`) |
 | `curl -sSL https://getstream.io/cli/install.sh \| bash` | Agent runs only after you approve | Installs the `stream` CLI binary. Skipped entirely for docs-only usage (`/stream-docs`) and React Native reference lookup (`/stream-react-native` Track C). Full audit of what the installer does - including SHA-256 verification and TTY confirmation - in [`skills/stream-cli/bootstrap.md`](skills/stream-cli/bootstrap.md#what-the-installer-does). | `getstream.io/cli/` |
 | Frontend skill installs (builder only) | Agent asks first, then runs | Installs three third-party skill packs for UI scaffolding - see below. | GitHub (listed) |
-| React Native app scaffold (`/stream-react-native`) | Agent runs only when asked to create a new RN/Expo Chat app | Runs `npx create-expo-app@latest` or `npx @react-native-community/cli@latest init`, then continues with Stream Chat setup. | npm / framework registries |
-| React Native package installs (`/stream-react-native`) | Agent runs only while creating or wiring an RN/Expo app | Installs `stream-chat-react-native` or `stream-chat-expo` plus required peer dependencies for Chat RN v9, using the project's package manager or `npx expo install`. | npm / Expo package registry |
+| React Native app scaffold (`/stream-react-native`) | Agent runs only when asked to create a new RN/Expo Chat app | Runs `npx create-expo-app@latest` or `npx @react-native-community/cli@latest init`, then continues with Stream Chat setup. Expo apps use dev-client/native-build setup. | npm / framework registries |
+| React Native package installs (`/stream-react-native`) | Agent runs only while creating or wiring an RN/Expo app | Installs `stream-chat-react-native` or `stream-chat-expo` plus required peer dependencies for Chat RN v9, using the project's package manager or `npx expo install`. Expo lane includes `expo-dev-client`. | npm / Expo package registry |
 
 ### Frontend skills (builder only)
 
@@ -115,7 +115,7 @@ Cross-cutting web/router rules (secrets, login screen, strict mode, package mana
 - [`skills/stream-react-native/`](skills/stream-react-native/) - **React Native Chat sub-skill**
   - [`SKILL.md`](skills/stream-react-native/SKILL.md) - RN/Expo intent classifier, project detection, module pointers
   - [`RULES.md`](skills/stream-react-native/RULES.md) - Chat RN v9 non-negotiable rules
-  - [`credentials.md`](skills/stream-react-native/credentials.md) - API key, token, and optional channel seeding flow
+  - [`credentials.md`](skills/stream-react-native/credentials.md) - API key, token, and optional requested demo-data flow
   - [`builder.md`](skills/stream-react-native/builder.md) + [`sdk.md`](skills/stream-react-native/sdk.md) - shared RN CLI and Expo integration flow
   - [`references/`](skills/stream-react-native/references/) - `llms.txt` docs lookup, Chat RN v9 setup, gotchas, and screen blueprints
 - [`.cursor-plugin/plugin.json`](.cursor-plugin/plugin.json) - Cursor plugin manifest

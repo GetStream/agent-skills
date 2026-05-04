@@ -164,7 +164,6 @@ Recreate the channel on the destination from `useChatContext().client`:
 ```tsx
 import React, { useMemo } from "react";
 import { useHeaderHeight } from "@react-navigation/elements";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   Channel,
   MessageComposer,
@@ -176,7 +175,6 @@ export const ChannelScreen = ({ route }) => {
   const { channelCid } = route.params;
   const { client } = useChatContext();
   const headerHeight = useHeaderHeight();
-  const { bottom } = useSafeAreaInsets();
 
   const channel = useMemo(() => {
     const [type, id] = channelCid.split(":");
@@ -185,10 +183,8 @@ export const ChannelScreen = ({ route }) => {
 
   return (
     <Channel
-      bottomInset={bottom}
       channel={channel}
       keyboardVerticalOffset={headerHeight}
-      topInset={headerHeight}
     >
       <MessageList />
       <MessageComposer />
@@ -296,7 +292,39 @@ await chatClient.offlineDb?.resetDB();
 await chatClient.disconnectUser();
 ```
 
-Expo Go cannot use offline support; use Expo dev client or prebuild.
+Expo apps in this skill use a dev-client/native-build lane by default; do not target Expo Go.
+
+---
+
+## Native multipart uploads
+
+For upload progress in current React Native and Expo native builds, use the native multipart driver:
+
+```tsx
+<Chat client={chatClient} useNativeMultipartUpload={true}>
+  {children}
+</Chat>
+```
+
+Expo apps already use a dev-client/native-build lane. If the app does not have native projects yet, generate them and start the dev client:
+
+```bash
+npx expo prebuild
+npx expo start --dev-client
+```
+
+Do not use Expo Go for `stream-chat-expo` apps in this skill.
+
+### Upload troubleshooting
+
+Known simulator-only issue: on iOS Simulator, after fully closing and reopening the app, the first native multipart upload can fail while later uploads may proceed. Verify on a real device before treating it as a general SDK bug.
+
+Recommended debug points:
+
+- JS native multipart adapter
+- `nativeMultipartUpload`
+- message input upload failure path
+- iOS Swift multipart bridge/manager logs
 
 ---
 

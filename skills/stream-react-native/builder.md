@@ -1,6 +1,6 @@
 # Stream React Native - build and integration flow
 
-Use this module after intent classification and the Project signals probe from [`SKILL.md`](SKILL.md). Run [`credentials.md`](credentials.md) before writing connected Chat code or seeding data.
+Use this module after intent classification and the Project signals probe from [`SKILL.md`](SKILL.md). Run [`credentials.md`](credentials.md) before writing connected Chat code or creating requested demo data.
 
 ---
 
@@ -44,11 +44,12 @@ Then install Stream Chat for Expo with the latest v9 package and mandatory peers
 
 ```bash
 npm view stream-chat-expo version dist-tags --json
-npx expo install stream-chat-expo@latest @react-native-community/netinfo expo-image-manipulator react-native-gesture-handler react-native-reanimated react-native-svg react-native-teleport
+npx expo install stream-chat-expo@latest @react-native-community/netinfo expo-dev-client expo-image-manipulator react-native-gesture-handler react-native-reanimated react-native-svg react-native-teleport
 npx expo install react-native-safe-area-context
+npx expo prebuild
 ```
 
-Use `npx expo install` for Expo dependencies so versions match the Expo SDK. Add `react-native-safe-area-context` when using React Navigation or the provided screen blueprints.
+Use `npx expo install` for Expo dependencies so versions match the Expo SDK. Add `react-native-safe-area-context` when using React Navigation or the provided screen blueprints. Expo Chat apps use a dev-client/native-build lane by default; do not target Expo Go.
 
 ### RN CLI lane
 
@@ -81,7 +82,7 @@ After scaffold and packages:
 3. Run [`credentials.md`](credentials.md) or wire the app's token provider plan.
 4. Configure Babel and root providers.
 5. Implement the first screen set from [`references/CHAT-REACT-NATIVE-blueprints.md`](references/CHAT-REACT-NATIVE-blueprints.md): App Provider and Auth Gate, Navigation Shell if needed, Channel List Screen, and Channel Screen.
-6. Start the dev server only when useful and feasible for the environment (`npx expo start`, `npm run ios`, or `npm run android`).
+6. Start the dev server only when useful and feasible for the environment (`npx expo start --dev-client`, `npm run ios`, or `npm run android`).
 
 ---
 
@@ -127,16 +128,22 @@ Install the Expo wrapper and compatible peers:
 
 ```bash
 npm view stream-chat-expo version dist-tags --json
-npx expo install stream-chat-expo@latest @react-native-community/netinfo expo-image-manipulator react-native-gesture-handler react-native-reanimated react-native-svg react-native-teleport
+npx expo install stream-chat-expo@latest @react-native-community/netinfo expo-dev-client expo-image-manipulator react-native-gesture-handler react-native-reanimated react-native-svg react-native-teleport
 ```
 
-If the project uses Expo prebuild or native builds, run prebuild after adding native packages with config plugins:
+Expo Chat apps use a dev-client/native-build lane by default because the SDK includes native code. If the app does not already have native projects, generate them:
 
 ```bash
 npx expo prebuild
 ```
 
-Do not run prebuild for a managed Expo app unless the project already uses native builds or the requested feature requires it.
+Run Expo through the dev client:
+
+```bash
+npx expo start --dev-client
+```
+
+Do not target Expo Go for `stream-chat-expo`. Also set `useNativeMultipartUpload={true}` on `Chat` when upload progress is required.
 
 ### Optional packages by capability
 
@@ -148,12 +155,13 @@ How to add one:
 2. Pick the package from the matrix for the detected runtime lane.
 3. Install with the project's package manager for RN CLI, or `npx expo install` for Expo.
 4. Add required platform permissions or Expo config plugins from the selected package docs.
-5. Run pods for RN CLI native installs. For Expo, run prebuild only when the project already uses native builds or the capability requires custom native code.
+5. Run pods for RN CLI native installs. For Expo, keep the app in the dev-client/native-build lane and run prebuild when native config changes need to be regenerated.
 6. Verify the capability in the existing app flow; do not leave unused optional packages installed.
 
 | User asks for | RN CLI packages | Expo packages | Notes |
 |---|---|---|---|
 | React Navigation examples / safe areas | `react-native-safe-area-context` | `react-native-safe-area-context` | Needed for `SafeAreaProvider` and `useSafeAreaInsets`; navigation itself may already be installed |
+| Native multipart upload progress | none beyond required Stream peers | none beyond Expo dev-client lane | Set `useNativeMultipartUpload={true}` on `Chat` |
 | Attachment picker with built-in image media library | `@react-native-camera-roll/camera-roll` | `expo-media-library` | Enables gallery images in the SDK attachment picker |
 | Native image picker / camera image upload | `react-native-image-picker` | `expo-image-picker` | Use for camera capture and native picker flows |
 | File attachments / document picker | `@react-native-documents/picker` | `expo-document-picker` | Required for file picking |
@@ -162,10 +170,10 @@ How to add one:
 | Voice recording and audio attachments | `react-native-video react-native-audio-recorder-player react-native-blob-util` | Expo SDK 53+: `expo-audio`; Expo SDK 51/52: `expo-av` | Add microphone permissions/config plugins |
 | Copy message | `@react-native-clipboard/clipboard` | `expo-clipboard` | Clipboard action support |
 | Haptic feedback | `react-native-haptic-feedback` | `expo-haptics` | Optional tactile feedback |
-| Offline support | `@op-engineering/op-sqlite` | `@op-engineering/op-sqlite` | Expo Go cannot use this; dev client/prebuild required |
+| Offline support | `@op-engineering/op-sqlite` | `@op-engineering/op-sqlite` | Requires native code; Expo already uses the dev-client lane |
 | High-performance message list | `@shopify/flash-list` | `@shopify/flash-list` | Use when large channels need FlashList |
 
-After adding native optional packages, follow their platform permission steps. For Expo prebuild/native builds, add the needed config plugins and run `npx expo prebuild` only when the project already uses native builds or the capability requires custom native code.
+After adding native optional packages, follow their platform permission steps. For Expo, keep the app in the dev-client/native-build lane and run `npx expo prebuild` when native config changes need to be regenerated.
 
 ---
 
@@ -195,7 +203,7 @@ For Expo Router, the entry point is usually `app/_layout.tsx`. For RN CLI, it is
 
 ### Safe area
 
-If navigation is used, install and place `SafeAreaProvider` near the root. Use `useSafeAreaInsets()` in channel screens for `bottomInset`.
+If navigation is used, install and place `SafeAreaProvider` near the root. Do not pass safe-area values into `Channel` as `topInset` or `bottomInset` by default; add those props only after a specific layout or attachment-picker issue proves they are needed.
 
 ---
 

@@ -48,7 +48,8 @@ Expo:
 
 ```bash
 npm view stream-chat-expo version dist-tags --json
-npx expo install stream-chat-expo@latest @react-native-community/netinfo expo-image-manipulator react-native-gesture-handler react-native-reanimated react-native-svg react-native-teleport
+npx expo install stream-chat-expo@latest @react-native-community/netinfo expo-dev-client expo-image-manipulator react-native-gesture-handler react-native-reanimated react-native-svg react-native-teleport
+npx expo prebuild
 ```
 
 Install `@latest` only after confirming npm `latest` is v9. If not, use the manifest-selected docs' v9 tag/version.
@@ -61,12 +62,14 @@ Add optional dependencies with the runtime's normal install lane:
 
 - RN CLI: use the project's package manager, then run pods after native packages change.
 - Expo: use `npx expo install` so versions match the Expo SDK.
-- Expo Go may not support packages that require custom native code; use a dev client or prebuild when required.
+- Expo Chat apps use a dev-client/native-build lane by default because the SDK includes native code. Do not target Expo Go.
+- If an Expo app does not already have native projects, run `npx expo prebuild`; run it again when native config changes need to be regenerated.
 - Add platform permissions and config plugins from the selected package docs.
 
 | Feature | Packages |
 |---|---|
 | React Navigation safe areas | RN CLI: `react-native-safe-area-context`; Expo: `npx expo install react-native-safe-area-context` |
+| Native multipart upload progress | RN CLI: none beyond required Stream peers; Expo: none beyond dev-client lane |
 | Attachment picker with built-in image media library | RN CLI: `@react-native-camera-roll/camera-roll`; Expo: `expo-media-library` |
 | Native image picker / camera image upload | RN CLI: `react-native-image-picker`; Expo: `expo-image-picker` |
 | File attachments / document picker | RN CLI: `@react-native-documents/picker`; Expo: `expo-document-picker` |
@@ -81,6 +84,7 @@ Add optional dependencies with the runtime's normal install lane:
 What the common entries mean:
 
 - Media library packages let the SDK or app read existing photos/videos from the device library.
+- Native multipart upload progress uses `useNativeMultipartUpload={true}` on `Chat`; Expo already uses the dev-client/native-build lane.
 - Image picker packages let the app open native picker and camera capture flows.
 - Document picker packages let the app choose arbitrary files outside the media library.
 - Sharing packages let the app hand an attachment to another app.
@@ -199,7 +203,8 @@ Local demo tokens can come from [`../credentials.md`](../credentials.md).
 - Pass `channel.cid` through navigation params. Do not pass `Channel` objects.
 - Recreate a channel from `client.channel(type, id)` in the destination screen.
 - Use `keyboardVerticalOffset={headerHeight}` on `Channel`.
-- Use `topInset={headerHeight}` and `bottomInset={safeArea.bottom}` for attachment picker alignment.
+- Do not add `topInset` or `bottomInset` by default. Add them only after a specific layout or attachment-picker issue proves they are needed.
+- Field note: in our Expo dev-client app, adding `topInset` and `bottomInset` made the layout wrong.
 - For threads, pass the active `thread` to the main `Channel` while the thread screen is open and render the thread screen with `threadList`.
 
 ---
@@ -214,8 +219,6 @@ Use [DOCS.md](DOCS.md) to fetch the manifest-selected theming/customization page
 4. Full core component replacement only when the smaller slots cannot satisfy the request.
 
 `WithComponents` can wrap any subtree. Inner overrides merge over outer overrides.
-
-For message visual or layout changes, start with theme overrides under the relevant message keys from the manifest-selected theming/customization docs. Replace a core message component only when a theme or subcomponent override cannot satisfy the request.
 
 ---
 
@@ -243,7 +246,7 @@ Enable it:
 
 Caveats from the manifest-selected docs:
 
-- Expo Go cannot use offline support; use Expo dev client or prebuild.
+- Expo apps already use a dev-client/native-build lane. Expo Go is not a supported target for this skill.
 - Threads are not available in offline mode.
 - Reset the DB on sign-out before disconnecting:
 
@@ -268,4 +271,6 @@ await chatClient.disconnectUser();
 - Do not wrap `MessageComposer` in extra `SafeAreaView` to fix spacing; use `Channel` insets.
 - Remove old Android negative `keyboardVerticalOffset` hacks during v9 migration.
 - Keep theme objects stable with `useMemo`.
+- For upload progress, use `useNativeMultipartUpload={true}` on `Chat`.
+- On iOS Simulator, after fully closing and reopening the app, the first native multipart upload can fail while later uploads may proceed. Verify on a real device before treating it as a general SDK bug.
 - If using push notifications, fetch the manifest-selected push notification docs before changing setup. Do not assume background WebSocket behavior or default prop values from memory.

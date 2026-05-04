@@ -1,10 +1,10 @@
-# Stream React Native - credentials, token, and seed data
+# Stream React Native - credentials, token, and demo data
 
-Run this once per session for tracks A, B, and D before writing connected Chat code or seeding data. Track C does not need credentials.
+Run this once per session for tracks A, B, and D before writing connected Chat code or creating requested demo data. Track C does not need credentials.
 
 ## Goal
 
-Collect the Stream API key, user id, user token, and optional seed channels so the app can connect to real Chat data on first run. For a brand-new app, scaffolding may happen before this file if the runtime or target directory must be resolved first.
+Collect the Stream API key, user id, user token, and optional demo data so the app can connect to real Chat data on first run. For a brand-new app, scaffolding may happen before this file if the runtime or target directory must be resolved first.
 
 This flow uses the **`stream`** CLI (binary name `stream`). It is the same CLI used by [`../stream-cli`](../stream-cli/SKILL.md). If the CLI is missing, use [`../stream-cli/bootstrap.md`](../stream-cli/bootstrap.md) for the install flow.
 
@@ -17,13 +17,13 @@ Post one message asking all relevant things together. Do not split into multiple
 > 1. **Credentials** - Should I fetch your API key via the Stream CLI and generate a token, or will you paste them yourself?
 > 2. **User** - What user id and display name should the app connect as?
 > 3. **Token expiry** - If I am generating the token: should it expire? (for example `1h`, `1d`, `30m`) or never expire?
-> 4. **Seed channels** - Should I pre-create a few messaging channels with random usernames so the channel list has data immediately?
+> 4. **Demo data** - Do you want me to create demo channels? If you want more demo data, say whether to add demo users and messages too.
 >
-> If you want to handle credentials yourself, paste your API key and token and tell me whether to seed channels.
+> If you want to handle credentials yourself, paste your API key and token and tell me whether to create demo data.
 
 ## After the user replies - act without further prompting
 
-Once the user answers, execute the needed CLI steps in sequence without pausing between them. Narrate each step briefly, but do not ask "shall I continue?" between steps. Channel seeding is mutating; the user's upfront "yes" covers those seed calls.
+Once the user answers, execute the needed CLI steps in sequence without pausing between them. Narrate each step briefly, but do not ask "shall I continue?" between steps. Demo data calls are mutating; run them only when the user asked for them.
 
 ### Step A0 - Confirm CLI install and auth
 
@@ -74,17 +74,19 @@ Hold the token in context for code edits. Do not print it in summaries.
 
 If the user pastes a token, hold it in context and skip generation.
 
-### Step C - Seed channels (only if the user said yes)
+### Step C - Demo data (only if the user asked)
 
-Create 3 to 5 channels with realistic usernames. Use `messaging` as the channel type. The connected user must be a member of at least one seeded channel, or `ChannelList` will render empty.
+Create 3 to 5 channels with realistic usernames. Use `messaging` as the channel type. The connected user must be a member of at least one demo channel, or `ChannelList` will render empty.
 
 These calls are mutating. Announce briefly:
 
-> Seeding channels with mutating Stream API calls now.
+> Creating requested demo data with mutating Stream API calls now.
+
+Route demo data through [`../stream-cli/SKILL.md`](../stream-cli/SKILL.md) and [`../stream-cli/cli-cookbook.md`](../stream-cli/cli-cookbook.md). Keep the CLI safe-mode-first rule for endpoint discovery and only run mutating calls after the user's explicit demo-data request.
 
 #### C1 - Create user records
 
-User records must exist before channel membership can be added. Create the token user and seed users in one `UpdateUsers` batch:
+User records must exist before channel membership can be added. Create the token user and demo users in one `UpdateUsers` batch:
 
 ```bash
 stream api UpdateUsers --body '{"users":{"<token_user_id>":{"id":"<token_user_id>","name":"Token User"},"alice":{"id":"alice","name":"Alice"},"bob":{"id":"bob","name":"Bob"},"carol":{"id":"carol","name":"Carol"}}}'
@@ -102,13 +104,25 @@ stream api GetOrCreateChannel type=messaging id=general --body '{"data":{"name":
 
 Generate short channel ids such as `general`, `random`, `team-alpha`. Make sure the token user appears in `data.members`.
 
-After seeding, summarize without secrets:
+After creating demo channels, summarize without secrets:
 
 > Created channels: `general` (<token_user_id>, alice, bob), `random` (<token_user_id>, carol), `team-alpha` (<token_user_id>, alice)
 
+#### C3 - Send demo messages (only if the user asked for messages or more demo data)
+
+Use `SendMessage` through the Stream CLI cookbook. Each message's `user_id` must belong to an existing user.
+
+```bash
+stream api SendMessage type=messaging id=<channel_id> --body '{"message":{"text":"Hello from Alex","user_id":"alex"}}'
+```
+
+Do not send demo messages when the user only asked for credentials or channels.
+
 ### Step D - Proceed automatically
 
-After credentials and optional seeding succeed, return to [`SKILL.md`](SKILL.md) and continue into [`builder.md`](builder.md). No additional prompt is needed.
+After credentials and requested demo data succeed, return to [`SKILL.md`](SKILL.md) and continue into [`builder.md`](builder.md). No additional prompt is needed.
+
+When generating a local demo form, prefill the editable API key, token, user, and channel values from this flow by default. Do not print user tokens in final summaries.
 
 If any CLI step fails and cannot be recovered, ask the user to paste the missing API key or token manually before editing code.
 

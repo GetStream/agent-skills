@@ -2,7 +2,7 @@
 name: stream-react-native
 description: "Create, build, and integrate Stream Chat React Native v9 apps in React Native Community CLI and Expo. Use for new RN/Expo Chat apps from scratch, existing app integration, Stream Chat RN, stream-chat-react-native, stream-chat-expo, v9 migration/setup, channel list, message list, MessageComposer, attachment picker, image/file attachments, media picker, camera upload, audio messages, threads, thread list, React Navigation, Expo Router, theming, offline support, push notifications, and Chat customization. Chat only in v1; not for Stream Video, Feeds, or Moderation UI."
 license: See LICENSE in repository root
-compatibility: Supports new or existing React Native CLI and Expo apps that can run Stream Chat RN v9 with React Native New Architecture. The `stream` CLI is the default credentials and seed-data path; pasted API key and token are accepted as fallback.
+compatibility: Supports new or existing React Native CLI and Expo apps that can run Stream Chat RN v9 with React Native New Architecture. The `stream` CLI is the default credentials and requested demo-data path; pasted API key and token are accepted as fallback.
 metadata:
   author: GetStream
 allowed-tools: >-
@@ -18,7 +18,7 @@ allowed-tools: >-
   Bash(curl -Ls https://getstream.io/chat/docs/react-native/llms.txt),
   Bash(npx create-expo-app@latest *), Bash(npx create-expo-app *),
   Bash(npx @react-native-community/cli@latest init *),
-  Bash(npx expo install *), Bash(npx expo start *),
+  Bash(npx expo install *), Bash(npx expo prebuild *), Bash(npx expo start *),
   Bash(npm run *), Bash(yarn *), Bash(pnpm *),
   Bash(npx pod-install *), Bash(cd ios && pod install)
 ---
@@ -66,12 +66,12 @@ Do not invent missing React Native Video or Feeds API details from memory.
 
 ### After classification
 
-- **Tracks A, B, D** -> run Project signals, then continue in [`builder.md`](builder.md) and [`sdk.md`](sdk.md). Run [`credentials.md`](credentials.md) before writing Chat connection code or seeding data.
+- **Tracks A, B, D** -> run Project signals, then continue in [`builder.md`](builder.md) and [`sdk.md`](sdk.md). Run [`credentials.md`](credentials.md) before writing Chat connection code or creating requested demo data.
 - **Track C** -> skip credentials and project probes if the product + runtime are explicit. Only run a read-only probe if RN CLI vs Expo is ambiguous and the answer affects the guidance.
 
 ---
 
-## Step 0.5: Credentials, token, and seed data (tracks A, B, D only)
+## Step 0.5: Credentials, token, and demo data (tracks A, B, D only)
 
 Use [`credentials.md`](credentials.md) once per session before writing code that connects to Stream Chat.
 
@@ -80,7 +80,7 @@ It resolves:
 - Stream API key
 - user id and display name
 - user token or token provider plan
-- optional seed channels via `UpdateUsers` and `GetOrCreateChannel`
+- optional demo data, only when requested, via Stream CLI calls such as `UpdateUsers`, `GetOrCreateChannel`, and `SendMessage`
 
 For Track A, it is acceptable to scaffold the app first if the runtime or target directory must be resolved before credentials. Do not render a connected Chat UI until credentials or a token-provider plan are resolved.
 

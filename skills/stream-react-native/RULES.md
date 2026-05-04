@@ -68,10 +68,13 @@ For Chat RN v9, required setup includes:
 - `@react-native-community/netinfo`
 - `react-native-worklets` for RN CLI when Reanimated 4+ is used
 - `expo-image-manipulator` for Expo image compression
+- `expo-dev-client` for Expo apps
 
 The Reanimated or Worklets Babel plugin must be the last Babel plugin. Wrap the app entry point in `GestureHandlerRootView`.
 
 `react-native-teleport` is required in v9 because `OverlayProvider` uses it for portal-hosted UI.
+
+Expo Chat apps in this skill use a dev-client/native-build lane by default because the SDK includes native code. Do not target Expo Go for `stream-chat-expo` setup.
 
 Optional native dependencies are capability-owned. Install them only for requested capabilities or when manifest-selected docs require them. The package matrix and install notes live in [`builder.md`](builder.md) and [`references/CHAT-REACT-NATIVE.md`](references/CHAT-REACT-NATIVE.md).
 
@@ -103,7 +106,7 @@ When using React Navigation or Expo Router:
 - Pass channel CIDs or ids through navigation params, not `Channel` instances.
 - Recreate the `Channel` instance from `useChatContext().client` on the destination screen.
 - Set `keyboardVerticalOffset` to the header height.
-- Set `topInset` and `bottomInset` on `Channel` for attachment picker and safe area alignment.
+- Do not add `topInset` or `bottomInset` by default. Add them only when a specific layout or attachment-picker issue proves they are needed.
 
 For threads, keep thread state explicit. When a thread screen is open, pass the same `thread` value to the main `Channel` and render the thread screen with `threadList`.
 
@@ -115,7 +118,7 @@ Offline support is opt-in.
 
 - Install `@op-engineering/op-sqlite` only when requested.
 - Pass `enableOfflineSupport` to `Chat`.
-- Expo Go cannot use offline support because it requires custom native code; use Expo prebuild or a dev client.
+- Expo apps already use a dev-client/native-build lane. Expo Go is not a supported target for this skill.
 - Access to threads in offline mode is not implemented in the referenced v9 docs.
 - On sign-out, run `chatClient.offlineDb.resetDB()` before `disconnectUser()` to avoid cross-user data leaks.
 
@@ -142,8 +145,8 @@ Use the **Request -> Blueprint section** table at the top of the blueprints file
 
 ## CLI and shell discipline
 
-Credentials and seeding use the `stream` binary. If the binary is missing, follow [`../stream-cli/bootstrap.md`](../stream-cli/bootstrap.md) instead of introducing a new installer flow.
+Credentials and requested demo data use the `stream` binary. If the binary is missing, follow [`../stream-cli/bootstrap.md`](../stream-cli/bootstrap.md) instead of introducing a new installer flow.
 
-For `stream api` calls, follow [`../stream/RULES.md`](../stream/RULES.md) > CLI safety: discover endpoints before running them, use `--safe` first for read operations, and only run mutating seed calls after the user explicitly agrees to seeding.
+For `stream api` calls, follow [`../stream/RULES.md`](../stream/RULES.md) > CLI safety: discover endpoints before running them, use `--safe` first for read operations, and only run mutating demo-data calls after the user explicitly asks for demo data.
 
 Do not read or print `.env` files. Do not use `bash -ce` in probes.

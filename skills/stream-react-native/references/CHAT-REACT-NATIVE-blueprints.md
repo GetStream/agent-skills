@@ -18,7 +18,6 @@ Expo lane: change imports from `"stream-chat-react-native"` to `"stream-chat-exp
 | thread navigation, replies, thread list | Thread Screen or Thread List Screen |
 | React Navigation or Expo Router shell | Navigation Shell |
 | theme, dark mode, colors, design tokens | Theming Blueprint |
-| message styling, message layout, per-message visual changes | Message Styling and Layout Blueprint |
 | UI slot, component, behavior, or composer customization | DOCS.md -> primary manifest lookup, then Component Override Blueprint |
 | offline support or sign-out cleanup | Offline and Sign-out Blueprint |
 
@@ -53,10 +52,24 @@ const Loading = () => (
   </View>
 );
 
-const LoginScreen = ({ onSession }: { onSession: (session: Session) => void }) => {
-  const [userId, setUserId] = useState("");
+const LoginScreen = ({
+  demoDefaults,
+  onSession,
+}: {
+  demoDefaults?: Partial<Session>;
+  onSession: (session: Session) => void;
+}) => {
+  const [apiKey, setApiKey] = useState(demoDefaults?.apiKey ?? "");
+  const [token, setToken] = useState(demoDefaults?.token ?? "");
+  const [userId, setUserId] = useState(demoDefaults?.userId ?? "");
+  const [userName, setUserName] = useState(demoDefaults?.userName ?? "");
 
   const signIn = useCallback(async () => {
+    if (apiKey && token && userId) {
+      onSession({ apiKey, token, userId, userName: userName || userId });
+      return;
+    }
+
     const response = await fetch(
       `https://your-api.example.com/stream-token?user_id=${encodeURIComponent(userId)}`,
     );
@@ -65,17 +78,35 @@ const LoginScreen = ({ onSession }: { onSession: (session: Session) => void }) =
       apiKey: body.apiKey,
       token: body.token,
       userId,
-      userName: body.userName ?? userId,
+      userName: body.userName || userName || userId,
     });
-  }, [onSession, userId]);
+  }, [apiKey, onSession, token, userId, userName]);
 
   return (
     <View style={{ flex: 1, justifyContent: "center", padding: 24 }}>
       <TextInput
         autoCapitalize="none"
+        onChangeText={setApiKey}
+        placeholder="API key"
+        value={apiKey}
+      />
+      <TextInput
+        autoCapitalize="none"
+        onChangeText={setToken}
+        placeholder="User token"
+        value={token}
+      />
+      <TextInput
+        autoCapitalize="none"
         onChangeText={setUserId}
         placeholder="User id"
         value={userId}
+      />
+      <TextInput
+        autoCapitalize="words"
+        onChangeText={setUserName}
+        placeholder="User name"
+        value={userName}
       />
       <Button disabled={!userId} onPress={signIn} title="Sign in" />
     </View>
@@ -104,7 +135,13 @@ const ConnectedChat = ({
   );
 };
 
-export const StreamChatRoot = ({ children }: { children: React.ReactNode }) => {
+export const StreamChatRoot = ({
+  children,
+  demoDefaults,
+}: {
+  children: React.ReactNode;
+  demoDefaults?: Partial<Session>;
+}) => {
   const [session, setSession] = useState<Session | null>(null);
 
   return (
@@ -112,7 +149,7 @@ export const StreamChatRoot = ({ children }: { children: React.ReactNode }) => {
       {session ? (
         <ConnectedChat session={session}>{children}</ConnectedChat>
       ) : (
-        <LoginScreen onSession={setSession} />
+        <LoginScreen demoDefaults={demoDefaults} onSession={setSession} />
       )}
     </GestureHandlerRootView>
   );
@@ -124,7 +161,8 @@ Wiring:
 - `useCreateChatClient` returns `StreamChat | null`.
 - Clearing `session` unmounts `ConnectedChat` and lets the hook disconnect.
 - For production, fetch tokens from the app backend.
-- For local demos, session values can come from CLI-generated credentials.
+- For local demos, prefill editable form values from CLI-generated API key, token, user, and channel setup when available.
+- Do not print user tokens in final summaries or logs.
 
 ---
 
@@ -140,8 +178,9 @@ Replace `MyChatApp` with the target directory, or use `.` only when the current 
 npx create-expo-app@latest MyChatApp
 cd MyChatApp
 npm view stream-chat-expo version dist-tags --json
-npx expo install stream-chat-expo@latest @react-native-community/netinfo expo-image-manipulator react-native-gesture-handler react-native-reanimated react-native-svg react-native-teleport
+npx expo install stream-chat-expo@latest @react-native-community/netinfo expo-dev-client expo-image-manipulator react-native-gesture-handler react-native-reanimated react-native-svg react-native-teleport
 npx expo install react-native-safe-area-context
+npx expo prebuild
 ```
 
 RN CLI:
@@ -157,7 +196,7 @@ npm install react-native-safe-area-context
 npx pod-install
 ```
 
-After scaffolding, continue with these sections in order: App Provider and Auth Gate, Navigation Shell if navigation is present or desired, Channel List Screen, and Channel Screen. Optional native capabilities stay opt-in and use the dependency map in [CHAT-REACT-NATIVE.md](CHAT-REACT-NATIVE.md).
+After scaffolding, continue with these sections in order: App Provider and Auth Gate, Navigation Shell if navigation is present or desired, Channel List Screen, and Channel Screen. Start Expo with `npx expo start --dev-client`; do not target Expo Go. Optional native capabilities stay opt-in and use the dependency map in [CHAT-REACT-NATIVE.md](CHAT-REACT-NATIVE.md).
 
 ---
 
@@ -180,7 +219,6 @@ Keep optional UI inside the same provider and `Channel` hierarchy as the core Ch
 ```tsx
 import React, { useMemo } from "react";
 import { useHeaderHeight } from "@react-navigation/elements";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   Channel,
   MessageComposer,
@@ -192,7 +230,6 @@ export const ChannelScreenWithNativeCapability = ({ route }) => {
   const { channelCid } = route.params;
   const { client } = useChatContext();
   const headerHeight = useHeaderHeight();
-  const { bottom } = useSafeAreaInsets();
 
   const channel = useMemo(() => {
     const [type, id] = channelCid.split(":");
@@ -201,10 +238,8 @@ export const ChannelScreenWithNativeCapability = ({ route }) => {
 
   return (
     <Channel
-      bottomInset={bottom}
       channel={channel}
       keyboardVerticalOffset={headerHeight}
-      topInset={headerHeight}
     >
       <MessageList />
       <MessageComposer />
@@ -216,7 +251,7 @@ export const ChannelScreenWithNativeCapability = ({ route }) => {
 Wiring:
 
 - Keep `MessageComposer` inside `Channel`.
-- Use `topInset` and `bottomInset` for optional UI that opens above or below the composer.
+- Add `topInset` or `bottomInset` only after a specific layout or attachment-picker issue proves they are needed.
 - Use `WithComponents` for custom buttons, previews, rows, or capability-specific UI slots.
 
 ---
@@ -315,7 +350,6 @@ Recreate the channel from CID using the provided Chat client. `Channel` owns `Me
 import React, { useMemo } from "react";
 import { View } from "react-native";
 import { useHeaderHeight } from "@react-navigation/elements";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   Channel,
   MessageComposer,
@@ -327,7 +361,6 @@ export const ChannelScreen = ({ navigation, route }) => {
   const { channelCid } = route.params;
   const { client } = useChatContext();
   const headerHeight = useHeaderHeight();
-  const { bottom } = useSafeAreaInsets();
 
   const channel = useMemo(() => {
     const [type, id] = channelCid.split(":");
@@ -336,10 +369,8 @@ export const ChannelScreen = ({ navigation, route }) => {
 
   return (
     <Channel
-      bottomInset={bottom}
       channel={channel}
       keyboardVerticalOffset={headerHeight}
-      topInset={headerHeight}
     >
       <View style={{ flex: 1 }}>
         <MessageList />
@@ -353,7 +384,8 @@ export const ChannelScreen = ({ navigation, route }) => {
 Wiring:
 
 - `Channel` initializes and watches the channel by default.
-- Use `keyboardVerticalOffset`, `topInset`, and `bottomInset` for navigation chrome and safe area.
+- Use `keyboardVerticalOffset={headerHeight}` for navigation headers.
+- Add `topInset` or `bottomInset` only after a specific layout or attachment-picker issue proves they are needed. In our Expo dev-client app, adding them made the layout wrong.
 - If implementing threads, store the selected thread in context or parent state. See Thread Screen.
 
 ---
@@ -519,53 +551,6 @@ Wiring:
 
 ---
 
-## Message Styling and Layout Blueprint
-
-Use this for message-level visual or layout changes. Use [DOCS.md](DOCS.md) to fetch the manifest-selected theming/customization pages before editing.
-
-Prefer theme overrides first:
-
-```tsx
-import React, { useMemo } from "react";
-import type { DeepPartial, Theme } from "stream-chat-react-native";
-import { Chat, OverlayProvider } from "stream-chat-react-native";
-
-export const MessageStyledChat = ({ chatClient, children }) => {
-  const chatTheme = useMemo<DeepPartial<Theme>>(
-    () => ({
-      messageItemView: {
-        content: {
-          markdown: {
-            text: {
-              fontSize: 16,
-            },
-          },
-        },
-      },
-    }),
-    [],
-  );
-
-  return (
-    <OverlayProvider value={{ style: chatTheme }}>
-      <Chat client={chatClient} style={chatTheme}>
-        {children}
-      </Chat>
-    </OverlayProvider>
-  );
-};
-```
-
-Wiring:
-
-- Keep the theme object stable with `useMemo`.
-- Apply the style at both `OverlayProvider` and `Chat` when message overlays or galleries must match.
-- If the requested visual change cannot be expressed through theme keys, use `WithComponents` with a focused subcomponent override.
-- Replace a core message component only when the manifest-selected customization docs show that smaller overrides cannot satisfy the request.
-- If replacing the row structure, use [DOCS.md](DOCS.md) to fetch the manifest-selected context docs and preserve long-press overlay anchor behavior.
-
----
-
 ## Component Override Blueprint
 
 Use `WithComponents` for custom subcomponents. Keep custom message rows memoized and use SDK context hooks.
@@ -637,6 +622,6 @@ export const SignOutButton = ({ onSignedOut }) => {
 Wiring:
 
 - Install `@op-engineering/op-sqlite`.
-- Expo Go cannot use offline support.
+- Expo apps use the dev-client/native-build lane by default; do not target Expo Go.
 - Reset DB before disconnecting.
 - Do not promise offline thread access.
