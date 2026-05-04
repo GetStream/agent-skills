@@ -1,6 +1,6 @@
 ---
 name: stream
-description: "Stream router for Chat, Video, Feeds, and Moderation. Use when the user wants to build a new app with Stream, scaffold a project, add Chat/Video/Feeds/Moderation to an existing app, integrate Stream, query Stream data, list channels, list calls, show flagged messages, find users, run stream api / stream config / stream auth commands, install the Stream CLI, set up Stream, search Stream SDK documentation, look up Stream React/iOS/Android/Node/Flutter/Unity SDK methods, ask how-to questions about Stream hooks/components/methods, configure moderation blocklists or automod, set up webhooks, or anything tagged Chat React, Video iOS, Feeds Node, Moderation, etc. Routes to the right sub-skill based on the task."
+description: "Stream router for Chat, Video, Feeds, and Moderation. Use when the user wants to build a new app with Stream, scaffold a project, add Chat/Video/Feeds/Moderation to an existing app, integrate Stream, build for Swift/SwiftUI/UIKit/iOS/Xcode, query Stream data, list channels, list calls, show flagged messages, find users, run stream api / stream config / stream auth commands, install the Stream CLI, set up Stream, search Stream SDK documentation, look up Stream React/iOS/Android/Node/Flutter/Unity SDK methods, ask how-to questions about Stream hooks/components/methods, configure moderation blocklists or automod, set up webhooks, or anything tagged Chat React, Video iOS, Feeds Node, Moderation, etc. Routes to the right sub-skill based on the task."
 license: See LICENSE in repository root
 metadata:
   author: GetStream
@@ -13,9 +13,11 @@ allowed-tools: >-
 
 This skill picks the track from the user's input and delegates to a specialized sub-skill. **It does no scaffolding, CLI, or docs work itself** - those live in dedicated skills.
 
-> **Read first:** [`RULES.md`](RULES.md). Non-negotiable rules apply, including the **Peer skills** table (Glob path + install command + Skill-vs-Read-inline rule).
+> **Read first:** [`RULES.md`](RULES.md). Non-negotiable rules apply, including the **Peer skills** procedure (Glob path + install command + install policy + Skill-vs-Read-inline rule).
 >
-> **After picking a sub-skill (`stream-cli`, `stream-docs`, `stream-builder`):** follow the **Peer skills** procedure from RULES.md - Glob the SKILL.md path, install if empty, then Skill tool (if listed) or Read inline. Do not call `Skill` before the Glob; it surfaces a confusing "Unknown skill" error. Do not stop after naming the track.
+> **Peer manifest:** [`peers.yaml`](peers.yaml) (schema: [`peers.schema.json`](peers.schema.json)) is the single source of truth for peer skill names, Glob paths, install commands, install policies (`silent` vs `ask`), routing signals, and decline fallbacks. Read it before installing or routing to a peer.
+>
+> **After picking a sub-skill:** follow the procedure in RULES.md > Peer skills - Glob the entry's `SKILL.md` path, install per its `install_policy` if missing (silently, or after explicit confirm for `ask` peers), then Skill tool (if listed) or Read inline. Do not call `Skill` before the Glob; it surfaces a confusing "Unknown skill" error. Do not stop after naming the track.
 
 ---
 
@@ -28,6 +30,11 @@ This skill picks the track from the user's input and delegates to a specialized 
 **Add Stream to an existing app** -> use the `stream-builder` skill
 - Existing project + "add Chat to this app", "integrate Video", "drop Feeds into ..."
 - Same SDK wiring as scaffold; skips Next.js init and theme pick
+
+**Build or integrate Stream in a platform-specific app** -> peer pack from [`peers.yaml`](peers.yaml)
+- Match user input or cwd against each peer's `signals` (e.g. `swift` / `swiftui` / `.xcodeproj` -> `stream-swift`)
+- Platform packs declare `install_policy: ask` - confirm install with the user once before adding
+- On decline, route to the peer's `fallback_on_decline` (typically `stream-docs` for read-only lookups)
 
 **Query Stream data via the CLI** -> use the `stream-cli` skill
 - "list calls", "show channels", "any flagged", "find users"
@@ -58,11 +65,14 @@ Scan the user's input for the signals below in order. The classifier is determin
 | Operational verbs + Stream noun: "list calls", "show channels", "any flagged", "find users", "check {anything}" | `stream-cli` |
 | `stream api`, `stream config`, `stream auth` (literal CLI invocation) | `stream-cli` |
 | "Install the CLI", "set up stream" with no project context | `stream-cli` |
-| "Build me a ... app", "scaffold", "create a new ..." + Stream product, in an empty/new directory | `stream-builder` |
-| "Add Chat/Video/Feeds to this app", "integrate Stream into" - existing project | `stream-builder` |
+| "Build me a ... app", "scaffold", "create a new ..." + Stream product, in an empty/new directory | `stream-builder` (web/Next.js) |
+| "Add Chat/Video/Feeds to this app", "integrate Stream into" - existing project | `stream-builder` (web/Next.js) |
+| Build/integration intent + a token matching a peer's `signals` in [`peers.yaml`](peers.yaml) (e.g. `swift`, `swiftui`, `.xcodeproj` -> `stream-swift`) | matching peer (confirm install if `install_policy: ask`) |
 | Operational verb wrapped in how-to phrasing (e.g. "how do I list my calls?" - docs *or* CLI) | **Ask one disambiguator** |
 
 **Track D carve-out.** `stream-docs` answers from documentation only - no preflight, no shell commands, no project inspection. Every other sub-skill runs preflight before doing real work.
+
+**Docs vs platform packs.** A pure how-to or method-lookup question about an iOS/Android/etc. SDK symbol stays in `stream-docs` - don't pull in a platform pack for a documentation answer. Platform packs (e.g. `stream-swift`) are for *building or integrating* - scaffolding projects, wiring packages, generating views.
 
 **Disambiguator.** If the input fits more than one row (typically operational verb + how-to phrasing), ask one short question and wait. Don't probe before the answer:
 
@@ -70,7 +80,7 @@ Scan the user's input for the signals below in order. The classifier is determin
 
 After the answer, route as if the user had given that signal directly.
 
-**Bare `/stream` with no args.** List the four sub-skills under "Quick navigation" briefly and wait for input. No shell execution.
+**Bare `/stream` with no args.** List the sub-skills under "Quick navigation" briefly and wait for input. No shell execution.
 
 ---
 
@@ -78,9 +88,12 @@ After the answer, route as if the user had given that signal directly.
 
 If the user already knows what they want, skip the router and invoke a sub-skill directly:
 
-- `/stream-builder` - scaffold a new app, or add Chat/Video/Feeds/Moderation to an existing one
+- `/stream-builder` - scaffold a new web (Next.js) app, or add Chat/Video/Feeds/Moderation to an existing one
+- `/stream-swift` - scaffold or integrate Stream into a Swift/SwiftUI/UIKit/iOS app (install confirmed first)
 - `/stream-cli` - query Stream data via CLI, install the CLI, run `stream api / config / auth`
 - `/stream-docs` - search live Stream SDK documentation (no CLI needed)
+
+Platform-specific packs are declared in [`peers.yaml`](peers.yaml) - new platforms become available by adding an entry there.
 
 Or describe the task and the router will pick.
 
