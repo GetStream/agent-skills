@@ -1,4 +1,4 @@
-# Chat React Native v9 - Screen and Component Blueprints
+# Chat React Native - Screen and Component Blueprints
 
 Load only the section you are implementing. For `llms.txt` manifest search, see [DOCS.md](DOCS.md). For setup, packages, and gotchas, see [CHAT-REACT-NATIVE.md](CHAT-REACT-NATIVE.md).
 
@@ -545,7 +545,7 @@ export const ThemedChat = ({ chatClient, children }) => {
 
 Wiring:
 
-- Prefer semantic tokens from v9 when reading SDK theme values.
+- Prefer semantic tokens from the SDK when reading theme values.
 - Do not mutate theme objects inline during render.
 - Overlay components do not inherit only from `Chat`; pass style through `OverlayProvider` too.
 

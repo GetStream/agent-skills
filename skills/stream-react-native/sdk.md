@@ -1,6 +1,6 @@
 # Stream React Native - shared SDK patterns
 
-This file holds shared React Native and Expo patterns for Stream Chat RN v9. Load it before Chat-specific references when you need lifecycle, auth, provider, navigation, offline, or sign-out guidance.
+This file holds shared React Native and Expo patterns for Stream Chat RN. Load it before Chat-specific references when you need lifecycle, auth, provider, navigation, offline, or sign-out guidance.
 
 ---
 
@@ -339,7 +339,7 @@ If the user asks for push notifications, use [references/DOCS.md](references/DOC
 Before calling the work done, confirm:
 
 - imports match the runtime package lane
-- `react-native-teleport` is installed for v9
+- `react-native-teleport` is installed for overlay support
 - mandatory peer dependencies are installed for the selected lane
 - optional dependencies are installed only for requested capabilities
 - Babel plugin is last

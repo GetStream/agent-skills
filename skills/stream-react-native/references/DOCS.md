@@ -8,10 +8,10 @@ Use `llms.txt` manifests as the only docs entrypoint. Do not maintain direct pag
 
 | Manifest | Use for |
 |---|---|
-| `https://getstream.io/chat/docs/sdk/react-native/llms.txt` | Primary source for Stream Chat React Native UI SDK v9: installation, packages, components, contexts, theming, customization, UI cookbook, offline, push, New Architecture, native handlers, migration guides. |
+| `https://getstream.io/chat/docs/sdk/react-native/llms.txt` | Primary source for Stream Chat React Native UI SDK: installation, packages, components, contexts, theming, customization, UI cookbook, offline, push, New Architecture, native handlers, migration guides. |
 | `https://getstream.io/chat/docs/react-native/llms.txt` | Secondary source for low-level Chat API/client topics: tokens, users, channels, messages, query syntax, permissions, events, webhooks, push provider setup, imports/exports. |
 
-The primary manifest should identify itself as React Native v9 or latest. If it does not, treat that as a docs-version problem and verify from the manifest title before continuing.
+The primary manifest should identify itself as the current React Native docs. If it does not, treat that as a docs-version problem and verify from the manifest title before continuing.
 
 ---
 
@@ -20,7 +20,7 @@ The primary manifest should identify itself as React Native v9 or latest. If it 
 1. Fetch the primary manifest.
 2. Search manifest link text for the exact component, hook, guide, or feature name.
 3. Fetch the selected markdown URL from the manifest.
-4. Confirm the markdown page is for React Native v9/latest when doing UI SDK work.
+4. Confirm the markdown page matches the current React Native UI SDK docs when doing UI SDK work.
 5. Code from the fetched markdown page plus this skill's rules and blueprints.
 6. If the primary manifest does not contain the topic and the request is low-level Chat API/client behavior, repeat the lookup in the secondary manifest.
 7. If multiple titles match, prefer the exact component or guide title over generic `Overview` pages.
@@ -34,7 +34,7 @@ npm view stream-chat-react-native version dist-tags --json
 npm view stream-chat-expo version dist-tags --json
 ```
 
-Install `@latest` when `latest` is v9. If `latest` is not v9, use the v9 tag or exact version recommended by the manifest-selected installation page.
+Install `@latest` when the npm dist-tag matches the selected docs. If it does not, use the tag or exact version recommended by the manifest-selected installation page.
 
 ---
 

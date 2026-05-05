@@ -40,7 +40,7 @@ npx create-expo-app@latest MyChatApp
 cd MyChatApp
 ```
 
-Then install Stream Chat for Expo with the latest v9 package and mandatory peers:
+Then install Stream Chat for Expo with the selected package and mandatory peers:
 
 ```bash
 npm view stream-chat-expo version dist-tags --json
@@ -62,7 +62,7 @@ npx @react-native-community/cli@latest init MyChatApp
 cd MyChatApp
 ```
 
-Then install Stream Chat for RN CLI with the latest v9 package and mandatory peers:
+Then install Stream Chat for RN CLI with the selected package and mandatory peers:
 
 ```bash
 npm view stream-chat-react-native version dist-tags --json
@@ -78,7 +78,7 @@ If the new app uses yarn or pnpm, translate package-manager commands without cha
 After scaffold and packages:
 
 1. Use [`references/DOCS.md`](references/DOCS.md) to fetch the primary manifest and selected `Installation` markdown page.
-2. Confirm the installed Stream package major is v9.
+2. Confirm the installed Stream package matches the selected docs and npm dist-tag.
 3. Run [`credentials.md`](credentials.md) or wire the app's token provider plan.
 4. Configure Babel and root providers.
 5. Implement the first screen set from [`references/CHAT-REACT-NATIVE-blueprints.md`](references/CHAT-REACT-NATIVE-blueprints.md): App Provider and Auth Gate, Navigation Shell if needed, Channel List Screen, and Channel Screen.
@@ -267,7 +267,7 @@ For message visual or layout changes, fetch the manifest-selected theming/custom
 
 Use the project's existing verification commands. Prefer the smallest checks that prove the integration works:
 
-- package install completed and selected Stream package is v9
+- package install completed and selected Stream package matches the docs
 - iOS pods resolved for RN CLI native installs
 - Babel plugin is present and last
 - `GestureHandlerRootView` wraps the app

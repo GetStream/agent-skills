@@ -1,8 +1,8 @@
-# Chat React Native v9 - Setup and Integration
+# Chat React Native - Setup and Integration
 
-Stream Chat React Native v9 provides pre-built Chat UI for React Native CLI and Expo apps. This file covers packages, app setup, client/auth patterns, navigation, offline support, and gotchas. For `llms.txt` docs lookup, see [DOCS.md](DOCS.md). For screen structures, see [CHAT-REACT-NATIVE-blueprints.md](CHAT-REACT-NATIVE-blueprints.md).
+Stream Chat React Native provides pre-built Chat UI for React Native CLI and Expo apps. This file covers packages, app setup, client/auth patterns, navigation, offline support, and gotchas. For `llms.txt` docs lookup, see [DOCS.md](DOCS.md). For screen structures, see [CHAT-REACT-NATIVE-blueprints.md](CHAT-REACT-NATIVE-blueprints.md).
 
-Rules: [../RULES.md](../RULES.md) (Chat-only v9, New Architecture, secrets, runtime lane ownership, provider placement, blueprint reads).
+Rules: [../RULES.md](../RULES.md) (Chat-only, New Architecture, secrets, runtime lane ownership, provider placement, blueprint reads).
 
 Manifest-selected docs are the authority. Use [DOCS.md](DOCS.md) before installing packages or making API-specific claims.
 
@@ -52,7 +52,7 @@ npx expo install stream-chat-expo@latest @react-native-community/netinfo expo-de
 npx expo prebuild
 ```
 
-Install `@latest` only after confirming npm `latest` is v9. If not, use the manifest-selected docs' v9 tag/version.
+Install `@latest` only after confirming the npm dist-tag matches the selected docs. If not, use the manifest-selected docs' tag or exact version.
 
 ### Optional dependency map
 
@@ -187,7 +187,7 @@ Local demo tokens can come from [`../credentials.md`](../credentials.md).
 | `ChannelList` | Queries and renders channels |
 | `Channel` | Provides channel, keyboard, messages, composer, attachment picker, and thread contexts |
 | `MessageList` | Renders messages inside `Channel` |
-| `MessageComposer` | v9 message input; use instead of old message input patterns |
+| `MessageComposer` | Current message input; use instead of old message input patterns |
 | `Thread` | Renders replies for a selected parent message |
 | `ThreadList` | Renders an inbox of threads inside `Chat` |
 | `WithComponents` | Replaces component slots and subcomponents |
@@ -259,17 +259,17 @@ await chatClient.disconnectUser();
 
 ## Gotchas
 
-- v9 requires React Native New Architecture.
-- `react-native-teleport` is required for v9 overlays.
+- The bundled references assume React Native New Architecture.
+- `react-native-teleport` is required for overlays.
 - `useCreateChatClient` returns `null` while connecting.
 - Never pass `null` to `Chat`.
 - Do not create multiple connected `StreamChat` clients.
 - Do not pass `Channel` instances through navigation params.
 - A channel created with only a members list gets a generated id and cannot later add/remove members in the usual channel-id flow; use explicit ids when membership editing matters.
-- Use `MessageComposer` for v9 message input.
+- Use `MessageComposer` for message input.
 - Use `WithComponents` for component overrides instead of old prop-heavy override patterns.
 - Do not wrap `MessageComposer` in extra `SafeAreaView` to fix spacing; use `Channel` insets.
-- Remove old Android negative `keyboardVerticalOffset` hacks during v9 migration.
+- Remove old Android negative `keyboardVerticalOffset` hacks during migration.
 - Keep theme objects stable with `useMemo`.
 - For upload progress, use `useNativeMultipartUpload={true}` on `Chat`.
 - On iOS Simulator, after fully closing and reopening the app, the first native multipart upload can fail while later uploads may proceed. Verify on a real device before treating it as a general SDK bug.

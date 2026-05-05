@@ -6,10 +6,10 @@ Every rule below is stated once. Other files reference this file - do not duplic
 
 ## Target SDK version and scope
 
-Target **Stream Chat React Native v9**.
+Target **Stream Chat React Native**.
 
-- v9 supports the React Native **New Architecture only**. The v9 migration docs require React Native 0.76+ or an Expo SDK version that defaults to the New Architecture.
-- The general New Architecture guide says SDK New Architecture support starts at React Native >=0.75.4, but for v9 migrations use the stricter v9 requirement.
+- Follow the official docs for the current React Native New Architecture support matrix. When migration docs are stricter than the general New Architecture guide, use the stricter requirement.
+- The bundled references assume the React Native **New Architecture**. Do not claim old-architecture support unless the docs for the selected package version explicitly say it is supported.
 - This skill is Chat-only in v1. Do not implement or document React Native Video, Feeds, or Moderation UI from memory.
 
 Use Stream `llms.txt` manifests as the docs authority. Start from [`references/DOCS.md`](references/DOCS.md), fetch the appropriate manifest, then fetch the selected markdown page before coding. Do not maintain or rely on hardcoded individual docs URLs. If a symbol must be verified in source, inspect the installed package in the target app's `node_modules` after install.
@@ -51,7 +51,7 @@ Before installing Stream Chat RN packages:
 
 1. Use [`references/DOCS.md`](references/DOCS.md) to fetch the primary manifest and the manifest-selected `Installation` markdown page.
 2. Run or consult `npm view stream-chat-react-native version dist-tags --json` and/or `npm view stream-chat-expo version dist-tags --json`.
-3. Install `@latest` when the latest major is v9. If `latest` is not v9, use the manifest-selected docs' v9 tag or version.
+3. Install `@latest` when the npm dist-tag matches the selected docs. If it does not, use the manifest-selected tag or exact version.
 
 Before changing an existing Chat UI, fetch the manifest-selected markdown page that matches the requested change. Choose the implementation path from the docs and the existing app: theme for style-only changes, component overrides for UI slots, documented props/hooks for behavior, and optional native packages only for requested native capabilities.
 
@@ -59,7 +59,7 @@ Before changing an existing Chat UI, fetch the manifest-selected markdown page t
 
 ## Required peer setup
 
-For Chat RN v9, required setup includes:
+For Chat RN, required setup includes:
 
 - `react-native-gesture-handler`
 - `react-native-reanimated`
@@ -72,7 +72,7 @@ For Chat RN v9, required setup includes:
 
 The Reanimated or Worklets Babel plugin must be the last Babel plugin. Wrap the app entry point in `GestureHandlerRootView`.
 
-`react-native-teleport` is required in v9 because `OverlayProvider` uses it for portal-hosted UI.
+`react-native-teleport` is required because `OverlayProvider` uses it for portal-hosted UI.
 
 Expo Chat apps in this skill use a dev-client/native-build lane by default because the SDK includes native code. Do not target Expo Go for `stream-chat-expo` setup.
 
@@ -119,7 +119,7 @@ Offline support is opt-in.
 - Install `@op-engineering/op-sqlite` only when requested.
 - Pass `enableOfflineSupport` to `Chat`.
 - Expo apps already use a dev-client/native-build lane. Expo Go is not a supported target for this skill.
-- Access to threads in offline mode is not implemented in the referenced v9 docs.
+- Access to threads in offline mode is not implemented in the referenced docs.
 - On sign-out, run `chatClient.offlineDb.resetDB()` before `disconnectUser()` to avoid cross-user data leaks.
 
 For offline-first boot, read the offline section in [`sdk.md`](sdk.md) before coding. The docs require starting `connectUser` before rendering Chat components but not blocking the UI on the promise.
@@ -132,7 +132,7 @@ Load only the React Native Chat files that match the request:
 
 - [`references/DOCS.md`](references/DOCS.md) for `llms.txt` manifests and docs lookup routing
 - [`sdk.md`](sdk.md) for shared RN/Expo, auth, provider, navigation, offline, and sign-out patterns
-- [`references/CHAT-REACT-NATIVE.md`](references/CHAT-REACT-NATIVE.md) for Chat v9 setup and gotchas
+- [`references/CHAT-REACT-NATIVE.md`](references/CHAT-REACT-NATIVE.md) for Chat setup and gotchas
 - [`references/CHAT-REACT-NATIVE-blueprints.md`](references/CHAT-REACT-NATIVE-blueprints.md) for concrete screen/component structure
 
 ### Blueprints are mandatory, on every turn

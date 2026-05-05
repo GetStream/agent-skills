@@ -2,7 +2,7 @@
   "name": "stream",
   "displayName": "Stream",
   "version": "0.1.0",
-  "description": "Build, query, and manage Stream Chat, Video, Feeds, Moderation, and React Native Chat. Scaffold full apps, add products to existing projects, create or wire Chat RN v9 in Expo/RN CLI apps, query live data, and configure moderation - all from your editor.",
+  "description": "Build, query, and manage Stream Chat, Video, Feeds, Moderation, Swift/iOS integrations, and React Native Chat. Scaffold full apps, add products to existing projects, create or wire Chat RN in Expo/RN CLI apps, query live data, and configure moderation - all from your editor.",
   "author": {
     "name": "GetStream"
   },
@@ -18,6 +18,9 @@
     "realtime",
     "messaging",
     "getstream",
+    "swift",
+    "swiftui",
+    "ios",
     "react-native",
     "expo",
     "stream-chat-react-native",

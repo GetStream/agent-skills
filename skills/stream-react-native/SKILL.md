@@ -1,8 +1,8 @@
 ---
 name: stream-react-native
-description: "Create, build, and integrate Stream Chat React Native v9 apps in React Native Community CLI and Expo. Use for new RN/Expo Chat apps from scratch, existing app integration, Stream Chat RN, stream-chat-react-native, stream-chat-expo, v9 migration/setup, channel list, message list, MessageComposer, attachment picker, image/file attachments, media picker, camera upload, audio messages, threads, thread list, React Navigation, Expo Router, theming, offline support, push notifications, and Chat customization. Chat only in v1; not for Stream Video, Feeds, or Moderation UI."
+description: "Create, build, and integrate Stream Chat React Native apps in React Native Community CLI and Expo. Use for new RN/Expo Chat apps from scratch, existing app integration, Stream Chat RN, stream-chat-react-native, stream-chat-expo, migration/setup, channel list, message list, MessageComposer, attachment picker, image/file attachments, media picker, camera upload, audio messages, threads, thread list, React Navigation, Expo Router, theming, offline support, push notifications, and Chat customization. Chat only in v1; not for Stream Video, Feeds, or Moderation UI."
 license: See LICENSE in repository root
-compatibility: Supports new or existing React Native CLI and Expo apps that can run Stream Chat RN v9 with React Native New Architecture. The `stream` CLI is the default credentials and requested demo-data path; pasted API key and token are accepted as fallback.
+compatibility: Supports new or existing React Native CLI and Expo apps that can run Stream Chat RN with React Native New Architecture. The `stream` CLI is the default credentials and requested demo-data path; pasted API key and token are accepted as fallback.
 metadata:
   author: GetStream
 allowed-tools: >-
@@ -27,7 +27,7 @@ allowed-tools: >-
 
 **Rules:** Read **[`RULES.md`](RULES.md)** once per session. Every non-negotiable React Native Chat rule is stated there.
 
-This file is the single entrypoint: intent classification, project detection, and module pointers for Stream Chat React Native v9 work.
+This file is the single entrypoint: intent classification, project detection, and module pointers for Stream Chat React Native work.
 
 ---
 
@@ -41,7 +41,7 @@ Before any tool call, decide the track from the user's input alone. Do not probe
 |---|---|
 | "Build/create/scaffold a new React Native app", "create an Expo app", "new Stream Chat RN app", empty directory + React Native/Expo Chat | **A - New app** |
 | "Add/integrate Stream Chat into this app", "wire Chat RN", "set up stream-chat-expo", "change/customize this Chat UI" | **B - Existing app** |
-| `React Native`, `Expo`, `Expo Router`, `stream-chat-react-native`, `stream-chat-expo`, `Stream Chat RN`, `Chat React Native`, `v9 migration` | **C - Reference lookup** if the user only asks how/docs; otherwise **B - Existing app** |
+| `React Native`, `Expo`, `Expo Router`, `stream-chat-react-native`, `stream-chat-expo`, `Stream Chat RN`, `Chat React Native`, migration | **C - Reference lookup** if the user only asks how/docs; otherwise **B - Existing app** |
 | Words "docs" or "documentation" around Stream Chat React Native / Expo work | **C - Reference lookup** |
 | "How do I {X} in React Native/Expo?", "What does {SDK component/hook/prop} do?" | **C - Reference lookup** |
 | "Install Stream packages", "set up Chat RN", "wire auth/token flow" with no broader feature request | **D - Bootstrap / setup** |
@@ -60,7 +60,7 @@ If the user wants a new app but did not name Expo or RN CLI, default to Expo bec
 
 This v1 skill bundles **Chat React Native only**. If the user asks for Stream Video, Feeds, or Moderation UI in React Native, say:
 
-> The React Native skill currently bundles Chat references only. I can help with Chat RN v9 here, or switch to live docs for Video/Feeds.
+> The React Native skill currently bundles Chat references only. I can help with Chat RN here, or switch to live docs for Video/Feeds.
 
 Do not invent missing React Native Video or Feeds API details from memory.
 
@@ -146,7 +146,7 @@ If the requested product file is not bundled yet, say so plainly and only switch
 | **A1** | Detect | Run Project signals. Empty workspace is valid for Track A. |
 | **A2** | Choose lane | Default to Expo if unspecified; use RN CLI when requested. |
 | **A3** | Scaffold | Create the app with current framework tooling; do not explain full RN/Expo environment setup. |
-| **A4** | Install + wire | Use the primary `llms.txt` manifest to read Installation docs, verify npm dist-tags, install latest v9 package and peers, then wire providers and first Chat UI. |
+| **A4** | Install + wire | Use the primary `llms.txt` manifest to read Installation docs, verify npm dist-tags, install the selected package and peers, then wire providers and first Chat UI. |
 | **A5** | Verify | Confirm install, Babel plugin, root providers, auth, and first rendered Chat screen. |
 
 ---
@@ -170,7 +170,7 @@ Load only the relevant files:
 
 - `llms.txt` manifest lookup rules -> [`references/DOCS.md`](references/DOCS.md)
 - Shared lifecycle / auth / provider / runtime patterns -> [`sdk.md`](sdk.md)
-- Chat RN v9 setup and gotchas -> [`references/CHAT-REACT-NATIVE.md`](references/CHAT-REACT-NATIVE.md)
+- Chat RN setup and gotchas -> [`references/CHAT-REACT-NATIVE.md`](references/CHAT-REACT-NATIVE.md)
 - Chat RN screen/component structure -> [`references/CHAT-REACT-NATIVE-blueprints.md`](references/CHAT-REACT-NATIVE-blueprints.md)
 
 If the user asks for exact API details not bundled here, use [`references/DOCS.md`](references/DOCS.md) to fetch the right manifest and selected markdown page. If implementation still needs source-level confirmation, inspect the installed package under the target app's `node_modules` after dependencies are installed. Do not use machine-specific documentation paths.
