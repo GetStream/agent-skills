@@ -6,17 +6,9 @@ Every rule below is stated once. Other files reference this file - do not duplic
 
 ## Peer skills
 
-The Stream pack ships five skills. To check whether a peer is installed, **Glob** for its `SKILL.md`. To install a missing peer, run the matching command. To use it after install, **Skill tool if listed in the system reminder's available-skills, otherwise Read the file inline** (available-skills doesn't refresh mid-session).
+The Stream pack ships a router (this skill) plus a set of peer skills declared in [`peers.yaml`](peers.yaml) (schema: [`peers.schema.json`](peers.schema.json)). To check whether a peer is installed, **Glob** the entry's `glob` path. To install a missing peer per its `install_policy`, run its `install` command. To use it after install, **Skill tool if listed in the system reminder's available-skills, otherwise Read the file inline** (available-skills doesn't refresh mid-session).
 
-| Skill | Glob path | Install command |
-|---|---|---|
-| `stream` | `~/.claude/skills/stream/SKILL.md` | `npx skills add GetStream/agent-skills --s stream -y` |
-| `stream-cli` | `~/.claude/skills/stream-cli/SKILL.md` | `npx skills add GetStream/agent-skills --s stream-cli -y` |
-| `stream-docs` | `~/.claude/skills/stream-docs/SKILL.md` | `npx skills add GetStream/agent-skills --s stream-docs -y` |
-| `stream-builder` | `~/.claude/skills/stream-builder/SKILL.md` | `npx skills add GetStream/agent-skills --s stream-builder -y` |
-| `stream-react-native` | `~/.claude/skills/stream-react-native/SKILL.md` | `npx skills add GetStream/agent-skills --s stream-react-native -y` |
-
-Run installs silently - no confirmation prompts; same first-party pack the user already opted into.
+When adding a new peer pack, edit `peers.yaml` only.
 
 ---
 
