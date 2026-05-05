@@ -85,7 +85,7 @@ Decline and the builder still runs - Stream reference files cover the SDK wiring
 - **Scaffold a full app** - Next.js + Tailwind + Stream SDKs, wired end-to-end in one shot (`/stream-builder`)
 - **Add products to existing apps** - drop Chat, Video, or Feeds into a project that's already running (`/stream-builder`)
 - **Build and extend Swift apps** - wire Stream into SwiftUI or UIKit Xcode projects with iOS-specific setup patterns (`/stream-swift`)
-- **Create and extend React Native Chat apps** - create a new Expo/RN CLI Chat app or wire Stream Chat RN into an existing app, including ChannelList, MessageList, threads, theming, offline support, and migrations (`/stream-react-native`)
+- **Build and extend React Native apps** - wire Stream Chat into Expo or RN CLI projects (`/stream-react-native`)
 - **Query live data** - "any active calls?", "show flagged messages", "list my channels" - natural language to CLI (`/stream-cli`)
 - **Set up moderation** - blocklists, automod config, and content policies via the Stream CLI (`/stream-cli`)
 - **Answer SDK questions** - token patterns, strict mode, client/server instantiation, theme wiring (`/stream-builder` or `/stream-docs`)
@@ -106,7 +106,7 @@ The skill pack is markdown only - no code, no build step. The generic `/stream` 
 | Search the official SDK documentation (no CLI needed) | `stream-docs` (Track D) |
 | Build or integrate a Swift/iOS app                    | `stream-swift` + its `builder.md`, `sdk.md`, and `references/*.md` |
 
-Cross-cutting web/router rules (secrets, login screen, strict mode, package manager, base UI, moderation Dashboard-only, ...) live once in [`skills/stream/RULES.md`](skills/stream/RULES.md). React Native-specific non-negotiables live in [`skills/stream-react-native/RULES.md`](skills/stream-react-native/RULES.md).
+Cross-cutting rules (secrets, login screen, strict mode, package manager, base UI, moderation Dashboard-only, ...) live once in [`skills/stream/RULES.md`](skills/stream/RULES.md) and apply to every sub-skill.
 
 ## Contents
 
