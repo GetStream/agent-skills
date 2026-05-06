@@ -45,8 +45,6 @@ When you need the current artifact version, follow [`RULES.md`](RULES.md) → *V
 
 After editing, sync Gradle (Android Studio "Sync Now" or `./gradlew help`) and confirm the dependency resolves before continuing.
 
-Make sure `<uses-permission android:name="android.permission.INTERNET" />` is in the app's `AndroidManifest.xml`.
-
 Install only the artifacts needed for the requested Stream products.
 
 ---
@@ -101,7 +99,6 @@ Check the smallest set of outcomes that proves the integration works:
 - `ChatClient`, `StreamVideo`, and/or `FeedsClient` are initialized from `Application.onCreate()` (or an owned DI binding) before any Stream Composable renders
 - the app does not call `ChatClient.instance()` / `StreamVideo.instance()` before the corresponding builder has run; for Feeds, `FeedsClient` is owned (no global singleton) — never reach for an `instance()` shape
 - for Feeds: `feedsClient.connect()` has been awaited before any `feed.getOrCreate()` / `addActivity(...)` call
-- the `INTERNET` permission is declared in the manifest
 - for Video: `CAMERA` and `RECORD_AUDIO` are requested at runtime before the first `call.join(...)` (via `LaunchCallPermissions(call)` or `rememberCallPermissionsState(call)`)
 - the requested login, channel list, channel, call, or feed surface appears where expected
 - switching users does not leave a previous WebSocket connection or persisted state behind: Chat `disconnect()` completes before the next `connectUser`; Video `StreamVideo.instance().logOut()` and `StreamVideo.removeClient()` complete before the next `StreamVideoBuilder(...).build()`; Feeds `client.disconnect()` completes before constructing a fresh `FeedsClient` for the next user

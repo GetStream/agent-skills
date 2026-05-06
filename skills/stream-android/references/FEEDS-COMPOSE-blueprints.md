@@ -6,9 +6,7 @@ Per [`RULES.md`](../RULES.md) → *Blueprints are mandatory, on every turn*: any
 
 > **Stream Feeds has no pre-built UI components.** Every screen here is custom Compose driven by `FeedState` / `ActivityState` `StateFlow`s. There is no drop-in `FeedScreen` and no Stream-supplied theme — render against your project's existing Compose theme (typically `MaterialTheme`).
 
-> **Imports.** Each code block lists only `io.getstream.*` imports. Standard Compose, Material3, Lifecycle, coroutines, and platform imports are omitted — add them as needed.
-
-> **DI shape.** ViewModels in this file use the non-DI `companion object factory(client: FeedsClient)` + `viewModelFactory { initializer { … } }` pattern, obtained via `viewModel(factory = …)`. **In a Hilt project, drop the factory** and replace with `@HiltViewModel class TimelineViewModel @Inject constructor(client: FeedsClient) : ViewModel()`, then `hiltViewModel()` at the call site. Provide `FeedsSessionManager` as `@Singleton`. To inject `FeedsClient` into screen ViewModels, use an `@AssistedInject` + `@AssistedFactory` pattern keyed on the connected client, or call `sessionManager.session.value.let { (it as? FeedsSession.Connected)?.client ?: error("not connected") }` from inside the ViewModel — child VMs are only constructed from the `Connected` branch, so the assertion holds. **In Koin**, `single { FeedsSessionManager(androidContext(), getProperty("streamApiKey")) }` and `viewModel { TimelineViewModel(get()) }`. The `App.sessionManager` field shown in the Session Manager Blueprint is sample-only — production code should use a real DI container so ViewModels stay testable.
+> **DI shape.** `FeedsClient` is not in the DI graph — it only exists after `connect()` succeeds, so `@Inject FeedsClient` has nothing to bind to. Inject `FeedsSessionManager` as a singleton (Hilt `@Singleton`, Koin `single`); for child VMs that need the `FeedsClient`, pass it from the `is FeedsSession.Connected` branch via this file's `companion object factory(client)` pattern, Hilt `@AssistedInject` keyed on `client`, or Koin `parametersOf(client)`. See the [Root Navigation Blueprint](#root-navigation-blueprint) for the call-site code.
 
 ---
 
@@ -143,14 +141,12 @@ Register the application class in `AndroidManifest.xml`:
     android:label="@string/app_name">
     <!-- activities ... -->
 </application>
-
-<uses-permission android:name="android.permission.INTERNET" />
 ```
 
 For an expiring (backend-issued) token, replace the static `StreamToken.fromString(token)` inside `buildClient(...)` with a `StreamTokenProvider` that calls your auth service in `loadToken(userId)`. The SDK re-invokes `loadToken` on expiry — see [FEEDS-COMPOSE.md → User Authentication](FEEDS-COMPOSE.md#user-authentication).
 
 **Wiring:**
-- The manager is the *only* writer of `_session`. ViewModels never set state directly — they call `manager.connect(...)` / `manager.disconnect()` and observe `manager.session`. This keeps lifecycle policy (double-tap protection, ordering of `disconnect()` vs state flip) in one place.
+- The manager is the *only* writer of `_session`. ViewModels never set state directly — they call `manager.connect(...)` / `manager.disconnect()` and observe `manager.session`.
 - `manager.session` starts `Disconnected`. Composables observe via `collectAsStateWithLifecycle()` and `when`-switch on the variant; the `Connected` branch destructures `client` from the state, so there is no nullable-client path to handle.
 - Login transitions: `Disconnected` → `Connecting` → `Connected(client)` on success or `Failed(message)` on error.
 - Logout: the manager `disconnect()`s the current client and flips state to `Disconnected` in a single launch on its own scope, so the operation completes even if the calling screen is gone.
@@ -620,7 +616,6 @@ fun ActivityComposerSheet(
 - The composer takes both feed ids; the story toggle picks which feed receives the activity *and* whether `expiresAt` is set. Keeping stories in a separate group means no `expiresAt` filter is needed in the timeline.
 - The Composable owns only transient UI state (`text`, `postAsStory`) via `rememberSaveable` so rotation preserves typed input. All operation state (`Posting`/`Done`/`Error`) lives on the ViewModel.
 - For attachments, see [FEEDS-COMPOSE.md → Create with attachments](FEEDS-COMPOSE.md#create-with-attachments). The picker + URI-copy work belongs in `ComposerViewModel.post(...)` too — the cacheDir cleanup `try { … } finally { files.forEach { it.delete() } }` shown there must run in `viewModelScope` for the same reason.
-- `kotlin.time.Clock` was stabilized in Kotlin 2.1; on older toolchains either keep the `@OptIn(ExperimentalTime::class)` annotation or fall back to `java.time.Instant.now().plusSeconds(86_400).toString()` (or `kotlinx-datetime`).
 
 ---
 

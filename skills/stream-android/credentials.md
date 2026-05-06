@@ -4,7 +4,7 @@ Run this **once per session** for tracks A, B, and D, right after intent classif
 
 ## Goal
 
-Collect the Stream **API key**, a **user token**, and optionally seed a few channels — all before touching code — so the app has real data to show from the first run.
+Collect the Stream **API key**, a **user token**, and any product-specific setup (Chat: optionally seed channels; Feeds: confirm feed groups; Video: nothing extra — calls are ephemeral) — all before touching code — so the app has something real to show from the first run.
 
 This skill uses the **`stream`** CLI (binary name `stream`, installed from `https://getstream.io/cli/install.sh`). It is the same binary used by [`skills/stream`](../stream/SKILL.md). Do **not** confuse it with the `stream-cli` binary from `GetStream/stream-cli` on GitHub — the command surface is different.
 
@@ -58,8 +58,6 @@ If `stream` does not resolve, install it after explicit user approval:
 ```bash
 /bin/bash -c "$(curl -fsSL https://getstream.io/cli/install.sh)"
 ```
-
-For a deeper description of what `install.sh` does (per-step breakdown, checksum verification, audit recipe), see [`skills/stream/bootstrap.md`](../stream/bootstrap.md). Do not proceed until `command -v stream` resolves.
 
 Once installed, verify the user is authenticated with a cheap probe:
 
@@ -151,7 +149,3 @@ After all CLI steps succeed, return to [`SKILL.md`](SKILL.md) → **Project sign
 - Never invent or fabricate credentials.
 - Never ask "should I continue?" between Step A, B, C, and D — execute the whole sequence once the user's upfront answers are in.
 - Never use `stream-cli` (the public Go CLI from `GetStream/stream-cli`) commands here — that is a different binary with a different command surface (`stream-cli chat get-app`, `stream-cli chat create-token`, etc.). This skill targets the `stream` binary only.
-- Never run `CreateChannel` — the correct endpoint is `GetOrCreateChannel`. Same for users (`UpdateUsers`, not `CreateUser`) and calls (`GetOrCreateCall`, not `CreateCall`).
-- Never assume `created_by_id` adds the creator to the channel's members — it only records who created the channel. Membership must be set explicitly via `data.members`.
-- Never pass bare user-id strings as members (`["alice","bob"]`). The correct shape is `[{"user_id":"alice"},{"user_id":"bob"}]` — both for `data.members` on creation and `add_members` on `UpdateChannel`.
-- Never put `members` at the top level of the `GetOrCreateChannel` body — that field is a pagination shape (`PaginationParams`) for the read response, not a membership setter. Channel members go inside `data.members`.

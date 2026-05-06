@@ -6,7 +6,7 @@ Rules: [../RULES.md](../RULES.md) (secrets, no dev tokens in production, proper 
 
 - **Blueprint** - Compose screen structure and initialization
 - **Wiring** - SDK calls for each component, exact property paths
-- **Requirements** - `INTERNET` permission in `AndroidManifest.xml`, `minSdk` 21+, Kotlin + Jetpack Compose enabled in the app module.
+- **Requirements** - `minSdk` 21+, Kotlin + Jetpack Compose enabled in the app module.
 
 ## Quick ref
 
@@ -55,15 +55,9 @@ dependencies {
 
 If you don't know the latest version, ask the user to check the [installation guide](https://getstream.io/chat/docs/sdk/android/basics/getting-started/).
 
-Add the `INTERNET` permission to `AndroidManifest.xml`:
-
-```xml
-<uses-permission android:name="android.permission.INTERNET" />
-```
-
 ### Client Initialization
 
-Initialize once in your `Application` class. **Never** create `ChatClient` in a `@Composable` body, a `remember { ... }` factory, or an `Activity.onCreate` that re-runs - the Builder registers a singleton, so the second build will fail or replace the first.
+Initialize once in your `Application` class. **Never** create `ChatClient` in a `@Composable` body, a `remember { ... }` factory, or an `Activity.onCreate` that re-runs - the Builder registers a singleton.
 
 ```kotlin
 import android.app.Application
@@ -98,7 +92,7 @@ After build time, retrieve the client anywhere via `ChatClient.instance()`. The 
 
 **Default - hardcoded token (no expiry):**
 
-Ask the user for their Stream token from the [Stream Dashboard](https://dashboard.getstream.io) (User Explorer -> generate token):
+Ask the user for their Stream token:
 
 ```kotlin
 import io.getstream.chat.android.client.ChatClient
@@ -121,7 +115,7 @@ ChatClient.instance()
     }
 ```
 
-**Token provider (expiring tokens - use only if the user asks for it):**
+**Token provider (expiring tokens):**
 
 Use this when the user has a backend endpoint that issues Stream JWTs. The provider is called automatically by the SDK when the token expires:
 
@@ -223,7 +217,7 @@ class ChannelsActivity : ComponentActivity() {
 
 **Create Stream ViewModels via `viewModels { factory }` - never inside Composables.**
 
-The Compose SDK ships two factories:
+The Compose SDK ships some factories, like:
 
 - `ChannelListViewModelFactory` -> `ChannelListViewModel`
 - `ChannelViewModelFactory` -> `MessageListViewModel`, `MessageComposerViewModel`, `AttachmentsPickerViewModel`
@@ -442,9 +436,9 @@ fun MyChatTheme(content: @Composable () -> Unit) {
 }
 ```
 
-> **Never guess `StreamDesign.Colors` token names.** The palette is built around two scales (`brand`, `chrome`) plus semantic tokens with the prefixes `accent*`, `text*`, `backgroundCore*`, `borderCore*`, `borderUtility*`, `avatarPalette*`. If a token isn't in the table below, fetch the source (`StreamDesign.kt`) before using it - guessing names like `primaryAccent` or `textHighEmphasis` will not compile.
+> **Never guess `StreamDesign.Colors` token names as your training data might be stale.** The palette is built around two scales (`brand`, `chrome`) plus semantic tokens with the prefixes `accent*`, `text*`, `backgroundCore*`, `borderCore*`, `borderUtility*`, `avatarPalette*`.
 
-**Confirmed `StreamDesign.Colors` tokens (commonly used):**
+**Commonly used `StreamDesign.Colors` tokens:**
 
 | Token | What it controls |
 |---|---|
@@ -506,23 +500,6 @@ ChatTheme(messageTextFormatter = formatter) { /* content */ }
 
 `MessageTextFormatter.composite(default, custom)` lets you layer formatters; `MessageTextFormatter.defaultFormatter(...)` rebuilds the SDK default with extra spans.
 
-### Custom attachment factories
-
-Attachment rendering goes through `AttachmentFactory` instances on `ChatTheme(attachmentFactories = ...)`. Build a list that combines defaults with your own:
-
-```kotlin
-import io.getstream.chat.android.compose.ui.attachments.StreamAttachmentFactories
-import io.getstream.chat.android.compose.ui.attachments.AttachmentFactory
-
-val factories = listOf(
-    myCustomFactory,                // matched first
-) + StreamAttachmentFactories.defaultFactories()
-
-ChatTheme(attachmentFactories = factories) { /* content */ }
-```
-
-For a step-by-step custom-attachment guide, see [getstream.io/chat/docs/sdk/android/compose/guides/adding-custom-attachments/](https://getstream.io/chat/docs/sdk/android/compose/guides/adding-custom-attachments/).
-
 ### Component factory customization
 
 Bound components do **not** expose `itemContent` / `emptyContent` / `loadingContent` / `trailingContent` slot lambdas. Sub-piece customization (channel item rows, list headers, empty/loading states, message item parts, the input row, etc.) goes through **`ChatComponentFactory`**, an interface with one `@Composable` method per overridable piece.
@@ -561,22 +538,11 @@ Common factory entry points (look up the `Params` types in `ChatComponentFactory
 | `MessageListEmptyContent(...)` | Empty-state of a channel |
 | `MessageComposer(...)` / `MessageComposerInput(...)` | Composer surface and input row |
 
-> **Never guess factory method or `Params` field names from training data.** They evolve between SDK versions - verify against `ChatComponentFactory.kt` (or the [component-architecture docs](https://getstream.io/chat/docs/sdk/android/compose/component-architecture/)) before overriding.
-
-`ChannelsScreen` itself accepts a few high-level parameters that *are* available without a factory: `viewModelFactory`, `title`, `isShowingHeader`, `searchMode = SearchMode.{None,Channels,Messages}`, `onChannelClick`, `onSearchMessageItemClick`, `onHeaderAvatarClick`, `onBackPressed`. Use those for screen-level wiring and reach for `ChatComponentFactory` only when you need to replace a sub-piece.
-
 ---
 
 ## Gotchas
 
-- **Never use `ChatClient.devToken(userId)` in production.** Dev tokens disable token verification and let any client impersonate any user.
-- **Never store your Stream API secret in the app.** Secrets on-device can be extracted from rooted devices and enable destructive actions on your app instance.
 - **Always wait for `disconnect()` completion before connecting another user.** The SDK uses Room for offline persistence and runs optimistic updates; connecting a new user while disconnect is in flight risks state corruption.
-- **`ChatClient.Builder(...).build()` registers a singleton.** Calling it twice replaces the previous instance and orphans existing socket subscriptions. Build once in `Application.onCreate()`.
-- **`ChatClient.instance()` throws if the Builder has not run yet.** Make sure your `Application` class is declared in the manifest (`<application android:name=".App" ... />`) and that `Application.onCreate()` has completed before any Stream Composable renders.
-- **`INTERNET` permission is required.** Without it, every Stream API call fails silently or with cryptic socket errors.
+- **Build `ChatClient` once in `Application.onCreate()`, before any Stream Composable renders.** `ChatClient.Builder(...).build()` registers a singleton (a second build orphans existing socket subscriptions); `ChatClient.instance()` throws until that first build completes.
 - **Never instantiate Stream ViewModels inside Composables.** Use `viewModels { factory }` or `hiltViewModel()`. A `remember { factory.create(...) }` recreates state across configuration changes.
-- **`ChannelListViewModelFactory(filters = null)` uses the default query** (`members in [currentUserId]`). Pass an explicit `Filters` expression only when you need a custom slice.
-- **Drop-in screens already include their own `Scaffold` and back-handling.** Don't wrap `ChannelsScreen` / `ChannelScreen` in another `Scaffold`; pass the navigation callback (`onBackPressed`, `onChannelClick`) to integrate with your `NavHost`.
 - **`TokenProvider.loadToken()` is synchronous.** Block on your backend call inside it; the SDK runs the provider off the main thread and re-invokes it on expiry.
-- **State-layer extensions (`watchChannelAsState`, `queryChannelsAsState`) live under `io.getstream.chat.android.client.api.state`** and ship in `stream-chat-android-client` directly. You do not need a separate plugin to call them; the Compose artifact already brings the client in transitively.

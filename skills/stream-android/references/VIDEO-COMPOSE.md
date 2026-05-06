@@ -6,7 +6,7 @@ Rules: [../RULES.md](../RULES.md) (secrets, no fake credentials, client lifetime
 
 - **Blueprint** - Compose call-screen structure and initialization
 - **Wiring** - SDK calls for each component, exact property paths
-- **Requirements** - `INTERNET` in app manifest (CAMERA / RECORD_AUDIO / BLUETOOTH_CONNECT are merged in from the SDK manifest), runtime permission grant before joining a call, `minSdk` 24+, Kotlin + Jetpack Compose enabled in the app module.
+- **Requirements** - mandatory permissions are merged in from the SDK manifest, runtime permission grant before joining a call, `minSdk` 24+, Kotlin + Jetpack Compose enabled in the app module.
 
 ## Quick ref
 
@@ -54,13 +54,7 @@ dependencies {
 
 If you don't know the latest version, look it up via the sources listed in [`RULES.md` -> Version lookup](../RULES.md#version-lookup) (Maven Central / GitHub releases). Never use `search.maven.org`.
 
-Add the `INTERNET` permission to `AndroidManifest.xml`:
-
-```xml
-<uses-permission android:name="android.permission.INTERNET" />
-```
-
-`CAMERA`, `RECORD_AUDIO`, `BLUETOOTH_CONNECT`, `MODIFY_AUDIO_SETTINGS`, and `FOREGROUND_SERVICE` are declared in the SDK's library manifest and merged automatically — you do **not** need to add them again. You **do** need to request `CAMERA` / `RECORD_AUDIO` at runtime before joining a call (see [Permissions](#permissions)).
+Mandatory permissions are declared in the SDK's library manifest and merged automatically — you do **not** need to add them to your app manifest. You **do** need to request `CAMERA` / `RECORD_AUDIO` at runtime before joining a call (see [Permissions](#permissions)).
 
 ### Client Initialization
 
@@ -105,7 +99,7 @@ Register the `Application` subclass in `AndroidManifest.xml`:
 
 After build time, retrieve the client anywhere via `StreamVideo.instance()` (throws if the builder has not run) or `StreamVideo.instanceOrNull()` (returns `null`). The builder registers the singleton automatically — do **not** store your own copy as a top-level `lateinit var`.
 
-> If the user already initializes Stream Chat in the same `Application.onCreate()`, build both clients in the same method. They are independent singletons; see [Combined Chat + Video](#combined-chat--video).
+> If the user already initializes Stream Chat in the same `Application.onCreate()`, build both clients in the same method. They are independent singletons.
 
 ---
 
@@ -136,7 +130,7 @@ Token generation: `stream token <user_id>` (same CLI as Chat — see [`credentia
 
 ### Token provider (expiring tokens)
 
-`TokenProvider` has a single `suspend` method. The SDK invokes it on a background dispatcher and re-invokes it automatically when the token expires:
+`TokenProvider` has a single `suspend` method. The SDK invokes it automatically when the token expires:
 
 ```kotlin
 import io.getstream.video.android.core.TokenProvider
@@ -382,7 +376,7 @@ fun JoinScreen(call: Call) {
 
 ```kotlin
 import io.getstream.video.android.compose.theme.VideoTheme
-import io.getstream.video.android.compose.theme.base.StreamColors
+import io.getstream.video.android.compose.theme.StreamColors
 
 @Composable
 fun BrandVideoTheme(content: @Composable () -> Unit) {
@@ -397,8 +391,6 @@ fun BrandVideoTheme(content: @Composable () -> Unit) {
     )
 }
 ```
-
-> **Never guess `StreamColors` token names from training data.** Inspect `stream-video-android-ui-compose/.../theme/base/StreamColors.kt` (or the [theming docs](https://getstream.io/video/docs/android/ui-cookbook/replacing-the-theme/)) before overriding individual fields. Tokens evolve across versions.
 
 Read tokens at the call site via `VideoTheme.colors.<token>`, `VideoTheme.dimens.<token>`, etc.
 
@@ -473,7 +465,6 @@ A failed WebSocket connection prevents calls from being established.
 - **Expired token** — verify at [jwt.io](https://jwt.io). When using expiring tokens always supply a `tokenProvider` so the SDK can refresh automatically.
 - **Wrong secret** — tokens must be signed with this app's secret. Tokens copied from docs use a demo secret and will be rejected.
 - **User-token mismatch** — the token must be signed for the same user id passed to `StreamVideoBuilder(user = ...)`.
-- **Missing `INTERNET` permission** — the app manifest must declare it explicitly even though the SDK manifest declares it too (manifest merger keeps both, but if your app removes the SDK's via `tools:node="remove"` the call silently fails).
 
 ### Ringing call issues
 
@@ -497,15 +488,10 @@ Levels: `Priority.VERBOSE`, `DEBUG`, `INFO`, `WARN`, `ERROR`, `ASSERT`, `NONE`. 
 
 ## Gotchas
 
-- **`StreamVideoBuilder(...).build()` registers a singleton.** Calling it twice without `StreamVideo.removeClient()` leaks the previous instance. Build once in `Application.onCreate()`.
-- **`StreamVideo.instance()` throws if the builder has not run yet.** Make sure your `Application` class is declared in the manifest (`<application android:name=".App" ... />`) before any Stream Composable renders. Use `StreamVideo.instanceOrNull()` for code paths that may run pre-init.
+- **Build `StreamVideo` once in `Application.onCreate()`, before any Stream Composable renders.** `StreamVideoBuilder(...).build()` registers a singleton (a second build without `StreamVideo.removeClient()` leaks the previous instance); `StreamVideo.instance()` throws until that first build completes — use `instanceOrNull()` for code paths that may run pre-init.
 - **Never instantiate the client in a `@Composable` body or `remember { ... }`.** It survives recompositions; recreating it tears down the WebSocket and orphans the active call.
 - **Every Stream Composable needs a hosting `VideoTheme { ... }`.** Calling `CallContent`, `RingingCallContent`, etc. outside a `VideoTheme` throws "No colors provided!" at runtime.
 - **All call lifecycle methods (`create`, `join`, `accept`, `reject`, `end`, `ring`) are `suspend` and return `Result<T>`.** Call them from a coroutine scope you own; never from a `@Composable` body. Handle `Result.Failure` — silently swallowing it leaves the UI stuck mid-state.
 - **`call.leave()` is synchronous; the rest are not.** `leave()` is the right way to exit the local session — kicking off `end()` on the host side ends the call for everyone.
 - **Use `sessionId` as the list key for participants, not `userId`.** The same user may join twice (multi-device); `sessionId` is unique per session.
 - **Do not request `CAMERA` / `RECORD_AUDIO` lazily inside the call screen.** Use `LaunchCallPermissions(call)` (or `rememberCallPermissionsState`) before `call.join(...)` runs — joining without granted permissions starts the call but with disabled tracks.
-- **The API key is shared between Chat and Video.** One Stream project, one API key and one secret — token generation is identical for both products.
-- **Chat + Video coexist cleanly on Android.** The two SDKs use different package names — `io.getstream.chat.android.models.User` vs `io.getstream.video.android.model.User`, separate theming, separate DI primitives — so they don't collide. Build both in the same `Application.onCreate()` with the same API key and token; no file-isolation pattern needed (unlike iOS).
-- **Never use dev / unsigned tokens in production.** They disable token verification and let any client impersonate any user.
-- **The SDK manifest already declares `CAMERA`, `RECORD_AUDIO`, `BLUETOOTH_CONNECT`, `MODIFY_AUDIO_SETTINGS`, `FOREGROUND_SERVICE`, etc.** Do not duplicate them in the app manifest unless you want to add extra `android:maxSdkVersion` or `tools:node` overrides.

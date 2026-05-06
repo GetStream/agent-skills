@@ -71,18 +71,15 @@ Register it in `AndroidManifest.xml`:
 ```xml
 <application
     android:name=".App"
-    android:label="@string/app_name"
-    android:theme="@style/Theme.StreamVideo">
+    android:label="@string/app_name">
     <!-- activities ... -->
 </application>
-
-<uses-permission android:name="android.permission.INTERNET" />
 ```
 
 **Wiring:**
 - `Application.onCreate()` runs before any Activity, so `StreamVideo.instance()` is safe to call from any Composable lifecycle.
 - `CAMERA`, `RECORD_AUDIO`, `BLUETOOTH_CONNECT`, `MODIFY_AUDIO_SETTINGS`, and `FOREGROUND_SERVICE` are merged in from the SDK manifest — do not redeclare them.
-- For combined Chat + Video apps, build both clients here in the same `onCreate` (see [Combined Chat + Video Blueprint](#combined-chat--video-blueprint)).
+- For combined Chat + Video apps, build both clients here in the same `onCreate`.
 
 ---
 

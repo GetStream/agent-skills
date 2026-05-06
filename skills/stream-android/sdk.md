@@ -76,7 +76,7 @@ Preserve the project's concurrency style. If the app already uses coroutines + `
 
 ## Combined Chat + Video apps
 
-The Android Chat and Video modules don't collide at the type level (unlike iOS — `User`, theming, and DI primitives live under different package names). Build both clients in `Application.onCreate()` with the same API key and JWT token. See [`references/VIDEO-COMPOSE.md`](references/VIDEO-COMPOSE.md) → *Gotchas* (the "Chat + Video coexist" bullet) for the package-path detail.
+The Android Chat and Video modules don't collide at the type level (`User`, theming, and DI primitives live under different package names). Build both clients in `Application.onCreate()` with the same API key and JWT token.
 
 ---
 
@@ -84,9 +84,8 @@ The Android Chat and Video modules don't collide at the type level (unlike iOS �
 
 Before calling the work done, confirm:
 
-- the right Stream artifact is added to the right module's `build.gradle.kts` (e.g. `:app`, not `:core`)
+- the right Stream artifact is added to the right module's `build.gradle.kts`
 - each Stream client is built before any Stream UI renders
-- `INTERNET` permission is present in `AndroidManifest.xml`
 - for Video, `CAMERA` / `RECORD_AUDIO` are requested at runtime before the first `call.join(...)`
 - the requested user can connect without leaking the API secret
 - the edited flow works within the existing navigation structure (Compose `NavHost`, Navigation Component, or Fragment back stack)

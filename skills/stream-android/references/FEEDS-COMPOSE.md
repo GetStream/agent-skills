@@ -8,8 +8,6 @@ Rules: [../RULES.md](../RULES.md) (secrets, no fake credentials, client lifetime
 - **Wiring** — SDK calls per feature with exact property paths
 - **No pre-built UI** — every screen is custom; the SDK owns the data layer only
 
-> Stream Feeds V3 is in closed alpha at the time of writing — the public artifact metadata may surface SNAPSHOT or alpha versions on Maven Central / GitHub. Always look up the current coordinate before adding it to a project (see [`RULES.md` → Version lookup](../RULES.md#version-lookup)).
-
 ## Quick ref
 
 - **Artifact:** `io.getstream:stream-feeds-android-client` via Maven Central
@@ -55,17 +53,17 @@ dependencies {
 
 For the current version, follow [`RULES.md` → Version lookup](../RULES.md#version-lookup) (Maven Central / GitHub releases — never `search.maven.org`).
 
-Add the `INTERNET` permission to `AndroidManifest.xml`:
+**Compose deps the blueprints rely on.** The default Android Studio "Empty Compose Activity" template ships Material3, the Compose BOM, and `lifecycle-runtime-ktx`, but **not** the three below. The blueprints in [`FEEDS-COMPOSE-blueprints.md`](FEEDS-COMPOSE-blueprints.md) won't compile without them:
 
-```xml
-<uses-permission android:name="android.permission.INTERNET" />
-```
+- `androidx.lifecycle:lifecycle-runtime-compose`
+- `androidx.lifecycle:lifecycle-viewmodel-compose`
+- `androidx.compose.material:material-icons-extended`
+
+Add them to the app module — via the version catalog if one is in use, otherwise inline in `app/build.gradle.kts`.
 
 ### Client Initialization
 
-> **`FeedsClient` is bound to one user for its lifetime.** `FeedsClient(...)` is a top-level factory function (not a class constructor) that returns a `FeedsClient` interface implementation; the `User` and `tokenProvider` you pass in are fixed and cannot be swapped afterwards — there is no method to change the signed-in user on an existing client. To operate as a different user, `disconnect()` the current client and call `FeedsClient(...)` again with the new `User`. *You* own the reference; the SDK does not register a global accessor.
->
-> **`User` (input) vs `UserData` (output) — different field names for avatars.** When constructing the connection user the field is `imageURL`: `User(id = "alice", name = "Alice", imageURL = "https://…/alice.png")`. When reading from server-returned data (e.g. `activity.user`, which is `UserData`) the field is `image`: `AsyncImage(model = activity.user.image, …)`. Don't mix them up.
+> **`FeedsClient` is bound to one user for its lifetime.** `FeedsClient(...)` is a top-level factory function that returns a `FeedsClient` interface implementation; the `User` and `tokenProvider` you pass in are fixed and cannot be swapped afterwards. To operate as a different user, `disconnect()` the current client and call `FeedsClient(...)` again with the new `User`. *You* own the reference; the SDK does not register a global accessor.
 
 Because of this, construction happens at login. Model the lifecycle as a sealed `FeedsSession` so the `Connected` variant carries the client. A singleton **`FeedsSessionManager`** owns the state, the long-lived coroutine scope, *and* the connect/disconnect logic — ViewModels are thin translators that call `manager.connect(...)` / `manager.disconnect()` and observe `manager.session`. Provide the manager via `@Singleton` (Hilt) / `single { ... }` (Koin), or own it from `Application` for non-DI samples.
 
@@ -210,7 +208,7 @@ sessionManager.disconnect()                  // tears down current client, flips
 sessionManager.connect(nextUser, nextToken)  // builds a fresh FeedsClient and connects
 ```
 
-Both calls are non-suspending (they enqueue onto the manager's internal scope). The manager guarantees ordering — `disconnect()` awaits the in-flight `client.disconnect()` before flipping to `Disconnected`, and a subsequent `connect(...)` is gated on the state being `Disconnected`/`Failed`. UI observes `manager.session` and re-renders on each transition; no manual state writes from the call site.
+Both calls are non-suspending (they enqueue onto the manager's internal scope).  UI observes `manager.session` and re-renders on each transition; no manual state writes from the call site.
 
 If you need to chain the two synchronously (e.g. wait for disconnect to complete before connecting), expose a `suspend fun switchUser(user, token)` on the manager rather than coordinating from the call site.
 
@@ -697,18 +695,10 @@ Custom values round-trip through JSON, so cast defensively (`String`, `Number`, 
 
 ## Gotchas
 
-- **No pre-built UI.** `stream-feeds-android-client` is headless. There is no `FeedListScreen`, `ActivityRow`, or theme — build every Composable yourself against `FeedState` / `ActivityState`.
 - **`FeedsClient` is bound to one user for its lifetime.** `FeedsClient(...)` is a top-level factory function; the `User` and `tokenProvider` you pass in are fixed and there is no method to change the signed-in user afterwards. The SDK does not register a global accessor either — *you* hold the reference, ideally inside a `FeedsSessionManager` (Hilt `@Singleton` / Koin `single` / Application field). To operate as a different user, drive `manager.disconnect()` then `manager.connect(nextUser, nextToken)` — the manager serializes the two so the new client doesn't overlap the old one.
-- **Always `client.connect()` before any feed call.** Calling `feed.getOrCreate()` before `connect()` fails. Connect once per user session, after the user logs in.
-- **Don't overlap `FeedsClient` instances for the same user.** They will potentially desync state and waste a WebSocket connection. The `FeedsSessionManager` pattern handles this by serializing connect/disconnect through a `Mutex` — call sites just invoke the two and the manager guarantees ordering.
-- **Collect `FeedState` flows with `collectAsStateWithLifecycle()`, never `collectAsState()`** in production Composables — the lifecycle-aware variant suspends collection in the background and avoids leaking work after the screen is gone.
+- **Always `client.connect()` before any feed call.**  Connect once per user session, after the user logs in.
+- **Don't overlap `FeedsClient` instances for the same user.** They will potentially desync state and waste a WebSocket connection.
 - **`feed.state` is the same instance across calls.** Don't replace it — keep one `Feed` reference per surface and observe its `state` flows directly.
 - **Use `viewModels { factory }` / `hiltViewModel()` for state holders.** Don't `remember { FeedsClient(...) }` or build `Feed` objects inside a Composable body — hoist them into a ViewModel that takes the client as a constructor arg.
 - **`FeedId` group names are case-sensitive** and must match the feed groups configured on your Stream dashboard. `"User"` and `"user"` are different groups; the wrong case silently creates a new (empty) feed group.
-- **Stories vs posts share the activity type, differentiated by `expiresAt`.** Filter with `ActivitiesFilterField.expiresAt.exists()` for stories and `.doesNotExist()` for regular posts so they don't mix in the same feed.
-- **`client.activity(activityId, fid)` returns an `Activity` handle, not `ActivityData`.** `ActivityData` is the plain model from `FeedState.activities`. The `Activity` handle exposes the suspend operations (`get()`, `addComment(...)`, `addCommentReaction(...)`) and its own `ActivityState` for comments + poll.
-- **`createNotificationActivity = true` is required** on `addActivityReaction`, `addComment`, `follow`, etc. for the action to surface in the target user's notification feed. Omitting it silently drops the notification.
 - **`timeline:<userId>` does not automatically follow `user:<userId>`.** If you want the user to see their own posts in the timeline, call `timelineFeed.follow(FeedId("user", userId))` once after `getOrCreate()` (typically `createNotificationActivity = false` to avoid notifying yourself).
-- **Never store the Stream API secret in the app.** Token minting must happen server-side or via the `stream` CLI for local dev (see [`../credentials.md`](../credentials.md)).
-- **`INTERNET` permission is required.** Without it, `connect()` fails with cryptic socket errors.
-- **Feeds is in closed alpha (V3).** Public APIs may change between versions — verify against the source on `https://github.com/GetStream/stream-feeds-android` if a property name in your training data disagrees with this file.

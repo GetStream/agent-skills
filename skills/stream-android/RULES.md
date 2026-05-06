@@ -6,11 +6,11 @@ Every rule below is stated once. Other files reference this file - do not duplic
 
 ## Target SDK version
 
-Target Stream Chat Android SDK **v7+** (`io.getstream:stream-chat-android-compose:7.x` and matching `stream-chat-android-client` / `stream-chat-android-ui-components`). v7 changed plugin wiring, theme APIs, and several Composable signatures vs. v6. If a pattern in your training data conflicts with this skill's blueprints or the [v7 docs](https://getstream.io/chat/docs/sdk/android/), trust the docs - do not fall back to remembered v6 shapes.
+Target Stream Chat Android SDK major is **v7+** (`io.getstream:stream-chat-android-compose:7.x` and matching `stream-chat-android-client` / `stream-chat-android-ui-components`). v7 changed plugin wiring, theme APIs, and several Composable signatures vs. v6. If a pattern in your training data conflicts with this skill's blueprints or the [v7 docs](https://getstream.io/chat/docs/sdk/android/), trust the docs - do not fall back to remembered v6 shapes.
 
 For Stream Video, target the latest published `io.getstream:stream-video-android-ui-compose` (and its transitive `-core`). Verify any signature you are about to write against the bundled `VIDEO-COMPOSE.md` reference or the [Video Android docs](https://getstream.io/video/docs/android/).
 
-For Stream Feeds (V3), target the latest published `io.getstream:stream-feeds-android-client`. Feeds V3 is in closed alpha — public APIs may shift between versions, and there is no pre-built UI artifact. Verify any signature against the bundled `FEEDS-COMPOSE.md` reference, the [Feeds Android docs](https://getstream.io/activity-feeds/docs/android/), or the source on [`GetStream/stream-feeds-android`](https://github.com/GetStream/stream-feeds-android).
+For Stream Feeds (V3), target the latest published `io.getstream:stream-feeds-android-client`. Feeds V3 is not yet v1 — public APIs may shift between versions, and there is no pre-built UI artifact. Verify any signature against the bundled `FEEDS-COMPOSE.md` reference, the [Feeds Android docs](https://getstream.io/activity-feeds/docs/android/), or the source on [`GetStream/stream-feeds-android`](https://github.com/GetStream/stream-feeds-android).
 
 ### Version lookup
 
@@ -19,7 +19,7 @@ When you need the current Stream artifact version, use one of these sources:
 - Maven Central (Sonatype): `https://central.sonatype.com/artifact/io.getstream/stream-chat-android-compose/versions` (or `/stream-chat-android-ui-components/versions`, `/stream-video-android-ui-compose/versions`, `/stream-feeds-android-client/versions`)
 - GitHub releases: `https://github.com/GetStream/stream-chat-android/releases`, `https://github.com/GetStream/stream-video-android/releases`, `https://github.com/GetStream/stream-feeds-android/releases`
 
-**Do not use `search.maven.org`** — it is deprecated and its index is stale; it does not surface v7 (Chat) or recent Video releases and will lead you to ship outdated versions by mistake. If a tool result shows `search.maven.org` as the source, discard it and re-query one of the sources above.
+**Do not use `search.maven.org`** — it is deprecated and its index is stale; it will lead you to ship outdated versions by mistake. If a tool result shows `search.maven.org` as the source, discard it and re-query one of the sources above.
 
 ---
 

@@ -2,7 +2,7 @@
 name: stream-android
 description: "Build and integrate Stream Chat, Video, and Feeds in Android apps. Use for Jetpack Compose, Android Studio, and Gradle project work — including Stream package setup, auth and token wiring, screen blueprints, and any follow-up Stream UI work such as adding screens, navigating between channel list and channel/message screens, channel tap handling, deep links, push routing, theming, custom channel/message UI, video calling flows (joining/starting calls, ringing, custom call controls and participant tiles), and Feeds surfaces (timeline, activity composer, threaded comments, follow graph / profile, notification feed, stories)."
 license: See LICENSE in repository root
-compatibility: Requires an Android Studio / Gradle project (Kotlin). The `stream` CLI (binary name `stream`, installed from `getstream.io/cli/install.sh`) is the default path for the credentials flow (API key fetch, token mint, optional channel seeding — see `credentials.md`); only optional when the user pastes the API key and token themselves.
+compatibility: Requires an Android Studio / Gradle project (Kotlin). The `stream` CLI (binary name `stream`, installed from `getstream.io/cli/install.sh`) is the default path for the credentials flow (API key fetch, token mint, and any product-specific setup — see `credentials.md`); only optional when the user pastes the API key and token themselves.
 metadata:
   author: GetStream
 allowed-tools:
@@ -42,7 +42,7 @@ Before any tool call, decide the **track** from the user's input alone - no prob
 
 | Signal in user input | Track |
 |---|---|
-| Explicit product/framework token: `Chat Compose`, `Chat XML`, `Chat UI Components`, `Video Android`, `Video Compose`, `Feeds Android`, `Feeds Compose`, etc. | **C - Reference lookup** |
+| Explicit product/framework token: `Chat Compose`, `Chat UI Components`, `Video Android`, `Video Compose`, `Feeds Android`, `Feeds Compose`, etc. | **C - Reference lookup** |
 | Words "docs" or "documentation" around Stream Android/Compose work | **C - Reference lookup** |
 | "How do I {X} in Compose/XML/Android?", "What does {SDK type/Composable/View} do?" | **C - Reference lookup** |
 | "Build me a new Android app", "create a Compose app", "new Android app" + Stream product | **A - New app** |
@@ -71,7 +71,7 @@ Follow [`credentials.md`](credentials.md) to:
 
 - collect the Stream API key from the dashboard (or from the user)
 - generate a user token via the Stream CLI (or accept one from the user)
-- optionally seed a few channels so the app has real data on first launch
+- run any product-specific setup (Chat: optionally seed channels; Feeds: confirm feed groups; Video: nothing — calls are ephemeral)
 
 Use the resulting API key and token in every code snippet — never placeholder strings. If a track A/B/D task reaches code work and credentials haven't been collected yet, return to `credentials.md` before continuing.
 
@@ -165,8 +165,8 @@ Load only the relevant files for the requested product and UI layer.
 - Chat Compose screen structure -> [`references/CHAT-COMPOSE-blueprints.md`](references/CHAT-COMPOSE-blueprints.md)
 - Video Compose setup and gotchas -> [`references/VIDEO-COMPOSE.md`](references/VIDEO-COMPOSE.md)
 - Video Compose call/screen structure -> [`references/VIDEO-COMPOSE-blueprints.md`](references/VIDEO-COMPOSE-blueprints.md)
-- Feeds Compose SDK patterns (FeedsClient, FeedState, activities, comments, reactions, follow, notifications) -> [`references/FEEDS-COMPOSE.md`](references/FEEDS-COMPOSE.md)
-- Feeds Compose blueprints (timeline, row, composer, comments sheet, profile, notifications, stories) -> [`references/FEEDS-COMPOSE-blueprints.md`](references/FEEDS-COMPOSE-blueprints.md)
+- Feeds Compose SDK patterns -> [`references/FEEDS-COMPOSE.md`](references/FEEDS-COMPOSE.md)
+- Feeds Compose blueprints -> [`references/FEEDS-COMPOSE-blueprints.md`](references/FEEDS-COMPOSE-blueprints.md)
 
 If the user asks for an exact XML / UI Components module that is not bundled yet, say that clearly instead of inventing API details.
 

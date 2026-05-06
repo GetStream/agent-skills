@@ -59,17 +59,14 @@ Register it in `AndroidManifest.xml`:
 ```xml
 <application
     android:name=".App"
-    android:label="@string/app_name"
-    android:theme="@style/Theme.StreamChat">
+    android:label="@string/app_name">
     <!-- activities ... -->
 </application>
-
-<uses-permission android:name="android.permission.INTERNET" />
 ```
 
 **Wiring:**
 - `Application.onCreate()` runs before any Activity, so `ChatClient.instance()` is safe to call from any Composable lifecycle.
-- The Compose artifact transitively pulls in the offline + state plugins; no extra Builder calls are required for default state-layer behavior.
+- The Compose artifact transitively pulls in offline and state management; no extra Builder calls are required for default state-layer behavior.
 
 ---
 
