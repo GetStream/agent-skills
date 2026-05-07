@@ -32,10 +32,11 @@ Before any tool call, decide the **track** from the user's input alone - no prob
 
 | Signal in user input | Track |
 |---|---|
-| Explicit product/framework token: `Chat SwiftUI`, `Chat UIKit`, `Video iOS`, `Feeds Swift`, etc. | **C - Reference lookup** |
+| Explicit product/framework token: `Chat SwiftUI`, `Chat UIKit`, `Video iOS`, `Feeds Swift`, `Livestream SwiftUI`, etc. | **C - Reference lookup** |
 | Words "docs" or "documentation" around Stream Swift/iOS work | **C - Reference lookup** |
 | "How do I {X} in SwiftUI/UIKit/Xcode?", "What does {SDK type/method/view} do?" | **C - Reference lookup** |
 | "Build me a new iOS app", "create a SwiftUI app", "new UIKit app" + Stream product | **A - New app** |
+| "Build a livestream app", "creator and viewer mode", "go live", "one-to-many broadcast" | **A - New app** (load `LIVESTREAM-SWIFTUI.md` + `LIVESTREAM-SWIFTUI-blueprints.md`) |
 | "Add/integrate Stream into this app", "wire Chat/Video/Feeds into my Xcode project" | **B - Existing app** |
 | "Install Stream packages", "set up Stream in Xcode", "wire auth/token flow" with no broader feature request | **D - Bootstrap / setup** |
 | Bare `/stream-swift` with no args | List the tracks briefly and wait |
@@ -189,6 +190,7 @@ Current extracted modules:
 - **Chat + UIKit:** [`references/CHAT-UIKIT.md`](references/CHAT-UIKIT.md) + [`references/CHAT-UIKIT-blueprints.md`](references/CHAT-UIKIT-blueprints.md)
 - **Video + SwiftUI:** [`references/VIDEO-SWIFTUI.md`](references/VIDEO-SWIFTUI.md) + [`references/VIDEO-SWIFTUI-blueprints.md`](references/VIDEO-SWIFTUI-blueprints.md)
 - **Video + UIKit:** [`references/VIDEO-UIKIT.md`](references/VIDEO-UIKIT.md) + [`references/VIDEO-UIKIT-blueprints.md`](references/VIDEO-UIKIT-blueprints.md)
+- **Livestream + SwiftUI:** [`references/LIVESTREAM-SWIFTUI.md`](references/LIVESTREAM-SWIFTUI.md) + [`references/LIVESTREAM-SWIFTUI-blueprints.md`](references/LIVESTREAM-SWIFTUI-blueprints.md)
 - **Combined Chat + Video (SwiftUI or UIKit):** [`references/COMBINED-CHAT-VIDEO.md`](references/COMBINED-CHAT-VIDEO.md)
 - **Feeds (SwiftUI or UIKit):** [`references/FEEDS-SWIFTUI.md`](references/FEEDS-SWIFTUI.md) + [`references/FEEDS-SWIFTUI-blueprints.md`](references/FEEDS-SWIFTUI-blueprints.md)
 
@@ -237,6 +239,8 @@ Load only the relevant files for the requested product and UI layer.
 - Video SwiftUI view structure -> [`references/VIDEO-SWIFTUI-blueprints.md`](references/VIDEO-SWIFTUI-blueprints.md)
 - Video UIKit setup and gotchas -> [`references/VIDEO-UIKIT.md`](references/VIDEO-UIKIT.md)
 - Video UIKit view controller structure -> [`references/VIDEO-UIKIT-blueprints.md`](references/VIDEO-UIKIT-blueprints.md)
+- Livestream SwiftUI (call type, backstage, goLive/stopLive, host/viewer flows, HLS) -> [`references/LIVESTREAM-SWIFTUI.md`](references/LIVESTREAM-SWIFTUI.md)
+- Livestream SwiftUI view structure (mode selection, creator, WebRTC viewer, HLS viewer) -> [`references/LIVESTREAM-SWIFTUI-blueprints.md`](references/LIVESTREAM-SWIFTUI-blueprints.md)
 - Combined Chat + Video (collision table, file isolation, UIKit + SwiftUI blueprints) -> [`references/COMBINED-CHAT-VIDEO.md`](references/COMBINED-CHAT-VIDEO.md)
 - Feeds SDK patterns (setup, FeedState, activities, reactions, comments, follow, notifications) -> [`references/FEEDS-SWIFTUI.md`](references/FEEDS-SWIFTUI.md)
 - Feeds SwiftUI view blueprints (timeline, row, composer, comments, profile, notifications) -> [`references/FEEDS-SWIFTUI-blueprints.md`](references/FEEDS-SWIFTUI-blueprints.md)
