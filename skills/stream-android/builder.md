@@ -25,7 +25,7 @@ Do **not** try to scaffold Android Studio projects from the CLI.
 Resolve three things before editing:
 
 1. **Product:** Chat, Video, Feeds, or a combination
-2. **UI layer:** Jetpack Compose, XML / Views (UI Components), or mixed
+2. **UI layer:** Jetpack Compose, XML / Views, or mixed
 3. **Scope:** app bootstrap, auth, a specific screen, or a full product shell
 
 If the user only asked for setup, stop after the shared wiring in [`sdk.md`](sdk.md).
@@ -74,18 +74,14 @@ Available extracted modules:
 
 - Chat + Compose: [`references/CHAT-COMPOSE.md`](references/CHAT-COMPOSE.md)
 - Chat + Compose screen blueprints: [`references/CHAT-COMPOSE-blueprints.md`](references/CHAT-COMPOSE-blueprints.md)
+- Chat + XML: [`references/CHAT-XML.md`](references/CHAT-XML.md)
+- Chat + XML screen blueprints: [`references/CHAT-XML-blueprints.md`](references/CHAT-XML-blueprints.md)
 - Video + Compose: [`references/VIDEO-COMPOSE.md`](references/VIDEO-COMPOSE.md)
 - Video + Compose call/screen blueprints: [`references/VIDEO-COMPOSE-blueprints.md`](references/VIDEO-COMPOSE-blueprints.md)
 - Feeds + Compose: [`references/FEEDS-COMPOSE.md`](references/FEEDS-COMPOSE.md)
 - Feeds + Compose screen blueprints: [`references/FEEDS-COMPOSE-blueprints.md`](references/FEEDS-COMPOSE-blueprints.md)
 
 Per [`RULES.md`](RULES.md) → *Blueprints are mandatory, on every turn*: every Stream Chat, Stream Video, or Stream Feeds screen, Composable, navigation handler, deep-link route, ringing flow, or UI customization must be preceded by reading the matching section in the corresponding blueprints file. Use the **Request → Blueprint section** table at the top of each `*-blueprints.md` file to pick the section. This applies to follow-up requests in the same session too — re-open the file and re-read the matching section before each Stream screen edit, do not rely on what was loaded earlier.
-
-Future modules should follow the same naming family:
-
-- `CHAT-XML.md`
-- `VIDEO-XML.md`
-- `FEEDS-XML.md`
 
 If the exact file is not present yet, say so directly instead of faking a reference.
 

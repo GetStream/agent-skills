@@ -85,16 +85,18 @@ Load only the product/UI-layer reference files that match the request.
 
 - `CHAT-COMPOSE.md` for Chat + Jetpack Compose
 - `CHAT-COMPOSE-blueprints.md` for concrete Composable screen structure
+- `CHAT-XML.md` for Chat + XML (View-based SDK)
+- `CHAT-XML-blueprints.md` for concrete Activity/Fragment + View structure
 - `VIDEO-COMPOSE.md` for Video + Jetpack Compose
 - `VIDEO-COMPOSE-blueprints.md` for concrete call-screen structure
 - `FEEDS-COMPOSE.md` for Feeds + Jetpack Compose (headless data SDK — no pre-built UI)
 - `FEEDS-COMPOSE-blueprints.md` for custom Composable scaffolding driven by `FeedState` / `ActivityState`
 
-Do not invent missing XML / UI-Components API details. If a requested reference is not bundled yet, say so plainly and fall back to shared guidance from [`sdk.md`](sdk.md) or live docs only when the user wants that.
+Do not invent missing API details for product/UI-layer combinations not listed above. If a requested reference is not bundled yet, say so plainly and fall back to shared guidance from [`sdk.md`](sdk.md) or live docs only when the user wants that.
 
 ### Blueprints are mandatory, on every turn
 
-Before writing or editing **any** Stream Chat, Stream Video, or Stream Feeds screen, Composable, navigation handler, deep-link route, theming override, ringing handler, or channel/message/call/feed UI customization, you **must** open the matching section of the corresponding `<PRODUCT>-<UI_LAYER>-blueprints.md` file (e.g. [`references/CHAT-COMPOSE-blueprints.md`](references/CHAT-COMPOSE-blueprints.md), [`references/VIDEO-COMPOSE-blueprints.md`](references/VIDEO-COMPOSE-blueprints.md), [`references/FEEDS-COMPOSE-blueprints.md`](references/FEEDS-COMPOSE-blueprints.md)) and follow its structure. This applies on **every turn**, not just the first time the skill is invoked in a session — follow-up requests like *"add navigation to the channel screen"*, *"open a channel on tap"*, *"add a button to start a call"*, *"customize the call controls"*, *"theme the call screen"*, *"add a comments sheet"*, or *"add a follow button"* count as new screen work and require a fresh blueprint read.
+Before writing or editing **any** Stream Chat, Stream Video, or Stream Feeds screen, Composable, View, Fragment, Activity, navigation handler, deep-link route, theming override, ringing handler, or channel/message/call/feed UI customization, you **must** open the matching section of the corresponding `<PRODUCT>-<UI_LAYER>-blueprints.md` file (e.g. [`references/CHAT-COMPOSE-blueprints.md`](references/CHAT-COMPOSE-blueprints.md), [`references/CHAT-XML-blueprints.md`](references/CHAT-XML-blueprints.md), [`references/VIDEO-COMPOSE-blueprints.md`](references/VIDEO-COMPOSE-blueprints.md), [`references/FEEDS-COMPOSE-blueprints.md`](references/FEEDS-COMPOSE-blueprints.md)) and follow its structure. This applies on **every turn**, not just the first time the skill is invoked in a session — follow-up requests like *"add navigation to the channel screen"*, *"open a channel on tap"*, *"add a button to start a call"*, *"customize the call controls"*, *"theme the call screen"*, *"add a comments sheet"*, or *"add a follow button"* count as new screen work and require a fresh blueprint read.
 
 Use the **Request → Blueprint section** table at the top of each blueprints file to resolve which section to read. If no section matches, say so explicitly before improvising — do not silently fall back to remembered SDK shapes from training data.
 

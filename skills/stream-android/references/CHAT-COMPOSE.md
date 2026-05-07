@@ -139,20 +139,18 @@ ChatClient.instance()
 
 ### Disconnecting / switching users
 
-Always wait for `disconnect()` to complete before connecting another user:
+For switching to another user, prefer `ChatClient.switchUser(...)` — it disconnects the current user, deletes the push device, and connects the new user atomically:
 
 ```kotlin
-ChatClient.instance().disconnect(flushPersistence = false).enqueue { result ->
+ChatClient.instance().switchUser(nextUser, nextToken).enqueue { result ->
     when (result) {
-        is Result.Success -> {
-            ChatClient.instance().connectUser(nextUser, nextToken).enqueue { /* ... */ }
-        }
+        is Result.Success -> { /* connected as next user */ }
         is Result.Failure -> { /* handle error */ }
     }
 }
 ```
 
-Pass `flushPersistence = true` only when you want to clear the offline cache (e.g. on full logout).
+For a full logout (no follow-up `connectUser`), call `disconnect(flushPersistence = true)` to clear the offline cache. If you do roll your own switch via `disconnect(...).enqueue { connectUser(...) }`, always wait for `disconnect()` to complete before connecting — connecting in flight risks state corruption.
 
 ### Creating Channels
 

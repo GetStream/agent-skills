@@ -25,7 +25,7 @@ Use this table to resolve a user request to the section(s) you must read before 
 | "custom channel header", per-channel top bar, message-list header | [Custom Channel Header Blueprint](#custom-channel-header-blueprint) |
 | state flows, observing channels/messages outside the bundled screens | [State Layer Compose Blueprint](#state-layer-compose-blueprint) |
 
-If the request is something not covered (Video, Feeds, XML/UI-Components, or a Compose surface not listed above), do not fabricate APIs — say the blueprint is not bundled and fall back per [`RULES.md`](../RULES.md).
+If the request is something not covered (Video, Feeds, XML, or a Compose surface not listed above), do not fabricate APIs — say the blueprint is not bundled and fall back per [`RULES.md`](../RULES.md).
 
 ---
 
@@ -461,6 +461,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import io.getstream.chat.android.client.extensions.currentUserUnreadCount
 import io.getstream.chat.android.compose.state.channels.list.ItemState
 import io.getstream.chat.android.compose.ui.theme.ChatComponentFactory
 import io.getstream.chat.android.compose.ui.theme.ChannelListItemContentParams
@@ -491,7 +492,7 @@ class BrandComponentFactory : ChatComponentFactory {
                     )
                 }
             }
-            val unread = channel.unreadCount ?: 0
+            val unread = channel.currentUserUnreadCount()
             if (unread > 0) {
                 Badge { Text(unread.toString()) }
             }
@@ -508,7 +509,7 @@ fun BrandedChannelsHost(onChannelClick: (Channel) -> Unit) {
 ```
 
 **Wiring:**
-- `ChannelListItemContentParams` exposes `channelItem: ItemState.ChannelItemState` (with `channel`, `isMuted`, `typingUsers`, `draftMessage`, `isSelected`), plus `currentUser`, `onChannelClick`, `onChannelLongClick`. Unread count lives on `channel.unreadCount`, not on the item state.
+- `ChannelListItemContentParams` exposes `channelItem: ItemState.ChannelItemState` (with `channel`, `isMuted`, `typingUsers`, `draftMessage`, `isSelected`), plus `currentUser`, `onChannelClick`, `onChannelLongClick`. For unread count, use the extension `channel.currentUserUnreadCount()` from `io.getstream.chat.android.client.extensions`.
 - To override only a sub-piece of the row (avatar, name, trailing timestamp/unread), prefer `ChannelItemLeadingContent` / `ChannelItemCenterContent` / `ChannelItemTrailingContent` instead of replacing the whole row - they preserve the SDK swipe-action wrapper.
 - Composables overridden on `ChatComponentFactory` need their original receiver (`LazyItemScope`, `RowScope`, etc.) - copy the receiver from the interface declaration, otherwise the override won't compile.
 

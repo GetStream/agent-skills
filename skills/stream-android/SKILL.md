@@ -42,9 +42,9 @@ Before any tool call, decide the **track** from the user's input alone - no prob
 
 | Signal in user input | Track |
 |---|---|
-| Explicit product/framework token: `Chat Compose`, `Chat UI Components`, `Video Android`, `Video Compose`, `Feeds Android`, `Feeds Compose`, etc. | **C - Reference lookup** |
+| Explicit product/framework token: `Chat Compose`, `Chat XML`, `Video Android`, `Video Compose`, `Feeds Android`, `Feeds Compose`, etc. | **C - Reference lookup** |
 | Words "docs" or "documentation" around Stream Android/Compose work | **C - Reference lookup** |
-| "How do I {X} in Compose/XML/Android?", "What does {SDK type/Composable/View} do?" | **C - Reference lookup** |
+| "How do I {X} in Compose/XML/Android?", "What does {SDK type/Composable/View/Fragment} do?" | **C - Reference lookup** |
 | "Build me a new Android app", "create a Compose app", "new Android app" + Stream product | **A - New app** |
 | "Add/integrate Stream into this app", "wire Chat/Video/Feeds into my Android project" | **B - Existing app** |
 | "Install Stream packages", "set up Stream in Android Studio", "wire auth/token flow" with no broader feature request | **D - Bootstrap / setup** |
@@ -58,14 +58,14 @@ If the request is ambiguous between **build/integrate** and **reference lookup**
 
 ### After classification
 
-- **Tracks A, B, D** -> run **Project signals** once per session, then continue in [`builder.md`](builder.md) and [`sdk.md`](sdk.md).
-- **Track C** -> skip the probe if the product + UI layer are explicit. Only run it on demand if the SDK or UI layer is ambiguous.
+- **Tracks A, B, D** -> run **Step 0.5 (credentials)** first, **then Project signals** once per session, then continue in [`builder.md`](builder.md) and [`sdk.md`](sdk.md). Do not probe the project before credentials.
+- **Track C** -> skip both steps if the product + UI layer are explicit. Only run Project signals on demand if the SDK or UI layer is ambiguous.
 
 ---
 
 ## Step 0.5: Credentials, token, and seed data (tracks A, B, D only)
 
-Run **once per session** for tracks A, B, and D, right after intent classification and before the Project signals probe. Skip for Track C.
+**Order:** intent classification -> **Step 0.5 (this step)** -> Project signals probe -> track work. Do this **before** running the Project signals shell command, even if a track table below lists "Detect" as phase 1. Run **once per session** for tracks A, B, and D. Skip for Track C.
 
 Follow [`credentials.md`](credentials.md) to:
 
@@ -119,6 +119,7 @@ Product and UI-layer specifics live under **`references/`** using a flat naming 
 Current extracted modules:
 
 - **Chat + Compose:** [`references/CHAT-COMPOSE.md`](references/CHAT-COMPOSE.md) + [`references/CHAT-COMPOSE-blueprints.md`](references/CHAT-COMPOSE-blueprints.md)
+- **Chat + XML:** [`references/CHAT-XML.md`](references/CHAT-XML.md) + [`references/CHAT-XML-blueprints.md`](references/CHAT-XML-blueprints.md)
 - **Video + Compose:** [`references/VIDEO-COMPOSE.md`](references/VIDEO-COMPOSE.md) + [`references/VIDEO-COMPOSE-blueprints.md`](references/VIDEO-COMPOSE-blueprints.md)
 - **Feeds + Compose:** [`references/FEEDS-COMPOSE.md`](references/FEEDS-COMPOSE.md) + [`references/FEEDS-COMPOSE-blueprints.md`](references/FEEDS-COMPOSE-blueprints.md)
 
@@ -136,7 +137,7 @@ If the requested product/UI layer file is not bundled yet, say so plainly, use `
 
 | Phase | Name | What you do |
 |---|---|---|
-| **A1** | Detect | Run **Project signals**. If there is no Android app yet, tell the user to create one in Android Studio first. |
+| **A1** | Detect | After **Step 0.5 (credentials)**, run **Project signals**. If there is no Android app yet, tell the user to create one in Android Studio first. |
 | **A2** | Choose lane | Confirm product(s) and UI layer: Compose, XML/Views, or mixed. |
 | **A3** | Install + wire | Follow [`builder.md`](builder.md) + [`sdk.md`](sdk.md), then load only the needed product references. |
 | **A4** | Verify | Confirm Gradle sync, `ChatClient` lifetime, auth, and first rendered screen. |
@@ -149,7 +150,7 @@ If the requested product/UI layer file is not bundled yet, say so plainly, use `
 
 | Phase | Name | What you do |
 |---|---|---|
-| **B1** | Detect | Run **Project signals** and inspect the existing app structure before editing. |
+| **B1** | Detect | After **Step 0.5 (credentials)**, run **Project signals** and inspect the existing app structure before editing. |
 | **B2** | Preserve | Keep the current UI layer, dependency strategy (version catalog vs inline), and navigation setup unless the user asks for a migration. |
 | **B3** | Integrate | Use [`sdk.md`](sdk.md) for shared wiring, then load only the needed product reference files. |
 | **B4** | Verify | Confirm the requested Stream flow builds and renders inside the existing app. |
@@ -163,12 +164,14 @@ Load only the relevant files for the requested product and UI layer.
 - Shared lifecycle / auth / state patterns -> [`sdk.md`](sdk.md)
 - Chat Compose setup and gotchas -> [`references/CHAT-COMPOSE.md`](references/CHAT-COMPOSE.md)
 - Chat Compose screen structure -> [`references/CHAT-COMPOSE-blueprints.md`](references/CHAT-COMPOSE-blueprints.md)
+- Chat XML setup and gotchas -> [`references/CHAT-XML.md`](references/CHAT-XML.md)
+- Chat XML screen structure -> [`references/CHAT-XML-blueprints.md`](references/CHAT-XML-blueprints.md)
 - Video Compose setup and gotchas -> [`references/VIDEO-COMPOSE.md`](references/VIDEO-COMPOSE.md)
 - Video Compose call/screen structure -> [`references/VIDEO-COMPOSE-blueprints.md`](references/VIDEO-COMPOSE-blueprints.md)
 - Feeds Compose SDK patterns -> [`references/FEEDS-COMPOSE.md`](references/FEEDS-COMPOSE.md)
 - Feeds Compose blueprints -> [`references/FEEDS-COMPOSE-blueprints.md`](references/FEEDS-COMPOSE-blueprints.md)
 
-If the user asks for an exact XML / UI Components module that is not bundled yet, say that clearly instead of inventing API details.
+If the user asks for a product/UI-layer combo that is not bundled (e.g. Video XML, Feeds XML), say that clearly instead of inventing API details.
 
 ---
 
@@ -176,6 +179,7 @@ If the user asks for an exact XML / UI Components module that is not bundled yet
 
 Use when the user wants the install and wiring path more than a feature build:
 
+- run **Step 0.5 (credentials)** first
 - detect the project shape
 - choose Compose vs XML ownership
 - install Stream packages with the project's existing dependency strategy (version catalog or inline)
