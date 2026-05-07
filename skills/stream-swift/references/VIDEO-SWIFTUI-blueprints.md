@@ -307,10 +307,10 @@ struct CustomCallControlsView: View {
             Button {
                 callViewModel.toggleMicrophoneEnabled()
             } label: {
-                Image(systemName: callViewModel.callSettings.isAudioOn
+                Image(systemName: callViewModel.callSettings.audioOn
                     ? "mic.fill" : "mic.slash.fill")
                     .font(.title2)
-                    .foregroundStyle(callViewModel.callSettings.isAudioOn ? .primary : .red)
+                    .foregroundStyle(callViewModel.callSettings.audioOn ? .primary : .red)
                     .frame(width: 56, height: 56)
                     .background(.ultraThinMaterial, in: Circle())
             }
@@ -319,10 +319,10 @@ struct CustomCallControlsView: View {
             Button {
                 callViewModel.toggleCameraEnabled()
             } label: {
-                Image(systemName: callViewModel.callSettings.isVideoOn
+                Image(systemName: callViewModel.callSettings.videoOn
                     ? "video.fill" : "video.slash.fill")
                     .font(.title2)
-                    .foregroundStyle(callViewModel.callSettings.isVideoOn ? .primary : .red)
+                    .foregroundStyle(callViewModel.callSettings.videoOn ? .primary : .red)
                     .frame(width: 56, height: 56)
                     .background(.ultraThinMaterial, in: Circle())
             }
@@ -367,13 +367,16 @@ import StreamVideoSwiftUI // VideoCallParticipantView
 struct ParticipantTileView: View {
     let participant: CallParticipant
     let availableFrame: CGRect
+    let call: Call?
 
     var body: some View {
         ZStack(alignment: .bottomLeading) {
             VideoCallParticipantView(
                 participant: participant,
                 availableFrame: availableFrame,
-                onChangeTrackVisibility: { _, _ in }
+                contentMode: .scaleAspectFill,
+                customData: [:],
+                call: call
             )
 
             // Name + mute indicator
@@ -402,9 +405,10 @@ struct ParticipantTileView: View {
 ```
 
 **Wiring:**
-- `VideoCallParticipantView` renders the participant's `RTCVideoTrack` - pass their current track via `participant`
+- `VideoCallParticipantView` requires `contentMode`, `customData`, and `call` — all three must be provided
+- `call` is `Call?` — pass `callViewModel.call` from the owning view
+- `contentMode: .scaleAspectFill` fills the tile; use `.scaleAspectFit` to avoid cropping
 - `availableFrame` sets the rendering resolution; read it from a `GeometryReader` on the tile's container
-- `onChangeTrackVisibility` fires when the tile enters/leaves the viewport - pause tracks for offscreen participants to save bandwidth
 
 ---
 
@@ -502,7 +506,8 @@ struct ParticipantGridView: View {
                             let frame = CGRect(x: 0, y: 0, width: tileSize, height: tileSize)
                             ParticipantTileView(
                                 participant: participant,
-                                availableFrame: frame
+                                availableFrame: frame,
+                                call: callViewModel.call
                             )
                             .frame(width: tileSize, height: tileSize)
                         }
@@ -513,9 +518,13 @@ struct ParticipantGridView: View {
                 // Local PiP
                 if let local = callViewModel.call?.state.localParticipant {
                     let pipFrame = CGRect(x: 0, y: 0, width: 120, height: 160)
-                    ParticipantTileView(participant: local, availableFrame: pipFrame)
-                        .frame(width: 120, height: 160)
-                        .padding(16)
+                    ParticipantTileView(
+                        participant: local,
+                        availableFrame: pipFrame,
+                        call: callViewModel.call
+                    )
+                    .frame(width: 120, height: 160)
+                    .padding(16)
                 }
             }
         }

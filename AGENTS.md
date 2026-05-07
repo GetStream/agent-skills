@@ -12,6 +12,7 @@ The pack splits across four skills under `skills/`. The `stream` skill is the ro
 | [`skills/stream-cli/SKILL.md`](skills/stream-cli/SKILL.md) | Query Stream data, run `stream api / config / auth`, install the CLI binary |
 | [`skills/stream-docs/SKILL.md`](skills/stream-docs/SKILL.md) | Search live SDK documentation from getstream.io (no CLI required) |
 | [`skills/stream-builder/SKILL.md`](skills/stream-builder/SKILL.md) | Scaffold a new app, or add Chat/Video/Feeds/Moderation to an existing one |
+| [`skills/stream-swift/SKILL.md`](skills/stream-swift/SKILL.md) | Build or integrate Stream Chat/Video/Feeds in Swift/SwiftUI/UIKit/iOS apps |
 
 ---
 

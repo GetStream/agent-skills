@@ -77,6 +77,7 @@ Load only the product/framework reference files that match the request.
 - `CHAT-UIKIT.md` + `CHAT-UIKIT-blueprints.md` for Chat + UIKit
 - `VIDEO-SWIFTUI.md` + `VIDEO-SWIFTUI-blueprints.md` for Video + SwiftUI
 - `VIDEO-UIKIT.md` + `VIDEO-UIKIT-blueprints.md` for Video + UIKit
+- `LIVESTREAM-SWIFTUI.md` + `LIVESTREAM-SWIFTUI-blueprints.md` for Livestream + SwiftUI (creator/viewer, goLive/stopLive, HLS)
 - `COMBINED-CHAT-VIDEO.md` whenever the app uses both Chat and Video together
 
 Do not invent missing Feeds or other unbundled API details. If a requested reference is not bundled yet, say so plainly and fall back to shared guidance from [`sdk.md`](sdk.md) or live docs only when the user wants that.

@@ -303,8 +303,8 @@ callViewModel.toggleSpeaker()
 **Read current state** from `callViewModel.callSettings`:
 
 ```swift
-callViewModel.callSettings.isVideoOn    // camera enabled
-callViewModel.callSettings.isAudioOn    // microphone active
+callViewModel.callSettings.videoOn      // camera enabled
+callViewModel.callSettings.audioOn      // microphone active
 callViewModel.callSettings.speakerOn    // speaker phone on
 ```
 
@@ -384,6 +384,10 @@ CallContainer(viewFactory: CustomVideoViewFactory.shared, viewModel: callViewMod
 | `livestream` | One-to-many broadcasting |
 
 Use `default` for most calling scenarios. `audio_room` and `livestream` have different permission and layout models.
+
+**Livestream:** For one-to-many broadcasts with a creator/viewer split, backstage mode, `goLive()`/`stopLive()`, and HLS viewer support, load the dedicated references instead of this file:
+- SDK patterns, backstage, goLive/stopLive, HLS -> [`LIVESTREAM-SWIFTUI.md`](LIVESTREAM-SWIFTUI.md)
+- Mode selection, creator view, viewer view blueprints -> [`LIVESTREAM-SWIFTUI-blueprints.md`](LIVESTREAM-SWIFTUI-blueprints.md)
 
 ---
 
