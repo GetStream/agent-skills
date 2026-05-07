@@ -15,6 +15,7 @@ These endpoints need specific body structures that aren't obvious from the name 
 | "Add members to channel" | `UpdateChannel` | `--body '{"add_members":["user1","user2"]}'` |
 | "Add channel moderators" | `UpdateChannel` | `--body '{"add_moderators":["user1"]}'` |
 | "Search messages" | `Search` | `--body '{"payload":{"filter_conditions":{"type":"messaging"},"query":"hello","limit":10}}'` |
+| "Send a message" / "Seed messages" | `SendMessage` | Mutating. Only run after explicit user request. `type=messaging id=<channel_id> --body '{"message":{"text":"Hello from Alex","user_id":"alex"}}'` |
 | "Create/update users" | `UpdateUsers` | NOT CreateUser. `--body '{"users":{"john":{"id":"john","name":"John"}}}'` |
 | "Create a call" | `GetOrCreateCall` | NOT CreateCall. |
 | "Create a call with ringing" | `GetOrCreateCall` | `ring=true` + `data.members` in body |
@@ -46,6 +47,18 @@ stream api QueryChannels --body '{"filter_conditions":{"frozen":true},"limit":20
 # Combine filters with $and
 stream api QueryChannels --body '{"filter_conditions":{"$and":[{"type":"messaging"},{"member_count":{"$gt":5}}]},"limit":10}'
 ```
+
+### SendMessage
+
+Use only after the user explicitly asks to send or seed messages. Discover endpoint help first, then run the mutating call.
+
+```bash
+stream --safe api SendMessage --help
+
+stream api SendMessage type=messaging id=<channel_id> --body '{"message":{"text":"Hello from Alex","user_id":"alex"}}'
+```
+
+The `user_id` must belong to an existing user and should be a channel member for normal demo conversations.
 
 ### QueryUsers
 Fields: `id`, `name`, `role`, `banned`, `shadow_banned`, `created_at`, `updated_at`, `last_active`, `teams`

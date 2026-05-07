@@ -1,9 +1,9 @@
 # AGENTS.md - Codex entrypoint for the Stream skill pack
 
-The pack splits across four skills under `skills/`. The `stream` skill is the router; the rest are specialists.
+The pack has a generic router, core specialists, and platform peers declared in [`skills/stream/peers.yaml`](skills/stream/peers.yaml).
 
 **Router (start here):** [`skills/stream/SKILL.md`](skills/stream/SKILL.md) - classifies intent, dispatches to a sub-skill.
-**Rules (read once per session):** [`skills/stream/RULES.md`](skills/stream/RULES.md) - every non-negotiable rule, applies to every sub-skill.
+**Rules (read once per session):** [`skills/stream/RULES.md`](skills/stream/RULES.md) - core web, CLI, docs, and peer-pack routing rules. Platform sub-skills can add their own `RULES.md`.
 
 ## Sub-skills
 

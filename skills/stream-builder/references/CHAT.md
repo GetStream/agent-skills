@@ -65,7 +65,7 @@ const client = StreamChat.getInstance(process.env.STREAM_API_KEY!, process.env.S
 
 - Always generate real tokens server-side via `client.createToken()` - never `devToken()`
 - `StreamChat.getInstance(apiKey, apiSecret)` is fine server-side (singleton OK)
-- `client.channel("livestream", id)` - no third arg with `{ name }` (TS error in v9+)
+- `client.channel("livestream", id)` - no third arg with `{ name }` (TS error in current SDKs)
 - Listen for `user.banned` event to show banned state in UI
 - Import `stream-chat-react/dist/css/index.css` for default styles (v14+; the `/v2/` subpath was removed)
 - `MessageInput` was renamed/removed in v14 - use `MessageComposer` from `stream-chat-react` instead
