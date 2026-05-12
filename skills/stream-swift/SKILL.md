@@ -13,7 +13,8 @@ allowed-tools: >-
   Bash(cat Package.swift), Bash(cat Package.resolved), Bash(cat Podfile),
   Bash(stream token *),
   Bash(stream chat *),
-  Bash(stream config *)
+  Bash(stream config *),
+  Bash(stream --safe *)
 ---
 
 # Stream Swift - skill router + execution flow

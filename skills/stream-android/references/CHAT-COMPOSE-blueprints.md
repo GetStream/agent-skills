@@ -517,31 +517,50 @@ fun BrandedChannelsHost(onChannelClick: (Channel) -> Unit) {
 
 ## Custom Channel Header Blueprint
 
-Replace the channel-screen header without rebuilding the rest of the screen by passing your own `topBarContent` to a custom layout, or override the channel screen's header slot.
+Two paths:
+
+- **Factory override** — override `ChatComponentFactory.ChannelHeader(...)` (or one of its sub-slots) and pass your factory to `ChatTheme(componentFactory = ...)`. Every `ChannelScreen` call *inside that `ChatTheme` subtree* picks it up.
+- **`topBarContent` lambda** — pass your own `topBarContent: @Composable (BackAction) -> Unit` to `ChannelScreen(...)`. Bypasses the factory entirely for that call site, even when the enclosing `ChatTheme` has a custom factory.
 
 ```kotlin
-import io.getstream.chat.android.compose.ui.messages.header.MessageListHeader
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Call
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.runtime.Composable
+import io.getstream.chat.android.compose.ui.theme.ChannelHeaderTrailingContentParams
+import io.getstream.chat.android.compose.ui.theme.ChatComponentFactory
+import io.getstream.chat.android.compose.ui.theme.ChatTheme
+
+class BrandComponentFactory(
+    private val onCall: () -> Unit,
+) : ChatComponentFactory {
+
+    @Composable
+    override fun RowScope.ChannelHeaderTrailingContent(params: ChannelHeaderTrailingContentParams) {
+        IconButton(onClick = onCall) {
+            Icon(Icons.Default.Call, contentDescription = "Call")
+        }
+    }
+}
 
 @Composable
-fun CustomChannelHeader(
-    channelName: String,
+fun BrandedChannelHost(
+    factory: ChannelViewModelFactory,
     onBack: () -> Unit,
     onCall: () -> Unit,
 ) {
-    Surface(tonalElevation = 2.dp) {
-        Row(
-            Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, contentDescription = "Back") }
-            Text(channelName, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
-            IconButton(onClick = onCall) { Icon(Icons.Default.Call, contentDescription = "Call") }
-        }
+    ChatTheme(componentFactory = BrandComponentFactory(onCall = onCall)) {
+        ChannelScreen(viewModelFactory = factory, onBackPressed = onBack)
     }
 }
 ```
 
-Then host it above a bound `MessageList`/`MessageComposer` instead of using `ChannelScreen`. If you need to keep `ChannelScreen` and only swap the bar, use the SDK's built-in `MessageListHeader` and pass your own `leadingContent` / `trailingContent` slots.
+**Wiring:**
+- The factory has three sub-slots — `ChannelHeaderLeadingContent` (back button), `ChannelHeaderCenterContent` (title + typing/connection state), `ChannelHeaderTrailingContent` (avatar). Override only the one you need; the others keep their SDK defaults.
+- To replace the *whole* bar (back + title + trailing as one Composable) override `ChatComponentFactory.ChannelHeader(params: ChannelHeaderParams)` instead — you lose the row scaffold but gain full layout control. Or, for a one-off swap at a single call site, pass `topBarContent` directly to `ChannelScreen(...)` without touching the factory.
+- Composables overridden on `ChatComponentFactory` need their original receiver (`RowScope` for these three slots) - copy the receiver from the interface declaration, otherwise the override won't compile.
 
 ---
 

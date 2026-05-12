@@ -160,7 +160,7 @@ StreamVideo.instance().logOut()
 StreamVideo.removeClient()
 
 // Then build again with the new user/token
-StreamVideoBuilder(context, apiKey, newUser, newToken).build()
+StreamVideoBuilder(context = applicationContext, apiKey = apiKey, user = newUser, token = newToken).build()
 ```
 
 `StreamVideo.removeClient()` clears the singleton so `StreamVideoBuilder` can register a new one. Skipping it leaves the previous instance live and ignores the new user.

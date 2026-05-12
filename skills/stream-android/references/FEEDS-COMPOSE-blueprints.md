@@ -615,7 +615,7 @@ fun ActivityComposerSheet(
 - The VM exposes view-events (`onPostClicked`, `onDismissed`) — "*this happened in the view*" — and decides internally what state to transition to. The Composable never reaches in to clear specific state (e.g. no `consumeDone()`); it just tells the VM what the user did. Apply this convention across every VM in this file: `onLikeClicked`, `onScrolledToEnd`, `onPullToRefresh`, `onSendClicked`, `onFollowClicked`, `onMarkAllReadClicked`, etc. — never imperative names like `toggleLike`, `loadMore`, `submit`, `markAllRead`.
 - The composer takes both feed ids; the story toggle picks which feed receives the activity *and* whether `expiresAt` is set. Keeping stories in a separate group means no `expiresAt` filter is needed in the timeline.
 - The Composable owns only transient UI state (`text`, `postAsStory`) via `rememberSaveable` so rotation preserves typed input. All operation state (`Posting`/`Done`/`Error`) lives on the ViewModel.
-- For attachments, see [FEEDS-COMPOSE.md → Create with attachments](FEEDS-COMPOSE.md#create-with-attachments). The picker + URI-copy work belongs in `ComposerViewModel.post(...)` too — the cacheDir cleanup `try { … } finally { files.forEach { it.delete() } }` shown there must run in `viewModelScope` for the same reason.
+- For attachments, see [FEEDS-COMPOSE.md → Create with attachments](FEEDS-COMPOSE.md#create-with-attachments). The picker + URI-copy work belongs in `ComposerViewModel.onPostClicked(...)` too — the cacheDir cleanup `try { … } finally { files.forEach { it.delete() } }` shown there must run in `viewModelScope` for the same reason.
 
 ---
 

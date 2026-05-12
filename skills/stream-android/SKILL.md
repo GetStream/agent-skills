@@ -22,7 +22,7 @@ allowed-tools:
   - Bash(command -v stream)
   - Bash(stream token *)
   - Bash(stream config *)
-  - Bash(stream --safe api *)
+  - Bash(stream --safe *)
   - Bash(stream api *)
 ---
 
