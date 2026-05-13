@@ -101,3 +101,5 @@ Before writing or editing **any** Stream Chat, Stream Video, or Stream Feeds scr
 Use the **Request → Blueprint section** table at the top of each blueprints file to resolve which section to read. If no section matches, say so explicitly before improvising — do not silently fall back to remembered SDK shapes from training data.
 
 Do **not** assume that because a blueprint section was read earlier in the session, its content is still in working context. Re-read the relevant section before each Stream screen edit.
+
+Before changing the public surface of an existing Stream screen — its Composable signature, nav arguments, exposed callbacks, or ViewModel's public API — grep the project for usages first. Blueprint conformance alone does not catch breakage in callers outside the files you have already read this session.
