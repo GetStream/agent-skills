@@ -1,6 +1,6 @@
 ---
 name: stream-flutter
-description: "Build and integrate Stream Chat in Flutter apps. Use for Flutter/Dart project work with Stream package setup, auth wiring, and widget blueprints. Supports stream_chat_flutter (pre-built UI) and stream_chat_flutter_core (custom UI)."
+description: "Build and integrate Stream Chat and Video in Flutter apps. Use for Flutter/Dart project work with Stream package setup, auth wiring, and widget blueprints. Supports stream_chat_flutter (pre-built Chat UI), stream_chat_flutter_core (custom Chat UI), and stream_video_flutter (Video calling and livestreaming)."
 license: See LICENSE in repository root
 compatibility: Requires a Flutter project (pubspec.yaml). No Stream CLI required.
 metadata:
@@ -36,10 +36,13 @@ Before any tool call, decide the **track** from the user's input alone - no prob
 | Signal in user input | Track |
 |---|---|
 | Explicit package/widget token: `stream_chat_flutter`, `StreamChannelListView`, `StreamMessageListView`, `StreamChatClient`, etc. | **C - Reference lookup** |
+| Explicit video token: `stream_video_flutter`, `StreamCallContainer`, `StreamVideo`, `StreamVideoRenderer`, `goLive`, `stopLive`, `livestream` call type | **C - Reference lookup** |
 | Words "docs" or "documentation" around Stream Flutter work | **C - Reference lookup** |
 | "How do I {X} in Flutter?", "What does {widget/method} do?" | **C - Reference lookup** |
 | "Build me a new Flutter app", "create a Flutter chat app" + Stream | **A - New app** |
+| "Build a Flutter video call app", "create a livestream app in Flutter" | **A - New app** (load `VIDEO-FLUTTER.md` + `VIDEO-FLUTTER-blueprints.md` or `LIVESTREAM-FLUTTER.md` + `LIVESTREAM-FLUTTER-blueprints.md`) |
 | "Add/integrate Stream into this app", "wire Chat into my Flutter project" | **B - Existing app** |
+| "Add video calling to my Flutter app", "integrate Stream Video into my existing app" | **B - Existing app** (load `VIDEO-FLUTTER.md` + `VIDEO-FLUTTER-blueprints.md`) |
 | "Install Stream packages", "set up Stream in Flutter", "wire auth/token" with no broader feature request | **D - Bootstrap / setup** |
 | Bare `/stream-flutter` with no args | List the tracks briefly and wait |
 
@@ -62,11 +65,13 @@ Run this once per session, right after intent classification, before the Project
 
 ### Goal
 
-Collect the Stream **API key**, a **user token**, and optionally seed a few channels - all before touching code - so the app has real data to show from the first run.
+Collect the Stream **API key**, a **user token**, and optionally seed channels or calls - all before touching code - so the app has real data to show from the first run.
 
 ### Single upfront question (ask exactly once, then act immediately)
 
 Post **one message** asking all relevant things together. Do not split into multiple rounds.
+
+**For Chat projects:**
 
 > To wire everything up with real data, I need a few quick answers:
 >
@@ -75,6 +80,15 @@ Post **one message** asking all relevant things together. Do not split into mult
 > 3. **Seed channels** - Should I pre-create a few channels with random usernames so the app has something to show immediately?
 >
 > If you want to handle everything yourself, just paste your API key and token and tell me whether to seed channels.
+
+**For Video projects** (calls are ephemeral - no seeding needed):
+
+> To wire everything up, I need a couple of quick answers:
+>
+> 1. **Credentials** - Should I fetch your API key from the dashboard and generate a token via the Stream CLI, or will you paste them yourself?
+> 2. **Token expiry** - If I'm generating the token: should it expire? (e.g. `1h`, `1d`, `30m`) or never expire?
+>
+> If you want to handle everything yourself, just paste your API key and token.
 
 ### After the user replies - act without further prompting
 
@@ -164,7 +178,7 @@ After all CLI steps succeed, move straight to **Project signals** and then into 
 Read-only local probe. Use it to detect whether the user is in a Flutter project or an empty directory.
 
 ```bash
-bash -c 'echo "=== FLUTTER ==="; find . -maxdepth 2 -name "pubspec.yaml" -print 2>/dev/null; echo "=== STREAM ==="; grep -r "stream_chat" . --include="pubspec.yaml" -l 2>/dev/null; echo "=== EMPTY ==="; test -z "$(ls -A 2>/dev/null)" && echo "EMPTY_CWD" || echo "NON_EMPTY"'
+bash -c 'echo "=== FLUTTER ==="; find . -maxdepth 2 -name "pubspec.yaml" -print 2>/dev/null; echo "=== STREAM ==="; grep -rE "stream_chat|stream_video" . --include="pubspec.yaml" -l 2>/dev/null; echo "=== EMPTY ==="; test -z "$(ls -A 2>/dev/null)" && echo "EMPTY_CWD" || echo "NON_EMPTY"'
 ```
 
 Hold the result in conversation context. Don't re-run it unless the user changes directory or the project shape clearly changed.
@@ -172,6 +186,7 @@ Hold the result in conversation context. Don't re-run it unless the user changes
 Use the result to produce a **one-line status**, for example:
 
 - `Flutter app detected - stream_chat_flutter already in pubspec.yaml`
+- `Flutter app detected - stream_video_flutter already in pubspec.yaml`
 - `Flutter app detected - no Stream dependency yet, ready to install`
 - `No Flutter project found - user needs to run flutter create first`
 
@@ -201,8 +216,10 @@ Current extracted modules:
 
 - **Chat + pre-built UI (`stream_chat_flutter`):** [`references/CHAT-FLUTTER.md`](references/CHAT-FLUTTER.md) + [`references/CHAT-FLUTTER-blueprints.md`](references/CHAT-FLUTTER-blueprints.md)
 - **Chat + custom UI (`stream_chat_flutter_core`):** [`references/CHAT-CORE.md`](references/CHAT-CORE.md) + [`references/CHAT-CORE-blueprints.md`](references/CHAT-CORE-blueprints.md)
+- **Video (`stream_video_flutter`):** [`references/VIDEO-FLUTTER.md`](references/VIDEO-FLUTTER.md) + [`references/VIDEO-FLUTTER-blueprints.md`](references/VIDEO-FLUTTER-blueprints.md)
+- **Livestream (`stream_video_flutter`):** [`references/LIVESTREAM-FLUTTER.md`](references/LIVESTREAM-FLUTTER.md) + [`references/LIVESTREAM-FLUTTER-blueprints.md`](references/LIVESTREAM-FLUTTER-blueprints.md)
 
-Future Stream product coverage (Video, Feeds) should stay in this naming family instead of creating more top-level skills.
+Future Stream product coverage (Feeds) should stay in this naming family instead of creating more top-level skills.
 
 ---
 
@@ -241,6 +258,10 @@ Load only the relevant files for the requested package.
 - Chat pre-built UI widget blueprints -> [`references/CHAT-FLUTTER-blueprints.md`](references/CHAT-FLUTTER-blueprints.md)
 - Chat custom UI setup and controllers -> [`references/CHAT-CORE.md`](references/CHAT-CORE.md)
 - Chat custom UI widget blueprints -> [`references/CHAT-CORE-blueprints.md`](references/CHAT-CORE-blueprints.md)
+- Video setup, call types, controls, state, StreamCallContainer -> [`references/VIDEO-FLUTTER.md`](references/VIDEO-FLUTTER.md)
+- Video widget blueprints (entry point, join, call container, controls, participant tile) -> [`references/VIDEO-FLUTTER-blueprints.md`](references/VIDEO-FLUTTER-blueprints.md)
+- Livestream SDK patterns (call type, backstage, goLive/stopLive, HLS) -> [`references/LIVESTREAM-FLUTTER.md`](references/LIVESTREAM-FLUTTER.md)
+- Livestream widget blueprints (mode selection, creator, WebRTC viewer, HLS viewer) -> [`references/LIVESTREAM-FLUTTER-blueprints.md`](references/LIVESTREAM-FLUTTER-blueprints.md)
 
 ---
 
