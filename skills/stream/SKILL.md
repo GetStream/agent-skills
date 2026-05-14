@@ -90,6 +90,7 @@ If the user already knows what they want, skip the router and invoke a sub-skill
 
 - `/stream-builder` - scaffold a new web (Next.js) app, or add Chat/Video/Feeds/Moderation to an existing one
 - `/stream-swift` - scaffold or integrate Stream into a Swift/SwiftUI/UIKit/iOS app (install confirmed first)
+- `/stream-flutter` - build or integrate Stream Chat into a Flutter app (install confirmed first)
 - `/stream-cli` - query Stream data via CLI, install the CLI, run `stream api / config / auth`
 - `/stream-docs` - search live Stream SDK documentation (no CLI needed)
 
