@@ -19,18 +19,20 @@ Do **not** try to scaffold Flutter projects from scratch.
 
 ## 2. Choose the integration lane
 
-Resolve two things before editing:
+Resolve three things before editing:
 
-1. **Product:** Chat, Video, Livestream, or a combination
+1. **Product:** Chat, Video, Livestream, Feeds, or a combination
 2. **Package / tier:**
    - Chat pre-built UI: `stream_chat_flutter`
    - Chat custom UI: `stream_chat_flutter_core`
    - Video calling or livestreaming: `stream_video_flutter`
+   - Activity Feeds: `stream_feeds` (the only correct package; `stream_feed` and `stream_feed_flutter_core` are deprecated)
 3. **Scope:** full app bootstrap, auth, a specific screen, or a targeted feature
+4. **Feeds only — UI style:** Default to Twitter-style. Only use a different style if the user explicitly says so.
 
-If the user has not stated a Chat preference, default to `stream_chat_flutter`. For Video, `stream_video_flutter` covers both standard calls and livestreaming.
+If the user has not stated a Chat preference, default to `stream_chat_flutter`. For Video, `stream_video_flutter` covers both standard calls and livestreaming. For Feeds, use `stream_feeds` — it is the only current package. Do not use `stream_feed` or `stream_feed_flutter_core`.
 
-If the user only asked for setup, stop after the shared wiring in [`sdk.md`](sdk.md) (for Chat) or after client initialization in [`references/VIDEO-FLUTTER.md`](references/VIDEO-FLUTTER.md) (for Video).
+If the user only asked for setup, stop after the shared wiring in [`sdk.md`](sdk.md) (for Chat), after client initialization in [`references/VIDEO-FLUTTER.md`](references/VIDEO-FLUTTER.md) (for Video), or after `setUser` + `FeedProvider` wiring (for Feeds).
 
 ---
 
@@ -63,6 +65,19 @@ dependencies:
 ```
 
 Do not add `stream_video` separately when `stream_video_flutter` is chosen - the UI package re-exports it.
+
+### Feeds
+
+Add the dependency to `pubspec.yaml`:
+
+```yaml
+dependencies:
+  stream_feeds: ^0.5.1   # check pub.dev for latest; requires Dart >=3.6.2
+```
+
+> **Package name is `stream_feeds` (plural).** Do not use `stream_feed` (deprecated, fails to compile on Dart 3) or `stream_feed_flutter_core` (old package, incompatible with `stream_feeds`). `stream_feeds` is the only package needed.
+
+The Feeds SDK has **no pre-built UI widgets**; all feed screens are built with standard Flutter widgets.
 
 Then run:
 
@@ -137,6 +152,18 @@ Add entitlements to `macos/Runner/Release.entitlements` and `macos/Runner/DebugP
 <key>com.apple.security.files.user-selected.read-write</key>
 <true/>
 ```
+
+### Feeds platform setup
+
+No native dependencies beyond standard network access.
+
+**Android** — add to `android/app/src/main/AndroidManifest.xml` if not already present:
+
+```xml
+<uses-permission android:name="android.permission.INTERNET"/>
+```
+
+**iOS** — no additional `Info.plist` keys are needed for basic feed functionality. If the user adds image upload, add `NSPhotoLibraryUsageDescription` and `NSCameraUsageDescription` following the same pattern as Chat.
 
 ### Video platform setup
 
@@ -215,6 +242,18 @@ Follow [`references/VIDEO-FLUTTER.md`](references/VIDEO-FLUTTER.md) for:
 
 Keep the existing app shell intact. Add only the minimum composition points needed for Stream.
 
+### Feeds
+
+Follow [`references/FEEDS-FLUTTER.md`](references/FEEDS-FLUTTER.md) for:
+
+- `StreamFeedClient('apiKey')` initialization before `runApp`
+- `client.setUser(user, token)` — always `await` before `runApp`; use real credentials from Step 0.5
+- `FeedProvider(bloc: FeedBloc(client: client), child: MaterialApp(...))` wrapping the app
+- feed group references: `client.flatFeed('user', userId)`, `client.flatFeed('timeline', userId)`
+- activity queries with `getEnrichedActivities` and reactions via `client.reactions`
+
+**UI style:** Twitter-style by default. Load `FEEDS-FLUTTER-blueprints.md` and use those blueprints directly. Only adapt to Instagram/Reddit/custom layout if the user explicitly asks for it.
+
 ---
 
 ## 6. Load only the needed reference files
@@ -231,6 +270,8 @@ Available extracted modules:
 - Video widget blueprints: [`references/VIDEO-FLUTTER-blueprints.md`](references/VIDEO-FLUTTER-blueprints.md)
 - Livestream SDK patterns: [`references/LIVESTREAM-FLUTTER.md`](references/LIVESTREAM-FLUTTER.md)
 - Livestream widget blueprints: [`references/LIVESTREAM-FLUTTER-blueprints.md`](references/LIVESTREAM-FLUTTER-blueprints.md)
+- Feeds SDK setup, activities, reactions, follow/unfollow, realtime: [`references/FEEDS-FLUTTER.md`](references/FEEDS-FLUTTER.md)
+- Feeds widget blueprints (Twitter-style default; Instagram/Reddit variants): [`references/FEEDS-FLUTTER-blueprints.md`](references/FEEDS-FLUTTER-blueprints.md)
 
 If the exact file is not present yet, say so directly instead of faking a reference.
 
@@ -257,3 +298,12 @@ Check the smallest set of outcomes that proves the integration works:
 - `call.leave()` is called in `dispose()` as a safety net
 - Android runtime camera and microphone permissions are requested before joining
 - the `StreamCallContainer` or custom call UI appears after a successful join
+
+**Feeds:**
+- `StreamFeedClient` is initialized before `runApp` and `setUser` is awaited
+- `FeedProvider` wraps the widget tree before any `FlatFeedCore` or `FeedBloc` access
+- `client.flatFeed('timeline', userId)` returns activities from followed users
+- `client.flatFeed('user', userId)` stores activities posted by the user
+- reactions are added/removed via `client.reactions.add` / `client.reactions.delete`
+- feed subscriptions created in `initState` are cancelled in `dispose()`
+- the requested feed screen (home timeline, profile, notifications) renders with real data

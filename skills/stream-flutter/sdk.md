@@ -6,6 +6,8 @@ This file holds the shared Flutter/Dart patterns that cut across different Strea
 
 ## Package tiers
 
+### Chat
+
 Three tiers with increasing control:
 
 | Package | Use when |
@@ -15,6 +17,18 @@ Three tiers with increasing control:
 | `stream_chat` | Low-level API access - direct `StreamChatClient` calls, no UI helpers |
 
 Default to `stream_chat_flutter` unless the user explicitly needs custom UI or low-level control.
+
+### Feeds
+
+One package — no pre-built UI:
+
+| Package | Notes |
+|---|---|
+| `stream_feeds: ^0.5.1` | Current package. Requires Dart >=3.6.2. Client, models, reactions, follow/unfollow, pagination. No UI. |
+
+> **Do not use `stream_feed` or `stream_feed_flutter_core`.** Both are deprecated and incompatible with Dart 3. `stream_feeds` is the only correct choice.
+
+All feed UI is built with standard Flutter widgets (`StatefulWidget` + `setState` or the user's existing state management). Default UI style is Twitter-style.
 
 ---
 

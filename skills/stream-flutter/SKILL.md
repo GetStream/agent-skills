@@ -1,6 +1,6 @@
 ---
 name: stream-flutter
-description: "Build and integrate Stream Chat and Video in Flutter apps. Use for Flutter/Dart project work with Stream package setup, auth wiring, and widget blueprints. Supports stream_chat_flutter (pre-built Chat UI), stream_chat_flutter_core (custom Chat UI), and stream_video_flutter (Video calling and livestreaming)."
+description: "Build and integrate Stream Chat, Video, and Feeds in Flutter apps. Use for Flutter/Dart project work with Stream package setup, auth wiring, and widget blueprints. Supports stream_chat_flutter (pre-built Chat UI), stream_chat_flutter_core (custom Chat UI), stream_video_flutter (Video calling and livestreaming), and stream_feed / stream_feed_flutter_core (Activity Feeds, no pre-built UI)."
 license: See LICENSE in repository root
 compatibility: Requires a Flutter project (pubspec.yaml). No Stream CLI required.
 metadata:
@@ -37,12 +37,15 @@ Before any tool call, decide the **track** from the user's input alone - no prob
 |---|---|
 | Explicit package/widget token: `stream_chat_flutter`, `StreamChannelListView`, `StreamMessageListView`, `StreamChatClient`, etc. | **C - Reference lookup** |
 | Explicit video token: `stream_video_flutter`, `StreamCallContainer`, `StreamVideo`, `StreamVideoRenderer`, `goLive`, `stopLive`, `livestream` call type | **C - Reference lookup** |
+| Explicit feeds token: `stream_feed`, `stream_feed_flutter_core`, `StreamFeedClient`, `FlatFeedCore`, `FlatFeed`, `FeedBloc`, `activity feed`, `feeds flutter` | **C - Reference lookup** |
 | Words "docs" or "documentation" around Stream Flutter work | **C - Reference lookup** |
 | "How do I {X} in Flutter?", "What does {widget/method} do?" | **C - Reference lookup** |
 | "Build me a new Flutter app", "create a Flutter chat app" + Stream | **A - New app** |
 | "Build a Flutter video call app", "create a livestream app in Flutter" | **A - New app** (load `VIDEO-FLUTTER.md` + `VIDEO-FLUTTER-blueprints.md` or `LIVESTREAM-FLUTTER.md` + `LIVESTREAM-FLUTTER-blueprints.md`) |
+| "Build a Flutter feeds app", "create an activity feed app", "build a social feed in Flutter", "create a Twitter/Instagram clone" | **A - New app** (load `FEEDS-FLUTTER.md` + `FEEDS-FLUTTER-blueprints.md`; use Twitter-style UI unless the user explicitly specifies otherwise) |
 | "Add/integrate Stream into this app", "wire Chat into my Flutter project" | **B - Existing app** |
 | "Add video calling to my Flutter app", "integrate Stream Video into my existing app" | **B - Existing app** (load `VIDEO-FLUTTER.md` + `VIDEO-FLUTTER-blueprints.md`) |
+| "Add a feed to my Flutter app", "integrate Stream Feeds into my existing app", "add activity feed" | **B - Existing app** (load `FEEDS-FLUTTER.md` + `FEEDS-FLUTTER-blueprints.md`; use Twitter-style UI unless the user explicitly specifies otherwise) |
 | "Install Stream packages", "set up Stream in Flutter", "wire auth/token" with no broader feature request | **D - Bootstrap / setup** |
 | Bare `/stream-flutter` with no args | List the tracks briefly and wait |
 
@@ -89,6 +92,38 @@ Post **one message** asking all relevant things together. Do not split into mult
 > 2. **Token expiry** - If I'm generating the token: should it expire? (e.g. `1h`, `1d`, `30m`) or never expire?
 >
 > If you want to handle everything yourself, just paste your API key and token.
+
+**For Feeds projects** (no pre-built UI; feed groups required):
+
+Ask **one message** with all setup questions together — do not split into rounds:
+
+> To wire everything up, I need a few quick answers:
+>
+> 1. **Credentials** - Should I fetch your API key from the dashboard and generate a token via the Stream CLI, or will you paste them yourself?
+> 2. **Token expiry** - If I'm generating the token: should it expire? (e.g. `1h`, `1d`, `30m`) or never expire?
+> 3. **Feed groups** - I need to create 3 feed groups in your Stream project (user, timeline, notification). Should I set these up automatically, or have you already created them?
+> 4. **Seed posts** - Should I add a few sample posts so the feed has content from the first run?
+>
+> If you want to handle credentials yourself, just paste your API key and token.
+
+Once the user replies, execute all steps without pausing. For feed groups, if the user said "set up automatically":
+
+```bash
+stream api CreateFeedGroup --body '{"id": "user", "type": "flat"}'
+stream api CreateFeedGroup --body '{"id": "timeline", "type": "flat"}'
+stream api CreateFeedGroup --body '{"id": "notification", "type": "notification"}'
+```
+
+If the CLI commands fail (the Feeds API may use different endpoints than Chat), tell the user once:
+> Please create these in Stream Dashboard → Activity Feeds → Feed Groups: `user` (Flat), `timeline` (Flat), `notification` (Notification).
+
+For Feeds projects, always generate two separate helpers in `main` after `connect()`:
+1. `_setupFollows(client)` — **always called, unconditionally.** Makes `timeline` follow `user` so the user's own posts appear there. Do not merge this into seed logic — once seed data exists the guard returns early and the follow call never runs.
+2. `_seedPosts(client)` — only if the user said yes to seeding. Adds sample activities and exits early if data already exists.
+
+See [`references/FEEDS-FLUTTER.md`](references/FEEDS-FLUTTER.md) for both implementations.
+
+The package is `stream_feeds: ^0.5.1` — not the deprecated `stream_feed` or `stream_feed_flutter_core`.
 
 ### After the user replies - act without further prompting
 
@@ -178,7 +213,7 @@ After all CLI steps succeed, move straight to **Project signals** and then into 
 Read-only local probe. Use it to detect whether the user is in a Flutter project or an empty directory.
 
 ```bash
-bash -c 'echo "=== FLUTTER ==="; find . -maxdepth 2 -name "pubspec.yaml" -print 2>/dev/null; echo "=== STREAM ==="; grep -rE "stream_chat|stream_video" . --include="pubspec.yaml" -l 2>/dev/null; echo "=== EMPTY ==="; test -z "$(ls -A 2>/dev/null)" && echo "EMPTY_CWD" || echo "NON_EMPTY"'
+bash -c 'echo "=== FLUTTER ==="; find . -maxdepth 2 -name "pubspec.yaml" -print 2>/dev/null; echo "=== STREAM ==="; grep -rE "stream_chat|stream_video|stream_feed" . --include="pubspec.yaml" -l 2>/dev/null; echo "=== EMPTY ==="; test -z "$(ls -A 2>/dev/null)" && echo "EMPTY_CWD" || echo "NON_EMPTY"'
 ```
 
 Hold the result in conversation context. Don't re-run it unless the user changes directory or the project shape clearly changed.
@@ -187,6 +222,7 @@ Use the result to produce a **one-line status**, for example:
 
 - `Flutter app detected - stream_chat_flutter already in pubspec.yaml`
 - `Flutter app detected - stream_video_flutter already in pubspec.yaml`
+- `Flutter app detected - stream_feed already in pubspec.yaml`
 - `Flutter app detected - no Stream dependency yet, ready to install`
 - `No Flutter project found - user needs to run flutter create first`
 
@@ -200,6 +236,8 @@ Use the result to produce a **one-line status**, for example:
 | B - Existing app | [`builder.md`](builder.md) + [`sdk.md`](sdk.md) + relevant reference files |
 | C - Reference lookup | [`sdk.md`](sdk.md) + relevant reference files |
 | D - Bootstrap / setup | [`builder.md`](builder.md) + [`sdk.md`](sdk.md) |
+
+> **Feeds note (Track A/B):** Use Twitter-style UI by default. Only deviate if the user explicitly requests a different style (e.g., "Instagram grid", "Reddit-style votes").
 
 ---
 
@@ -218,8 +256,9 @@ Current extracted modules:
 - **Chat + custom UI (`stream_chat_flutter_core`):** [`references/CHAT-CORE.md`](references/CHAT-CORE.md) + [`references/CHAT-CORE-blueprints.md`](references/CHAT-CORE-blueprints.md)
 - **Video (`stream_video_flutter`):** [`references/VIDEO-FLUTTER.md`](references/VIDEO-FLUTTER.md) + [`references/VIDEO-FLUTTER-blueprints.md`](references/VIDEO-FLUTTER-blueprints.md)
 - **Livestream (`stream_video_flutter`):** [`references/LIVESTREAM-FLUTTER.md`](references/LIVESTREAM-FLUTTER.md) + [`references/LIVESTREAM-FLUTTER-blueprints.md`](references/LIVESTREAM-FLUTTER-blueprints.md)
+- **Feeds (`stream_feed` / `stream_feed_flutter_core`):** [`references/FEEDS-FLUTTER.md`](references/FEEDS-FLUTTER.md) + [`references/FEEDS-FLUTTER-blueprints.md`](references/FEEDS-FLUTTER-blueprints.md)
 
-Future Stream product coverage (Feeds) should stay in this naming family instead of creating more top-level skills.
+Additional Stream product coverage should stay in this naming family instead of creating more top-level skills.
 
 ---
 
@@ -230,7 +269,7 @@ Future Stream product coverage (Feeds) should stay in this naming family instead
 | Phase | Name | What you do |
 |---|---|---|
 | **A1** | Detect | Run **Project signals**. If there is no Flutter app yet, tell the user to run `flutter create my_app` first. |
-| **A2** | Choose lane | Confirm package choice: `stream_chat_flutter` (pre-built UI, fastest) or `stream_chat_flutter_core` (custom UI). |
+| **A2** | Choose lane | Confirm package choice: `stream_chat_flutter` (pre-built UI, fastest), `stream_chat_flutter_core` (custom UI), `stream_video_flutter` (video/livestream), or `stream_feed` / `stream_feed_flutter_core` (activity feeds, no pre-built UI). For Feeds, default to Twitter-style UI. |
 | **A3** | Install + wire | Follow [`builder.md`](builder.md) + [`sdk.md`](sdk.md), then load only the needed reference files. |
 | **A4** | Verify | Confirm `flutter pub get` succeeds, client connects, and first screen renders. |
 
@@ -262,6 +301,8 @@ Load only the relevant files for the requested package.
 - Video widget blueprints (entry point, join, call container, controls, participant tile) -> [`references/VIDEO-FLUTTER-blueprints.md`](references/VIDEO-FLUTTER-blueprints.md)
 - Livestream SDK patterns (call type, backstage, goLive/stopLive, HLS) -> [`references/LIVESTREAM-FLUTTER.md`](references/LIVESTREAM-FLUTTER.md)
 - Livestream widget blueprints (mode selection, creator, WebRTC viewer, HLS viewer) -> [`references/LIVESTREAM-FLUTTER-blueprints.md`](references/LIVESTREAM-FLUTTER-blueprints.md)
+- Feeds SDK setup, StreamFeedClient, feed types, activities, reactions, follow/unfollow, realtime -> [`references/FEEDS-FLUTTER.md`](references/FEEDS-FLUTTER.md)
+- Feeds widget blueprints (Twitter-style by default: home feed, activity card, compose, profile, notifications; also Instagram/Reddit variants) -> [`references/FEEDS-FLUTTER-blueprints.md`](references/FEEDS-FLUTTER-blueprints.md)
 
 ---
 
