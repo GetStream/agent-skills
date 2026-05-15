@@ -1,336 +1,233 @@
 # Stream React Native - shared SDK patterns
 
-This file holds shared React Native and Expo patterns for Stream Chat RN. Load it before Chat-specific references when you need lifecycle, auth, provider, navigation, offline, or sign-out guidance.
+This file holds the shared React Native and Expo patterns that cut across Stream Chat and Stream Video. Load it before product-specific references when you need client lifecycle, auth, provider, navigation, or lifecycle/cleanup guidance.
+
+> **Client model.** Chat uses a process-wide singleton (`StreamChat.getInstance(apiKey)`) and swaps user identity via `connectUser` / `disconnectUser`. Video uses `StreamVideoClient.getOrCreateInstance({ apiKey, user, tokenProvider, options? })` - **never `new StreamVideoClient(...)`** - which caches a single instance per process and breaks push/state if you create more than one. Both products tear down the current user with `disconnectUser()` before building a new client for a different user.
+
+For the canonical Video best-practices source, see [`/video/docs/react-native/advanced/integration-best-practices/`](https://getstream.io/video/docs/react-native/advanced/integration-best-practices.md).
 
 ---
 
 ## Runtime package lane
 
-| Runtime | Package | Import from |
-|---|---|---|
-| RN CLI | `stream-chat-react-native` | `"stream-chat-react-native"` |
-| Expo | `stream-chat-expo` | `"stream-chat-expo"` |
+| Product | RN CLI | Expo | Import from |
+|---|---|---|---|
+| Chat | `stream-chat-react-native` | `stream-chat-expo` | matching package |
+| Video | `@stream-io/video-react-native-sdk` | `@stream-io/video-react-native-sdk` (same package) | `"@stream-io/video-react-native-sdk"` |
 
-Most component names are the same across lanes. Swap the import package to match the project. Import Stream Chat client types from `stream-chat` only when needed.
+Most Chat component names are the same across CLI and Expo - swap the import package to match the project. Video uses the same package across CLI and Expo and is differentiated only by install commands and Expo config plugins.
 
 Never mix `stream-chat-react-native` and `stream-chat-expo` in the same app unless the existing project already does so intentionally.
 
 ---
 
-## Required root shape
+## App shapes
 
-All Chat UI needs `GestureHandlerRootView`, `OverlayProvider`, and `Chat`.
+Match the project that already exists:
+
+- **Expo Router app:** ownership starts in `app/_layout.tsx`
+- **RN CLI with React Navigation:** ownership starts in `App.tsx` (or the component registered from `index.js`)
+- **Mixed / non-standard navigation:** keep Stream setup at the shared boundary (`App` root) instead of duplicating it per screen
+
+Do not rewrite the app into a different navigator unless the user asks.
+
+---
+
+## Client ownership
+
+Create each Stream client once, store it in app-scoped state, and pass or hook it from there.
+
+Good ownership points:
+
+- the top-level `App` component (or `app/_layout.tsx`)
+- a context provider that wraps the navigator
+- a module-level singleton initialised in the auth flow
+
+Bad ownership points:
+
+- inside a screen body
+- inside a `useEffect` with empty deps inside a leaf component that remounts on navigation
+- per channel screen (Chat) or per call screen (Video)
+- inside render-time factories or unstable callbacks
+
+### Chat client lifecycle
+
+`useCreateChatClient` is the supported path. It creates a client, connects the user, returns `null` while connecting, and disconnects on cleanup. Never pass `null` to `<Chat client={...}>`.
 
 ```tsx
-import React from "react";
-import { ActivityIndicator, View } from "react-native";
+import { Chat, OverlayProvider, useCreateChatClient } from "stream-chat-react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import {
-  Chat,
-  OverlayProvider,
-  useCreateChatClient,
-} from "stream-chat-react-native";
 
-type ChatRootProps = {
-  apiKey: string;
-  tokenOrProvider: string | (() => Promise<string>);
-  userId: string;
-  userName: string;
-  children: React.ReactNode;
-};
-
-export const ChatRoot = ({
+const chatClient = useCreateChatClient({
   apiKey,
-  children,
   tokenOrProvider,
-  userId,
-  userName,
-}: ChatRootProps) => {
-  const chatClient = useCreateChatClient({
-    apiKey,
-    tokenOrProvider,
-    userData: { id: userId, name: userName },
-  });
+  userData: { id: userId, name: userName },
+});
 
-  if (!chatClient) {
-    return (
-      <GestureHandlerRootView style={{ flex: 1 }}>
-        <View style={{ alignItems: "center", flex: 1, justifyContent: "center" }}>
-          <ActivityIndicator size="large" />
-        </View>
-      </GestureHandlerRootView>
-    );
-  }
+if (!chatClient) return null;
 
-  return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <OverlayProvider>
-        <Chat client={chatClient}>{children}</Chat>
-      </OverlayProvider>
-    </GestureHandlerRootView>
-  );
-};
+return (
+  <GestureHandlerRootView style={{ flex: 1 }}>
+    <OverlayProvider>
+      <Chat client={chatClient}>{children}</Chat>
+    </OverlayProvider>
+  </GestureHandlerRootView>
+);
 ```
 
 For Expo, change imports from `stream-chat-react-native` to `stream-chat-expo`.
 
-`useCreateChatClient` returns `null` while connecting. Never pass `null` to `Chat`.
+### Video client lifecycle
+
+```tsx
+import { useEffect, useState } from "react";
+import {
+  StreamVideo,
+  StreamVideoClient,
+  User,
+} from "@stream-io/video-react-native-sdk";
+
+const [client, setClient] = useState<StreamVideoClient>();
+
+useEffect(() => {
+  const user: User = { id: userId, name: userName };
+  const tokenProvider = async () => api.fetchToken(userId);
+  const c = StreamVideoClient.getOrCreateInstance({ apiKey, user, tokenProvider });
+  setClient(c);
+  return () => {
+    c.disconnectUser().catch((err) => console.error(err));
+    setClient(undefined);
+  };
+}, [apiKey, userId]);
+
+if (!client) return null;
+return <StreamVideo client={client}>{children}</StreamVideo>;
+```
+
+For ringing/push, pass the **same** `options` to `getOrCreateInstance` and `StreamVideoRN.setPushConfig`; the helper reuses cached instances and option mismatches break ringing.
+
+### Call lifetime (Video)
+
+Create `Call` only after the client is ready, inside a `useEffect`, and always `call.leave()` on cleanup. Dangling calls keep publishing audio/video and leak memory.
+
+```tsx
+import { useEffect, useState } from "react";
+import { useStreamVideoClient, Call, callManager } from "@stream-io/video-react-native-sdk";
+
+const client = useStreamVideoClient();
+const [call, setCall] = useState<Call>();
+
+useEffect(() => {
+  if (!client) return;
+  const c = client.call(type, id);
+  setCall(c);
+  callManager.start({ audioRole: "communicator", deviceEndpointType: "speaker" });
+  c.join().catch((err) => console.error("Failed to join", err));
+  return () => {
+    callManager.stop();
+    c.leave().catch((err) => console.error(err));
+    setCall(undefined);
+  };
+}, [client, type, id]);
+```
+
+A `Call` initializes after any of `call.get()`, `call.create()`, `call.getOrCreate()`, or `call.join()`.
 
 ---
 
 ## Auth model
 
-Production apps should fetch tokens from the app backend. A token provider lets the SDK refresh tokens:
+Use the simplest token shape that matches the user's environment:
 
-```tsx
-const tokenProvider = async () => {
-  const response = await fetch(
-    `https://your-api.example.com/stream-token?user_id=${encodeURIComponent(userId)}`,
-  );
-  const body = await response.json();
-  return body.token;
-};
-```
+- **Backend exists:** prefer a backend-issued Stream token via a `tokenProvider` callback. The SDK calls it again automatically when the token nears expiry or reconnects.
+- **No backend / demo flow:** generate a token with the Stream CLI (`stream token <user_id>`; expiring: `stream token <user_id> --ttl 1h`). See [`credentials.md`](credentials.md).
+- **User pastes their own:** accept it and pass to the client.
 
-Local demos can use a CLI-generated token from [`credentials.md`](credentials.md). Do not use `devToken()` for production.
+Keep the split clear:
 
-If the app already has auth, extend that flow. Do not add an unrelated login system unless the user asks for a demo shell.
+- **client:** API key, `User` (`id`, `name`, `image`), user token
+- **server:** API secret and token minting (the CLI handles this automatically)
 
----
+If the app already has its own auth system, extend that flow instead of adding a second login model beside it. Connect / build once per user session, not on every screen entry.
 
-## React Navigation placement
-
-When using React Navigation, keep `OverlayProvider` above navigation screens and keep `Chat` stable:
-
-```tsx
-import { NavigationContainer } from "@react-navigation/native";
-import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { SafeAreaProvider } from "react-native-safe-area-context";
-
-const Stack = createNativeStackNavigator();
-
-export const AppShell = ({ chatClient }) => (
-  <GestureHandlerRootView style={{ flex: 1 }}>
-    <SafeAreaProvider>
-      <OverlayProvider>
-        <NavigationContainer>
-          <Chat client={chatClient}>
-            <Stack.Navigator>
-              <Stack.Screen name="Channels" component={ChannelListScreen} />
-              <Stack.Screen name="Channel" component={ChannelScreen} />
-              <Stack.Screen name="Thread" component={ThreadScreen} />
-            </Stack.Navigator>
-          </Chat>
-        </NavigationContainer>
-      </OverlayProvider>
-    </SafeAreaProvider>
-  </GestureHandlerRootView>
-);
-```
-
-For Expo Router, put the same provider stack in `app/_layout.tsx`. Keep screen files focused on `ChannelList`, `Channel`, `MessageList`, `MessageComposer`, `Thread`, or `ThreadList`.
-
-If `createNativeStackNavigator` or modal presentation causes overlay layering problems, keep the chat screens inside the provider subtree and avoid full-screen native modals for Chat until the overlay behavior is verified.
+Never use `devToken()` (Chat) for production. Never invent credentials.
 
 ---
 
-## Channel list and channel navigation
+## Provider tree and navigation
 
-Use stable filters and sort values. Pass a channel CID through navigation, not a `Channel` instance.
+**Chat:** `GestureHandlerRootView` -> `SafeAreaProvider` (optional) -> `OverlayProvider` -> `NavigationContainer` (or Expo Router root) -> `<Chat>` -> screens. Keep `OverlayProvider` above navigation so attachment picker / image gallery / overlays render above the active screen. Keep `<Chat>` high enough that screen transitions do not reconnect the socket.
 
-```tsx
-import React, { useMemo } from "react";
-import { ChannelList } from "stream-chat-react-native";
+**Video:** `GestureHandlerRootView` (recommended) -> `<StreamVideo client={client}>` -> `NavigationContainer` (or Expo Router root) -> screens. Mount `StreamVideo` once near the app root; tearing it down restarts the WebSocket.
 
-export const ChannelListScreen = ({ navigation, userId }) => {
-  const filters = useMemo(
-    () => ({ members: { $in: [userId] }, type: "messaging" }),
-    [userId],
-  );
-  const sort = useMemo(() => [{ last_message_at: -1 }], []);
-
-  return (
-    <ChannelList
-      filters={filters}
-      onSelect={(channel) => navigation.navigate("Channel", { channelCid: channel.cid })}
-      sort={sort}
-    />
-  );
-};
-```
-
-Recreate the channel on the destination from `useChatContext().client`:
+**Chat + Video together:** nest both providers. Order does not matter, but **nest** them - do not place as siblings.
 
 ```tsx
-import React, { useMemo } from "react";
-import { useHeaderHeight } from "@react-navigation/elements";
-import {
-  Channel,
-  MessageComposer,
-  MessageList,
-  useChatContext,
-} from "stream-chat-react-native";
-
-export const ChannelScreen = ({ route }) => {
-  const { channelCid } = route.params;
-  const { client } = useChatContext();
-  const headerHeight = useHeaderHeight();
-
-  const channel = useMemo(() => {
-    const [type, id] = channelCid.split(":");
-    return client.channel(type, id);
-  }, [channelCid, client]);
-
-  return (
-    <Channel
-      channel={channel}
-      keyboardVerticalOffset={headerHeight}
-    >
-      <MessageList />
-      <MessageComposer />
-    </Channel>
-  );
-};
+<GestureHandlerRootView style={{ flex: 1 }}>
+  <StreamVideo client={videoClient}>
+    <OverlayProvider>
+      <Chat client={chatClient}>
+        <NavigationContainer>{/* navigator */}</NavigationContainer>
+      </Chat>
+    </OverlayProvider>
+  </StreamVideo>
+</GestureHandlerRootView>
 ```
+
+Pass references through navigation params, not live objects:
+
+- Chat: pass `channel.cid` (string), not the `Channel` instance. Recreate from `useChatContext().client.channel(type, id)` on the destination screen.
+- Video: pass `call.cid` (string), not the `Call` instance. Recreate from `useStreamVideoClient().call(type, id)` on the destination screen.
 
 ---
 
-## Threads
+## State and React patterns
 
-Keep the current thread in explicit state or context. When navigating to a thread screen, pass the thread value to both the main `Channel` and the thread `Channel`.
+Stateful SDK helpers should have explicit ownership:
 
-```tsx
-<Channel channel={channel} thread={thread}>
-  <MessageList
-    onThreadSelect={(selectedThread) => {
-      setThread(selectedThread);
-      navigation.navigate("Thread");
-    }}
-  />
-  <MessageComposer />
-</Channel>
-```
+- **Chat:** use the SDK's pre-built screens (`ChannelList`, `Channel`, `MessageList`, `MessageComposer`, `Thread`) and read context via `useChatContext`, `useMessageContext`, etc. Do not instantiate `StreamChat` inside Composables/screens.
+- **Video:** read call state via `useCallStateHooks()` sub-hooks (`useCallCallingState`, `useParticipants`, `useCameraState`, `useMicrophoneState`, `useCallRingingState`). Do not instantiate `StreamVideoClient` or `Call` inside leaf components - hoist them into `App` or a screen-owned `useEffect`.
 
-```tsx
-<Channel channel={channel} thread={thread} threadList>
-  <Thread onThreadDismount={() => setThread(undefined)} />
-</Channel>
-```
-
-Use `ThreadList` inside `Chat` when the user asks for an inbox of threads.
+Avoid creating filters/sort values (Chat) or `Call` instances (Video) inline on every render. Memoise with `useMemo` keyed on inputs that actually change.
 
 ---
 
-## Theming and component overrides
+## Lifecycle and cleanup
 
-Prefer theme or `WithComponents` overrides before replacing full core components.
-
-```tsx
-import { WithComponents } from "stream-chat-react-native";
-
-<WithComponents overrides={{ MessageAuthor: CustomAuthor }}>
-  <Channel channel={channel}>
-    <MessageList />
-    <MessageComposer />
-  </Channel>
-</WithComponents>;
-```
-
-Put overlay-level theme values on `OverlayProvider` so attachment picker, image gallery, and message overlays receive them:
-
-```tsx
-<OverlayProvider value={{ style: chatTheme }}>
-  <Chat client={chatClient} style={chatTheme}>
-    {children}
-  </Chat>
-</OverlayProvider>
-```
-
-Keep theme objects stable with `useMemo`.
+- **Chat:** unmount or change `useCreateChatClient` inputs on sign-out. If offline support is enabled, run `chatClient.offlineDb?.resetDB()` **before** `disconnectUser()` to avoid cross-user data leaks.
+- **Video:** call `client.disconnectUser()` and clear the state holding the client on sign-out. For active calls, `call.leave()` must run on unmount.
+- **AppState / background:** the SDK auto-reconnects on network changes. For Video, tune the reconnection window with `call.setDisconnectionTimeout(seconds)` rather than ending calls on temporary disconnects. Android requires a foreground service for background calls.
 
 ---
 
-## Offline support
+## Error handling
 
-For normal Chat setup, `useCreateChatClient` is preferred. For offline-first behavior, the docs require starting `connectUser`, setting UI ready immediately, and not waiting for the connection promise before rendering Chat.
+Wrap promise-returning SDK calls in try/catch and surface meaningful errors:
 
-Use this manual pattern only when offline support is requested and initial offline rendering matters:
+```ts
+try {
+  await call.join({ maxJoinRetries: 1 });
+} catch (err) {
+  console.error("Join failed", err);
+}
 
-```tsx
-import React, { useEffect, useMemo, useState } from "react";
-import { StreamChat } from "stream-chat";
-import { Chat } from "stream-chat-react-native";
-
-export const OfflineChatRoot = ({ apiKey, children, tokenOrProvider, user }) => {
-  const client = useMemo(() => StreamChat.getInstance(apiKey), [apiKey]);
-  const [isReady, setIsReady] = useState(false);
-
-  useEffect(() => {
-    let mounted = true;
-    const connectPromise = client.connectUser(user, tokenOrProvider);
-    setIsReady(true);
-
-    connectPromise.catch((error) => {
-      if (mounted) console.warn("Stream connect failed", error);
-    });
-
-    return () => {
-      mounted = false;
-    };
-  }, [tokenOrProvider, user]);
-
-  if (!isReady) return null;
-
-  return <Chat client={client} enableOfflineSupport>{children}</Chat>;
-};
+try {
+  await call.camera.enable();
+  await call.microphone.enable();
+} catch (err) {
+  console.error("Failed to enable a device", err);
+}
 ```
 
-On sign-out with offline enabled:
-
-```tsx
-await chatClient.offlineDb?.resetDB();
-await chatClient.disconnectUser();
-```
-
-Expo apps in this skill use a dev-client/native-build lane by default; do not target Expo Go.
+`call.join()` retries with exponential backoff by default; cap with `maxJoinRetries` when fast-fail UI is preferred. For Chat connect failures, surface them through your auth flow before mounting Chat.
 
 ---
 
-## Native multipart uploads
+## Combined Chat + Video apps
 
-For upload progress in current React Native and Expo native builds, use the native multipart driver:
+A single RN app can run both Chat and Video. Build both clients with the same API key; both products can share the same user token if both are enabled for the API key. Nest providers (do not silo); see the provider tree example above.
 
-```tsx
-<Chat client={chatClient} useNativeMultipartUpload={true}>
-  {children}
-</Chat>
-```
-
-Expo apps already use a dev-client/native-build lane. If the app does not have native projects yet, generate them and start the dev client:
-
-```bash
-npx expo prebuild
-npx expo start --dev-client
-```
-
-Do not use Expo Go for `stream-chat-expo` apps in this skill.
-
-### Upload troubleshooting
-
-Known simulator-only issue: on iOS Simulator, after fully closing and reopening the app, the first native multipart upload can fail while later uploads may proceed. Verify on a real device before treating it as a general SDK bug.
-
-Recommended debug points:
-
-- JS native multipart adapter
-- `nativeMultipartUpload`
-- message input upload failure path
-- iOS Swift multipart bridge/manager logs
-
----
-
-## Push notifications
-
-If the user asks for push notifications, use [references/DOCS.md](references/DOCS.md) to fetch the manifest-selected push notification docs before editing. Do not assume background WebSocket behavior, provider registration steps, or default prop values from memory.
+For interop-specific guidance (call from inside a chat channel, attach a thread to a call, ringing UX in a chat-first app), fetch the manifest-selected `https://getstream.io/video/docs/react-native/advanced/chat-with-video.md`.
 
 ---
 
@@ -338,15 +235,10 @@ If the user asks for push notifications, use [references/DOCS.md](references/DOC
 
 Before calling the work done, confirm:
 
-- imports match the runtime package lane
-- `react-native-teleport` is installed for overlay support
+- imports match the runtime package lane (Chat) / Expo config plugins are wired (Video)
 - mandatory peer dependencies are installed for the selected lane
 - optional dependencies are installed only for requested capabilities
-- Babel plugin is last
-- app entry is wrapped in `GestureHandlerRootView`
-- `OverlayProvider` and `Chat` are stable and high in the tree
-- `ChannelList` filters include the connected user for normal messaging lists
-- navigation passes channel CID, not channel object
-- `Channel` owns `MessageList` and `MessageComposer`
-- thread state is shared between channel and thread screens
-- offline sign-out resets DB before disconnect when offline is enabled
+- app entry is wrapped in `GestureHandlerRootView` (Chat required; Video recommended)
+- Chat: `OverlayProvider` and `<Chat>` are stable and high in the tree; navigation passes channel CID, not channel object; `Channel` owns `MessageList` and `MessageComposer`; thread state is shared between channel and thread screens; offline sign-out resets DB before disconnect when offline is enabled
+- Video: client created via `StreamVideoClient.getOrCreateInstance(...)` and disposed on cleanup; `<StreamVideo>` mounted once near the app root above the navigator; calls created with `client.call(type, id)`, joined inside `useEffect`, and `call.leave()` on cleanup; `callManager.start/stop` paired with the call lifecycle; navigation passes `call.cid`, not `Call` object; permissions declared (iOS `Info.plist`, Android `AndroidManifest.xml`, Expo `app.json` plugins)
+- when combined Chat + Video: both providers nested (not siblings); both clients disconnect on sign-out

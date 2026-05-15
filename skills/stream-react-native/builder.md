@@ -1,6 +1,6 @@
 # Stream React Native - build and integration flow
 
-Use this module after intent classification and the Project signals probe from [`SKILL.md`](SKILL.md). Run [`credentials.md`](credentials.md) before writing connected Chat code or creating requested demo data.
+Use this module after intent classification, **product selection (Chat / Video / Chat + Video)**, and the Project signals probe from [`SKILL.md`](SKILL.md). Run [`credentials.md`](credentials.md) before writing connected Chat or Video code or creating requested demo data.
 
 ---
 
@@ -14,15 +14,22 @@ Start by understanding what kind of React Native project is in front of you:
 - `package.json` with `react-native` and `ios/` + `android/` -> RN CLI lane
 - `app/_layout.*` or `expo-router` -> Expo Router
 - `@react-navigation/*` -> React Navigation
-- `babel.config.js` -> required place for Reanimated/Worklets plugin
+- `babel.config.js` -> required place for Reanimated/Worklets plugin (Chat)
 
-For Track A, default to Expo if the user did not specify Expo vs RN CLI. Keep the new-app guidance minimal: app creation, Stream package install, root providers, auth/token flow, first Chat screen, and verification. Do not explain full React Native, Expo, Xcode, Android Studio, simulator, device, or account setup.
+Also note any installed Stream packages:
+
+- `stream-chat-react-native` or `stream-chat-expo` -> Chat already present
+- `@stream-io/video-react-native-sdk` -> Video already present
+- `@stream-io/react-native-callingx`, `@stream-io/react-native-webrtc` -> Video peers already present
+- both Chat and Video packages -> Chat + Video interop applies; see [`RULES.md`](RULES.md)
+
+For Track A, default to Expo if the user did not specify Expo vs RN CLI. Keep the new-app guidance minimal: app creation, Stream package install, root providers, auth/token flow, first Chat or Video screen, and verification. Do not explain full React Native, Expo, Xcode, Android Studio, simulator, device, or account setup.
 
 ---
 
 ## 2. New app scaffold
 
-Use this when the user asks for a brand-new Chat RN app or the workspace is empty and Track A applies.
+Use this when the user asks for a brand-new Chat, Video, or Chat + Video RN app, or the workspace is empty and Track A applies.
 
 ### Pick target directory
 
@@ -31,16 +38,27 @@ Use this when the user asks for a brand-new Chat RN app or the workspace is empt
 - If the current directory is non-empty, create a child directory from the requested app name.
 - If no app name can be inferred in a non-empty directory, ask one short question for the app directory name.
 
-### Expo default lane
+### Scaffold the runtime (product-agnostic)
 
-Replace `MyChatApp` with the target directory, or use `.` only when the current directory is empty and the user asked to scaffold in place.
+Expo default lane (replace `MyApp` with the target directory):
 
 ```bash
-npx create-expo-app@latest MyChatApp
-cd MyChatApp
+npx create-expo-app@latest MyApp
+cd MyApp
 ```
 
-Then install Stream Chat for Expo with the selected package and mandatory peers:
+RN CLI lane (only when the user asks for RN CLI or requirements point there):
+
+```bash
+npx @react-native-community/cli@latest init MyApp
+cd MyApp
+```
+
+### Install Stream packages by product
+
+Pick the product(s) confirmed in Step 0 of [`SKILL.md`](SKILL.md). For Chat + Video, install both.
+
+**Chat - Expo:**
 
 ```bash
 npm view stream-chat-expo version dist-tags --json
@@ -49,20 +67,7 @@ npx expo install react-native-safe-area-context
 npx expo prebuild
 ```
 
-Use `npx expo install` for Expo dependencies so versions match the Expo SDK. Add `react-native-safe-area-context` when using React Navigation or the provided screen blueprints. Expo Chat apps use a dev-client/native-build lane by default; do not target Expo Go.
-
-### RN CLI lane
-
-Use this only when the user asks for RN CLI or the project requirements point there:
-
-Replace `MyChatApp` with the target directory, or use `.` only when the current directory is empty and the selected RN CLI supports in-place init.
-
-```bash
-npx @react-native-community/cli@latest init MyChatApp
-cd MyChatApp
-```
-
-Then install Stream Chat for RN CLI with the selected package and mandatory peers:
+**Chat - RN CLI:**
 
 ```bash
 npm view stream-chat-react-native version dist-tags --json
@@ -71,29 +76,57 @@ npm install react-native-safe-area-context
 npx pod-install
 ```
 
-If the new app uses yarn or pnpm, translate package-manager commands without changing package names. Run pods after native dependency changes in RN CLI apps.
+**Video - Expo:**
+
+```bash
+npm view @stream-io/video-react-native-sdk version dist-tags --json
+npx expo install @stream-io/video-react-native-sdk \
+  @stream-io/react-native-webrtc \
+  @config-plugins/react-native-webrtc \
+  react-native-svg \
+  @react-native-community/netinfo \
+  expo-build-properties
+```
+
+Add `@stream-io/video-react-native-sdk` and `@config-plugins/react-native-webrtc` to `app.json` `plugins`, then `npx expo prebuild --clean`.
+
+**Video - RN CLI:**
+
+```bash
+npm view @stream-io/video-react-native-sdk version dist-tags --json
+yarn add @stream-io/video-react-native-sdk
+yarn add @stream-io/react-native-webrtc react-native-svg @react-native-community/netinfo
+npx pod-install
+```
+
+Set `minSdkVersion = 24` in `android/build.gradle` and add Java 8 source compatibility in `android/app/build.gradle`. Add camera/microphone usage descriptions to `Info.plist` and camera/audio permissions to `AndroidManifest.xml`.
+
+If the new app uses yarn or pnpm, translate package-manager commands without changing package names. Run pods after native dependency changes in RN CLI apps. Use `npx expo install` for Expo dependencies so versions match the Expo SDK.
 
 ### New app continuation
 
 After scaffold and packages:
 
-1. Use [`references/DOCS.md`](references/DOCS.md) to fetch the primary manifest and selected `Installation` markdown page.
+1. Use [`references/DOCS.md`](references/DOCS.md) to fetch the appropriate manifest (Chat or Video) and selected `Installation` markdown page.
 2. Confirm the installed Stream package matches the selected docs and npm dist-tag.
 3. Run [`credentials.md`](credentials.md) or wire the app's token provider plan.
-4. Configure Babel and root providers.
-5. Implement the first screen set from [`references/CHAT-REACT-NATIVE-blueprints.md`](references/CHAT-REACT-NATIVE-blueprints.md): App Provider and Auth Gate, Navigation Shell if needed, Channel List Screen, and Channel Screen.
+4. Configure Babel (Chat: Reanimated/Worklets plugin) and root providers.
+5. Implement the first screen set:
+   - **Chat:** [`references/CHAT-REACT-NATIVE-blueprints.md`](references/CHAT-REACT-NATIVE-blueprints.md) -> App Provider and Auth Gate, Navigation Shell, Channel List Screen, Channel Screen.
+   - **Video:** [`references/VIDEO-REACT-NATIVE-blueprints.md`](references/VIDEO-REACT-NATIVE-blueprints.md) -> App Provider and Auth Gate, Navigation Shell, Home / Join-or-Start Call, Active Call Screen.
 6. Start the dev server only when useful and feasible for the environment (`npx expo start --dev-client`, `npm run ios`, or `npm run android`).
 
 ---
 
 ## 3. Choose the integration lane
 
-Resolve four things before editing an existing app:
+Resolve five things before editing an existing app:
 
 1. **Runtime:** Expo or RN CLI
-2. **Navigation:** React Navigation, Expo Router, existing custom navigation, or no navigation
-3. **Scope:** setup only, core Chat screens, optional native capability, or customization
-4. **Auth model:** backend token endpoint, CLI-generated local token, or pasted static token
+2. **Product:** Chat, Video, or Chat + Video (from Step 0 of [`SKILL.md`](SKILL.md))
+3. **Navigation:** React Navigation, Expo Router, existing custom navigation, or no navigation
+4. **Scope:** setup only, core Chat / Video screens, optional native capability, or customization
+5. **Auth model:** backend token endpoint, CLI-generated local token, or pasted static token
 
 If the user only asked for setup, stop after the shared wiring in [`sdk.md`](sdk.md).
 
@@ -101,30 +134,24 @@ If the user only asked for setup, stop after the shared wiring in [`sdk.md`](sdk
 
 ## 4. Install packages
 
-Use [`references/DOCS.md`](references/DOCS.md) first: fetch the primary manifest, select `Installation`, then fetch that markdown page.
+Use [`references/DOCS.md`](references/DOCS.md) first: fetch the appropriate manifest (Chat or Video), select `Installation`, then fetch that markdown page.
 
 Preserve the project's package manager. Use `npx expo install` for Expo packages so versions match the Expo SDK.
 
-### RN CLI lane
-
-Install the Chat SDK and required peers:
+### Chat - RN CLI lane
 
 ```bash
 npm view stream-chat-react-native version dist-tags --json
 npm install stream-chat-react-native@latest @react-native-community/netinfo react-native-gesture-handler react-native-reanimated react-native-teleport react-native-worklets react-native-svg
 ```
 
-If the project uses yarn or pnpm, translate the command without changing package names.
-
-Run pods after native dependencies change:
+If the project uses yarn or pnpm, translate the command without changing package names. Run pods after native dependencies change:
 
 ```bash
 npx pod-install
 ```
 
-### Expo lane
-
-Install the Expo wrapper and compatible peers:
+### Chat - Expo lane
 
 ```bash
 npm view stream-chat-expo version dist-tags --json
@@ -145,7 +172,83 @@ npx expo start --dev-client
 
 Do not target Expo Go for `stream-chat-expo`. Also set `useNativeMultipartUpload={true}` on `Chat` when upload progress is required.
 
-### Optional packages by capability
+### Video - RN CLI lane
+
+```bash
+npm view @stream-io/video-react-native-sdk version dist-tags --json
+yarn add @stream-io/video-react-native-sdk
+yarn add @stream-io/react-native-webrtc react-native-svg @react-native-community/netinfo
+npx pod-install
+```
+
+Required Android setup in the host app:
+
+- `android/build.gradle`: `minSdkVersion = 24`
+- `android/app/build.gradle`: `compileOptions { sourceCompatibility JavaVersion.VERSION_1_8; targetCompatibility JavaVersion.VERSION_11 }`
+- `AndroidManifest.xml`: declare `CAMERA`, `RECORD_AUDIO`, `MODIFY_AUDIO_SETTINGS`, and foreground-service permissions
+
+Required iOS setup:
+
+- `Info.plist`: add `NSCameraUsageDescription` and `NSMicrophoneUsageDescription`
+- For ringing/VoIP, also include `voip` and `audio` in `UIBackgroundModes`
+
+### Video - Expo lane
+
+```bash
+npm view @stream-io/video-react-native-sdk version dist-tags --json
+npx expo install @stream-io/video-react-native-sdk \
+  @stream-io/react-native-webrtc \
+  @config-plugins/react-native-webrtc \
+  react-native-svg \
+  @react-native-community/netinfo \
+  expo-build-properties
+```
+
+Add config plugins to `app.json`:
+
+```json
+{
+  "expo": {
+    "plugins": [
+      "@stream-io/video-react-native-sdk",
+      [
+        "@config-plugins/react-native-webrtc",
+        {
+          "cameraPermission": "$(PRODUCT_NAME) requires camera access to capture and transmit video",
+          "microphonePermission": "$(PRODUCT_NAME) requires microphone access to capture and transmit audio"
+        }
+      ],
+      [
+        "expo-build-properties",
+        { "android": { "minSdkVersion": 24 } }
+      ]
+    ]
+  }
+}
+```
+
+Then regenerate the native projects:
+
+```bash
+npx expo prebuild --clean
+```
+
+Do not target Expo Go for Video; the SDK includes native code.
+
+### Video - optional capabilities
+
+| User asks for | Packages | Notes |
+|---|---|---|
+| Ringing (CallKit iOS, Android Telecom) | `@stream-io/react-native-callingx` | Wires CallKit/Telecom; see manifest-selected `/incoming-calls/*` pages |
+| Background blur / virtual background | `@stream-io/video-filters-react-native` | Optional filter pipeline |
+| Noise cancellation | `@stream-io/noise-cancellation-react-native` | Audio quality improvement |
+| Android push (FCM) | `@react-native-firebase/app`, `@react-native-firebase/messaging` | Required for ringing/Android push |
+| iOS local notifications | `@react-native-community/push-notification-ios` | Local notification helpers |
+| Permissions helper | `react-native-permissions` | Pre-call permission prompts |
+
+After adding native Video optional packages, follow their platform permission steps. For Expo, keep the app in the dev-client/native-build lane and run `npx expo prebuild --clean` when native config changes need to be regenerated.
+
+### Chat - optional packages by capability
 
 Optional dependencies are capability packages. They are not required for every Chat app. Install them only when the user asks for that capability, when selected manifest docs require them, or when an implemented blueprint needs native functionality beyond the core Chat UI.
 
@@ -179,9 +282,9 @@ After adding native optional packages, follow their platform permission steps. F
 
 ## 5. Configure native/runtime requirements
 
-### Babel plugin
+### Babel plugin (Chat only)
 
-Ensure the Reanimated or Worklets plugin is the last Babel plugin:
+If Chat is in scope, ensure the Reanimated or Worklets plugin is the last Babel plugin:
 
 ```js
 module.exports = {
@@ -195,11 +298,23 @@ module.exports = {
 
 Use `react-native-reanimated/plugin` if the project is still on Reanimated 3. Use `react-native-worklets/plugin` for Reanimated 4+.
 
+Video does not require Reanimated/Worklets by default. Only add the plugin if Chat is also in scope or if a specific Video optional capability requires it.
+
 ### Entry point
 
-Wrap the app entry point with `GestureHandlerRootView`.
+Wrap the app entry point with `GestureHandlerRootView` (required for Chat; recommended for Video apps that use any gesture handling).
 
 For Expo Router, the entry point is usually `app/_layout.tsx`. For RN CLI, it is usually `App.tsx` or the component registered from `index.js`.
+
+### Permissions (Video only)
+
+If Video is in scope, ensure runtime camera/microphone access is configured:
+
+- RN CLI iOS: `NSCameraUsageDescription` and `NSMicrophoneUsageDescription` in `Info.plist`. Add `voip` and `audio` to `UIBackgroundModes` if ringing is in scope.
+- RN CLI Android: declare `CAMERA`, `RECORD_AUDIO`, `MODIFY_AUDIO_SETTINGS`, and foreground-service permissions in `AndroidManifest.xml`.
+- Expo: handled by the `@config-plugins/react-native-webrtc` plugin entry in `app.json` plus `npx expo prebuild --clean`.
+
+Use `react-native-permissions` if the app needs to request permissions before the first call screen mounts; otherwise the SDK prompts at the first media access.
 
 ### Safe area
 
@@ -207,19 +322,28 @@ If navigation is used, install and place `SafeAreaProvider` near the root. Do no
 
 ---
 
-## 6. Wire shared Chat setup
+## 6. Wire shared setup
 
 Before writing code, confirm [`credentials.md`](credentials.md) has resolved the API key, user id, and token or token provider plan for tracks A/B/D.
 
-Follow [`sdk.md`](sdk.md) for:
+Follow [`sdk.md`](sdk.md) for shared patterns (client lifecycle, auth, provider tree, navigation, lifecycle/cleanup) and then branch by product:
 
-- package import lane
-- `useCreateChatClient`
-- root provider hierarchy
-- React Navigation / Expo Router placement
+**Chat:**
+
+- package import lane (`stream-chat-react-native` or `stream-chat-expo`)
+- `useCreateChatClient` for client lifecycle
+- `OverlayProvider` + `<Chat>` root provider hierarchy
 - channel selection and CID navigation
 - thread state
 - sign-out and offline cleanup
+
+**Video:**
+
+- `StreamVideoClient.getOrCreateInstance({ apiKey, user, tokenProvider, options? })` inside a `useEffect`, with `client.disconnectUser()` on cleanup
+- `<StreamVideo client={client}>` mounted once near the app root, above the navigator
+- `call.cid` navigation, recreate `Call` in the destination screen, `<StreamCall call={call}>`
+- `call.leave()` on screen unmount (always); `callManager.start/stop` for audio routing
+- error handling around `call.join()`, `call.camera.enable()`, `client.connectUser()`
 
 Use the real API key and token or the app's token provider. Do not leave placeholder strings in final code unless the user explicitly asked for a template only.
 
@@ -227,57 +351,79 @@ Use the real API key and token or the app's token provider. Do not leave placeho
 
 ## 7. Load only the needed reference files
 
-Use the requested screen/feature to choose the smallest relevant reference set.
+Use the requested screen/feature **and product** to choose the smallest relevant reference set.
 
 Always load:
 
 - [`references/DOCS.md`](references/DOCS.md) for `llms.txt` manifest lookup
+
+Then load the matching product references:
+
+**Chat work:**
+
 - [`references/CHAT-REACT-NATIVE.md`](references/CHAT-REACT-NATIVE.md) for setup and gotchas
+- [`references/CHAT-REACT-NATIVE-blueprints.md`](references/CHAT-REACT-NATIVE-blueprints.md) for screen/component blueprints
 
-Load the matching blueprint section from:
+**Video work:**
 
-- [`references/CHAT-REACT-NATIVE-blueprints.md`](references/CHAT-REACT-NATIVE-blueprints.md)
+- [`references/VIDEO-REACT-NATIVE.md`](references/VIDEO-REACT-NATIVE.md) for setup and gotchas
+- [`references/VIDEO-REACT-NATIVE-blueprints.md`](references/VIDEO-REACT-NATIVE-blueprints.md) for screen/component blueprints
 
-Per [`RULES.md`](RULES.md), re-open the relevant blueprint section before every Stream Chat screen, navigation handler, thread flow, theming override, offline flow, or component customization edit.
+Per [`RULES.md`](RULES.md), re-open the relevant blueprint section before every Stream Chat or Stream Video screen, navigation handler, thread flow, ringing handler, call control, participant tile, theming override, offline flow, or component customization edit.
 
-For requested optional native capabilities, read [`references/CHAT-REACT-NATIVE.md`](references/CHAT-REACT-NATIVE.md) > **Optional dependency map** before installing packages.
+For requested optional native capabilities, read the **Optional dependency map** in the matching product reference file before installing packages.
 
 ---
 
 ## 8. Existing app modification flow
 
-Use this when the request is a targeted Chat change in an existing app.
+Use this when the request is a targeted Chat or Video change in an existing app.
 
-1. Detect runtime and currently installed Stream packages.
-2. Use [`references/DOCS.md`](references/DOCS.md) to fetch the relevant manifest and selected markdown page for the requested area.
-3. Open the matching blueprint section.
-4. For cookbook-style requests, use [`references/DOCS.md`](references/DOCS.md) manifest search and fetch the best matching cookbook/customization markdown page from the primary manifest.
+1. Detect runtime, product(s), and currently installed Stream packages.
+2. Use [`references/DOCS.md`](references/DOCS.md) to fetch the relevant manifest (Chat or Video) and selected markdown page for the requested area.
+3. Open the matching blueprint section in the product's `*-blueprints.md`.
+4. For cookbook-style requests, use [`references/DOCS.md`](references/DOCS.md) manifest search and fetch the best matching cookbook/customization markdown page.
 5. Prefer the smallest change that preserves the app's architecture:
-   - style-only -> theme object
-   - slot-level UI -> `WithComponents`
-   - behavior -> component prop or hook documented by the manifest-selected markdown page
-   - native capability -> install only the optional package(s) for that capability
+   - **Chat:** style-only -> theme object; slot-level UI -> `WithComponents`; behavior -> component prop or documented hook; native capability -> install only the optional package(s) for that capability
+   - **Video:** style-only -> `StreamVideoRN.setTheme` or per-component style; slot-level UI -> `CallContent` slot props (`CallControls`, `CallTopView`, `CallParticipantsList`, etc.); behavior -> documented `Call` method or `useCallStateHooks()` value; native capability -> install only the optional package(s) for that capability
 6. Verify with the existing project commands.
 
-For message visual or layout changes, fetch the manifest-selected theming/customization pages, then prefer theme values before replacing core message components.
+For Chat message visual or layout changes, fetch the manifest-selected theming/customization pages, then prefer theme values before replacing core message components. For Video customization, prefer slot replacement over full `CallContent` replacement.
 
 ---
 
 ## 9. Verify before you stop
 
-Use the project's existing verification commands. Prefer the smallest checks that prove the integration works:
+Use the project's existing verification commands. Prefer the smallest checks that prove the integration works.
 
-- package install completed and selected Stream package matches the docs
+**Common:**
+
+- package install completed and selected Stream package(s) match the docs
 - iOS pods resolved for RN CLI native installs
-- Babel plugin is present and last
-- `GestureHandlerRootView` wraps the app
+- `GestureHandlerRootView` wraps the app (Chat: required; Video: recommended when any gestures)
+- optional dependencies are present only for requested optional features
+
+**Chat:**
+
+- Babel Reanimated/Worklets plugin is present and last
 - `OverlayProvider` and `Chat` are stable near the root
 - `ChannelList` renders for the connected user
 - channel navigation passes a CID, not a `Channel` object
 - `Channel` renders `MessageList` and `MessageComposer`
 - thread navigation passes thread state correctly
 - sign-out clears the connected user and, if offline is enabled, resets offline DB before disconnect
-- optional dependencies are present only for requested optional features
+
+**Video:**
+
+- camera and microphone permissions declared (iOS `Info.plist`, Android `AndroidManifest.xml`); Expo: config plugins in `app.json` and `npx expo prebuild --clean` ran
+- Android `minSdkVersion = 24` set (RN CLI direct, Expo via `expo-build-properties`)
+- client created via `StreamVideoClient.getOrCreateInstance(...)` (not `new StreamVideoClient(...)`) and disposed on cleanup
+- `<StreamVideo>` mounted once near the app root, above the navigator
+- `Call` created with `client.call(type, id)` in the destination screen, joined inside `useEffect`, and `call.leave()` called on cleanup
+- `callManager.start/stop` paired with the call lifecycle
+- call navigation passes `call.cid`, not a `Call` object
+- error handling around `call.join()`, `call.camera.enable()`, `client.connectUser()`
+- ringing-related setup matches manifest-selected `/incoming-calls/*` pages when ringing is in scope
 
 Common commands:
 
