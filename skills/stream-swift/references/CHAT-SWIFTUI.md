@@ -115,7 +115,7 @@ chatClient.connectUser(userInfo: userInfo, token: token) { error in
 }
 ```
 
-**Token provider (expiring tokens - use only if the user asks for it):**
+**Token provider (expiring tokens):**
 
 Use this when the user has a backend endpoint that issues Stream JWTs. The provider is called automatically when the token expires:
 
