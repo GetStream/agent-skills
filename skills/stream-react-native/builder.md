@@ -94,8 +94,8 @@ Add `@stream-io/video-react-native-sdk` and `@config-plugins/react-native-webrtc
 
 ```bash
 npm view @stream-io/video-react-native-sdk version dist-tags --json
-yarn add @stream-io/video-react-native-sdk
-yarn add @stream-io/react-native-webrtc react-native-svg @react-native-community/netinfo
+npm install @stream-io/video-react-native-sdk
+npm install @stream-io/react-native-webrtc react-native-svg @react-native-community/netinfo
 npx pod-install
 ```
 
@@ -176,10 +176,12 @@ Do not target Expo Go for `stream-chat-expo`. Also set `useNativeMultipartUpload
 
 ```bash
 npm view @stream-io/video-react-native-sdk version dist-tags --json
-yarn add @stream-io/video-react-native-sdk
-yarn add @stream-io/react-native-webrtc react-native-svg @react-native-community/netinfo
+npm install @stream-io/video-react-native-sdk
+npm install @stream-io/react-native-webrtc react-native-svg @react-native-community/netinfo
 npx pod-install
 ```
+
+If the project uses yarn or pnpm, translate the command without changing package names. Run pods after native dependencies change.
 
 Required Android setup in the host app:
 

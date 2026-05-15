@@ -38,12 +38,12 @@ Full screen blueprints: [VIDEO-REACT-NATIVE-blueprints.md](VIDEO-REACT-NATIVE-bl
 
 ### Installation
 
-RN CLI:
+RN CLI (use the project's package manager - the command below is illustrative; translate to `yarn add` or `pnpm add` without changing package names):
 
 ```bash
 npm view @stream-io/video-react-native-sdk version dist-tags --json
-yarn add @stream-io/video-react-native-sdk
-yarn add @stream-io/react-native-webrtc react-native-svg @react-native-community/netinfo
+npm install @stream-io/video-react-native-sdk
+npm install @stream-io/react-native-webrtc react-native-svg @react-native-community/netinfo
 npx pod-install
 ```
 
@@ -232,16 +232,16 @@ const tokenProvider = async () => {
   const body = await res.json();
   return body.token as string;
 };
-const client = new StreamVideoClient({ apiKey, user, tokenProvider });
+const client = StreamVideoClient.getOrCreateInstance({ apiKey, user, tokenProvider });
 ```
 
-The SDK calls `tokenProvider` again automatically when the current token nears expiry or reconnects.
+The SDK calls `tokenProvider` again automatically when the current token nears expiry or reconnects. Always use `getOrCreateInstance` (see Client setup above) - never `new StreamVideoClient(...)`.
 
 ### Disconnecting and switching users
 
 ```ts
 await client.disconnectUser();
-// then create a new StreamVideoClient for the next user
+// then call StreamVideoClient.getOrCreateInstance(...) again with the next user
 ```
 
 Do not reuse a client across users. Tear it down on sign-out.

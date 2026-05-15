@@ -372,11 +372,11 @@ Sections to cover:
 Use this when there is no existing app. Otherwise prefer the App Provider blueprint inside the existing root.
 
 ```bash
-# RN CLI
+# RN CLI (translate the install commands to match the project's package manager)
 npx @react-native-community/cli@latest init MyApp
 cd MyApp
-yarn add @stream-io/video-react-native-sdk
-yarn add @stream-io/react-native-webrtc react-native-svg @react-native-community/netinfo
+npm install @stream-io/video-react-native-sdk
+npm install @stream-io/react-native-webrtc react-native-svg @react-native-community/netinfo
 npx pod-install
 ```
 
