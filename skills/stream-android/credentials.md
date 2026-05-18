@@ -101,7 +101,7 @@ stream token <user_id>
 stream token <user_id> --ttl 1h
 ```
 
-Hold the token in context. Use it (and the API key from Step A) in every code snippet — no placeholder strings.
+Hold the token in context. In generated code, reference credentials via named constants (e.g., in a `Config.kt` or `local.properties` file) — do not embed raw credential values directly in code snippets.
 
 ### Step C — Seed channels (Chat projects only; only if the user said yes)
 
