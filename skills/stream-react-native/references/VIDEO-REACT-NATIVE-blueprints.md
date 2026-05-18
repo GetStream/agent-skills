@@ -39,7 +39,7 @@ import {
   SafeAreaProvider,
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
-import { SystemBars } from "react-native-edge-to-edge";
+import { StatusBar } from "expo-status-bar";
 import {
   StreamVideo,
   StreamVideoClient,
@@ -155,7 +155,7 @@ export default function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <SystemBars style="auto" />
+        <StatusBar style="auto" />
         {session ? (
           <ConnectedVideo session={session}>
             {/* navigation lives here */}
@@ -171,7 +171,9 @@ export default function App() {
 
 Always use `StreamVideoClient.getOrCreateInstance(...)` (not `new StreamVideoClient(...)`); the SDK relies on the singleton for push notifications and call state. Pair with a `tokenProvider` (~4-hour tokens) in production so the SDK refreshes automatically. See [VIDEO-REACT-NATIVE.md > Client setup](VIDEO-REACT-NATIVE.md#client-setup) and the live [Integration Best Practices](https://getstream.io/video/docs/react-native/advanced/integration-best-practices.md) page.
 
-`SafeAreaProvider` + `VideoWithInsets` is the canonical safe-area wiring: `SafeAreaProvider` exposes device insets, and `VideoWithInsets` bridges them into `<StreamVideo>`'s theme so `CallContent`, `RingingCallContent`, and participant views respect notches and system bars without an extra `SafeAreaView` wrap. `<SystemBars style="auto" />` from `react-native-edge-to-edge` handles status-bar / nav-bar text contrast against the app's background. On Android, also enable edge-to-edge via Expo `app.json` `"edgeToEdgeEnabled": true` or the `react-native-edge-to-edge` theme on RN CLI; see [VIDEO-REACT-NATIVE.md > Safe areas and edge-to-edge](VIDEO-REACT-NATIVE.md#safe-areas-and-edge-to-edge).
+`SafeAreaProvider` + `VideoWithInsets` is the canonical safe-area wiring: `SafeAreaProvider` exposes device insets, and `VideoWithInsets` bridges them into `<StreamVideo>`'s theme so `CallContent`, `RingingCallContent`, and participant views respect notches and system bars without an extra `SafeAreaView` wrap. `<StatusBar style="auto" />` handles status-bar text contrast against the app's background.
+
+The snippet above defaults to the Expo lane: `expo-status-bar` is in every Expo template, so no extra install is needed. **RN CLI apps swap that import** to `import { SystemBars } from "react-native-edge-to-edge"` and use `<SystemBars style="auto" />` (and install `react-native-edge-to-edge` directly). Both APIs are equivalent on Expo SDK 54+; `expo-status-bar` simply delegates to `SystemBars` under the hood. For Android nav-bar styling on Expo, add `expo-navigation-bar` (also in the Expo template). On Android, edge-to-edge itself is enabled via Expo `app.json` `"edgeToEdgeEnabled": true` or the `react-native-edge-to-edge` theme on RN CLI; see [VIDEO-REACT-NATIVE.md > Safe areas and edge-to-edge](VIDEO-REACT-NATIVE.md#safe-areas-and-edge-to-edge).
 
 ---
 

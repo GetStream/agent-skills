@@ -388,7 +388,7 @@ For a scoped override (single screen, landscape iPad, custom toolbar overlap), w
 
 On Android the app must also enable edge-to-edge (Expo: `"edgeToEdgeEnabled": true` in `app.json` under `android`; RN CLI: install `react-native-edge-to-edge` and inherit a `Theme.EdgeToEdge` variant in `styles.xml`) so the call UI draws under transparent system bars before the inset bridge can give it usable padding. iOS is edge-to-edge by default.
 
-Status-bar / nav-bar styling: use `<SystemBars style="auto" />` from `react-native-edge-to-edge` (or Expo's `expo-status-bar` / `expo-navigation-bar` on SDK 54+, which delegate to `SystemBars`). Do not call deprecated direct `StatusBar` APIs.
+Status-bar / nav-bar styling: **Expo** apps use `expo-status-bar` (and optionally `expo-navigation-bar`), already in every Expo template - no extra install. **RN CLI** apps use `<SystemBars style="auto" />` from `react-native-edge-to-edge`. Both APIs are equivalent on Expo SDK 54+ (Expo wrappers delegate to `SystemBars`). Do not call deprecated direct `StatusBar` APIs from `react-native`.
 
 ---
 
