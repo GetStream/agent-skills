@@ -11,7 +11,6 @@ Target **Stream Chat React Native** and **Stream Video React Native**.
 - Follow the official docs for the current React Native New Architecture support matrix. When migration docs are stricter than the general New Architecture guide, use the stricter requirement.
 - The bundled references assume the React Native **New Architecture**. Do not claim old-architecture support unless the docs for the selected package version explicitly say it is supported.
 - This skill bundles Chat and Video. Do not implement or document React Native Feeds or Moderation UI from memory.
-- The skill installs **latest** of every package on invocation. Do not pin versions or reference deprecated APIs from memory; the live `llms.txt` and selected docs pages are authoritative.
 
 Use Stream `llms.txt` manifests as the docs authority. Start from [`references/DOCS.md`](references/DOCS.md), fetch the appropriate manifest, then fetch the selected markdown page before coding. Do not maintain or rely on hardcoded individual docs URLs. If a symbol must be verified in source, inspect the installed package in the target app's `node_modules` after install.
 
@@ -120,9 +119,11 @@ Do not create a `StreamVideoClient`:
 - per call screen
 - inside render-time factories or unstable callbacks
 
-For `Call` lifetime: create inside a `useEffect`, `await call.join()` (or `getOrCreate()`), and **always `await call.leave()` on cleanup**. Dangling `Call` instances keep publishing audio/video and leak memory. Pair with `callManager.start({...})` / `callManager.stop()` to keep audio routing aligned with the lifecycle.
+For `Call` lifetime: create inside a `useEffect`, `await call.join()` (or `getOrCreate()`), and on cleanup **guard the leave**: `if (call.state.callingState !== CallingState.LEFT) await call.leave()`. Dangling `Call` instances keep publishing audio/video and leak memory, but an unguarded second `leave()` (custom hangup + unmount, or React 18 strict-mode double-effect) throws `Cannot leave call that has already been left`. Hangup handlers should only navigate - `CallContent`'s default hangup already calls `leave()`.
 
-Pass `call.cid` through navigation params, not the `Call` object itself. Recreate the call from `client.call(type, id)` in the destination screen, then mount `<StreamCall call={call}>`.
+A `Call` instance must be created **exactly once** per call session. Create it in the screen that owns the lifecycle (typically the destination call screen) and mount `<StreamCall call={call}>` there. Every other component reads it via `useCall()` from within the `<StreamCall>` subtree - **never call `client.call(type, id)` again to "retrieve" the same call elsewhere**. Recreating a Call leaks SFU connections and breaks state.
+
+Pass only the call id (or `cid` if both type and id are needed) through navigation params, not the `Call` object itself. Upstream screens (lobby, home) should not pre-create the `Call` - hand off the id and let the destination screen own the single creation.
 
 For single-call concurrency, set `options: { rejectCallWhenBusy: true }` on `getOrCreateInstance` and `StreamVideoRN.setPushConfig({ shouldRejectCallWhenBusy: true })`.
 
@@ -133,7 +134,7 @@ For single-call concurrency, set `options: { rejectCallWhenBusy: true }` on `get
 When using React Navigation or Expo Router:
 
 - **Chat:** Place `OverlayProvider` above the navigation screens. With React Navigation, prefer `OverlayProvider` above `NavigationContainer`. Keep `Chat` high enough that screen transitions do not reconnect the client. Pass channel CIDs or ids through navigation params, not `Channel` instances. Recreate the `Channel` instance from `useChatContext().client` on the destination screen. Set `keyboardVerticalOffset` to the header height. Do not add `topInset` or `bottomInset` by default; add them only when a specific layout or attachment-picker issue proves they are needed.
-- **Video:** Place `StreamVideo` above `NavigationContainer` (or above the Expo Router root layout) so the client survives screen transitions. Pass `call.cid` through navigation params, not `Call` instances. Recreate the call from `useStreamVideoClient().call(type, id)` in the destination screen.
+- **Video:** Place `StreamVideo` above `NavigationContainer` (or above the Expo Router root layout) so the client survives screen transitions. Pass only the call id through navigation params, not `Call` instances. The destination call screen is the **sole** Call owner - it calls `client.call(type, id)` once, joins, and mounts `<StreamCall>`; descendants read via `useCall()`. Other screens/components must not call `client.call(...)` to obtain the same instance.
 
 For Chat threads, keep thread state explicit. When a thread screen is open, pass the same `thread` value to the main `Channel` and render the thread screen with `threadList`.
 

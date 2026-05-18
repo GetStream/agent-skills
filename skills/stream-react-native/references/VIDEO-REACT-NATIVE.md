@@ -250,11 +250,11 @@ Do not reuse a client across users. Tear it down on sign-out.
 
 ## Call object
 
-A `Call` represents one logical call (a `(type, id)` pair). Create the call inside a `useEffect` after the client is ready and **always call `call.leave()` on cleanup** - dangling calls keep publishing audio/video and leak memory.
+A `Call` represents one logical call (a `(type, id)` pair). Create the call inside a `useEffect` after the client is ready and **call `call.leave()` on cleanup, guarded by `callingState !== CallingState.LEFT`** - dangling calls keep publishing audio/video and leak memory, but leaving twice (hangup button + unmount, React 18 strict-mode double-effect) throws `Cannot leave call that has already been left`.
 
 ```tsx
 import { useEffect, useState } from "react";
-import { useStreamVideoClient, Call } from "@stream-io/video-react-native-sdk";
+import { useStreamVideoClient, Call, CallingState } from "@stream-io/video-react-native-sdk";
 
 const client = useStreamVideoClient();
 const [call, setCall] = useState<Call>();
@@ -265,7 +265,9 @@ useEffect(() => {
   setCall(c);
   c.join().catch((err) => console.error("Failed to join", err));
   return () => {
-    c.leave().catch((err) => console.error(err));
+    if (c.state.callingState !== CallingState.LEFT) {
+      c.leave().catch((err) => console.error(err));
+    }
     setCall(undefined);
   };
 }, [client, type, id]);
@@ -277,7 +279,7 @@ A call is initialized after any of `await call.get()`, `await call.create()`, `a
 
 - `getOrCreate(data?)` - server-side reserve/create
 - `join(options?)` - connect to the SFU and start sending/receiving media. Retries with exponential backoff; tune with `{ maxJoinRetries }`.
-- `leave()` - disconnect locally, keep call alive for others. **Always call on unmount.**
+- `leave()` - disconnect locally, keep call alive for others. **Call on unmount, guarded by `call.state.callingState !== CallingState.LEFT`**; calling twice throws `Cannot leave call that has already been left`.
 - `endCall()` - end the call for everyone
 - `accept()` / `reject()` - ringing-call handling
 - `getOrCreate({ ring: true, data: { members } })` - start an outgoing ringing call
@@ -285,15 +287,9 @@ A call is initialized after any of `await call.get()`, `await call.create()`, `a
 
 ### Audio routing
 
-`callManager` controls speaker/earpiece/Bluetooth routing. Start it when joining and stop when leaving:
+`callManager` is started and stopped **automatically** by `call.join()` and `call.leave()` with `audioRole: "communicator"` as the default. Do not call `callManager.start()` / `callManager.stop()` from your code for the standard call flow - the SDK already does it on the right boundaries.
 
-```ts
-import { callManager } from "@stream-io/video-react-native-sdk";
-
-callManager.start({ audioRole: "communicator", deviceEndpointType: "speaker" });
-// later, when leaving:
-callManager.stop();
-```
+The only reason to invoke `callManager` directly is to override the defaults (for example, an audio-room with `audioRole: "broadcaster"`, or a custom initial output device). When you do override, still rely on the SDK's automatic teardown on `call.leave()` rather than calling `stop()` yourself.
 
 ### Call types
 
@@ -363,8 +359,8 @@ client.on("call.ended", ...);
 
 - Put `StreamVideo` above any screen that needs a call. With React Navigation, prefer it above `NavigationContainer` so deep links land inside the provider.
 - Keep one `StreamVideo` mounted for the whole authenticated session. Tearing it down restarts the WebSocket.
-- Pass `call.cid` (string) through navigation params, not the `Call` object itself.
-- Recreate the call from `client.call(type, id)` in the destination screen, then `StreamCall call={call}`.
+- Pass only the call id (string) through navigation params, not the `Call` object itself.
+- **Create the `Call` instance exactly once** in the destination call screen via `client.call(type, id)`, join inside `useEffect`, and mount `<StreamCall call={call}>`. Descendants of `<StreamCall>` read the call via `useCall()` - they must **not** call `client.call(...)` again. Upstream screens (lobby, home) hand off the id without pre-creating the Call.
 - For ringing, register `client.on("call.ring", ...)` at the app shell, push the incoming-call screen, and let the user accept/reject before mounting `CallContent`.
 
 ---
@@ -461,8 +457,9 @@ try {
 - `react-native-gesture-handler` is recommended at the app root if any feature uses gestures; wrap with `GestureHandlerRootView`.
 - Re-run `npx expo prebuild --clean` after any change to `app.json` plugins, package versions, or native config.
 - Use `StreamVideoClient.getOrCreateInstance` only - never `new StreamVideoClient(...)`. Multiple instances break push and state.
-- Always `call.leave()` on cleanup. Dangling calls keep publishing audio/video.
-- Pass `call.cid`, not `Call` objects, through navigation params.
+- Create each `Call` instance **exactly once** in the destination call screen via `client.call(type, id)`. Components inside `<StreamCall>` read it with `useCall()` - never call `client.call(...)` again to "retrieve" the same call. Recreating leaks SFU connections and breaks state.
+- `call.leave()` on cleanup, **guarded by `call.state.callingState !== CallingState.LEFT`** - dangling calls keep publishing audio/video, but a second `leave()` (custom hangup + unmount, or React 18 strict-mode double-effect) throws `Cannot leave call that has already been left`.
+- Pass only the call id through navigation params, not `Call` objects. Upstream screens hand off the id; the destination owns single creation.
 - Permissions are prompted on first media access by default; request them explicitly with `react-native-permissions` if you need them before the call screen mounts.
 - For ringing on iOS, declare `UIBackgroundModes` includes `voip` and `audio` in `Info.plist`; on Android, declare the foreground service permissions above.
 - If using push notifications, fetch the manifest-selected push pages before changing setup. Push wiring varies by provider and SDK version.

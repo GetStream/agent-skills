@@ -108,11 +108,11 @@ For ringing/push, pass the **same** `options` to `getOrCreateInstance` and `Stre
 
 ### Call lifetime (Video)
 
-Create `Call` only after the client is ready, inside a `useEffect`, and always `call.leave()` on cleanup. Dangling calls keep publishing audio/video and leak memory.
+Create `Call` only after the client is ready, inside a `useEffect`, and `call.leave()` on cleanup **guarded by `callingState !== CallingState.LEFT`** - leaving twice throws `Cannot leave call that has already been left`. Dangling calls keep publishing audio/video and leak memory.
 
 ```tsx
 import { useEffect, useState } from "react";
-import { useStreamVideoClient, Call, callManager } from "@stream-io/video-react-native-sdk";
+import { useStreamVideoClient, Call, CallingState } from "@stream-io/video-react-native-sdk";
 
 const client = useStreamVideoClient();
 const [call, setCall] = useState<Call>();
@@ -121,17 +121,17 @@ useEffect(() => {
   if (!client) return;
   const c = client.call(type, id);
   setCall(c);
-  callManager.start({ audioRole: "communicator", deviceEndpointType: "speaker" });
   c.join().catch((err) => console.error("Failed to join", err));
   return () => {
-    callManager.stop();
-    c.leave().catch((err) => console.error(err));
+    if (c.state.callingState !== CallingState.LEFT) {
+      c.leave().catch((err) => console.error(err));
+    }
     setCall(undefined);
   };
 }, [client, type, id]);
 ```
 
-A `Call` initializes after any of `call.get()`, `call.create()`, `call.getOrCreate()`, or `call.join()`.
+A `Call` initializes after any of `call.get()`, `call.create()`, `call.getOrCreate()`, or `call.join()`. Audio routing (speaker/earpiece/Bluetooth) is handled by the SDK automatically on `join()` / `leave()` with `audioRole: "communicator"` - do not call `callManager.start/stop` yourself unless you are overriding the default role (e.g., `broadcaster` for an audio-room host).
 
 ---
 
@@ -177,7 +177,7 @@ Never use `devToken()` (Chat) for production. Never invent credentials.
 Pass references through navigation params, not live objects:
 
 - Chat: pass `channel.cid` (string), not the `Channel` instance. Recreate from `useChatContext().client.channel(type, id)` on the destination screen.
-- Video: pass `call.cid` (string), not the `Call` instance. Recreate from `useStreamVideoClient().call(type, id)` on the destination screen.
+- Video: pass only the call id through navigation, not the `Call` instance. The destination call screen is the **sole** Call owner - it calls `client.call(type, id)` once, joins, and mounts `<StreamCall>`. Descendants read via `useCall()` and must **not** call `client.call(...)` again to obtain the same instance. Upstream screens (lobby, home) hand off the id without pre-creating the Call.
 
 ---
 
@@ -195,7 +195,7 @@ Avoid creating filters/sort values (Chat) or `Call` instances (Video) inline on 
 ## Lifecycle and cleanup
 
 - **Chat:** unmount or change `useCreateChatClient` inputs on sign-out. If offline support is enabled, run `chatClient.offlineDb?.resetDB()` **before** `disconnectUser()` to avoid cross-user data leaks.
-- **Video:** call `client.disconnectUser()` and clear the state holding the client on sign-out. For active calls, `call.leave()` must run on unmount.
+- **Video:** call `client.disconnectUser()` and clear the state holding the client on sign-out. For active calls, run `call.leave()` on unmount **guarded by `callingState !== CallingState.LEFT`** to avoid `Cannot leave call that has already been left` when a hangup handler or React 18 strict-mode already left.
 - **AppState / background:** the SDK auto-reconnects on network changes. For Video, tune the reconnection window with `call.setDisconnectionTimeout(seconds)` rather than ending calls on temporary disconnects. Android requires a foreground service for background calls.
 
 ---
@@ -240,5 +240,5 @@ Before calling the work done, confirm:
 - optional dependencies are installed only for requested capabilities
 - app entry is wrapped in `GestureHandlerRootView` (Chat required; Video recommended)
 - Chat: `OverlayProvider` and `<Chat>` are stable and high in the tree; navigation passes channel CID, not channel object; `Channel` owns `MessageList` and `MessageComposer`; thread state is shared between channel and thread screens; offline sign-out resets DB before disconnect when offline is enabled
-- Video: client created via `StreamVideoClient.getOrCreateInstance(...)` and disposed on cleanup; `<StreamVideo>` mounted once near the app root above the navigator; calls created with `client.call(type, id)`, joined inside `useEffect`, and `call.leave()` on cleanup; `callManager.start/stop` paired with the call lifecycle; navigation passes `call.cid`, not `Call` object; permissions declared (iOS `Info.plist`, Android `AndroidManifest.xml`, Expo `app.json` plugins)
+- Video: client created via `StreamVideoClient.getOrCreateInstance(...)` and disposed on cleanup; `<StreamVideo>` mounted once near the app root above the navigator; **`Call` created exactly once** with `client.call(type, id)` in the destination call screen, joined inside `useEffect`, mounted via `<StreamCall>`, and descendants read via `useCall()` (never `client.call(...)` again); `call.leave()` on cleanup **guarded by `callingState !== CallingState.LEFT`**; hangup handlers only navigate (no manual `leave()` - `CallContent` already calls it); audio routing left to the SDK (no manual `callManager.start/stop` unless overriding the role); navigation passes only the call id (not `Call` instances); permissions declared (iOS `Info.plist`, Android `AndroidManifest.xml`, Expo `app.json` plugins)
 - when combined Chat + Video: both providers nested (not siblings); both clients disconnect on sign-out

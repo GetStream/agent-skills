@@ -1,6 +1,6 @@
 # Stream Agent Skills
 
-Give your AI coding agent the ability to build, query, and manage [Stream](https://getstream.io) - Chat, Video, Feeds, Moderation, Swift/iOS integrations, and React Native Chat.
+Give your AI coding agent the ability to build, query, and manage [Stream](https://getstream.io) - Chat, Video, Feeds, Moderation, Swift/iOS integrations, and React Native Chat and Video.
 
 ## Install
 
@@ -56,7 +56,7 @@ The router skill at [`skills/stream/`](skills/stream/) owns core web, CLI, docs,
 | `/stream-docs` | Search live SDK documentation from getstream.io | Explicit SDK token (Chat React, Video iOS, ...), "docs", "how do I ... in <framework>" |
 | `/stream-builder` | Scaffold a new app, or add Chat/Video/Feeds/Moderation to an existing one | "build me a ... app", "scaffold", "add Chat to this app", "integrate Video" |
 | `/stream-swift` | Build or integrate Stream in Swift/SwiftUI/UIKit/iOS apps | Swift, SwiftUI, UIKit, iOS, Xcode |
-| `/stream-react-native` | Create, build, or integrate Stream Chat React Native in RN CLI or Expo apps | React Native, Expo, `stream-chat-react-native`, `stream-chat-expo` |
+| `/stream-react-native` | Create, build, or integrate Stream Chat or Stream Video React Native in RN CLI or Expo apps | React Native, Expo, `stream-chat-react-native`, `stream-chat-expo`, `@stream-io/video-react-native-sdk`, video call, livestream, audio room, ringing |
 
 ## What gets installed
 
@@ -85,7 +85,7 @@ Decline and the builder still runs - Stream reference files cover the SDK wiring
 - **Scaffold a full app** - Next.js + Tailwind + Stream SDKs, wired end-to-end in one shot (`/stream-builder`)
 - **Add products to existing apps** - drop Chat, Video, or Feeds into a project that's already running (`/stream-builder`)
 - **Build and extend Swift apps** - wire Stream into SwiftUI or UIKit Xcode projects with iOS-specific setup patterns (`/stream-swift`)
-- **Build and extend React Native apps** - wire Stream Chat into Expo or RN CLI projects (`/stream-react-native`)
+- **Build and extend React Native apps** - wire Stream Chat or Stream Video into Expo or RN CLI projects (`/stream-react-native`)
 - **Query live data** - "any active calls?", "show flagged messages", "list my channels" - natural language to CLI (`/stream-cli`)
 - **Set up moderation** - blocklists, automod config, and content policies via the Stream CLI (`/stream-cli`)
 - **Answer SDK questions** - token patterns, strict mode, client/server instantiation, theme wiring (`/stream-builder` or `/stream-docs`)
@@ -102,7 +102,7 @@ The skill pack is markdown only - no code, no build step. The generic `/stream` 
 | Data queries and CLI operations                       | `stream-cli` (Track B) |
 | Install the Stream CLI                                | `stream-cli` (Track C) |
 | SDK wiring during builder/enhance                     | `stream-builder` + its `sdk.md` and `references/*.md` |
-| Build or integrate a React Native CLI/Expo app        | `stream-react-native` + its `sdk.md` and `references/*.md` |
+| Build or integrate a React Native CLI/Expo app (Chat or Video) | `stream-react-native` + its `sdk.md` and `references/*.md` |
 | Search the official SDK documentation (no CLI needed) | `stream-docs` (Track D) |
 | Build or integrate a Swift/iOS app                    | `stream-swift` + its `builder.md`, `sdk.md`, and `references/*.md` |
 
@@ -131,10 +131,10 @@ Cross-cutting rules (secrets, login screen, strict mode, package manager, base U
   - [`RULES.md`](skills/stream-swift/RULES.md) - Swift/iOS non-negotiable rules
   - [`builder.md`](skills/stream-swift/builder.md) + [`sdk.md`](skills/stream-swift/sdk.md) - shared Swift app integration flow and SDK ownership patterns
   - [`references/`](skills/stream-swift/references/) - product/framework-specific Swift references and blueprints
-- [`skills/stream-react-native/`](skills/stream-react-native/) - **React Native Chat sub-skill**
-  - [`SKILL.md`](skills/stream-react-native/SKILL.md) - RN/Expo intent classifier, project detection, module pointers
-  - [`RULES.md`](skills/stream-react-native/RULES.md) - Chat RN non-negotiable rules
+- [`skills/stream-react-native/`](skills/stream-react-native/) - **React Native Chat + Video sub-skill**
+  - [`SKILL.md`](skills/stream-react-native/SKILL.md) - RN/Expo intent classifier with Chat/Video product router, project detection, module pointers
+  - [`RULES.md`](skills/stream-react-native/RULES.md) - Chat and Video RN non-negotiable rules (incl. Chat + Video interop)
   - [`credentials.md`](skills/stream-react-native/credentials.md) - API key, token, and optional requested demo-data flow
-  - [`builder.md`](skills/stream-react-native/builder.md) + [`sdk.md`](skills/stream-react-native/sdk.md) - shared RN CLI and Expo integration flow
-  - [`references/`](skills/stream-react-native/references/) - `llms.txt` docs lookup, Chat RN setup, gotchas, and screen blueprints
+  - [`builder.md`](skills/stream-react-native/builder.md) + [`sdk.md`](skills/stream-react-native/sdk.md) - shared RN CLI and Expo integration flow across products
+  - [`references/`](skills/stream-react-native/references/) - `llms.txt` docs lookup (Chat + Video manifests), Chat RN setup/blueprints, Video RN setup/blueprints (`VIDEO-REACT-NATIVE.md`, `VIDEO-REACT-NATIVE-blueprints.md`), gotchas
 - [`.claude-plugin/marketplace.json`](.claude-plugin/marketplace.json) - Claude Code plugin manifest for granular installs

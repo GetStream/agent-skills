@@ -343,8 +343,9 @@ Follow [`sdk.md`](sdk.md) for shared patterns (client lifecycle, auth, provider 
 
 - `StreamVideoClient.getOrCreateInstance({ apiKey, user, tokenProvider, options? })` inside a `useEffect`, with `client.disconnectUser()` on cleanup
 - `<StreamVideo client={client}>` mounted once near the app root, above the navigator
-- `call.cid` navigation, recreate `Call` in the destination screen, `<StreamCall call={call}>`
-- `call.leave()` on screen unmount (always); `callManager.start/stop` for audio routing
+- `Call` created **exactly once** in the destination call screen via `client.call(type, id)`; mount `<StreamCall call={call}>`; descendants read it via `useCall()` and never call `client.call(...)` again; navigation hands off only the call id, not the Call instance
+- `call.leave()` on screen unmount, **guarded by `call.state.callingState !== CallingState.LEFT`** (a second `leave()` throws `Cannot leave call that has already been left`); hangup handlers only navigate
+- audio routing is automatic on `call.join()` / `call.leave()` (default `audioRole: "communicator"`); only call `callManager.start/stop` to override the role (e.g., audio-room broadcaster)
 - error handling around `call.join()`, `call.camera.enable()`, `client.connectUser()`
 
 Use the real API key and token or the app's token provider. Do not leave placeholder strings in final code unless the user explicitly asked for a template only.
@@ -421,9 +422,10 @@ Use the project's existing verification commands. Prefer the smallest checks tha
 - Android `minSdkVersion = 24` set (RN CLI direct, Expo via `expo-build-properties`)
 - client created via `StreamVideoClient.getOrCreateInstance(...)` (not `new StreamVideoClient(...)`) and disposed on cleanup
 - `<StreamVideo>` mounted once near the app root, above the navigator
-- `Call` created with `client.call(type, id)` in the destination screen, joined inside `useEffect`, and `call.leave()` called on cleanup
-- `callManager.start/stop` paired with the call lifecycle
-- call navigation passes `call.cid`, not a `Call` object
+- `Call` created **exactly once** with `client.call(type, id)` in the destination call screen, joined inside `useEffect`, and mounted via `<StreamCall>`; descendants read it via `useCall()` and never call `client.call(...)` again; upstream screens (lobby, home) only hand off the call id, do not pre-create the Call
+- `call.leave()` called on cleanup **guarded by `callingState !== CallingState.LEFT`** (avoids `Cannot leave call that has already been left`); hangup handlers only navigate
+- audio routing left to the SDK (automatic on `call.join()` / `call.leave()`); no manual `callManager.start/stop` unless overriding the default `audioRole: "communicator"`
+- call navigation passes only the call id, not a `Call` object
 - error handling around `call.join()`, `call.camera.enable()`, `client.connectUser()`
 - ringing-related setup matches manifest-selected `/incoming-calls/*` pages when ringing is in scope
 

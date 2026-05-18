@@ -148,33 +148,21 @@ Always use `StreamVideoClient.getOrCreateInstance(...)` (not `new StreamVideoCli
 
 ## Home / Join-or-Start Call
 
-Use this for a lobby screen where the user enters a call id, runs device checks, and joins (or creates) the call. Reads the client from `StreamVideo` and hands `cid` to the next screen via navigation params.
+Use this for a lobby screen where the user picks or enters a call id and navigates into the call screen. **The Home screen does not create the `Call` instance** - it only hands the id off through navigation. The destination Active Call screen owns the single creation. Pre-creating here and recreating downstream is a bug: it produces two `Call` objects, leaks SFU connections, and breaks state.
 
 ```tsx
 import { useCallback, useState } from "react";
 import { Button, TextInput, View } from "react-native";
-import { useStreamVideoClient } from "@stream-io/video-react-native-sdk";
 import { useNavigation } from "@react-navigation/native";
 
 export const HomeScreen = () => {
-  const client = useStreamVideoClient();
   const navigation = useNavigation<any>();
   const [callId, setCallId] = useState("");
-  const [joining, setJoining] = useState(false);
 
-  const onJoin = useCallback(async () => {
-    if (!client || !callId) return;
-    setJoining(true);
-    try {
-      const call = client.call("default", callId);
-      await call.getOrCreate();
-      navigation.navigate("ActiveCall", { cid: call.cid });
-    } catch (err) {
-      console.error("Failed to create call", err);
-    } finally {
-      setJoining(false);
-    }
-  }, [client, callId, navigation]);
+  const onJoin = useCallback(() => {
+    if (!callId) return;
+    navigation.navigate("ActiveCall", { callId });
+  }, [callId, navigation]);
 
   return (
     <View style={{ flex: 1, justifyContent: "center", padding: 24 }}>
@@ -184,19 +172,21 @@ export const HomeScreen = () => {
         placeholder="Call id"
         value={callId}
       />
-      <Button disabled={!callId || joining} onPress={onJoin} title="Join call" />
+      <Button disabled={!callId} onPress={onJoin} title="Join call" />
     </View>
   );
 };
 ```
 
-Pass `call.cid` (the string `"<type>:<id>"`), not the `Call` instance, through navigation params. Defer `call.join()` to the destination screen so its lifecycle (`useEffect` cleanup -> `call.leave()`) owns the live connection. For pre-join device checks, see the **Lobby Preview** pattern in the manifest-selected `/ui-cookbook/lobby-preview/` page.
+Pass only `callId` through navigation. For pre-join device checks (camera test, mic test, output picker), render the **Lobby Preview** pattern from the manifest-selected `/ui-cookbook/lobby-preview/` page - it uses the same "no Call yet" approach with `useCallStateHooks` mocked against device state, not against a Call instance.
 
 ---
 
 ## Active Call Screen
 
-The default in-call experience. Creates a `Call`, joins it inside `useEffect`, mounts `StreamCall`, and renders `CallContent`. Always `call.leave()` on unmount.
+The default in-call experience. **This screen is the sole owner of the `Call` instance** for the session - it calls `client.call(type, id)` exactly once inside `useEffect`, joins, and mounts `<StreamCall>`. Every child component reads the call via `useCall()` from `<StreamCall>` context; descendants must **not** call `client.call(...)` again to retrieve it. Recreating leaks SFU connections and breaks state.
+
+`call.leave()` runs on unmount, **guarded by `callingState !== CallingState.LEFT`** so leaving twice (hangup button + unmount, or React 18 strict-mode double-effect) does not throw `Cannot leave call that has already been left`. Hangup handlers should only navigate; `CallContent`'s default hangup already calls `leave()`.
 
 ```tsx
 import { useEffect, useState } from "react";
@@ -205,29 +195,28 @@ import {
   StreamCall,
   CallContent,
   Call,
-  callManager,
+  CallingState,
 } from "@stream-io/video-react-native-sdk";
 import { useNavigation, useRoute } from "@react-navigation/native";
 
 export const ActiveCallScreen = () => {
   const client = useStreamVideoClient();
   const navigation = useNavigation<any>();
-  const { cid } = useRoute().params as { cid: string };
-  const [type, id] = cid.split(":");
+  const { callId } = useRoute().params as { callId: string };
   const [call, setCall] = useState<Call>();
 
   useEffect(() => {
     if (!client) return;
-    const c = client.call(type, id);
+    const c = client.call("default", callId);
     setCall(c);
-    callManager.start({ audioRole: "communicator", deviceEndpointType: "speaker" });
     c.join({ create: true }).catch((err) => console.error("Failed to join", err));
     return () => {
-      callManager.stop();
-      c.leave().catch((err) => console.error(err));
+      if (c.state.callingState !== CallingState.LEFT) {
+        c.leave().catch((err) => console.error(err));
+      }
       setCall(undefined);
     };
-  }, [client, type, id]);
+  }, [client, callId]);
 
   if (!call) return null;
 
@@ -239,7 +228,9 @@ export const ActiveCallScreen = () => {
 };
 ```
 
-`CallContent` provides the full default UI - top bar, participant grid, and call controls. Replace any slot via its props; see Custom Call Controls and Custom Participant Tile blueprints below. `callManager.start/stop` keeps the speaker/earpiece/Bluetooth routing aligned with the call lifecycle.
+`CallContent` provides the full default UI - top bar, participant grid, and call controls. Inside `<StreamCall>`, any child component (custom controls, participant tile, ringing UI, in-call toolbar) reads the current call via `useCall()` - never `client.call(...)` again. Replace any slot via its props; see Custom Call Controls and Custom Participant Tile blueprints below. Audio routing (speaker/earpiece/Bluetooth) is handled automatically by `call.join()` / `call.leave()` with `audioRole: "communicator"` as the default - do not call `callManager.start/stop` yourself unless you are overriding the role (e.g., `broadcaster` in an audio room).
+
+If the call type is dynamic (`livestream`, `audio_room`, `default`, etc.), include it in the navigation params alongside `callId` and pass both to `client.call(type, id)`. Still create the Call exactly once.
 
 ---
 
