@@ -411,7 +411,7 @@ Use this when the request is a targeted Chat or Video change in an existing app.
 4. For cookbook-style requests, use [`references/DOCS.md`](references/DOCS.md) manifest search and fetch the best matching cookbook/customization markdown page.
 5. Prefer the smallest change that preserves the app's architecture:
    - **Chat:** style-only -> theme object; slot-level UI -> `WithComponents`; behavior -> component prop or documented hook; native capability -> install only the optional package(s) for that capability
-   - **Video:** style-only -> `StreamVideoRN.setTheme` or per-component style; slot-level UI -> `CallContent` slot props (`CallControls`, `CallTopView`, `CallParticipantsList`, etc.); behavior -> documented `Call` method or `useCallStateHooks()` value; native capability -> install only the optional package(s) for that capability
+   - **Video:** style-only -> pass a theme via `<StreamVideo style={theme}>` (or scope it with `<StreamTheme style={theme}>`); slot-level UI -> `CallContent` slot props (`CallControls`, `CallTopView`, `CallParticipantsList`, etc.); behavior -> documented `Call` method or `useCallStateHooks()` value; native capability -> install only the optional package(s) for that capability
 6. Verify with the existing project commands.
 
 For Chat message visual or layout changes, fetch the manifest-selected theming/customization pages, then prefer theme values before replacing core message components. For Video customization, prefer slot replacement over full `CallContent` replacement.

@@ -44,6 +44,7 @@ RN CLI (use the project's package manager - the command below is illustrative; t
 npm view @stream-io/video-react-native-sdk version dist-tags --json
 npm install @stream-io/video-react-native-sdk
 npm install @stream-io/react-native-webrtc react-native-svg @react-native-community/netinfo
+npm install react-native-safe-area-context react-native-edge-to-edge
 npx pod-install
 ```
 
@@ -56,6 +57,7 @@ npx expo install @stream-io/video-react-native-sdk \
   @config-plugins/react-native-webrtc \
   react-native-svg \
   @react-native-community/netinfo \
+  react-native-safe-area-context \
   expo-build-properties
 ```
 
@@ -292,7 +294,7 @@ The only reason to invoke `callManager` directly is to override the defaults (fo
 
 ### Call types
 
-`default`, `livestream`, `audio_room`, `development`. Configure per-type policies (permissions, settings, recording defaults) in the Stream dashboard or via `client.callTypes.update(...)`. See manifest-selected "Configuring Call Types".
+`default`, `livestream`, `audio_room`, `development`. Configure per-type policies (permissions, settings, recording defaults) in the Stream dashboard, or server-side via the Node SDK (the React Native client does not expose call-type configuration). See manifest-selected "Configuring Call Types".
 
 ---
 
@@ -396,7 +398,7 @@ Use [DOCS.md](DOCS.md) to fetch the manifest-selected UI Cookbook page first. Pr
 
 1. Props on `CallContent` for behavior changes (e.g., `layout`, `disablePictureInPicture`).
 2. Slot props on `CallContent` for swapping a section (`CallControls`, `CallTopView`, `CallParticipantsList`).
-3. Theme via `StreamVideoRN.setTheme(...)` and individual component style props.
+3. Theme via the `style` prop on `<StreamVideo style={theme}>` (global) or `<StreamTheme style={theme}>` (scoped), plus individual component style props.
 4. Custom `ParticipantView` only when the smaller slots cannot satisfy the request.
 
 ---
@@ -422,17 +424,24 @@ A single RN app can run both `stream-chat-react-native` (or `stream-chat-expo`) 
 Prevent multiple concurrent calls by enabling auto-reject for busy users. Configure on both the client and `StreamVideoRN.setPushConfig`:
 
 ```ts
-const client = StreamVideoClient.getOrCreateInstance({
+const clientOptions = {
   apiKey,
   user,
   tokenProvider,
   options: { rejectCallWhenBusy: true },
-});
+};
+
+const client = StreamVideoClient.getOrCreateInstance(clientOptions);
 
 StreamVideoRN.setPushConfig({
+  // Must return Promise<StreamVideoClient | undefined>
+  createStreamVideoClient: async () =>
+    StreamVideoClient.getOrCreateInstance(clientOptions),
   shouldRejectCallWhenBusy: true,
 });
 ```
+
+`createStreamVideoClient` is required on `setPushConfig` - the SDK invokes it to rebuild the client when waking from a push delivered while the app was terminated. It must return `Promise<StreamVideoClient | undefined>`, so wrap the synchronous `getOrCreateInstance(...)` in an `async` arrow. Share the same `clientOptions` between the in-app client and the push config so push wake-ups reuse the singleton.
 
 This stops a second incoming call from registering in CallKit/Telecom while another call is active. On iOS 26.4+ you also need the new `pushRegistry(_:didReceiveIncomingVoIPPushWith:metadata:withCompletionHandler:)` PushKit delegate that forwards to `StreamVideoReactNative.didReceiveIncomingVoIPPush(...)` so CallKit can be suppressed - RN CLI only; Expo handles this automatically via the SDK config plugin. See manifest-selected `/ui-cookbook/ringing/reject-call-when-busy/`.
 

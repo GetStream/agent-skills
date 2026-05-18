@@ -81,7 +81,7 @@ For Video RN, required setup includes:
 - `@react-native-community/netinfo`
 - Expo only: `@config-plugins/react-native-webrtc`, `expo-build-properties`
 - Android minSdk 24 (RN CLI: `android/build.gradle`; Expo: `expo-build-properties` plugin)
-- iOS Java 8 source / Java 11 target compatibility for the WebRTC module (RN CLI: `android/app/build.gradle` compileOptions)
+- Android Java 8 source / Java 11 target compatibility for the WebRTC module (RN CLI: `android/app/build.gradle` compileOptions)
 - `NSCameraUsageDescription` and `NSMicrophoneUsageDescription` in `Info.plist`
 - `CAMERA`, `RECORD_AUDIO`, `MODIFY_AUDIO_SETTINGS`, foreground-service permissions in `AndroidManifest.xml`
 - Expo only: add `@stream-io/video-react-native-sdk` and `@config-plugins/react-native-webrtc` to `app.json` plugins, then `npx expo prebuild --clean`
@@ -121,13 +121,26 @@ Do not create a `StreamVideoClient`:
 
 For `Call` lifetime: create inside a `useEffect`, `await call.join()` (or `getOrCreate()`), and on cleanup **guard the leave**: `if (call.state.callingState !== CallingState.LEFT) await call.leave()`. Dangling `Call` instances keep publishing audio/video and leak memory, but an unguarded second `leave()` (custom hangup + unmount, or React 18 strict-mode double-effect) throws `Cannot leave call that has already been left`. Hangup handlers should only navigate - `CallContent`'s default hangup already calls `leave()`.
 
-A `Call` instance must be created **exactly once** per call session. Create it in the screen that owns the lifecycle (typically the destination call screen) and mount `<StreamCall call={call}>` there. Every other component reads it via `useCall()` from within the `<StreamCall>` subtree - **never call `client.call(type, id)` again to "retrieve" the same call elsewhere**. Recreating a Call leaks SFU connections and breaks state.
+A `Call` instance must be a **singleton per `(type, id)` pair**. The destination call screen mounts `<StreamCall call={call}>` and is the only place that calls `client.call(type, id, { reuseInstance: true })` for the active call. The `{ reuseInstance: true }` flag is required - the same `(type, id)` may already exist in the SDK's managed state (outgoing ring, ringing watcher, deep link, push), and without the flag the SDK constructs a duplicate that leaks SFU connections and breaks state. Every component inside `<StreamCall>` reads the call via `useCall()`; descendants must **not** call `client.call(...)` again to retrieve it.
 
-Pass only the call id (or `cid` if both type and id are needed) through navigation params, not the `Call` object itself. Upstream screens (lobby, home) should not pre-create the `Call` - hand off the id and let the destination screen own the single creation.
+Pass the call id and (when known) the call type through navigation params, not the `Call` object itself. Upstream screens (lobby, home) should not pre-create the `Call` - hand off the id/type and let the destination screen own the single mount.
 
-For single-call concurrency, set `options: { rejectCallWhenBusy: true }` on `getOrCreateInstance` and `StreamVideoRN.setPushConfig({ shouldRejectCallWhenBusy: true })`. On iOS 26.4+ (RN CLI only), pair this with the new `pushRegistry(_:didReceiveIncomingVoIPPushWith:metadata:withCompletionHandler:)` PushKit delegate that forwards to `StreamVideoReactNative.didReceiveIncomingVoIPPush(...)` so CallKit can be suppressed when the app is foregrounded; Expo handles this automatically via the SDK config plugin.
+`StreamVideoRN.setPushConfig({ ... })` requires a `createStreamVideoClient` callback - it is how the SDK rebuilds the client when waking from push. Always include it alongside any other config:
 
-For app-owned in-foreground ringing UI (instead of CallKit/Telecom), set `skipIncomingPushInForeground: true` on the per-platform `ios` / `android` keys of `setPushConfig`.
+```ts
+StreamVideoRN.setPushConfig({
+  // Must return Promise<StreamVideoClient | undefined>
+  createStreamVideoClient: async () =>
+    StreamVideoClient.getOrCreateInstance({ apiKey, user, tokenProvider }),
+  shouldRejectCallWhenBusy: true,
+  // ios: { skipIncomingPushInForeground: true },
+  // android: { skipIncomingPushInForeground: true },
+});
+```
+
+For single-call concurrency, set `options: { rejectCallWhenBusy: true }` on `getOrCreateInstance` and add `shouldRejectCallWhenBusy: true` to `setPushConfig` (alongside `createStreamVideoClient`). On iOS 26.4+ (RN CLI only), pair this with the new `pushRegistry(_:didReceiveIncomingVoIPPushWith:metadata:withCompletionHandler:)` PushKit delegate that forwards to `StreamVideoReactNative.didReceiveIncomingVoIPPush(...)` so CallKit can be suppressed when the app is foregrounded; Expo handles this automatically via the SDK config plugin.
+
+For app-owned in-foreground ringing UI (instead of CallKit/Telecom), set `skipIncomingPushInForeground: true` on the per-platform `ios` / `android` keys of `setPushConfig` (alongside `createStreamVideoClient`).
 
 **Non-ringing notifications** (`call.missed`, `call.notification`, `call.live_started`, `call.session_started`) are entirely app-owned - the SDK does not display them or route taps. Register the device token explicitly via `client.addDevice(token, push_provider, push_provider_name)`; on iOS this is a separate APN token because the ringing VoIP token is PushKit-only.
 
@@ -138,7 +151,7 @@ For app-owned in-foreground ringing UI (instead of CallKit/Telecom), set `skipIn
 When using React Navigation or Expo Router:
 
 - **Chat:** Place `OverlayProvider` above the navigation screens. With React Navigation, prefer `OverlayProvider` above `NavigationContainer`. Keep `Chat` high enough that screen transitions do not reconnect the client. Pass channel CIDs or ids through navigation params, not `Channel` instances. Recreate the `Channel` instance from `useChatContext().client` on the destination screen. Set `keyboardVerticalOffset` to the header height. Do not add `topInset` or `bottomInset` by default; add them only when a specific layout or attachment-picker issue proves they are needed.
-- **Video:** Place `StreamVideo` above `NavigationContainer` (or above the Expo Router root layout) so the client survives screen transitions. Pass only the call id through navigation params, not `Call` instances. The destination call screen is the **sole** Call owner - it calls `client.call(type, id)` once, joins, and mounts `<StreamCall>`; descendants read via `useCall()`. Other screens/components must not call `client.call(...)` to obtain the same instance.
+- **Video:** Place `StreamVideo` above `NavigationContainer` (or above the Expo Router root layout) so the client survives screen transitions. Pass the call id (and call type when not the default) through navigation params, not `Call` instances. The destination call screen mounts `<StreamCall>` after calling `client.call(type, id, { reuseInstance: true })` once; descendants read via `useCall()`. Other screens/components must not call `client.call(...)` to obtain the same instance.
 
 For Chat threads, keep thread state explicit. When a thread screen is open, pass the same `thread` value to the main `Channel` and render the thread screen with `threadList`.
 

@@ -74,6 +74,9 @@ peers:
       - stream chat rn
       - "@stream-io/video-react-native-sdk"
       - stream video react native
+      - stream video rn
+      - video rn
+      - video react native
       - video call react native
       - livestream react native
       - audio room react native

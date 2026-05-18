@@ -60,13 +60,13 @@ Scan the user's input for the signals below in order. The classifier is determin
 
 | Signal in user input | Sub-skill |
 |---|---|
-| Explicit SDK/framework token: `Chat React`, `Video iOS`, `Feeds Node`, `Moderation`, etc. (with or without version) | `stream-docs` |
-| Words "docs" or "documentation" | `stream-docs` |
-| "How do I {X} in {framework}?", "How does {hook/component/method} work?", "What does {SDK thing} do?" | `stream-docs` |
+| Explicit SDK/framework token: `Chat React`, `Video iOS`, `Feeds Node`, `Moderation`, etc. (with or without version), and **no build/integrate verb** | `stream-docs` |
+| Words "docs" or "documentation" (and no build/integrate verb) | `stream-docs` |
+| "How do I {X} in {framework}?", "How does {hook/component/method} work?", "What does {SDK thing} do?" - and **no build/integrate verb**. If the request is "how do I add/build/integrate/scaffold {X} in {framework}" and `{framework}` matches a peer signal, the peer row below wins instead. | `stream-docs` |
 | Operational verbs + Stream noun: "list calls", "show channels", "any flagged", "find users", "check {anything}" | `stream-cli` |
 | `stream api`, `stream config`, `stream auth` (literal CLI invocation) | `stream-cli` |
 | "Install the CLI", "set up stream" with no project context | `stream-cli` |
-| **Build/integration intent + a token matching a peer's `signals` in [`peers.yaml`](peers.yaml)** (e.g. `swift` / `.xcodeproj` -> `stream-swift`; `react native` / `expo` / `stream video react native` -> `stream-react-native`). **This row takes precedence over the web `stream-builder` rows below whenever a peer signal is present, even if the request also mentions "add" / "scaffold" / "build".** | matching peer (confirm install if `install_policy: ask`) |
+| **Build/integration intent + a token matching a peer's `signals` in [`peers.yaml`](peers.yaml)** (e.g. `swift` / `.xcodeproj` -> `stream-swift`; `react native` / `expo` / `stream video react native` / `stream video rn` -> `stream-react-native`). **This row takes precedence over the web `stream-builder` rows below whenever a peer signal is present, and also wins over the docs how-to rows above whenever the request contains a build/integrate verb (`add`, `build`, `integrate`, `scaffold`, `wire`, `set up`, `create`) alongside the peer signal.** | matching peer (confirm install if `install_policy: ask`) |
 | "Build me a ... app", "scaffold", "create a new ..." + Stream product, in an empty/new directory, **and no peer signal present** | `stream-builder` (web/Next.js, the default when no platform signal is given) |
 | "Add Chat/Video/Feeds to this app", "integrate Stream into" - existing project, **and no peer signal present** | `stream-builder` (web/Next.js, the default when no platform signal is given) |
 | Operational verb wrapped in how-to phrasing (e.g. "how do I list my calls?" - docs *or* CLI) | **Ask one disambiguator** |

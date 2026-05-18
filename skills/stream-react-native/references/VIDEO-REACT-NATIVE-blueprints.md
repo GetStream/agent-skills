@@ -210,13 +210,13 @@ export const HomeScreen = () => {
 };
 ```
 
-`SafeAreaView` here comes from `react-native-safe-area-context`, not `"react-native"` (that one is deprecated and Android-blind). For finer control - e.g. an absolutely positioned floating action button that needs `bottom` inset only - reach for `useSafeAreaInsets()` from the same package and pad manually. Pass only `callId` through navigation. For pre-join device checks (camera test, mic test, output picker), render the **Lobby Preview** pattern from the manifest-selected `/ui-cookbook/lobby-preview/` page - it uses the same "no Call yet" approach with `useCallStateHooks` mocked against device state, not against a Call instance.
+`SafeAreaView` here comes from `react-native-safe-area-context`, not `"react-native"` (that one is deprecated and Android-blind). For finer control - e.g. an absolutely positioned floating action button that needs `bottom` inset only - reach for `useSafeAreaInsets()` from the same package and pad manually. Pass only `callId` through navigation. For pre-join device checks (camera test, mic test, output picker), see the **Lobby Preview** pattern in the manifest-selected `/ui-cookbook/lobby-preview/` page - the canonical lobby pre-creates a Call instance specifically for the preview so `useCallStateHooks()` can read camera/microphone state through a real `<StreamCall>` context.
 
 ---
 
 ## Active Call Screen
 
-The default in-call experience. **This screen is the sole owner of the `Call` instance** for the session - it calls `client.call(type, id)` exactly once inside `useEffect`, joins, and mounts `<StreamCall>`. Every child component reads the call via `useCall()` from `<StreamCall>` context; descendants must **not** call `client.call(...)` again to retrieve it. Recreating leaks SFU connections and breaks state.
+The default in-call experience. The screen calls `client.call(type, id, { reuseInstance: true })` once inside `useEffect`, joins, and mounts `<StreamCall>`. `{ reuseInstance: true }` is required because the same `(type, id)` may already be in the SDK's managed list - delivered by an outgoing ring, an incoming ringing watcher, or a deep link / push - and a second construction would produce a duplicate `Call`. With the flag, the SDK returns the cached singleton. Child components read the call via `useCall()` from `<StreamCall>` context; they must **not** call `client.call(...)` again to retrieve it.
 
 `call.leave()` runs on unmount, **guarded by `callingState !== CallingState.LEFT`** so leaving twice (hangup button + unmount, or React 18 strict-mode double-effect) does not throw `Cannot leave call that has already been left`. Hangup handlers should only navigate; `CallContent`'s default hangup already calls `leave()`.
 
@@ -234,12 +234,15 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 export const ActiveCallScreen = () => {
   const client = useStreamVideoClient();
   const navigation = useNavigation<any>();
-  const { callId } = useRoute().params as { callId: string };
+  const { callId, callType = "default" } = useRoute().params as {
+    callId: string;
+    callType?: string;
+  };
   const [call, setCall] = useState<Call>();
 
   useEffect(() => {
     if (!client) return;
-    const c = client.call("default", callId);
+    const c = client.call(callType, callId, { reuseInstance: true });
     setCall(c);
     c.join({ create: true }).catch((err) => console.error("Failed to join", err));
     return () => {
@@ -248,7 +251,7 @@ export const ActiveCallScreen = () => {
       }
       setCall(undefined);
     };
-  }, [client, callId]);
+  }, [client, callType, callId]);
 
   if (!call) return null;
 
@@ -264,7 +267,7 @@ export const ActiveCallScreen = () => {
 
 Notice the screen does **not** wrap `<CallContent />` in a `SafeAreaView`. `CallContent` reads insets from `<StreamVideo>`'s theme (`variants.insets`) - wire them once at the App Provider blueprint and the call screen renders edge-to-edge with the correct padding on both iOS and Android. See [VIDEO-REACT-NATIVE.md > Safe areas and edge-to-edge](VIDEO-REACT-NATIVE.md#safe-areas-and-edge-to-edge).
 
-If the call type is dynamic (`livestream`, `audio_room`, `default`, etc.), include it in the navigation params alongside `callId` and pass both to `client.call(type, id)`. Still create the Call exactly once.
+The destructured `callType` defaults to `"default"` for the simple join-by-id case but accepts whatever the deep-link / ringing watcher / push handler delivers (`livestream`, `audio_room`, custom call types). Always pass `{ reuseInstance: true }` so a Call already created upstream (an outgoing ring, a ringing watcher) is returned as-is rather than duplicated.
 
 ---
 
@@ -326,11 +329,11 @@ export const RingingCalls = () => {
 };
 ```
 
-Render it as a sibling of your navigator: `<StreamVideo client={client}><MyApp /><RingingCalls /></StreamVideo>`. `RingingCallContent` reads insets from `StreamVideo`'s theme (`variants.insets`) - wire those once at the App Provider level via `useSafeAreaInsets()` so this overlay respects notches and system bars without an extra `SafeAreaView` wrap. `RingingCallContent` switches to `CallContent` on accept, so the accepted call flows into the active-call UI without an explicit navigation step. If you do navigate (e.g. to surface the existing Active Call Screen blueprint), pass only `ringingCall.id` and `ringingCall.type` through navigation - the destination screen still creates the Call exactly once via `client.call(type, id)`, and `getOrCreateInstance`-style call lookup returns the same instance.
+Render it as a sibling of your navigator: `<StreamVideo client={client}><MyApp /><RingingCalls /></StreamVideo>`. `RingingCallContent` reads insets from `StreamVideo`'s theme (`variants.insets`) - wire those once at the App Provider level via `useSafeAreaInsets()` so this overlay respects notches and system bars without an extra `SafeAreaView` wrap. `RingingCallContent` switches to `CallContent` on accept, so the accepted call flows into the active-call UI without an explicit navigation step. If you do navigate (e.g. to surface the existing Active Call Screen blueprint), pass only `ringingCall.id` and `ringingCall.type` through navigation - the destination screen passes `{ reuseInstance: true }` to `client.call(...)` so the SDK returns the same `Call` instance the watcher was rendering, not a new one.
 
 ### Starting an outgoing ringing call
 
-The screen that triggers the ring is the **only** place that constructs the `Call` - one `client.call(type, id)` call, period. Once `getOrCreate({ ring: true, ... })` registers it, the shell-level `RingingCalls` watcher picks it up via `useCalls()` (a read of the SDK's managed list - not another construction), so both sides reference the same instance without any flag. Always include the caller in `members`.
+The screen that triggers the ring calls `client.call(type, id, { reuseInstance: true })` once and fires `getOrCreate({ ring: true, ... })`. The shell-level `RingingCalls` watcher then picks the call up via `useCalls()` (a read of the SDK's managed list - not another construction), and any later navigation into the Active Call screen also passes `{ reuseInstance: true }` so the same instance is reused everywhere. Always include the caller in `members`.
 
 ```tsx
 import { useCallback } from "react";
@@ -343,7 +346,7 @@ export const RingPeerButton = ({ peerId, myId }: { peerId: string; myId: string 
   const onPress = useCallback(async () => {
     if (!client) return;
     const callId = `ring-${Date.now()}`; // unique id - do not reuse
-    const call = client.call("default", callId);
+    const call = client.call("default", callId, { reuseInstance: true });
     await call.getOrCreate({
       ring: true,
       video: true,
@@ -355,7 +358,7 @@ export const RingPeerButton = ({ peerId, myId }: { peerId: string; myId: string 
 };
 ```
 
-`getOrCreate({ ring: true })` starts the signaling flow and (with `StreamVideoRN.setPushConfig` set up) delivers a VoIP / FCM notification to each member. Reuse of call ids is unsupported - generate a fresh one per ring. Use `call.ring({ members_ids: [...] })` if you need to ring into an existing call instead. The shell-level `RingingCalls` watcher then renders `<StreamCall>` around the same instance via `useCalls()`; no second `client.call(...)` anywhere.
+`getOrCreate({ ring: true })` starts the signaling flow and (with `StreamVideoRN.setPushConfig` set up) delivers a VoIP / FCM notification to each member. Reuse of call ids is unsupported - generate a fresh one per ring. Use `call.ring({ members_ids: [...] })` if you need to ring into an existing call instead. The shell-level `RingingCalls` watcher renders `<StreamCall>` around the same instance via `useCalls()`; the Active Call screen later reuses the same instance via `{ reuseInstance: true }` when the user navigates in.
 
 ### Accepting / rejecting manually
 
@@ -695,6 +698,7 @@ npx @react-native-community/cli@latest init MyApp
 cd MyApp
 npm install @stream-io/video-react-native-sdk
 npm install @stream-io/react-native-webrtc react-native-svg @react-native-community/netinfo
+npm install react-native-safe-area-context react-native-edge-to-edge
 npx pod-install
 ```
 
@@ -707,6 +711,7 @@ npx expo install @stream-io/video-react-native-sdk \
   @config-plugins/react-native-webrtc \
   react-native-svg \
   @react-native-community/netinfo \
+  react-native-safe-area-context \
   expo-build-properties
 ```
 

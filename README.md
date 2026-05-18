@@ -97,14 +97,16 @@ The skill pack is markdown only - no code, no build step. The generic `/stream` 
 
 | Intent                                                | Sub-skill |
 |-------------------------------------------------------|---|
-| Build a new app                                       | `stream-builder` (Track A) |
-| Add a product to an existing app                      | `stream-builder` (Track E) |
+| Build or integrate a React Native CLI/Expo app (Chat or Video) | `stream-react-native` + its `sdk.md` and `references/*.md` |
+| Build or integrate a Swift/iOS app                    | `stream-swift` + its `builder.md`, `sdk.md`, and `references/*.md` |
+| Build a new web (Next.js) app, **no platform signal present** | `stream-builder` (Track A) |
+| Add a product to an existing web app, **no platform signal present** | `stream-builder` (Track E) |
 | Data queries and CLI operations                       | `stream-cli` (Track B) |
 | Install the Stream CLI                                | `stream-cli` (Track C) |
 | SDK wiring during builder/enhance                     | `stream-builder` + its `sdk.md` and `references/*.md` |
-| Build or integrate a React Native CLI/Expo app (Chat or Video) | `stream-react-native` + its `sdk.md` and `references/*.md` |
 | Search the official SDK documentation (no CLI needed) | `stream-docs` (Track D) |
-| Build or integrate a Swift/iOS app                    | `stream-swift` + its `builder.md`, `sdk.md`, and `references/*.md` |
+
+> **Routing precedence:** when user input contains a platform signal (e.g. `react native`, `expo`, `stream video rn`, `swift`, `ios`), the matching platform peer (`stream-react-native`, `stream-swift`) wins over the web `stream-builder` rows. The web builder is the default only when no platform signal is present.
 
 Cross-cutting rules (secrets, login screen, strict mode, package manager, base UI, moderation Dashboard-only, ...) live once in [`skills/stream/RULES.md`](skills/stream/RULES.md) and apply to every sub-skill.
 
