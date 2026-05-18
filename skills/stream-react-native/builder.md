@@ -85,10 +85,11 @@ npx expo install @stream-io/video-react-native-sdk \
   @config-plugins/react-native-webrtc \
   react-native-svg \
   @react-native-community/netinfo \
+  react-native-safe-area-context \
   expo-build-properties
 ```
 
-Add `@stream-io/video-react-native-sdk` and `@config-plugins/react-native-webrtc` to `app.json` `plugins`, then `npx expo prebuild --clean`.
+Add `@stream-io/video-react-native-sdk` and `@config-plugins/react-native-webrtc` to `app.json` `plugins`. Also enable Android edge-to-edge under `android` in `app.json` (`"edgeToEdgeEnabled": true`; default-on Expo SDK 54+). Then `npx expo prebuild --clean`.
 
 **Video - RN CLI:**
 
@@ -96,10 +97,11 @@ Add `@stream-io/video-react-native-sdk` and `@config-plugins/react-native-webrtc
 npm view @stream-io/video-react-native-sdk version dist-tags --json
 npm install @stream-io/video-react-native-sdk
 npm install @stream-io/react-native-webrtc react-native-svg @react-native-community/netinfo
+npm install react-native-safe-area-context react-native-edge-to-edge
 npx pod-install
 ```
 
-Set `minSdkVersion = 24` in `android/build.gradle` and add Java 8 source compatibility in `android/app/build.gradle`. Add camera/microphone usage descriptions to `Info.plist` and camera/audio permissions to `AndroidManifest.xml`.
+Set `minSdkVersion = 24` in `android/build.gradle` and add Java 8 source compatibility in `android/app/build.gradle`. Add camera/microphone usage descriptions to `Info.plist` and camera/audio permissions to `AndroidManifest.xml`. In `android/app/src/main/res/values/styles.xml`, set the app theme parent to a `Theme.EdgeToEdge` variant (e.g. `Theme.EdgeToEdge.Material3`) so Android draws under the system bars.
 
 If the new app uses yarn or pnpm, translate package-manager commands without changing package names. Run pods after native dependency changes in RN CLI apps. Use `npx expo install` for Expo dependencies so versions match the Expo SDK.
 

@@ -330,7 +330,7 @@ Render it as a sibling of your navigator: `<StreamVideo client={client}><MyApp /
 
 ### Starting an outgoing ringing call
 
-The screen that triggers the ring owns the Call lifecycle: create it once, fire `getOrCreate({ ring: true, ... })`, and let `RingingCalls` in the shell pick it up via `useCalls()`. Always include the caller in `members`.
+The screen that triggers the ring is the **only** place that constructs the `Call` - one `client.call(type, id)` call, period. Once `getOrCreate({ ring: true, ... })` registers it, the shell-level `RingingCalls` watcher picks it up via `useCalls()` (a read of the SDK's managed list - not another construction), so both sides reference the same instance without any flag. Always include the caller in `members`.
 
 ```tsx
 import { useCallback } from "react";
@@ -355,7 +355,7 @@ export const RingPeerButton = ({ peerId, myId }: { peerId: string; myId: string 
 };
 ```
 
-`getOrCreate({ ring: true })` starts the signaling flow and (with `StreamVideoRN.setPushConfig` set up) delivers a VoIP / FCM notification to each member. Reuse of call ids is unsupported - generate a fresh one per ring. Use `call.ring({ members_ids: [...] })` if you need to ring into an existing call instead.
+`getOrCreate({ ring: true })` starts the signaling flow and (with `StreamVideoRN.setPushConfig` set up) delivers a VoIP / FCM notification to each member. Reuse of call ids is unsupported - generate a fresh one per ring. Use `call.ring({ members_ids: [...] })` if you need to ring into an existing call instead. The shell-level `RingingCalls` watcher then renders `<StreamCall>` around the same instance via `useCalls()`; no second `client.call(...)` anywhere.
 
 ### Accepting / rejecting manually
 
