@@ -13,7 +13,8 @@ allowed-tools: >-
   Bash(cat Package.swift), Bash(cat Package.resolved), Bash(cat Podfile),
   Bash(stream token *),
   Bash(stream chat *),
-  Bash(stream config *)
+  Bash(stream config *),
+  Bash(stream --safe *)
 ---
 
 # Stream Swift - skill router + execution flow
@@ -102,10 +103,16 @@ Once the user answers, execute all CLI steps in sequence **without pausing for c
 #### Step A - API key
 
 ```bash
-stream config get-app
+stream --safe keys
 ```
 
-Extract the `api_key` field. Hold it in context.
+`stream keys` auto-resolves the org and app and prints the API key on a line shaped `API Key:  <key>`. Output format is fixed — `-o json` is ignored. Extract with:
+
+```bash
+api_key=$(stream --safe keys | awk '/^API Key:/ {print $3}')
+```
+
+Note: `stream keys` also auto-copies the **app secret** to the system clipboard. The SDK never needs the secret — discard with `pbcopy </dev/null` if that's a concern.
 
 #### Step B - Token
 
@@ -117,7 +124,7 @@ stream token <user_id>
 stream token <user_id> --ttl <duration>
 ```
 
-Hold the token in context. Use it (and the API key) in every code snippet - no placeholder strings.
+Hold the token in context. In generated code, reference credentials via named constants (e.g., `Config.apiKey`, `Config.userToken` defined in a dedicated config file) — do not embed raw credential values directly in code snippets.
 
 #### Step C - Seed channels (Chat projects only; only if the user said yes)
 

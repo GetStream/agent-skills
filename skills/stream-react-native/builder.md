@@ -371,7 +371,7 @@ Follow [`sdk.md`](sdk.md) for shared patterns (client lifecycle, auth, provider 
 - audio routing is automatic on `call.join()` / `call.leave()` (default `audioRole: "communicator"`); only call `callManager.start/stop` to override the role (e.g., audio-room broadcaster)
 - error handling around `call.join()`, `call.camera.enable()`, `client.connectUser()`
 
-Use the real API key and token or the app's token provider. Do not leave placeholder strings in final code unless the user explicitly asked for a template only.
+Use the real API key and token or the app's token provider. Reference credentials via named constants (e.g., from a local `.env` file or config module) or the app's token provider. Do not embed raw credential values in final code unless the user explicitly asked for a template only.
 
 ---
 
