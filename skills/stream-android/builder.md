@@ -56,7 +56,7 @@ Install only the artifacts needed for the requested Stream products.
 Follow [`sdk.md`](sdk.md) for:
 
 - Stream client lifetime in an app-scoped owner (`Application`, Hilt `@Singleton`, Koin `single`)
-- auth and token transport — use the real API key and token from `credentials.md`, never placeholder strings
+- auth and token transport — reference credentials via named constants (e.g., `Config.apiKey`, `Config.userToken` from a local config file), never embed raw credential values inline
 - ViewModel ownership and main-dispatcher boundaries
 - user switching and session teardown
 

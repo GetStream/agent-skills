@@ -221,7 +221,7 @@ Follow [`sdk.md`](sdk.md) for:
 - thread state
 - sign-out and offline cleanup
 
-Use the real API key and token or the app's token provider. Do not leave placeholder strings in final code unless the user explicitly asked for a template only.
+Reference credentials via named constants (e.g., from a local `.env` file or config module) or the app's token provider. Do not embed raw credential values in final code unless the user explicitly asked for a template only.
 
 ---
 
