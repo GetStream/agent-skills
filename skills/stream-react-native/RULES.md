@@ -125,7 +125,11 @@ A `Call` instance must be created **exactly once** per call session. Create it i
 
 Pass only the call id (or `cid` if both type and id are needed) through navigation params, not the `Call` object itself. Upstream screens (lobby, home) should not pre-create the `Call` - hand off the id and let the destination screen own the single creation.
 
-For single-call concurrency, set `options: { rejectCallWhenBusy: true }` on `getOrCreateInstance` and `StreamVideoRN.setPushConfig({ shouldRejectCallWhenBusy: true })`.
+For single-call concurrency, set `options: { rejectCallWhenBusy: true }` on `getOrCreateInstance` and `StreamVideoRN.setPushConfig({ shouldRejectCallWhenBusy: true })`. On iOS 26.4+ (RN CLI only), pair this with the new `pushRegistry(_:didReceiveIncomingVoIPPushWith:metadata:withCompletionHandler:)` PushKit delegate that forwards to `StreamVideoReactNative.didReceiveIncomingVoIPPush(...)` so CallKit can be suppressed when the app is foregrounded; Expo handles this automatically via the SDK config plugin.
+
+For app-owned in-foreground ringing UI (instead of CallKit/Telecom), set `skipIncomingPushInForeground: true` on the per-platform `ios` / `android` keys of `setPushConfig`.
+
+**Non-ringing notifications** (`call.missed`, `call.notification`, `call.live_started`, `call.session_started`) are entirely app-owned - the SDK does not display them or route taps. Register the device token explicitly via `client.addDevice(token, push_provider, push_provider_name)`; on iOS this is a separate APN token because the ringing VoIP token is PushKit-only.
 
 ---
 
@@ -137,6 +141,18 @@ When using React Navigation or Expo Router:
 - **Video:** Place `StreamVideo` above `NavigationContainer` (or above the Expo Router root layout) so the client survives screen transitions. Pass only the call id through navigation params, not `Call` instances. The destination call screen is the **sole** Call owner - it calls `client.call(type, id)` once, joins, and mounts `<StreamCall>`; descendants read via `useCall()`. Other screens/components must not call `client.call(...)` to obtain the same instance.
 
 For Chat threads, keep thread state explicit. When a thread screen is open, pass the same `thread` value to the main `Channel` and render the thread screen with `threadList`.
+
+---
+
+## Safe areas and Android edge-to-edge
+
+Every screen the skill ships must respect safe areas on iOS and edge-to-edge layout on Android. Apply these rules without exception:
+
+- Use **`react-native-safe-area-context`** for all inset handling: `SafeAreaProvider` at the app root (required, not optional), `SafeAreaView` from this package for full-screen wrappers, and `useSafeAreaInsets()` for custom padding. Never import `SafeAreaView` from `"react-native"`.
+- **Android edge-to-edge is mandatory.** Expo: set `"edgeToEdgeEnabled": true` under `android` in `app.json` (default-on from Expo SDK 54). RN CLI: install `react-native-edge-to-edge` and inherit a `Theme.EdgeToEdge` variant in `android/app/src/main/res/values/styles.xml`. iOS is already edge-to-edge by default and needs no extra config.
+- **Status bar / nav bar** styling uses `<SystemBars style="auto" />` from `react-native-edge-to-edge` (or via `expo-status-bar` / `expo-navigation-bar`, which delegate to `SystemBars` on Expo SDK 54+). Do not call deprecated `StatusBar` APIs directly when edge-to-edge is on.
+- **For Stream Video screens**, the SDK does not infer insets on its own. Read them with `useSafeAreaInsets()` and bridge into `<StreamVideo style={theme}>` (or a scoped `<StreamTheme>`) where `theme.variants.insets = { top, right, bottom, left }`. `CallContent`, `RingingCallContent`, and participant views consume those theme insets.
+- **For Stream Chat screens**, `<Channel>` handles its own insets - do not wrap `MessageComposer` or `MessageList` in `SafeAreaView` to fix spacing. Add `topInset` / `bottomInset` props on `<Channel>` only when a specific layout issue proves they are needed.
 
 ---
 

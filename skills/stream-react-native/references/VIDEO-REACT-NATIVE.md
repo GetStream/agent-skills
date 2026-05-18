@@ -145,9 +145,8 @@ Add optional dependencies with the runtime's normal install lane:
 | Ringing (CallKit on iOS, Android Telecom) | `@stream-io/react-native-callingx` |
 | Background blur and virtual backgrounds | `@stream-io/video-filters-react-native` |
 | Noise cancellation | `@stream-io/noise-cancellation-react-native` |
-| Android push (FCM) | `@react-native-firebase/app`, `@react-native-firebase/messaging` |
-| iOS local notifications | `@react-native-community/push-notification-ios` |
-| Non-ringing Android notifications | `@notifee/react-native` |
+| Ringing push delivery (Android FCM) | `@react-native-firebase/app`, `@react-native-firebase/messaging` |
+| App-owned non-ringing notifications (any combination, app's choice) | `@react-native-firebase/messaging`, `expo-notifications`, `@react-native-community/push-notification-ios`, `@notifee/react-native` |
 | Gesture handler (recommended root wrapper) | RN CLI: `react-native-gesture-handler`; Expo: `npx expo install react-native-gesture-handler` |
 | Permissions helper | `react-native-permissions` |
 
@@ -365,6 +364,32 @@ client.on("call.ended", ...);
 
 ---
 
+## Safe areas and edge-to-edge
+
+`CallContent`, `RingingCallContent`, and the participant views do **not** infer device insets on their own. The app must:
+
+1. Wrap the root with `SafeAreaProvider` from `react-native-safe-area-context`.
+2. Read insets via `useSafeAreaInsets()` and pass them through `<StreamVideo>`'s theme:
+
+```tsx
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { StreamVideo, type Theme, type DeepPartial } from "@stream-io/video-react-native-sdk";
+
+const VideoWithInsets = ({ client, children }) => {
+  const { top, right, bottom, left } = useSafeAreaInsets();
+  const theme: DeepPartial<Theme> = { variants: { insets: { top, right, bottom, left } } };
+  return <StreamVideo client={client} style={theme}>{children}</StreamVideo>;
+};
+```
+
+For a scoped override (single screen, landscape iPad, custom toolbar overlap), wrap that subtree in `<StreamTheme style={customTheme}>` instead of the global `<StreamVideo>` style. Source: manifest-selected `/ui-cookbook/safe-area-insets/`.
+
+On Android the app must also enable edge-to-edge (Expo: `"edgeToEdgeEnabled": true` in `app.json` under `android`; RN CLI: install `react-native-edge-to-edge` and inherit a `Theme.EdgeToEdge` variant in `styles.xml`) so the call UI draws under transparent system bars before the inset bridge can give it usable padding. iOS is edge-to-edge by default.
+
+Status-bar / nav-bar styling: use `<SystemBars style="auto" />` from `react-native-edge-to-edge` (or Expo's `expo-status-bar` / `expo-navigation-bar` on SDK 54+, which delegate to `SystemBars`). Do not call deprecated direct `StatusBar` APIs.
+
+---
+
 ## Customization
 
 Use [DOCS.md](DOCS.md) to fetch the manifest-selected UI Cookbook page first. Prefer these in order:
@@ -378,9 +403,11 @@ Use [DOCS.md](DOCS.md) to fetch the manifest-selected UI Cookbook page first. Pr
 
 ## Ringing, push, and notifications
 
-Ringing is opt-in. Install `@stream-io/react-native-callingx` and follow the manifest-selected "Incoming calls" pages. The SDK wires CallKit (iOS) and Android Telecom for system-level incoming-call UI; configuration runs through `StreamVideoRN.setPushConfig({ ... })` at app start.
+**Ringing** is opt-in and SDK-managed. Install `@stream-io/react-native-callingx` and follow the manifest-selected `/incoming-calls/ringing-setup/react-native/` and `/incoming-calls/ringing-setup/expo/` pages. The SDK wires CallKit (iOS) and Android Telecom for system-level incoming-call UI; configuration runs through `StreamVideoRN.setPushConfig({ ... })` at app start. An optional per-platform flag `skipIncomingPushInForeground: true` (under `ios` / `android`) suppresses the CallKit/Telecom UI when the app is already foregrounded so the in-app ringing UI can take over. On iOS 26.4+ this branch also requires the PushKit `didReceiveIncomingVoIPPushWith:metadata:withCompletionHandler:` delegate forwarding to `StreamVideoReactNative.didReceiveIncomingVoIPPush(...)` on RN CLI - Expo apps get this automatically from the SDK config plugin.
 
-For push providers (Firebase Cloud Messaging on Android, APNs/PushKit on iOS), fetch the matching push-provider page from the manifest before changing setup. Do not assume background WebSocket behavior or default prop values from memory.
+**Non-ringing notifications** (`call.missed`, `call.notification`, `call.live_started`, `call.session_started`) are **entirely the app's responsibility**. The SDK does not display them, route taps, or own channel config; use any push + display library (e.g. `@react-native-firebase/messaging`, `expo-notifications`, `@react-native-community/push-notification-ios`, `@notifee/react-native`). Register the device token explicitly with `client.addDevice(token, push_provider, push_provider_name)` - on iOS this requires a **separate APN token** because the VoIP token from ringing is PushKit-only. See manifest-selected `/incoming-calls/non-ringing-notifications-setup/overview/`, `/register-device/`, and `/handling-example/`.
+
+For ringing-provider details (Firebase Cloud Messaging on Android, APNs/PushKit on iOS), fetch the matching push-provider page from the manifest before changing setup. Do not assume background WebSocket behavior or default prop values from memory.
 
 ---
 
@@ -407,7 +434,7 @@ StreamVideoRN.setPushConfig({
 });
 ```
 
-This stops a second incoming call from registering in CallKit/Telecom while another call is active.
+This stops a second incoming call from registering in CallKit/Telecom while another call is active. On iOS 26.4+ you also need the new `pushRegistry(_:didReceiveIncomingVoIPPushWith:metadata:withCompletionHandler:)` PushKit delegate that forwards to `StreamVideoReactNative.didReceiveIncomingVoIPPush(...)` so CallKit can be suppressed - RN CLI only; Expo handles this automatically via the SDK config plugin. See manifest-selected `/ui-cookbook/ringing/reject-call-when-busy/`.
 
 ---
 
@@ -467,4 +494,55 @@ try {
 - Audio/video filters (noise cancellation, background blur) add CPU overhead; the SDK auto-disables under pressure, but expose a manual toggle for low-end devices.
 - Role-based UI hiding is insufficient on its own; configure permissions in the Stream dashboard (see `/guides/permissions-and-moderation/`).
 
-TODO: Troubleshooting deep-dive (connection errors, ringing-on-push, logs) - fill from manifest-selected `/advanced/troubleshooting/` and provider-specific incoming-calls pages.
+## Troubleshooting
+
+Source: [getstream.io/video/docs/react-native/advanced/troubleshooting/](https://getstream.io/video/docs/react-native/advanced/troubleshooting/)
+
+### Connection issues
+
+A failed WebSocket connection or rejected `call.join()` prevents calls from being established. Always `await` and handle rejection:
+
+```ts
+try {
+  await call.join();
+} catch (err) {
+  setError(err);
+}
+```
+
+- **Expired token** - verify at [jwt.io](https://jwt.io). Always pass a `tokenProvider` to `StreamVideoClient.getOrCreateInstance({ apiKey, user, tokenProvider })` so the SDK refreshes automatically (~4 hour tokens recommended).
+- **Wrong secret** - tokens copied from docs use a demo secret and will be rejected. Generate tokens with this app's secret on a backend.
+- **User-token mismatch** - the token must be signed for the same `user.id` passed to `getOrCreateInstance`.
+- **Firewall/proxy** - restrictive networks may block WebRTC. UDP is preferred; the SDK falls back to TURN over TCP/443 when UDP is blocked. See the manifest-selected `/misc/networking/` page for the port matrix.
+- **Retries** - `call.join()` retries up to three times with exponential backoff. Tune with `await call.join({ maxJoinRetries: 1 })`.
+- **Mid-call disruptions** - the SDK auto-reconnects; show UI based on `useCallCallingState()` (`CallingState.RECONNECTING`, `CallingState.RECONNECTING_FAILED`) and tune the window with `call.setDisconnectionTimeout(seconds)`. See the [Network Disruptions](https://getstream.io/video/docs/react-native/ui-cookbook/network-disruption/) cookbook.
+
+### Ringing call issues
+
+- **App in foreground:** ringing UI shows over the active socket - fix connection issues first.
+- **App in background or killed:** requires push (FCM on Android, APN/VoIP + CallKit on iOS). Mount `<StreamVideo>` at the app root so push-driven events are not missed during hot reload, and call `StreamVideoRN.setPushConfig(...)` with provider names that match the dashboard.
+- **Singleton client** - always `StreamVideoClient.getOrCreateInstance(...)`; multiple instances break push delivery and state.
+- **Calling yourself** - caller and callee must be different users.
+- **Unknown member** - the callee must have connected to Stream at least once so the device token is registered.
+- **Reused call id** - ringing fires only once per call id. Use a fresh UUID (or server-issued id) for each ringing call.
+- **Dashboard logs** - in the [Stream dashboard](https://dashboard.getstream.io/), open **Webhook & Push Logs** for Video & Audio and filter by `error` to see delivery failures.
+- **iOS** - VoIP certificate bundle id matches the app, Push Notifications capability enabled, background modes include `voip`, `audio`, `remote-notification`, `processing`. Disable Do Not Disturb when testing CallKit. A failed `mustReport` to CallKit can cause iOS to stop delivering VoIP pushes - reinstall the app to recover.
+- **Android** - grant `POST_NOTIFICATIONS` at runtime on Android 13+, declare `FOREGROUND_SERVICE` permissions, and check OEM battery optimizations (OnePlus Deep Clear, etc.) that block killed-app notifications. Force-stopped apps cannot receive push until the user reopens them.
+- **Dev-mode quirk** - during hot reload, global event listeners can de-register and accept/reject taps silently no-op. Fully restart the app or test a release build.
+
+### Logs
+
+Default SDK log level is `warn`. Raise it via `options.logLevel` on `getOrCreateInstance` (levels: `trace`, `debug`, `info`, `warn`, `error`):
+
+```ts
+import { StreamVideoClient } from "@stream-io/video-react-native-sdk";
+
+const client = StreamVideoClient.getOrCreateInstance({
+  apiKey,
+  user,
+  tokenProvider,
+  options: { logLevel: "debug" },
+});
+```
+
+For native WebRTC packet/peer-connection traces, set `WebRTCModuleOptions.loggingSeverity = .verbose` (iOS, in `AppDelegate`) or `Logging.Severity.LS_VERBOSE` (Android, in `MainApplication`) - then watch Xcode or Android Studio. Configure log level before connecting; changes after the socket is established do not retroactively rewrite existing connection state.

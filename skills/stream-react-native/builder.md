@@ -178,6 +178,7 @@ Do not target Expo Go for `stream-chat-expo`. Also set `useNativeMultipartUpload
 npm view @stream-io/video-react-native-sdk version dist-tags --json
 npm install @stream-io/video-react-native-sdk
 npm install @stream-io/react-native-webrtc react-native-svg @react-native-community/netinfo
+npm install react-native-safe-area-context react-native-edge-to-edge
 npx pod-install
 ```
 
@@ -188,6 +189,7 @@ Required Android setup in the host app:
 - `android/build.gradle`: `minSdkVersion = 24`
 - `android/app/build.gradle`: `compileOptions { sourceCompatibility JavaVersion.VERSION_1_8; targetCompatibility JavaVersion.VERSION_11 }`
 - `AndroidManifest.xml`: declare `CAMERA`, `RECORD_AUDIO`, `MODIFY_AUDIO_SETTINGS`, and foreground-service permissions
+- `android/app/src/main/res/values/styles.xml`: swap the app theme parent to a `Theme.EdgeToEdge` variant (e.g. `Theme.EdgeToEdge.Material3`) so Android draws under the system bars. Add `<item name="enforceNavigationBarContrast">false</item>` if you want a fully transparent nav bar.
 
 Required iOS setup:
 
@@ -203,7 +205,20 @@ npx expo install @stream-io/video-react-native-sdk \
   @config-plugins/react-native-webrtc \
   react-native-svg \
   @react-native-community/netinfo \
+  react-native-safe-area-context \
   expo-build-properties
+```
+
+Enable Android edge-to-edge in `app.json` (default-on from Expo SDK 54, opt-in on SDK 53):
+
+```json
+{
+  "expo": {
+    "android": {
+      "edgeToEdgeEnabled": true
+    }
+  }
+}
 ```
 
 Add config plugins to `app.json`:
@@ -241,11 +256,11 @@ Do not target Expo Go for Video; the SDK includes native code.
 
 | User asks for | Packages | Notes |
 |---|---|---|
-| Ringing (CallKit iOS, Android Telecom) | `@stream-io/react-native-callingx` | Wires CallKit/Telecom; see manifest-selected `/incoming-calls/*` pages |
+| Ringing (CallKit iOS, Android Telecom) | `@stream-io/react-native-callingx` | Wires CallKit/Telecom; see manifest-selected `/incoming-calls/*` pages. `skipIncomingPushInForeground: true` on `setPushConfig` lets the app's in-foreground ringing UI take over; on iOS 26.4+ RN CLI also needs the PushKit `metadata:` delegate calling `StreamVideoReactNative.didReceiveIncomingVoIPPush(...)` (Expo auto-injects) |
 | Background blur / virtual background | `@stream-io/video-filters-react-native` | Optional filter pipeline |
 | Noise cancellation | `@stream-io/noise-cancellation-react-native` | Audio quality improvement |
-| Android push (FCM) | `@react-native-firebase/app`, `@react-native-firebase/messaging` | Required for ringing/Android push |
-| iOS local notifications | `@react-native-community/push-notification-ios` | Local notification helpers |
+| Ringing push delivery (Android FCM) | `@react-native-firebase/app`, `@react-native-firebase/messaging` | Required for ringing on Android; `@react-native-firebase/messaging` is also the typical library for app-owned non-ringing handling |
+| App-owned non-ringing notifications | `@react-native-firebase/messaging`, `expo-notifications`, `@react-native-community/push-notification-ios`, `@notifee/react-native` (any combination) | Non-ringing pushes (`call.missed`, `call.notification`, `call.live_started`, `call.session_started`) are app-owned. Register the device token with `client.addDevice(token, provider, providerName)` and handle display/taps yourself. See manifest-selected `/incoming-calls/non-ringing-notifications-setup/overview/` |
 | Permissions helper | `react-native-permissions` | Pre-call permission prompts |
 
 After adding native Video optional packages, follow their platform permission steps. For Expo, keep the app in the dev-client/native-build lane and run `npx expo prebuild --clean` when native config changes need to be regenerated.
@@ -318,9 +333,15 @@ If Video is in scope, ensure runtime camera/microphone access is configured:
 
 Use `react-native-permissions` if the app needs to request permissions before the first call screen mounts; otherwise the SDK prompts at the first media access.
 
-### Safe area
+### Safe area and Android edge-to-edge
 
-If navigation is used, install and place `SafeAreaProvider` near the root. Do not pass safe-area values into `Channel` as `topInset` or `bottomInset` by default; add those props only after a specific layout or attachment-picker issue proves they are needed.
+Always wire safe areas:
+
+- Install `react-native-safe-area-context` and mount `SafeAreaProvider` near the root (above the navigator) on every app. Use `SafeAreaView` (from `react-native-safe-area-context`, not `react-native`) for full-screen wrappers and `useSafeAreaInsets()` when you need fine-grained padding.
+- **Android edge-to-edge** is required so the app draws under transparent system bars. Expo: set `"edgeToEdgeEnabled": true` in `app.json` under `android` (default-on Expo SDK 54+). RN CLI: install `react-native-edge-to-edge` and set the app theme parent to a `Theme.EdgeToEdge` variant in `android/app/src/main/res/values/styles.xml`.
+- Use `<SystemBars style="auto" />` from `react-native-edge-to-edge` (or `expo-status-bar` / `expo-navigation-bar` on Expo SDK 54+, which delegate to `SystemBars`) for status-bar and nav-bar styling. Do not call deprecated direct `StatusBar` APIs.
+- For **Chat**: `<Channel>` handles its own insets. Do not pass `topInset` or `bottomInset` by default; add them only after a specific layout or attachment-picker issue proves they are needed.
+- For **Video**: the SDK does not infer insets. Read them with `useSafeAreaInsets()` and bridge into `<StreamVideo style={theme}>` as `theme.variants.insets = { top, right, bottom, left }` so `CallContent`, `RingingCallContent`, and participant views respect notches and system bars.
 
 ---
 

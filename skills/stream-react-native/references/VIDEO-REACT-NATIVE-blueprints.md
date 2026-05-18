@@ -19,11 +19,8 @@ All snippets import from `@stream-io/video-react-native-sdk`. The package name i
 | custom participant tile, override video tile | Custom Participant Tile Blueprint |
 | participant grid, layout, speaker layout | Participant Grid Blueprint |
 | deep link into a call, push -> call screen | Call Deep-link Blueprint |
-| livestream viewer | Livestream Player Blueprint |
-| audio room, voice-only call | Audio Room Blueprint |
 | React Navigation or Expo Router shell | Navigation Shell |
-| theme, dark mode, colors | Theming Blueprint |
-| UI slot, component, or behavior customization | DOCS.md -> primary manifest lookup, then Component Override Blueprint |
+| livestream viewer, audio room, theming, generic UI slot override | DOCS.md -> manifest lookup, then VIDEO-REACT-NATIVE.md > Customization |
 | chat + video in the same app | DOCS.md -> manifest -> Chat Integration; then App Provider + Chat Provider |
 
 If no row matches, read [DOCS.md](DOCS.md) and [VIDEO-REACT-NATIVE.md](VIDEO-REACT-NATIVE.md) first, then verify symbols in manifest-selected docs or the installed package before coding.
@@ -39,8 +36,15 @@ import React, { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, Button, TextInput, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import {
+  SafeAreaProvider,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
+import { SystemBars } from "react-native-edge-to-edge";
+import {
   StreamVideo,
   StreamVideoClient,
+  type Theme,
+  type DeepPartial,
   User,
 } from "@stream-io/video-react-native-sdk";
 
@@ -56,6 +60,26 @@ const Loading = () => (
     <ActivityIndicator size="large" />
   </View>
 );
+
+// Bridge device insets into StreamVideo's theme so CallContent / RingingCallContent
+// respect notches and system bars (Android edge-to-edge + iOS safe areas).
+const VideoWithInsets = ({
+  children,
+  client,
+}: {
+  children: React.ReactNode;
+  client: StreamVideoClient;
+}) => {
+  const { top, right, bottom, left } = useSafeAreaInsets();
+  const theme: DeepPartial<Theme> = {
+    variants: { insets: { top, right, bottom, left } },
+  };
+  return (
+    <StreamVideo client={client} style={theme}>
+      {children}
+    </StreamVideo>
+  );
+};
 
 const LoginScreen = ({
   demoDefaults,
@@ -122,7 +146,7 @@ const ConnectedVideo = ({
   }, [session]);
 
   if (!client) return <Loading />;
-  return <StreamVideo client={client}>{children}</StreamVideo>;
+  return <VideoWithInsets client={client}>{children}</VideoWithInsets>;
 };
 
 export default function App() {
@@ -130,19 +154,24 @@ export default function App() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      {session ? (
-        <ConnectedVideo session={session}>
-          {/* navigation lives here */}
-        </ConnectedVideo>
-      ) : (
-        <LoginScreen onSession={setSession} />
-      )}
+      <SafeAreaProvider>
+        <SystemBars style="auto" />
+        {session ? (
+          <ConnectedVideo session={session}>
+            {/* navigation lives here */}
+          </ConnectedVideo>
+        ) : (
+          <LoginScreen onSession={setSession} />
+        )}
+      </SafeAreaProvider>
     </GestureHandlerRootView>
   );
 }
 ```
 
 Always use `StreamVideoClient.getOrCreateInstance(...)` (not `new StreamVideoClient(...)`); the SDK relies on the singleton for push notifications and call state. Pair with a `tokenProvider` (~4-hour tokens) in production so the SDK refreshes automatically. See [VIDEO-REACT-NATIVE.md > Client setup](VIDEO-REACT-NATIVE.md#client-setup) and the live [Integration Best Practices](https://getstream.io/video/docs/react-native/advanced/integration-best-practices.md) page.
+
+`SafeAreaProvider` + `VideoWithInsets` is the canonical safe-area wiring: `SafeAreaProvider` exposes device insets, and `VideoWithInsets` bridges them into `<StreamVideo>`'s theme so `CallContent`, `RingingCallContent`, and participant views respect notches and system bars without an extra `SafeAreaView` wrap. `<SystemBars style="auto" />` from `react-native-edge-to-edge` handles status-bar / nav-bar text contrast against the app's background. On Android, also enable edge-to-edge via Expo `app.json` `"edgeToEdgeEnabled": true` or the `react-native-edge-to-edge` theme on RN CLI; see [VIDEO-REACT-NATIVE.md > Safe areas and edge-to-edge](VIDEO-REACT-NATIVE.md#safe-areas-and-edge-to-edge).
 
 ---
 
@@ -153,6 +182,7 @@ Use this for a lobby screen where the user picks or enters a call id and navigat
 ```tsx
 import { useCallback, useState } from "react";
 import { Button, TextInput, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 
 export const HomeScreen = () => {
@@ -165,20 +195,22 @@ export const HomeScreen = () => {
   }, [callId, navigation]);
 
   return (
-    <View style={{ flex: 1, justifyContent: "center", padding: 24 }}>
-      <TextInput
-        autoCapitalize="none"
-        onChangeText={setCallId}
-        placeholder="Call id"
-        value={callId}
-      />
-      <Button disabled={!callId} onPress={onJoin} title="Join call" />
-    </View>
+    <SafeAreaView style={{ flex: 1 }} edges={["top", "bottom"]}>
+      <View style={{ flex: 1, justifyContent: "center", padding: 24 }}>
+        <TextInput
+          autoCapitalize="none"
+          onChangeText={setCallId}
+          placeholder="Call id"
+          value={callId}
+        />
+        <Button disabled={!callId} onPress={onJoin} title="Join call" />
+      </View>
+    </SafeAreaView>
   );
 };
 ```
 
-Pass only `callId` through navigation. For pre-join device checks (camera test, mic test, output picker), render the **Lobby Preview** pattern from the manifest-selected `/ui-cookbook/lobby-preview/` page - it uses the same "no Call yet" approach with `useCallStateHooks` mocked against device state, not against a Call instance.
+`SafeAreaView` here comes from `react-native-safe-area-context`, not `"react-native"` (that one is deprecated and Android-blind). For finer control - e.g. an absolutely positioned floating action button that needs `bottom` inset only - reach for `useSafeAreaInsets()` from the same package and pad manually. Pass only `callId` through navigation. For pre-join device checks (camera test, mic test, output picker), render the **Lobby Preview** pattern from the manifest-selected `/ui-cookbook/lobby-preview/` page - it uses the same "no Call yet" approach with `useCallStateHooks` mocked against device state, not against a Call instance.
 
 ---
 
@@ -230,6 +262,8 @@ export const ActiveCallScreen = () => {
 
 `CallContent` provides the full default UI - top bar, participant grid, and call controls. Inside `<StreamCall>`, any child component (custom controls, participant tile, ringing UI, in-call toolbar) reads the current call via `useCall()` - never `client.call(...)` again. Replace any slot via its props; see Custom Call Controls and Custom Participant Tile blueprints below. Audio routing (speaker/earpiece/Bluetooth) is handled automatically by `call.join()` / `call.leave()` with `audioRole: "communicator"` as the default - do not call `callManager.start/stop` yourself unless you are overriding the role (e.g., `broadcaster` in an audio room).
 
+Notice the screen does **not** wrap `<CallContent />` in a `SafeAreaView`. `CallContent` reads insets from `<StreamVideo>`'s theme (`variants.insets`) - wire them once at the App Provider blueprint and the call screen renders edge-to-edge with the correct padding on both iOS and Android. See [VIDEO-REACT-NATIVE.md > Safe areas and edge-to-edge](VIDEO-REACT-NATIVE.md#safe-areas-and-edge-to-edge).
+
 If the call type is dynamic (`livestream`, `audio_room`, `default`, etc.), include it in the navigation params alongside `callId` and pass both to `client.call(type, id)`. Still create the Call exactly once.
 
 ---
@@ -262,99 +296,392 @@ For Expo Router, wrap `app/_layout.tsx` with `StreamVideo` inside `GestureHandle
 
 ## Ringing Blueprint
 
-TODO: Fill from manifest-selected `/incoming-calls/overview.md` and `/incoming-calls/ringing-setup/react-native.md`.
+`RingingCallContent` reads `call.state.callingState` and routes between the default `IncomingCall`, `OutgoingCall`, `JoiningCallIndicator`, and accepted `CallContent` slots. Pair it with the client-level `useCalls()` hook to surface incoming or outgoing ringing calls from anywhere in the app. Deeper detail lives on the live [Ringing](https://getstream.io/video/docs/react-native/incoming-calls/ringing.md) and [RingingCallContent](https://getstream.io/video/docs/react-native/ui-components/call/ringing-call-content.md) pages.
 
-Sections to cover:
+### Surfacing an incoming call from the app shell
 
-- Surfacing an incoming call from the app shell (`client.on("call.ring", ...)`)
-- Starting an outgoing ringing call (`call.getOrCreate({ ring: true, data: { members } })`)
-- Accepting / rejecting an incoming call manually (`call.accept()`, `call.reject()`)
-- Using built-in `IncomingCall` and `OutgoingCall` screen components
-- Wiring `StreamVideoRN.setPushConfig(...)` for CallKit (iOS) + Android Telecom integration via `@stream-io/react-native-callingx`
+Mount the watcher once, **inside `<StreamVideo>` but above your navigator**, so it covers every screen and also catches calls that arrive via push while the app is backgrounded. The Call instance comes from `useCalls()` - the app shell never calls `client.call(...)` itself.
+
+```tsx
+import { StyleSheet, View } from "react-native";
+import {
+  RingingCallContent,
+  StreamCall,
+  useCalls,
+} from "@stream-io/video-react-native-sdk";
+
+export const RingingCalls = () => {
+  // SDK-managed ringing calls (incoming + outgoing). For simplicity, take the
+  // first one - there can be multiple ringing at once if you allow it.
+  const ringingCall = useCalls().filter((c) => c.ringing)[0];
+  if (!ringingCall) return null;
+
+  return (
+    <StreamCall call={ringingCall}>
+      <View style={StyleSheet.absoluteFill}>
+        <RingingCallContent />
+      </View>
+    </StreamCall>
+  );
+};
+```
+
+Render it as a sibling of your navigator: `<StreamVideo client={client}><MyApp /><RingingCalls /></StreamVideo>`. `RingingCallContent` reads insets from `StreamVideo`'s theme (`variants.insets`) - wire those once at the App Provider level via `useSafeAreaInsets()` so this overlay respects notches and system bars without an extra `SafeAreaView` wrap. `RingingCallContent` switches to `CallContent` on accept, so the accepted call flows into the active-call UI without an explicit navigation step. If you do navigate (e.g. to surface the existing Active Call Screen blueprint), pass only `ringingCall.id` and `ringingCall.type` through navigation - the destination screen still creates the Call exactly once via `client.call(type, id)`, and `getOrCreateInstance`-style call lookup returns the same instance.
+
+### Starting an outgoing ringing call
+
+The screen that triggers the ring owns the Call lifecycle: create it once, fire `getOrCreate({ ring: true, ... })`, and let `RingingCalls` in the shell pick it up via `useCalls()`. Always include the caller in `members`.
+
+```tsx
+import { useCallback } from "react";
+import { Button } from "react-native";
+import { useStreamVideoClient } from "@stream-io/video-react-native-sdk";
+
+export const RingPeerButton = ({ peerId, myId }: { peerId: string; myId: string }) => {
+  const client = useStreamVideoClient();
+
+  const onPress = useCallback(async () => {
+    if (!client) return;
+    const callId = `ring-${Date.now()}`; // unique id - do not reuse
+    const call = client.call("default", callId);
+    await call.getOrCreate({
+      ring: true,
+      video: true,
+      data: { members: [{ user_id: myId }, { user_id: peerId }] },
+    });
+  }, [client, myId, peerId]);
+
+  return <Button onPress={onPress} title={`Call ${peerId}`} />;
+};
+```
+
+`getOrCreate({ ring: true })` starts the signaling flow and (with `StreamVideoRN.setPushConfig` set up) delivers a VoIP / FCM notification to each member. Reuse of call ids is unsupported - generate a fresh one per ring. Use `call.ring({ members_ids: [...] })` if you need to ring into an existing call instead.
+
+### Accepting / rejecting manually
+
+Inside `<StreamCall>`, read the Call with `useCall()` and the calling state with `useCallStateHooks().useCallCallingState()`. Guard `leave()` with `callingState !== CallingState.LEFT` to survive React 18 strict-mode double-effects and hangup+unmount races.
+
+```tsx
+import { useCallback } from "react";
+import { Button, View } from "react-native";
+import {
+  CallingState,
+  useCall,
+  useCallStateHooks,
+} from "@stream-io/video-react-native-sdk";
+
+export const IncomingCallButtons = () => {
+  const call = useCall();
+  const { useCallCallingState } = useCallStateHooks();
+  const callingState = useCallCallingState();
+
+  const accept = useCallback(async () => {
+    // call.join() is the accept action - no separate accept() step
+    await call?.join();
+  }, [call]);
+
+  const reject = useCallback(async () => {
+    if (!call || callingState === CallingState.LEFT) return;
+    await call.leave({ reject: true, reason: "decline" });
+  }, [call, callingState]);
+
+  return (
+    <View>
+      <Button onPress={accept} title="Accept" />
+      <Button onPress={reject} title="Reject" />
+    </View>
+  );
+};
+```
+
+**Wiring:**
+- `call.join()` is the accept action on RN - it records acceptance with the backend and enters the media session in one step. Audio routing (`audioRole: "communicator"`) is auto-managed by `join()` / `leave()`; do not call `callManager.start/stop` here.
+- Reject an incoming call with `call.leave({ reject: true, reason: "decline" })`. Cancel an outgoing call with `call.leave({ reject: true, reason: "cancel" })` before the first callee accepts.
+- Replace the default ringing UIs by passing `IncomingCall`, `OutgoingCall`, `JoiningCallIndicator`, or `CallContent` component refs to `<RingingCallContent ... />`. Match the prop signatures on the live [RingingCallContent](https://getstream.io/video/docs/react-native/ui-components/call/ringing-call-content.md) page; the [Incoming & Outgoing Call cookbook](https://getstream.io/video/docs/react-native/ui-cookbook/incoming-and-outgoing-call.md) shows full custom replacements built from `useCallMembers` and the accept/reject buttons above.
+- For background and terminated ringing (CallKit on iOS, Telecom + FCM on Android), call `StreamVideoRN.setPushConfig({...})` once at module load - including a `createStreamVideoClient` callback that builds the client with `StreamVideoClient.getOrCreateInstance(...)`. Full wiring (Info.plist keys, AppDelegate PushKit hooks, Firebase listeners, `@stream-io/react-native-callingx`) is documented at [Ringing Setup - React Native](https://getstream.io/video/docs/react-native/incoming-calls/ringing-setup/react-native.md).
+- To let the app's own ringing UI take over when a ringing push arrives while the app is foregrounded, set `skipIncomingPushInForeground: true` on the per-platform `ios` / `android` keys of `setPushConfig`. On iOS 26.4+ this branch also requires the PushKit `didReceiveIncomingVoIPPushWith:metadata:withCompletionHandler:` delegate forwarding to `StreamVideoReactNative.didReceiveIncomingVoIPPush(...)` on RN CLI; Expo apps inject this automatically via the SDK config plugin. Full details on the same Ringing Setup pages above.
+- **Non-ringing notifications** (`call.missed`, `call.notification`, `call.live_started`, `call.session_started`) are NOT handled by `setPushConfig` - they are entirely app-owned. Register the device token via `client.addDevice(token, push_provider, push_provider_name)` and display/route the push yourself using any library. See manifest-selected `/incoming-calls/non-ringing-notifications-setup/overview/`.
 
 ---
 
 ## Custom Call Controls Blueprint
 
-TODO: Fill from manifest-selected `/ui-cookbook/replacing-call-controls.md`.
+Replace the SDK's default controls bar with your own. Drive call state through `call.microphone`, `call.camera`, and `call.leave()`, reading toggle status via `useCallStateHooks()`.
 
-Sections to cover:
+```tsx
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import {
+  CallingState,
+  useCall,
+  useCallStateHooks,
+} from "@stream-io/video-react-native-sdk";
+import { useNavigation } from "@react-navigation/native";
 
-- Replacing the `CallControls` slot on `CallContent` with a custom component
-- Reading toggle state from `useCallStateHooks().useMicrophoneState()` / `useCameraState()`
-- Wiring a custom hangup button via `call.leave()` or `call.endCall()`
+export const CustomCallControls = () => {
+  const call = useCall();
+  const navigation = useNavigation<any>();
+  const { useMicrophoneState, useCameraState } = useCallStateHooks();
+  const { status: micStatus } = useMicrophoneState();
+  const { status: camStatus } = useCameraState();
+
+  const toggleMic = async () => {
+    await call?.microphone.toggle();
+  };
+  const toggleCam = async () => {
+    await call?.camera.toggle();
+  };
+  const flipCam = async () => {
+    await call?.camera.flip();
+  };
+  const hangup = async () => {
+    if (call && call.state.callingState !== CallingState.LEFT) {
+      await call.leave().catch((err) => console.error(err));
+    }
+    navigation.goBack();
+  };
+
+  return (
+    <View style={styles.row}>
+      <Pressable onPress={toggleMic} style={styles.button}>
+        <Text>{micStatus === "disabled" ? "Mic On" : "Mic Off"}</Text>
+      </Pressable>
+      <Pressable onPress={toggleCam} style={styles.button}>
+        <Text>{camStatus === "disabled" ? "Cam On" : "Cam Off"}</Text>
+      </Pressable>
+      <Pressable onPress={flipCam} style={styles.button}>
+        <Text>Flip</Text>
+      </Pressable>
+      <Pressable onPress={hangup} style={[styles.button, styles.hangup]}>
+        <Text style={styles.hangupText}>Leave</Text>
+      </Pressable>
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  row: { flexDirection: "row", justifyContent: "space-evenly", paddingVertical: 10 },
+  button: { alignItems: "center", borderRadius: 40, height: 64, justifyContent: "center", width: 64 },
+  hangup: { backgroundColor: "#FF3742" },
+  hangupText: { color: "white" },
+});
+```
+
+Wire the custom bar via `<CallContent CallControls={CustomCallControls} />` - the prop accepts a `ComponentType` and the SDK renders it in the controls slot. The custom component must live inside `<StreamCall>` so `useCall()` and `useCallStateHooks()` resolve the active call.
+
+**Wiring:**
+
+- `call.microphone.toggle()` / `call.camera.toggle()` flip the published track; await them since they are async. Read the live state from `useMicrophoneState().status` and `useCameraState().status` (`"enabled" | "disabled"`) - the hooks re-render on change.
+- `call.camera.flip()` swaps front/back; `useCameraState().direction` (`"front" | "back"`) is available if you need to label the button.
+- For hangup, call `call.leave()` and navigate. Guard with `callingState !== CallingState.LEFT` so the call-screen unmount effect does not double-leave. Do **not** use `call.endCall()` here unless you intend to terminate the call for every participant.
 
 ---
 
 ## Custom Participant Tile Blueprint
 
-TODO: Fill from manifest-selected `/ui-components/participants/participant-view.md` and `/ui-cookbook/participant-label.md`.
+Wrap `ParticipantView` with a speaking border and a custom label that surfaces the dominant-speaker state.
 
-Sections to cover:
+```tsx
+import { StyleSheet, Text, View } from "react-native";
+import {
+  ParticipantLabelProps,
+  ParticipantView,
+  StreamVideoParticipant,
+  useCallStateHooks,
+  VideoRendererProps,
+  VideoRenderer,
+} from "@stream-io/video-react-native-sdk";
 
-- Wrapping `ParticipantView` with custom badges / labels
-- Reading speaking state, connection quality, audio level
-- Overriding the video / audio renderer
+const CustomParticipantLabel = ({ participant }: ParticipantLabelProps) => {
+  const label = participant?.name || participant?.id;
+  const isDominant = participant?.isDominantSpeaker;
+  return (
+    <View style={styles.labelWrap}>
+      <Text style={styles.labelText}>
+        {label}
+        {isDominant ? " (speaking)" : ""}
+      </Text>
+    </View>
+  );
+};
+
+const CustomVideoRenderer = (props: VideoRendererProps) => (
+  <VideoRenderer {...props} objectFit="cover" />
+);
+
+export const ParticipantTile = ({
+  participant,
+}: {
+  participant: StreamVideoParticipant;
+}) => {
+  const { useParticipants } = useCallStateHooks();
+  const participants = useParticipants();
+  const tracked = participants.find((p) => p.sessionId === participant.sessionId) ?? participant;
+  const isSpeaking = tracked.isSpeaking;
+
+  return (
+    <View
+      style={[
+        styles.tile,
+        { borderColor: isSpeaking ? "#00E676" : "transparent" },
+      ]}
+    >
+      <ParticipantView
+        participant={tracked}
+        style={styles.view}
+        ParticipantLabel={CustomParticipantLabel}
+        VideoRenderer={CustomVideoRenderer}
+      />
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  tile: { borderRadius: 12, borderWidth: 2, flex: 1, overflow: "hidden" },
+  view: { flex: 1 },
+  labelWrap: {
+    backgroundColor: "rgba(0,0,0,0.5)",
+    borderRadius: 4,
+    bottom: 8,
+    left: 8,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    position: "absolute",
+  },
+  labelText: { color: "white", fontSize: 12 },
+});
+```
+
+**Wiring:**
+
+- `ParticipantView` handles track attach/detach, mirroring for the local participant, and avatar fallback when the camera is off via its built-in `ParticipantVideoFallback`. Override the `ParticipantLabel`, `ParticipantReaction`, `ParticipantVideoFallback`, `ParticipantNetworkQualityIndicator`, or `VideoRenderer` slot props to customize sub-regions; leave the rest as default.
+- Read live participant state (`isSpeaking`, `isDominantSpeaker`, `audioLevel`, `connectionQuality`) via `useCallStateHooks().useParticipants()` inside `<StreamCall>` - never call `client.call(...)` again to retrieve state.
+- Plug the tile into `CallContent` via the `ParticipantView` prop, or render it directly from a custom `CallParticipantsList` layout. For a label-only swap (no border), pass `CustomParticipantLabel` straight to `CallContent`'s `ParticipantLabel` prop.
 
 ---
 
 ## Participant Grid Blueprint
 
-TODO: Fill from manifest-selected `/ui-cookbook/runtime-layout-switching.md`.
+Toggle the built-in grid/spotlight layouts via `CallContent`'s `layout` prop, and read participants through `useCallStateHooks().useParticipants()` when you need a fully custom grid.
 
-Sections to cover:
+```tsx
+import { useState } from "react";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import {
+  CallContent,
+  ParticipantView,
+  StreamCall,
+  useCallStateHooks,
+  type Call,
+} from "@stream-io/video-react-native-sdk";
 
-- Switching between grid and spotlight layouts
-- Custom grid component receiving `useParticipants()` output
-- Pinning participants
+type LayoutMode = "grid" | "spotlight";
+
+export const ParticipantGridScreen = ({ call }: { call: Call }) => {
+  const [layout, setLayout] = useState<LayoutMode>("grid");
+
+  return (
+    <StreamCall call={call}>
+      <View style={styles.toolbar}>
+        <Pressable onPress={() => setLayout("grid")}>
+          <Text style={layout === "grid" ? styles.active : styles.inactive}>Grid</Text>
+        </Pressable>
+        <Pressable onPress={() => setLayout("spotlight")}>
+          <Text style={layout === "spotlight" ? styles.active : styles.inactive}>Spotlight</Text>
+        </Pressable>
+      </View>
+      <CallContent layout={layout} />
+    </StreamCall>
+  );
+};
+
+// Fully custom grid - render instead of <CallContent /> when defaults don't fit.
+export const CustomParticipantGrid = () => {
+  const { useParticipants } = useCallStateHooks();
+  const participants = useParticipants();
+
+  return (
+    <View style={styles.grid}>
+      {participants.map((participant) => (
+        <View key={participant.sessionId} style={styles.cell}>
+          <ParticipantView participant={participant} />
+        </View>
+      ))}
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  toolbar: { flexDirection: "row", gap: 16, padding: 12 },
+  active: { fontWeight: "700" },
+  inactive: { opacity: 0.5 },
+  grid: { flex: 1, flexDirection: "row", flexWrap: "wrap" },
+  cell: { width: "50%", aspectRatio: 1, padding: 4 },
+});
+```
+
+**Wiring:**
+
+- `CallContent` auto-switches to `spotlight` when a screen share starts - your stored `layout` state is overridden until the share ends, so do not fight it.
+- `useParticipants()` already sorts by speaking/dominant-speaker/pinned; iterate it in order rather than re-sorting on every render.
+- Use `sessionId` as the React `key` - `userId` can repeat across multi-device joins.
+- For pinning, dominant-speaker focus, or a floating local tile, prefer overriding `CallContent`'s `CallParticipantsList` / `FloatingParticipantView` slot props over reimplementing the grid from scratch.
 
 ---
 
 ## Call Deep-link Blueprint
 
-TODO: Fill from manifest-selected `/incoming-calls/overview.md` plus the platform's deep-link docs.
+Push notifications and external deep links typically deliver `(callType, callId)`. Resolve the pair as soon as the app wakes, then navigate to the Active Call screen with just the id - the destination screen owns the single `client.call(...)` creation (see Active Call Screen). The deep-link handler must NOT pre-create a `Call` instance.
 
-Sections to cover:
+```tsx
+import { useEffect } from "react";
+import { Linking } from "react-native";
+import { useNavigation } from "@react-navigation/native";
 
-- Handling a notification payload at cold start
-- Resolving `(type, id)` from a push payload and navigating to `ActiveCall`
-- Restoring an in-progress call after the app returns from background
+// matches stream-calls-dogfood.example.com/join/<callType>/<callId>
+// or myapp://call/<callType>/<callId>
+const CALL_LINK_REGEX = /(?:\/join\/|:\/\/call\/)([^/]+)\/([^/?#]+)/;
 
----
+const parseCallLink = (url: string | null) => {
+  const m = url?.match(CALL_LINK_REGEX);
+  if (!m) return null;
+  return { callType: m[1], callId: m[2] };
+};
 
-## Livestream Player Blueprint
+export const useCallDeepLink = () => {
+  const navigation = useNavigation<any>();
 
-TODO: Fill from manifest-selected `/ui-components/livestream/livestream-player.md` and `/streaming/mobile-livestreaming.md`.
+  useEffect(() => {
+    const open = (url: string | null) => {
+      const parsed = parseCallLink(url);
+      if (!parsed) return;
+      // Pass the id (and type if dynamic) through navigation only.
+      // ActiveCallScreen creates the Call exactly once via client.call(type, id).
+      navigation.navigate("ActiveCall", parsed);
+    };
 
-Sections to cover:
+    // Cold start: app launched by tapping the link.
+    Linking.getInitialURL().then(open);
 
-- Viewer-only setup using `LivestreamPlayer`
-- Connecting to an existing livestream call via `client.call("livestream", id)`
-- Handling start, pause, viewer count
+    // Warm: app already running, link delivered as an event.
+    const sub = Linking.addEventListener("url", ({ url }) => open(url));
+    return () => sub.remove();
+  }, [navigation]);
+};
+```
 
----
+Mount `useCallDeepLink()` inside the `<StreamVideo>` subtree (below the auth gate) so the client is ready by the time navigation lands on `ActiveCall`. For Expo Router, swap `useNavigation()` for `router.push({ pathname: "/active-call", params: parsed })` from `expo-router`; the rest of the hook is identical.
 
-## Audio Room Blueprint
+**Push payload path:** ringing calls delivered via Firebase/APNs/CallKit are handled by `StreamVideoRN.setPushConfig(...)` plus the SDK's `@stream-io/react-native-callingx` bridge - the SDK surfaces the incoming call UI for you (see Ringing Blueprint). Non-ringing pushes (`call.missed`, `call.notification`, `call.live_started`, `call.session_started`) are **app-owned**: register the device token via `client.addDevice(token, push_provider, push_provider_name)`, then have your push handler (any library) filter by `data.sender === "stream.video"`, split `data.call_cid` on `:`, and call your own navigation helper:
 
-TODO: Fill from manifest-selected `audio_room` call-type pages.
+```ts
+// inside your FCM / APN / expo-notifications tap handler:
+if (data?.sender === "stream.video") {
+  const [callType, callId] = String(data.call_cid).split(":");
+  staticNavigate({ name: "ActiveCall", params: { callType, callId } });
+}
+```
 
-Sections to cover:
-
-- Creating an `audio_room` call type
-- Speaker vs listener roles
-- Built-in audio-only UI components
-
----
-
-## Theming Blueprint
-
-TODO: Fill from manifest-selected theming pages.
-
-Sections to cover:
-
-- `StreamVideoRN.setTheme(...)` global theme overrides
-- Per-component style props
-- Dark mode toggle via React Native `Appearance`
+Use a `createNavigationContainerRef` + interval gate (`staticNavigate`) because cold-start taps fire before `<NavigationContainer>` is ready - identical pattern to `Linking.getInitialURL()` but driven by the chosen push library. Native intent-filter / `apple-app-site-association` setup (AndroidManifest, AppDelegate `RCTLinkingManager`) is one-time per platform; see the [Deep Linking guide](https://getstream.io/video/docs/react-native/advanced/deeplinking.md). For the canonical non-ringing handling flow and the full payload schema, see manifest-selected `/incoming-calls/non-ringing-notifications-setup/overview/`, `/register-device/`, and `/handling-example/`.
 
 ---
 
@@ -389,15 +716,3 @@ After install:
 - Expo: add `@stream-io/video-react-native-sdk` and `@config-plugins/react-native-webrtc` to `app.json` plugins, then `npx expo prebuild --clean`.
 
 Then drop in the App Provider and Auth Gate blueprint above, hook up the Navigation Shell, and add Home + Active Call screens.
-
----
-
-## Component Override Blueprint
-
-TODO: Generic pattern for any `CallContent` slot or component override. Fill once the specific override is identified via manifest lookup.
-
-Sections to cover:
-
-- Pass a component reference via the matching slot prop on `CallContent`
-- Read context via `useCall`, `useStreamVideoClient`, `useCallStateHooks()`
-- Keep the override outside the `CallContent` subtree if it needs to live in the navigator shell

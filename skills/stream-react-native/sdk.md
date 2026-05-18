@@ -156,9 +156,9 @@ Never use `devToken()` (Chat) for production. Never invent credentials.
 
 ## Provider tree and navigation
 
-**Chat:** `GestureHandlerRootView` -> `SafeAreaProvider` (optional) -> `OverlayProvider` -> `NavigationContainer` (or Expo Router root) -> `<Chat>` -> screens. Keep `OverlayProvider` above navigation so attachment picker / image gallery / overlays render above the active screen. Keep `<Chat>` high enough that screen transitions do not reconnect the socket.
+**Chat:** `GestureHandlerRootView` -> `SafeAreaProvider` -> `OverlayProvider` -> `NavigationContainer` (or Expo Router root) -> `<Chat>` -> screens. `SafeAreaProvider` from `react-native-safe-area-context` is required for both platforms (iOS notches, Android edge-to-edge). Keep `OverlayProvider` above navigation so attachment picker / image gallery / overlays render above the active screen. Keep `<Chat>` high enough that screen transitions do not reconnect the socket.
 
-**Video:** `GestureHandlerRootView` (recommended) -> `<StreamVideo client={client}>` -> `NavigationContainer` (or Expo Router root) -> screens. Mount `StreamVideo` once near the app root; tearing it down restarts the WebSocket.
+**Video:** `GestureHandlerRootView` (recommended) -> `SafeAreaProvider` -> `<StreamVideo client={client} style={themeWithInsets}>` -> `NavigationContainer` (or Expo Router root) -> screens. Bridge insets from `useSafeAreaInsets()` into `StreamVideo`'s `style` prop as `theme.variants.insets = { top, right, bottom, left }` so `CallContent`, `RingingCallContent`, and all participant views respect notches and system bars - the SDK does not infer insets on its own. Mount `<StreamVideo>` once near the app root; tearing it down restarts the WebSocket.
 
 **Chat + Video together:** nest both providers. Order does not matter, but **nest** them - do not place as siblings.
 
