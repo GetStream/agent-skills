@@ -23,18 +23,19 @@ This skill picks the track from the user's input and delegates to a specialized 
 
 ## By task
 
-**Build a new app with Stream** -> use the `stream-builder` skill
-- Empty/new directory + "build me a Chat/Video/Feeds app", "scaffold", "create a new ..."
-- Covers Steps 0-7 (scaffold, theme, auth, env, SDK install, component generation)
-
-**Add Stream to an existing app** -> use the `stream-builder` skill
-- Existing project + "add Chat to this app", "integrate Video", "drop Feeds into ..."
-- Same SDK wiring as scaffold; skips Next.js init and theme pick
-
-**Build or integrate Stream in a platform-specific app** -> peer pack from [`peers.yaml`](peers.yaml)
-- Match user input or cwd against each peer's `signals` (e.g. `swift` / `swiftui` / `.xcodeproj` -> `stream-swift`)
+**Build or integrate Stream in a platform-specific app** -> peer pack from [`peers.yaml`](peers.yaml) (**check peer signals first**)
+- Match user input or cwd against each peer's `signals` (e.g. `swift` / `swiftui` / `.xcodeproj` -> `stream-swift`; `react native` / `expo` / `stream video react native` -> `stream-react-native`)
 - Platform packs declare `install_policy: ask` - confirm install with the user once before adding
 - On decline, route to the peer's `fallback_on_decline` (typically `stream-docs` for read-only lookups)
+- **Peer signals take precedence over the `stream-builder` rows below.** A request like "add a video call to my Expo app" or "scaffold a React Native app with Stream Video" matches `stream-react-native`, not `stream-builder` - the platform token wins.
+
+**Build a new app with Stream (web)** -> use the `stream-builder` skill (default when no peer signal is present)
+- Empty/new directory + "build me a Chat/Video/Feeds app", "scaffold", "create a new ..." and **no platform signal** (no `react native`, `expo`, `swift`, `ios`, `android`, etc.)
+- Covers Steps 0-7 (scaffold, theme, auth, env, SDK install, component generation)
+
+**Add Stream to an existing app (web)** -> use the `stream-builder` skill (default when no peer signal is present)
+- Existing project + "add Chat to this app", "integrate Video", "drop Feeds into ..." and **no platform signal**
+- Same SDK wiring as scaffold; skips Next.js init and theme pick
 
 **Query Stream data via the CLI** -> use the `stream-cli` skill
 - "list calls", "show channels", "any flagged", "find users"
@@ -59,15 +60,15 @@ Scan the user's input for the signals below in order. The classifier is determin
 
 | Signal in user input | Sub-skill |
 |---|---|
-| Explicit SDK/framework token: `Chat React`, `Video iOS`, `Feeds Node`, `Moderation`, etc. (with or without version) | `stream-docs` |
-| Words "docs" or "documentation" | `stream-docs` |
-| "How do I {X} in {framework}?", "How does {hook/component/method} work?", "What does {SDK thing} do?" | `stream-docs` |
+| Explicit SDK/framework token: `Chat React`, `Video iOS`, `Feeds Node`, `Moderation`, etc. (with or without version), and **no build/integrate verb** | `stream-docs` |
+| Words "docs" or "documentation" (and no build/integrate verb) | `stream-docs` |
+| "How do I {X} in {framework}?", "How does {hook/component/method} work?", "What does {SDK thing} do?" - and **no build/integrate verb**. If the request is "how do I add/build/integrate/scaffold {X} in {framework}" and `{framework}` matches a peer signal, the peer row below wins instead. | `stream-docs` |
 | Operational verbs + Stream noun: "list calls", "show channels", "any flagged", "find users", "check {anything}" | `stream-cli` |
 | `stream api`, `stream config`, `stream auth` (literal CLI invocation) | `stream-cli` |
 | "Install the CLI", "set up stream" with no project context | `stream-cli` |
-| "Build me a ... app", "scaffold", "create a new ..." + Stream product, in an empty/new directory | `stream-builder` (web/Next.js) |
-| "Add Chat/Video/Feeds to this app", "integrate Stream into" - existing project | `stream-builder` (web/Next.js) |
-| Build/integration intent + a token matching a peer's `signals` in [`peers.yaml`](peers.yaml) (e.g. `swift`, `swiftui`, `.xcodeproj` -> `stream-swift`) | matching peer (confirm install if `install_policy: ask`) |
+| **Build/integration intent + a token matching a peer's `signals` in [`peers.yaml`](peers.yaml)** (e.g. `swift` / `.xcodeproj` -> `stream-swift`; `react native` / `expo` / `stream video react native` / `stream video rn` -> `stream-react-native`). **This row takes precedence over the web `stream-builder` rows below whenever a peer signal is present, and also wins over the docs how-to rows above whenever the request contains a build/integrate verb (`add`, `build`, `integrate`, `scaffold`, `wire`, `set up`, `create`) alongside the peer signal.** | matching peer (confirm install if `install_policy: ask`) |
+| "Build me a ... app", "scaffold", "create a new ..." + Stream product, in an empty/new directory, **and no peer signal present** | `stream-builder` (web/Next.js, the default when no platform signal is given) |
+| "Add Chat/Video/Feeds to this app", "integrate Stream into" - existing project, **and no peer signal present** | `stream-builder` (web/Next.js, the default when no platform signal is given) |
 | Operational verb wrapped in how-to phrasing (e.g. "how do I list my calls?" - docs *or* CLI) | **Ask one disambiguator** |
 
 **Track D carve-out.** `stream-docs` answers from documentation only - no preflight, no shell commands, no project inspection. Every other sub-skill runs preflight before doing real work.
@@ -90,6 +91,7 @@ If the user already knows what they want, skip the router and invoke a sub-skill
 
 - `/stream-builder` - scaffold a new web (Next.js) app, or add Chat/Video/Feeds/Moderation to an existing one
 - `/stream-swift` - scaffold or integrate Stream into a Swift/SwiftUI/UIKit/iOS app (install confirmed first)
+- `/stream-react-native` - scaffold or integrate Stream Chat or Stream Video into a React Native CLI or Expo app (install confirmed first)
 - `/stream-cli` - query Stream data via CLI, install the CLI, run `stream api / config / auth`
 - `/stream-docs` - search live Stream SDK documentation (no CLI needed)
 
