@@ -203,7 +203,7 @@ For Expo Router, the entry point is usually `app/_layout.tsx`. For RN CLI, it is
 
 ### Safe area
 
-If navigation is used, install and place `SafeAreaProvider` near the root. Do not pass safe-area values into `Channel` as `topInset` or `bottomInset` by default; add those props only after a specific layout or attachment-picker issue proves they are needed.
+If navigation is used, install and place `SafeAreaProvider` near the root. When the chat screen sits under a native navigation header, pass that header height to `Channel` as both `keyboardVerticalOffset` and `topInset` (same value) — `topInset` is what the attachment picker uses to compute its bottom sheet top boundary, and without it the sheet clamps short of its snap point. `bottomInset` stays opt-in; add it only when a specific layout requires it (e.g. a tab bar that owns the bottom safe-area).
 
 ---
 

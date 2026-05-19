@@ -202,9 +202,8 @@ Local demo tokens can come from [`../credentials.md`](../credentials.md).
 - Keep `Chat` high and stable so screen transitions do not reconnect the socket.
 - Pass `channel.cid` through navigation params. Do not pass `Channel` objects.
 - Recreate a channel from `client.channel(type, id)` in the destination screen.
-- Use `keyboardVerticalOffset={headerHeight}` on `Channel`.
-- Do not add `topInset` or `bottomInset` by default. Add them only after a specific layout or attachment-picker issue proves they are needed.
-- Field note: in our Expo dev-client app, adding `topInset` and `bottomInset` made the layout wrong.
+- Use `keyboardVerticalOffset={headerHeight}` on `Channel`, and pair it with `topInset={headerHeight}` so the attachment picker bottom sheet reaches its full snap point when a native navigation header is present.
+- `bottomInset` stays opt-in. Add it only when a specific layout requires it (e.g. a tab bar that owns the bottom safe-area).
 - For threads, pass the active `thread` to the main `Channel` while the thread screen is open and render the thread screen with `threadList`.
 
 ---

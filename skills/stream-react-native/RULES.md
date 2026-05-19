@@ -106,7 +106,8 @@ When using React Navigation or Expo Router:
 - Pass channel CIDs or ids through navigation params, not `Channel` instances.
 - Recreate the `Channel` instance from `useChatContext().client` on the destination screen.
 - Set `keyboardVerticalOffset` to the header height.
-- Do not add `topInset` or `bottomInset` by default. Add them only when a specific layout or attachment-picker issue proves they are needed.
+- When a native navigation header is present, pass the same value as `topInset` on `Channel` — without it the attachment picker bottom sheet gets clamped short of its full snap point.
+- `bottomInset` stays opt-in. Add it only when a specific layout requires it (e.g. a tab bar that owns the bottom safe-area).
 
 For threads, keep thread state explicit. When a thread screen is open, pass the same `thread` value to the main `Channel` and render the thread screen with `threadList`.
 

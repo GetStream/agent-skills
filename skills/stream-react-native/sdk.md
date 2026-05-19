@@ -185,6 +185,7 @@ export const ChannelScreen = ({ route }) => {
     <Channel
       channel={channel}
       keyboardVerticalOffset={headerHeight}
+      topInset={headerHeight}
     >
       <MessageList />
       <MessageComposer />
