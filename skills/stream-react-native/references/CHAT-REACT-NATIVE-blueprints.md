@@ -240,6 +240,7 @@ export const ChannelScreenWithNativeCapability = ({ route }) => {
     <Channel
       channel={channel}
       keyboardVerticalOffset={headerHeight}
+      topInset={headerHeight}
     >
       <MessageList />
       <MessageComposer />
@@ -251,7 +252,8 @@ export const ChannelScreenWithNativeCapability = ({ route }) => {
 Wiring:
 
 - Keep `MessageComposer` inside `Channel`.
-- Add `topInset` or `bottomInset` only after a specific layout or attachment-picker issue proves they are needed.
+- Pair `keyboardVerticalOffset` with `topInset` set to the same header height — without it, the attachment picker bottom sheet gets clamped short of its full snap point.
+- Add `bottomInset` only when a specific layout requires it (e.g. tab bar that owns the bottom safe-area).
 - Use `WithComponents` for custom buttons, previews, rows, or capability-specific UI slots.
 
 ---
@@ -371,6 +373,7 @@ export const ChannelScreen = ({ navigation, route }) => {
     <Channel
       channel={channel}
       keyboardVerticalOffset={headerHeight}
+      topInset={headerHeight}
     >
       <View style={{ flex: 1 }}>
         <MessageList />
@@ -384,8 +387,8 @@ export const ChannelScreen = ({ navigation, route }) => {
 Wiring:
 
 - `Channel` initializes and watches the channel by default.
-- Use `keyboardVerticalOffset={headerHeight}` for navigation headers.
-- Add `topInset` or `bottomInset` only after a specific layout or attachment-picker issue proves they are needed. In our Expo dev-client app, adding them made the layout wrong.
+- Use `keyboardVerticalOffset={headerHeight}` for navigation headers, and pass the same value as `topInset` so the attachment picker bottom sheet reaches its full snap point.
+- Add `bottomInset` only when a specific layout requires it (e.g. tab bar that owns the bottom safe-area).
 - If implementing threads, store the selected thread in context or parent state. See Thread Screen.
 
 ---
