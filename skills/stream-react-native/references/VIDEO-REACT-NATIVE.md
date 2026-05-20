@@ -368,7 +368,7 @@ client.on("call.ended", ...);
 
 ## Safe areas and edge-to-edge
 
-`CallContent`, `RingingCallContent`, and the participant views do **not** infer device insets on their own. The app must:
+`CallContent`, `RingingCallContent`, `HostLivestream`, `ViewerLivestream`, and the participant views do **not** infer device insets on their own. The app must:
 
 1. Wrap the root with `SafeAreaProvider` from `react-native-safe-area-context`.
 2. Read insets via `useSafeAreaInsets()` and pass them through `<StreamVideo>`'s theme:
@@ -386,7 +386,13 @@ const VideoWithInsets = ({ client, children }) => {
 
 For a scoped override (single screen, landscape iPad, custom toolbar overlap), wrap that subtree in `<StreamTheme style={customTheme}>` instead of the global `<StreamVideo>` style. Source: manifest-selected `/ui-cookbook/safe-area-insets/`.
 
-On Android the app must also enable edge-to-edge (Expo: `"edgeToEdgeEnabled": true` in `app.json` under `android`; RN CLI: install `react-native-edge-to-edge` and inherit a `Theme.EdgeToEdge` variant in `styles.xml`) so the call UI draws under transparent system bars before the inset bridge can give it usable padding. iOS is edge-to-edge by default.
+On Android the app must also enable edge-to-edge so the call UI draws under transparent system bars before the inset bridge can give it usable padding:
+
+- **Expo**: set `"edgeToEdgeEnabled": true` in `app.json` under `android`.
+- **RN CLI 0.81+**: set `edgeToEdgeEnabled=true` in `android/gradle.properties`. The React Native Gradle plugin flips `BuildConfig.IS_EDGE_TO_EDGE_ENABLED` and the generated entry-point calls `WindowUtilKt.setEdgeToEdgeFeatureFlagOn()` for you - no separate package install.
+- **Older RN CLI**: install `react-native-edge-to-edge` and inherit a `Theme.EdgeToEdge` variant in `android/app/src/main/res/values/styles.xml`.
+
+iOS is edge-to-edge by default.
 
 Status-bar / nav-bar styling: **Expo** apps use `expo-status-bar` (and optionally `expo-navigation-bar`), already in every Expo template - no extra install. **RN CLI** apps use `<SystemBars style="auto" />` from `react-native-edge-to-edge`. Both APIs are equivalent on Expo SDK 54+ (Expo wrappers delegate to `SystemBars`). Do not call deprecated direct `StatusBar` APIs from `react-native`.
 
