@@ -15,9 +15,9 @@ This skill picks the track from the user's input and delegates to a specialized 
 
 > **Read first:** [`RULES.md`](RULES.md). Non-negotiable rules apply, including the **Peer skills** procedure (Glob path + install command + install policy + Skill-vs-Read-inline rule).
 >
-> **Peer manifest:** [`peers.yaml`](peers.yaml) (schema: [`peers.schema.json`](peers.schema.json)) is the single source of truth for peer skill names, Glob paths, install commands, install policies (`silent` vs `ask`), routing signals, and decline fallbacks. Read it before installing or routing to a peer.
+> **Peer manifest:** [`peers.yaml`](peers.yaml) (schema: [`peers.schema.json`](peers.schema.json)) is the single source of truth for peer skill names, Glob paths, install commands, and routing signals. Every peer installs silently on demand. Read it before installing or routing to a peer.
 >
-> **After picking a sub-skill:** follow the procedure in RULES.md > Peer skills - Glob the entry's `SKILL.md` path, install per its `install_policy` if missing (silently, or after explicit confirm for `ask` peers), then Skill tool (if listed) or Read inline. Do not call `Skill` before the Glob; it surfaces a confusing "Unknown skill" error. Do not stop after naming the track.
+> **After picking a sub-skill:** follow the procedure in RULES.md > Peer skills - Glob the entry's `SKILL.md` path, install it if missing (always silently - every peer is silent-install), then Skill tool (if listed) or Read inline. Do not call `Skill` before the Glob; it surfaces a confusing "Unknown skill" error. Do not stop after naming the track.
 
 ---
 
@@ -33,8 +33,7 @@ This skill picks the track from the user's input and delegates to a specialized 
 
 **Build or integrate Stream in a platform-specific app** -> peer pack from [`peers.yaml`](peers.yaml)
 - Match user input or cwd against each peer's `signals` (e.g. `swift` / `swiftui` / `.xcodeproj` -> `stream-swift`)
-- Platform packs declare `install_policy: ask` - confirm install with the user once before adding
-- On decline, route to the peer's `fallback_on_decline` (typically `stream-docs` for read-only lookups)
+- All peers install silently on demand - install if missing, then route, no prompt
 
 **Query Stream data via the CLI** -> use the `stream-cli` skill
 - "list calls", "show channels", "any flagged", "find users"
@@ -67,7 +66,7 @@ Scan the user's input for the signals below in order. The classifier is determin
 | "Install the CLI", "set up stream" with no project context | `stream-cli` |
 | "Build me a ... app", "scaffold", "create a new ..." + Stream product, in an empty/new directory | `stream-builder` (web/Next.js) |
 | "Add Chat/Video/Feeds to this app", "integrate Stream into" - existing project | `stream-builder` (web/Next.js) |
-| Build/integration intent + a token matching a peer's `signals` in [`peers.yaml`](peers.yaml) (e.g. `swift`, `swiftui`, `.xcodeproj` -> `stream-swift`) | matching peer (confirm install if `install_policy: ask`) |
+| Build/integration intent + a token matching a peer's `signals` in [`peers.yaml`](peers.yaml) (e.g. `swift`, `swiftui`, `.xcodeproj` -> `stream-swift`) | matching peer (installed silently if missing) |
 | Operational verb wrapped in how-to phrasing (e.g. "how do I list my calls?" - docs *or* CLI) | **Ask one disambiguator** |
 
 **Track D carve-out.** `stream-docs` answers from documentation only - no preflight, no shell commands, no project inspection. Every other sub-skill runs preflight before doing real work.

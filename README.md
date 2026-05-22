@@ -8,7 +8,7 @@ Give your AI coding agent the ability to build, query, and manage [Stream](https
 npx skills add GetStream/agent-skills
 ```
 
-That installs the router (`stream`) plus the specialist skills below. Use `/stream` for generic Stream routing, or invoke a sub-skill directly with `/stream-cli`, `/stream-docs`, `/stream-builder`, `/stream-swift`, `/stream-android`, or `/stream-react-native`.
+That's the only command you ever need. It installs the router (`stream`) plus every specialist skill below — and even if you install the router alone, it silently pulls in whatever sub-skill a task needs, on demand. Use `/stream` for generic Stream routing, or invoke a sub-skill directly with `/stream-cli`, `/stream-docs`, `/stream-builder`, `/stream-swift`, `/stream-android`, or `/stream-react-native`.
 
 ### Install - direct from GitHub (no third-party CLI)
 
