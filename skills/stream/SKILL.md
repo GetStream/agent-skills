@@ -79,22 +79,29 @@ Scan the user's input for the signals below in order. The classifier is determin
 
 After the answer, route as if the user had given that signal directly.
 
-**Bare `/stream` with no args.** List the sub-skills under "Quick navigation" briefly and wait for input. No shell execution.
+**Bare `/stream` with no args.** Render the menu under "Quick navigation" **verbatim**, then wait for input. No shell execution, no probing, no install.
 
 ---
 
 ## Quick navigation
 
-If the user already knows what they want, skip the router and invoke a sub-skill directly:
+For a bare `/stream` (and whenever the user wants to pick a skill directly), output the block below **verbatim** - keep the Core / Platform SDKs split, the examples, and the closing line - then wait:
 
-- `/stream-builder` - scaffold a new web (Next.js) app, or add Chat/Video/Feeds/Moderation to an existing one
-- `/stream-swift` - scaffold or integrate Stream into a Swift/SwiftUI/UIKit/iOS app (install confirmed first)
-- `/stream-cli` - query Stream data via CLI, install the CLI, run `stream api / config / auth`
-- `/stream-docs` - search live Stream SDK documentation (no CLI needed)
+> **Stream** - Chat - Video - Feeds - Moderation. Tell me what you want, or pick a skill directly:
+>
+> **Core**
+> - `/stream-builder` - scaffold a web app, or add Stream to an existing one - e.g. *"build me a chat app"*
+> - `/stream-cli` - query data, run `stream api / config / auth`, install the CLI - e.g. *"list my channels"*
+> - `/stream-docs` - search live SDK docs, with citations - e.g. *"how does useChannel work?"*
+>
+> **Platform SDKs**
+> - `/stream-swift` - Swift - SwiftUI - UIKit - iOS
+> - `/stream-android` - Android - Jetpack Compose - Kotlin
+> - `/stream-react-native` - React Native - Expo
+>
+> New to a skill? Just describe the task - I'll install the right one automatically.
 
-Platform-specific packs are declared in [`peers.yaml`](peers.yaml) - new platforms become available by adding an entry there.
-
-Or describe the task and the router will pick.
+The closing line is load-bearing: typing an uninstalled slash command errors with "Unknown skill" *before* this router runs, so natural-language description is the only dead-end-proof path - it routes here and the missing peer is installed per [`peers.yaml`](peers.yaml). Keep this menu in sync with `peers.yaml`: every peer there appears here under Core or Platform SDKs, and new platforms get a bullet under Platform SDKs when their entry is added.
 
 ---
 
