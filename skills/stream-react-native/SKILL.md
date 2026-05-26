@@ -148,7 +148,7 @@ Product-specific setup, docs lookup, gotchas, and UI blueprints live under **`re
 - **Video setup/reference:** [`references/VIDEO-REACT-NATIVE.md`](references/VIDEO-REACT-NATIVE.md)
 - **Video screen/component blueprints:** [`references/VIDEO-REACT-NATIVE-blueprints.md`](references/VIDEO-REACT-NATIVE-blueprints.md)
 
-Future React Native product coverage should stay in this naming family instead of creating more top-level skills (e.g., `FEEDS-REACT-NATIVE.md` if/when shipped). If the requested product file is not bundled yet, say so plainly and only switch to live docs if the user asks.
+If the requested product file is not bundled yet, say so plainly and only switch to live docs if the user asks.
 
 ---
 

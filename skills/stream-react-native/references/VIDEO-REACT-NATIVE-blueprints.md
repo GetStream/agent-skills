@@ -473,6 +473,8 @@ const styles = StyleSheet.create({
 
 Wire the custom bar via `<CallContent CallControls={CustomCallControls} />` - the prop accepts a `ComponentType` and the SDK renders it in the controls slot. The custom component must live inside `<StreamCall>` so `useCall()` and `useCallStateHooks()` resolve the active call.
 
+If the screen also adds a **custom top bar above `CallContent`**, zero `theme.callContent.container.paddingTop` via a scoped `<StreamTheme>` so the SDK's top inset doesn't stack on top of the app bar. If the bottom controls host **absolute overlays, drawers, or subtitles**, include `theme.variants.insets.bottom` (via `useTheme()`) in the offset math, since `CallContent` already pads the bottom safe area. Both patterns and full code: live [Safe area insets cookbook page](https://getstream.io/video/docs/react-native/ui-cookbook/safe-area-insets.md).
+
 **Wiring:**
 
 - `call.microphone.toggle()` / `call.camera.toggle()` flip the published track; await them since they are async. Read the live state from `useMicrophoneState().status` and `useCameraState().status` (`"enabled" | "disabled"`) - the hooks re-render on change.

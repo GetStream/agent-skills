@@ -1,7 +1,5 @@
 # Stream React Native - non-negotiable rules
 
-Every rule below is stated once. Other files reference this file - do not duplicate these rules inline.
-
 ---
 
 ## Target SDK version and scope

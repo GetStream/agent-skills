@@ -384,7 +384,13 @@ const VideoWithInsets = ({ client, children }) => {
 };
 ```
 
-For a scoped override (single screen, landscape iPad, custom toolbar overlap), wrap that subtree in `<StreamTheme style={customTheme}>` instead of the global `<StreamVideo>` style. Source: manifest-selected `/ui-cookbook/safe-area-insets/`.
+For a scoped override (single screen, landscape iPad, custom toolbar overlap), wrap that subtree in `<StreamTheme style={customTheme}>` instead of the global `<StreamVideo>` style.
+
+**Custom top bar outside `CallContent`**: if the app renders its own top bar above `CallContent`, the SDK's built-in top padding stacks on top of the app bar. Wrap `CallContent` in a scoped `<StreamTheme>` that sets `theme.callContent.container.paddingTop = 0` so only the app bar carries the top inset.
+
+**Custom bottom overlays, drawers, or subtitles** that sit above a custom `CallControls`: `CallContent` already pads the bottom safe area, so absolute offsets measured from the controls also need `theme.variants.insets.bottom` added in. Read `insets` via `useTheme()` inside the overlay.
+
+Full code for both cases: live [Safe area insets cookbook page](https://getstream.io/video/docs/react-native/ui-cookbook/safe-area-insets.md).
 
 On Android the app must also enable edge-to-edge so the call UI draws under transparent system bars before the inset bridge can give it usable padding:
 
