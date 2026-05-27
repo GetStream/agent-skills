@@ -15,9 +15,9 @@ This skill picks the track from the user's input and delegates to a specialized 
 
 > **Read first:** [`RULES.md`](RULES.md). Non-negotiable rules apply, including the **Peer skills** procedure (Glob path + install command + install policy + Skill-vs-Read-inline rule).
 >
-> **Peer manifest:** [`peers.yaml`](peers.yaml) (schema: [`peers.schema.json`](peers.schema.json)) is the single source of truth for peer skill names, Glob paths, install commands, install policies (`silent` vs `ask`), routing signals, and decline fallbacks. Read it before installing or routing to a peer.
+> **Peer manifest:** [`peers.yaml`](peers.yaml) (schema: [`peers.schema.json`](peers.schema.json)) is the single source of truth for peer skill names, Glob paths, install commands, and routing signals. Every peer installs silently on demand. Read it before installing or routing to a peer.
 >
-> **After picking a sub-skill:** follow the procedure in RULES.md > Peer skills - Glob the entry's `SKILL.md` path, install per its `install_policy` if missing (silently, or after explicit confirm for `ask` peers), then Skill tool (if listed) or Read inline. Do not call `Skill` before the Glob; it surfaces a confusing "Unknown skill" error. Do not stop after naming the track.
+> **After picking a sub-skill:** follow the procedure in RULES.md > Peer skills - Glob the entry's `SKILL.md` path, install it if missing (always silently - every peer is silent-install), then Skill tool (if listed) or Read inline. Do not call `Skill` before the Glob; it surfaces a confusing "Unknown skill" error. Do not stop after naming the track.
 
 ---
 
@@ -25,8 +25,7 @@ This skill picks the track from the user's input and delegates to a specialized 
 
 **Build or integrate Stream in a platform-specific app** -> peer pack from [`peers.yaml`](peers.yaml) (**check peer signals first**)
 - Match user input or cwd against each peer's `signals` (e.g. `swift` / `swiftui` / `.xcodeproj` -> `stream-swift`; `react native` / `expo` / `stream video react native` -> `stream-react-native`)
-- Platform packs declare `install_policy: ask` - confirm install with the user once before adding
-- On decline, route to the peer's `fallback_on_decline` (typically `stream-docs` for read-only lookups)
+- All peers install silently on demand - install if missing, then route, no prompt
 - **Peer signals take precedence over the `stream-builder` rows below.** A request like "add a video call to my Expo app" or "scaffold a React Native app with Stream Video" matches `stream-react-native`, not `stream-builder` - the platform token wins.
 
 **Build a new app with Stream (web)** -> use the `stream-builder` skill (default when no peer signal is present)
@@ -66,7 +65,7 @@ Scan the user's input for the signals below in order. The classifier is determin
 | Operational verbs + Stream noun: "list calls", "show channels", "any flagged", "find users", "check {anything}" | `stream-cli` |
 | `stream api`, `stream config`, `stream auth` (literal CLI invocation) | `stream-cli` |
 | "Install the CLI", "set up stream" with no project context | `stream-cli` |
-| **Build/integration intent + a token matching a peer's `signals` in [`peers.yaml`](peers.yaml)** (e.g. `swift` / `.xcodeproj` -> `stream-swift`; `react native` / `expo` / `stream video react native` / `stream video rn` -> `stream-react-native`). **This row takes precedence over the web `stream-builder` rows below whenever a peer signal is present, and also wins over the docs how-to rows above whenever the request contains a build/integrate verb (`add`, `build`, `integrate`, `scaffold`, `wire`, `set up`, `create`) alongside the peer signal.** | matching peer (confirm install if `install_policy: ask`) |
+| **Build/integration intent + a token matching a peer's `signals` in [`peers.yaml`](peers.yaml)** (e.g. `swift` / `.xcodeproj` -> `stream-swift`; `react native` / `expo` / `stream video react native` / `stream video rn` -> `stream-react-native`). **This row takes precedence over the web `stream-builder` rows below whenever a peer signal is present, and also wins over the docs how-to rows above whenever the request contains a build/integrate verb (`add`, `build`, `integrate`, `scaffold`, `wire`, `set up`, `create`) alongside the peer signal.** | matching peer (installed silently if missing) |
 | "Build me a ... app", "scaffold", "create a new ..." + Stream product, in an empty/new directory, **and no peer signal present** | `stream-builder` (web/Next.js, the default when no platform signal is given) |
 | "Add Chat/Video/Feeds to this app", "integrate Stream into" - existing project, **and no peer signal present** | `stream-builder` (web/Next.js, the default when no platform signal is given) |
 | Operational verb wrapped in how-to phrasing (e.g. "how do I list my calls?" - docs *or* CLI) | **Ask one disambiguator** |
@@ -81,23 +80,29 @@ Scan the user's input for the signals below in order. The classifier is determin
 
 After the answer, route as if the user had given that signal directly.
 
-**Bare `/stream` with no args.** List the sub-skills under "Quick navigation" briefly and wait for input. No shell execution.
+**Bare `/stream` with no args.** Render the menu under "Quick navigation" **verbatim**, then wait for input. No shell execution, no probing, no install.
 
 ---
 
 ## Quick navigation
 
-If the user already knows what they want, skip the router and invoke a sub-skill directly:
+For a bare `/stream` (and whenever the user wants to pick a skill directly), output the block below **verbatim** - keep the Core / Platform SDKs split, the examples, and the closing line - then wait:
 
-- `/stream-builder` - scaffold a new web (Next.js) app, or add Chat/Video/Feeds/Moderation to an existing one
-- `/stream-swift` - scaffold or integrate Stream into a Swift/SwiftUI/UIKit/iOS app (install confirmed first)
-- `/stream-react-native` - scaffold or integrate Stream Chat or Stream Video into a React Native CLI or Expo app (install confirmed first)
-- `/stream-cli` - query Stream data via CLI, install the CLI, run `stream api / config / auth`
-- `/stream-docs` - search live Stream SDK documentation (no CLI needed)
+> **Stream** - Chat - Video - Feeds - Moderation. Tell me what you want, or pick a skill directly:
+>
+> **Core**
+> - `/stream-builder` - scaffold a web app, or add Stream to an existing one - e.g. *"build me a chat app"*
+> - `/stream-cli` - query data, run `stream api / config / auth`, install the CLI - e.g. *"list my channels"*
+> - `/stream-docs` - search live SDK docs, with citations - e.g. *"how does useChannel work?"*
+>
+> **Platform SDKs**
+> - `/stream-swift` - Swift - SwiftUI - UIKit - iOS
+> - `/stream-android` - Android - Jetpack Compose - Kotlin
+> - `/stream-react-native` - React Native - Expo
+>
+> New to a skill? Just describe the task - I'll install the right one automatically.
 
-Platform-specific packs are declared in [`peers.yaml`](peers.yaml) - new platforms become available by adding an entry there.
-
-Or describe the task and the router will pick.
+The closing line is load-bearing: typing an uninstalled slash command errors with "Unknown skill" *before* this router runs, so natural-language description is the only dead-end-proof path - it routes here and the missing peer is installed per [`peers.yaml`](peers.yaml). Keep this menu in sync with `peers.yaml`: every peer there appears here under Core or Platform SDKs, and new platforms get a bullet under Platform SDKs when their entry is added.
 
 ---
 

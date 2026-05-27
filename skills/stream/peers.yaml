@@ -4,23 +4,22 @@
 # and RULES.md reference this file as the single source of truth for:
 #   - Glob path used to detect whether a peer is installed.
 #   - Install command used when a peer is missing.
-#   - Install policy: "silent" (run install with no prompt - default for first-party
-#     pack peers the user already opted into) or "ask" (require explicit user
-#     confirmation before installing - reserved for large platform-specific packs).
+#   - Install policy: every peer is "silent" - the router installs it on demand with
+#     no prompt. Installing the `stream` router alone is enough; it pulls in whatever
+#     sub-skill a task needs. ("ask" remains a valid schema value but is unused.)
 #   - Routing signals (platform packs only): tokens that, when seen in user input
 #     or detected in the cwd, indicate the user wants this pack.
-#   - Fallback target when the user declines an "ask" install.
 #
 # Schema: peers.schema.json (sibling file). Validate with any JSON Schema validator
 # after converting YAML -> JSON.
 #
 # Adding a new peer pack:
 #   1. Append an entry below.
-#   2. If the pack is platform-specific, add tokens to `signals` and choose
-#      `install_policy: ask` if the pack is large or rarely useful.
-#   3. Add a "By task" bullet to skills/stream/SKILL.md if the routing prose
-#      benefits from a human-readable hint. The Pick-a-track classifier reads
-#      this file at runtime - no code change needed for routing itself.
+#   2. If the pack is platform-specific, add tokens to `signals`. Keep
+#      `install_policy: silent` so the router auto-installs it on demand.
+#   3. Add it to the Quick-navigation menu and "By task" prose in
+#      skills/stream/SKILL.md. The Pick-a-track classifier reads this file at
+#      runtime - no code change needed for routing itself.
 
 peers:
   - name: stream-cli
@@ -44,7 +43,7 @@ peers:
   - name: stream-swift
     glob: ~/.claude/skills/stream-swift/SKILL.md
     install: npx skills add GetStream/agent-skills --s stream-swift -y
-    install_policy: ask
+    install_policy: silent
     purpose: Build or integrate Stream Chat/Video/Feeds in Swift/SwiftUI/UIKit/iOS apps. Includes package setup, auth wiring, and view blueprints.
     signals:
       - swift
@@ -54,12 +53,27 @@ peers:
       - xcode
       - .xcodeproj
       - Package.swift
-    fallback_on_decline: stream-docs
+
+  - name: stream-android
+    glob: ~/.claude/skills/stream-android/SKILL.md
+    install: npx skills add GetStream/agent-skills --s stream-android -y
+    install_policy: silent
+    purpose: Build or integrate Stream Chat/Video/Feeds in Android/Jetpack Compose apps. Includes package setup, auth wiring, and screen blueprints.
+    signals:
+      - android
+      - jetpack compose
+      - jetpack
+      - compose
+      - kotlin
+      - android studio
+      - gradle
+      - .gradle
+      - build.gradle
 
   - name: stream-react-native
     glob: ~/.claude/skills/stream-react-native/SKILL.md
     install: npx skills add GetStream/agent-skills --s stream-react-native -y
-    install_policy: ask
+    install_policy: silent
     purpose: Create, build, or integrate Stream Chat and Stream Video React Native in React Native CLI and Expo apps. Includes package setup, auth wiring, calling lifecycle, and Chat/Video UI blueprints.
     signals:
       - react native
@@ -80,4 +94,3 @@ peers:
       - video call react native
       - livestream react native
       - audio room react native
-    fallback_on_decline: stream-docs

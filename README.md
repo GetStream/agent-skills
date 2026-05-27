@@ -8,7 +8,7 @@ Give your AI coding agent the ability to build, query, and manage [Stream](https
 npx skills add GetStream/agent-skills
 ```
 
-That installs the router (`stream`) plus the specialist skills below. Use `/stream` for generic Stream routing, or invoke a sub-skill directly with `/stream-cli`, `/stream-docs`, `/stream-builder`, `/stream-swift`, `/stream-android`, or `/stream-react-native`.
+That's the only command you ever need. It installs the router (`stream`) plus every specialist skill below — and even if you install the router alone, it silently pulls in whatever sub-skill a task needs, on demand. Use `/stream` for generic Stream routing, or invoke a sub-skill directly with `/stream-cli`, `/stream-docs`, `/stream-builder`, `/stream-swift`, `/stream-android`, or `/stream-react-native`.
 
 ### Install - direct from GitHub (no third-party CLI)
 
@@ -23,20 +23,6 @@ curl -L https://github.com/GetStream/agent-skills/archive/refs/heads/main.tar.gz
 ```
 
 This is byte-for-byte the same content `npx skills add` installs, fetched directly from GitHub.
-
-### Install one skill at a time (Claude Code plugin marketplace)
-
-The pack is registered as a Claude Code plugin marketplace, so you can install a single sub-skill if that's all you need:
-
-```bash
-/plugin marketplace add GetStream/agent-skills
-/plugin install cli@stream-skills        # just the CLI sub-skill
-/plugin install docs@stream-skills       # just the docs sub-skill
-/plugin install builder@stream-skills    # just the builder sub-skill
-/plugin install core@stream-skills       # just the router + RULES
-```
-
-The `npx skills add` install always pulls everything; the plugin marketplace path lets you opt in granularly.
 
 ## Skills
 
@@ -148,4 +134,3 @@ Cross-cutting rules (secrets, login screen, strict mode, package manager, base U
   - [`RULES.md`](skills/stream-android/RULES.md) - Android non-negotiable rules
   - [`builder.md`](skills/stream-android/builder.md) + [`sdk.md`](skills/stream-android/sdk.md) - shared Android app integration flow and SDK ownership patterns
   - [`references/`](skills/stream-android/references/) - product/framework-specific Android references and blueprints
-- [`.claude-plugin/marketplace.json`](.claude-plugin/marketplace.json) - Claude Code plugin manifest for granular installs
