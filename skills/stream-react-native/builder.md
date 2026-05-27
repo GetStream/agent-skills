@@ -87,9 +87,11 @@ npx expo install @stream-io/video-react-native-sdk \
   @react-native-community/netinfo \
   react-native-safe-area-context \
   expo-build-properties
+# recommended (animated floating-participant tile; matches Stream's sample apps):
+npx expo install react-native-reanimated react-native-worklets react-native-gesture-handler
 ```
 
-Add `@stream-io/video-react-native-sdk` and `@config-plugins/react-native-webrtc` to `app.json` `plugins`. Also enable Android edge-to-edge under `android` in `app.json` (`"edgeToEdgeEnabled": true`; default-on Expo SDK 54+). Then `npx expo prebuild --clean`.
+Add `@stream-io/video-react-native-sdk` and `@config-plugins/react-native-webrtc` to `app.json` `plugins`. If you installed the animation peers, add `react-native-worklets/plugin` as the last Babel plugin. Also enable Android edge-to-edge under `android` in `app.json` (`"edgeToEdgeEnabled": true`; default-on Expo SDK 54+). Then `npx expo prebuild --clean`.
 
 **Video - RN CLI:**
 
@@ -98,10 +100,12 @@ npm view @stream-io/video-react-native-sdk version dist-tags --json
 npm install @stream-io/video-react-native-sdk
 npm install @stream-io/react-native-webrtc react-native-svg @react-native-community/netinfo
 npm install react-native-safe-area-context react-native-edge-to-edge
+# recommended (animated floating-participant tile; matches Stream's sample apps):
+npm install react-native-reanimated react-native-worklets react-native-gesture-handler
 npx pod-install
 ```
 
-Set `minSdkVersion = 24` in `android/build.gradle` and add Java 8 source compatibility in `android/app/build.gradle`. Add camera/microphone usage descriptions to `Info.plist` and camera/audio permissions to `AndroidManifest.xml`. In `android/app/src/main/res/values/styles.xml`, set the app theme parent to a `Theme.EdgeToEdge` variant (e.g. `Theme.EdgeToEdge.Material3`) so Android draws under the system bars.
+If you installed the animation peers, add `react-native-worklets/plugin` as the last Babel plugin. Set `minSdkVersion = 24` in `android/build.gradle` and add Java 8 source compatibility in `android/app/build.gradle`. Add camera/microphone usage descriptions to `Info.plist` and camera/audio permissions to `AndroidManifest.xml`. In `android/app/src/main/res/values/styles.xml`, set the app theme parent to a `Theme.EdgeToEdge` variant (e.g. `Theme.EdgeToEdge.Material3`) so Android draws under the system bars.
 
 If the new app uses yarn or pnpm, translate package-manager commands without changing package names. Run pods after native dependency changes in RN CLI apps. Use `npx expo install` for Expo dependencies so versions match the Expo SDK.
 
@@ -317,7 +321,7 @@ module.exports = {
 
 Use `react-native-reanimated/plugin` if the project is still on Reanimated 3. Use `react-native-worklets/plugin` for Reanimated 4+.
 
-Video does not require Reanimated/Worklets by default. Only add the plugin if Chat is also in scope or if a specific Video optional capability requires it.
+Reanimated/Worklets are optional for Video - the SDK falls back to the RN `Animated` API when they are absent. But Stream's sample apps (including the video-only ones) install `react-native-reanimated` + `react-native-worklets` + `react-native-gesture-handler` for the smoother animated floating-participant tile. If they are installed (or Chat is also in scope), add the Reanimated/Worklets plugin as the last Babel plugin.
 
 ### Entry point
 
@@ -371,7 +375,7 @@ Follow [`sdk.md`](sdk.md) for shared patterns (client lifecycle, auth, provider 
 - `<StreamVideo client={client}>` mounted once near the app root, above the navigator
 - `Call` created **exactly once** in the destination call screen via `client.call(type, id)`; mount `<StreamCall call={call}>`; descendants read it via `useCall()` and never call `client.call(...)` again; navigation hands off only the call id, not the Call instance
 - `call.leave()` on screen unmount, **guarded by `call.state.callingState !== CallingState.LEFT`** (a second `leave()` throws `Cannot leave call that has already been left`); hangup handlers only navigate
-- audio routing is automatic on `call.join()` / `call.leave()` (default `audioRole: "communicator"`); only call `callManager.start/stop` to override the role (e.g., audio-room broadcaster)
+- audio routing is automatic on `call.join()` / `call.leave()` (default `audioRole: "communicator"`); only call `callManager.start/stop` to override the role - the only other value is `"listener"` (playback-optimized, for a view-only livestream viewer or audio-room audience member)
 - error handling around `call.join()`, `call.camera.enable()`, `client.connectUser()`
 
 Use the real API key and token or the app's token provider. Reference credentials via named constants (e.g., from a local `.env` file or config module) or the app's token provider. Do not embed raw credential values in final code unless the user explicitly asked for a template only.
@@ -414,7 +418,7 @@ Use this when the request is a targeted Chat or Video change in an existing app.
 4. For cookbook-style requests, use [`references/DOCS.md`](references/DOCS.md) manifest search and fetch the best matching cookbook/customization markdown page.
 5. Prefer the smallest change that preserves the app's architecture:
    - **Chat:** style-only -> theme object; slot-level UI -> `WithComponents`; behavior -> component prop or documented hook; native capability -> install only the optional package(s) for that capability
-   - **Video:** style-only -> pass a theme via `<StreamVideo style={theme}>` (or scope it with `<StreamTheme style={theme}>`); slot-level UI -> `CallContent` slot props (`CallControls`, `CallTopView`, `CallParticipantsList`, etc.); behavior -> documented `Call` method or `useCallStateHooks()` value; native capability -> install only the optional package(s) for that capability
+   - **Video:** style-only -> pass a theme via `<StreamVideo style={theme}>` (or scope it with `<StreamTheme style={theme}>`); slot-level UI -> `CallContent` slot props (`CallControls`, `CallParticipantsList`, `FloatingParticipantView`, `ParticipantView`); behavior -> documented `Call` method or `useCallStateHooks()` value; native capability -> install only the optional package(s) for that capability
 6. Verify with the existing project commands.
 
 For Chat message visual or layout changes, fetch the manifest-selected theming/customization pages, then prefer theme values before replacing core message components. For Video customization, prefer slot replacement over full `CallContent` replacement.

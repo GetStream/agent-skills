@@ -131,7 +131,7 @@ useEffect(() => {
 }, [client, type, id]);
 ```
 
-A `Call` initializes after any of `call.get()`, `call.create()`, `call.getOrCreate()`, or `call.join()`. Audio routing (speaker/earpiece/Bluetooth) is handled by the SDK automatically on `join()` / `leave()` with `audioRole: "communicator"` - do not call `callManager.start/stop` yourself unless you are overriding the default role (e.g., `broadcaster` for an audio-room host).
+A `Call` initializes after any of `call.get()`, `call.create()`, `call.getOrCreate()`, or `call.join()`. Audio routing (speaker/earpiece/Bluetooth) is handled by the SDK automatically on `join()` / `leave()` with `audioRole: "communicator"` - do not call `callManager.start/stop` yourself unless you are overriding the default role. The only other role is `"listener"` (playback-optimized output for a view-only experience such as a livestream viewer or audio-room audience member); a host/publisher keeps `"communicator"`.
 
 ---
 
@@ -186,7 +186,7 @@ Pass references through navigation params, not live objects:
 Stateful SDK helpers should have explicit ownership:
 
 - **Chat:** use the SDK's pre-built screens (`ChannelList`, `Channel`, `MessageList`, `MessageComposer`, `Thread`) and read context via `useChatContext`, `useMessageContext`, etc. Do not instantiate `StreamChat` inside Composables/screens.
-- **Video:** read call state via `useCallStateHooks()` sub-hooks (`useCallCallingState`, `useParticipants`, `useCameraState`, `useMicrophoneState`, `useCallRingingState`). Do not instantiate `StreamVideoClient` or `Call` inside leaf components - hoist them into `App` or a screen-owned `useEffect`.
+- **Video:** read call state via `useCallStateHooks()` sub-hooks (`useCallCallingState`, `useParticipants`, `useCallMembers`, `useCameraState`, `useMicrophoneState`). For incoming/outgoing ringing calls, read the ringing list from the client-level `useCalls()` hook (filter by `call.ringing`) - there is no `useCallRingingState` hook. Do not instantiate `StreamVideoClient` or `Call` inside leaf components - hoist them into `App` or a screen-owned `useEffect`.
 
 Avoid creating filters/sort values (Chat) or `Call` instances (Video) inline on every render. Memoise with `useMemo` keyed on inputs that actually change.
 

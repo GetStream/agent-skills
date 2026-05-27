@@ -20,8 +20,10 @@ All snippets import from `@stream-io/video-react-native-sdk`. The package name i
 | participant grid, layout, speaker layout | Participant Grid Blueprint |
 | deep link into a call, push -> call screen | Call Deep-link Blueprint |
 | React Navigation or Expo Router shell | Navigation Shell |
-| livestream viewer, audio room, theming, generic UI slot override | DOCS.md -> manifest lookup, then VIDEO-REACT-NATIVE.md > Customization |
-| chat + video in the same app | DOCS.md -> manifest -> Chat Integration; then App Provider + Chat Provider |
+| host / broadcast a livestream, RTMP, watch / view a livestream | Livestream Blueprint |
+| audio room, spaces, speaker / listener, request to speak, go live | Audio Room Blueprint |
+| chat + video in the same app, call button inside a chat channel | Chat + Video Blueprint |
+| theming, generic UI slot override | DOCS.md -> manifest lookup, then VIDEO-REACT-NATIVE.md > Customization |
 
 If no row matches, read [DOCS.md](DOCS.md) and [VIDEO-REACT-NATIVE.md](VIDEO-REACT-NATIVE.md) first, then verify symbols in manifest-selected docs or the installed package before coding.
 
@@ -265,11 +267,13 @@ export const ActiveCallScreen = () => {
 };
 ```
 
-`CallContent` provides the full default UI - top bar, participant grid, and call controls. Inside `<StreamCall>`, any child component (custom controls, participant tile, ringing UI, in-call toolbar) reads the current call via `useCall()` - never `client.call(...)` again. Replace any slot via its props; see Custom Call Controls and Custom Participant Tile blueprints below. Audio routing (speaker/earpiece/Bluetooth) is handled automatically by `call.join()` / `call.leave()` with `audioRole: "communicator"` as the default - do not call `callManager.start/stop` yourself unless you are overriding the role (e.g., `broadcaster` in an audio room).
+`CallContent` provides the full default UI - top bar, participant grid, and call controls. Inside `<StreamCall>`, any child component (custom controls, participant tile, ringing UI, in-call toolbar) reads the current call via `useCall()` - never `client.call(...)` again. Replace any slot via its props; see Custom Call Controls and Custom Participant Tile blueprints below. Audio routing (speaker/earpiece/Bluetooth) is handled automatically by `call.join()` / `call.leave()` with `audioRole: "communicator"` as the default - do not call `callManager.start/stop` yourself unless you are overriding the role (the only other value is `"listener"`, for a view-only livestream viewer or audio-room audience member).
 
 Notice the screen does **not** wrap `<CallContent />` in a `SafeAreaView`. `CallContent`, `RingingCallContent`, `HostLivestream`, and `ViewerLivestream` all read insets from `<StreamVideo>`'s theme (`variants.insets`) - wire them once at the App Provider blueprint and the call screen renders edge-to-edge with the correct padding on both iOS and Android. See [VIDEO-REACT-NATIVE.md > Safe areas and edge-to-edge](VIDEO-REACT-NATIVE.md#safe-areas-and-edge-to-edge).
 
-The destructured `callType` defaults to `"default"` for the simple join-by-id case but accepts whatever the deep-link / ringing watcher / push handler delivers (`livestream`, `audio_room`, custom call types). Always pass `{ reuseInstance: true }` so a Call already created upstream (an outgoing ring, a ringing watcher) is returned as-is rather than duplicated.
+The destructured `callType` defaults to `"default"` for the simple join-by-id case but accepts whatever the deep-link / ringing watcher / push handler delivers (`livestream`, `audio_room`, custom call types).
+
+**When to use `{ reuseInstance: true }`:** pass it when the same `(type, id)` may already exist in the SDK's managed state (an outgoing ring, a ringing watcher, a deep link, a push wake-up) so the SDK returns the cached instance instead of duplicating it. For a plain user-initiated join-by-id, a bare `client.call(type, id)` is sufficient - Stream's `dogfood` sample does exactly that. And for calls that arrive via **ringing**, the canonical pattern in all of Stream's sample apps is to read the existing instance from `useCalls()` (see the Ringing Blueprint) rather than reconstructing it with `client.call(...)` at all - reach for `reuseInstance` only when you must call `client.call(...)` yourself for an id that might already be live.
 
 ---
 
@@ -301,7 +305,7 @@ For Expo Router, wrap `app/_layout.tsx` with `StreamVideo` inside `GestureHandle
 
 ## Ringing Blueprint
 
-`RingingCallContent` reads `call.state.callingState` and routes between the default `IncomingCall`, `OutgoingCall`, `JoiningCallIndicator`, and accepted `CallContent` slots. Pair it with the client-level `useCalls()` hook to surface incoming or outgoing ringing calls from anywhere in the app. Deeper detail lives on the live [Ringing](https://getstream.io/video/docs/react-native/incoming-calls/ringing.md) and [RingingCallContent](https://getstream.io/video/docs/react-native/ui-components/call/ringing-call-content.md) pages.
+`RingingCallContent` reads `call.state.callingState` and routes between the default `IncomingCall`, `OutgoingCall`, and accepted `CallContent` slots (each is an overridable prop). Pair it with the client-level `useCalls()` hook to surface incoming or outgoing ringing calls from anywhere in the app. Deeper detail lives on the live [Ringing](https://getstream.io/video/docs/react-native/incoming-calls/ringing.md) and [RingingCallContent](https://getstream.io/video/docs/react-native/ui-components/call/ringing-call-content.md) pages.
 
 ### Surfacing an incoming call from the app shell
 
@@ -402,7 +406,7 @@ export const IncomingCallButtons = () => {
 **Wiring:**
 - `call.join()` is the accept action on RN - it records acceptance with the backend and enters the media session in one step. Audio routing (`audioRole: "communicator"`) is auto-managed by `join()` / `leave()`; do not call `callManager.start/stop` here.
 - Reject an incoming call with `call.leave({ reject: true, reason: "decline" })`. Cancel an outgoing call with `call.leave({ reject: true, reason: "cancel" })` before the first callee accepts.
-- Replace the default ringing UIs by passing `IncomingCall`, `OutgoingCall`, `JoiningCallIndicator`, or `CallContent` component refs to `<RingingCallContent ... />`. Match the prop signatures on the live [RingingCallContent](https://getstream.io/video/docs/react-native/ui-components/call/ringing-call-content.md) page; the [Incoming & Outgoing Call cookbook](https://getstream.io/video/docs/react-native/ui-cookbook/incoming-and-outgoing-call.md) shows full custom replacements built from `useCallMembers` and the accept/reject buttons above.
+- Replace the default ringing UIs by passing `IncomingCall`, `OutgoingCall`, or `CallContent` component refs to `<RingingCallContent ... />`. Match the prop signatures on the live [RingingCallContent](https://getstream.io/video/docs/react-native/ui-components/call/ringing-call-content.md) page; the [Incoming & Outgoing Call cookbook](https://getstream.io/video/docs/react-native/ui-cookbook/incoming-and-outgoing-call.md) shows full custom replacements built from `useCallMembers` and the accept/reject buttons above.
 - For background and terminated ringing (CallKit on iOS, Telecom + FCM on Android), call `StreamVideoRN.setPushConfig({...})` once at module load - including a `createStreamVideoClient` callback that builds the client with `StreamVideoClient.getOrCreateInstance(...)`. Full wiring (Info.plist keys, AppDelegate PushKit hooks, Firebase listeners, `@stream-io/react-native-callingx`) is documented at [Ringing Setup - React Native](https://getstream.io/video/docs/react-native/incoming-calls/ringing-setup/react-native.md).
 - To let the app's own ringing UI take over when a ringing push arrives while the app is foregrounded, set `skipIncomingPushInForeground: true` on the per-platform `ios` / `android` keys of `setPushConfig`. On iOS 26.4+ this branch also requires the PushKit `didReceiveIncomingVoIPPushWith:metadata:withCompletionHandler:` delegate forwarding to `StreamVideoReactNative.didReceiveIncomingVoIPPush(...)` on RN CLI; Expo apps inject this automatically via the SDK config plugin. Full details on the same Ringing Setup pages above.
 - **Non-ringing notifications** (`call.missed`, `call.notification`, `call.live_started`, `call.session_started`) are NOT handled by `setPushConfig` - they are entirely app-owned. Register the device token via `client.addDevice(token, push_provider, push_provider_name)` and display/route the push yourself using any library. See manifest-selected `/incoming-calls/non-ringing-notifications-setup/overview/`.
@@ -692,6 +696,185 @@ Use a `createNavigationContainerRef` + interval gate (`staticNavigate`) because 
 
 ---
 
+## Livestream Blueprint
+
+Livestreams use the `livestream` call type. The host publishes (WebRTC, or RTMP-in from OBS); viewers watch with low latency. Component names are verified in [VIDEO-REACT-NATIVE.md](VIDEO-REACT-NATIVE.md); deeper options live on the manifest-selected `/ui-components/livestream/*` and `/advanced/broadcasting/` pages.
+
+### Host
+
+`HostLivestream` is the full host UI. Create a `livestream` call, join with `create: true` and the host as a member, then render `HostLivestream` inside `<StreamCall>`. The SDK's built-in start/stop control drives `call.goLive()` / `call.stopLive()`.
+
+```tsx
+import { useEffect, useMemo } from "react";
+import {
+  Call,
+  CallingState,
+  HostLivestream,
+  StreamCall,
+  useConnectedUser,
+  useStreamVideoClient,
+} from "@stream-io/video-react-native-sdk";
+
+export const HostLivestreamScreen = ({ callId }: { callId: string }) => {
+  const client = useStreamVideoClient();
+  const me = useConnectedUser();
+
+  const call = useMemo<Call | undefined>(
+    () => (client ? client.call("livestream", callId) : undefined),
+    [client, callId],
+  );
+
+  useEffect(() => {
+    if (!call || !me) return;
+    call
+      .join({ create: true, data: { members: [{ user_id: me.id, role: "host" }] } })
+      .catch((err) => console.error("Failed to start livestream", err));
+    return () => {
+      if (call.state.callingState !== CallingState.LEFT) {
+        call.leave().catch((err) => console.error(err));
+      }
+    };
+  }, [call, me]);
+
+  if (!call) return null;
+  return (
+    <StreamCall call={call}>
+      <HostLivestream />
+    </StreamCall>
+  );
+};
+```
+
+For RTMP-in (broadcast from OBS), read the ingress address + stream key from `call.state.ingress?.rtmp` after join. See the manifest-selected `/advanced/broadcasting/` page.
+
+### Viewer
+
+The simplest viewer is `LivestreamPlayer`, which takes `callId` + `callType` props and manages its own call instance:
+
+```tsx
+import { useEffect } from "react";
+import { callManager, LivestreamPlayer } from "@stream-io/video-react-native-sdk";
+
+export const ViewerScreen = ({ callId }: { callId: string }) => {
+  useEffect(() => {
+    // A watch-only viewer is a "listener", not a "communicator".
+    // This is the one place you start callManager yourself.
+    callManager.start({ audioRole: "listener", enableStereoAudioOutput: true });
+    return () => callManager.stop();
+  }, []);
+
+  return <LivestreamPlayer callId={callId} callType="livestream" />;
+};
+```
+
+For the full viewer UI (live badge, duration, participant count, leave button), create the call yourself (`client.call("livestream", id)` + `join()`) and render `<ViewerLivestream />` inside `<StreamCall>` instead of `LivestreamPlayer`. Either way, a watch-only viewer uses `audioRole: "listener"`; for an ordinary call you never touch `callManager`.
+
+---
+
+## Audio Room Blueprint
+
+Audio rooms use the `audio_room` call type. There is **no single `AudioRoom` component** - compose the UI from `useCallStateHooks()` plus the call's backstage and permission model. Verify the backstage/permission API on the manifest-selected `/guides/audio-rooms/` page before building - it drifts more than any other Video flow.
+
+Verified building blocks (all confirmed in the SDK source):
+
+- **Create / join:** `client.call("audio_room", id)`, then `call.join({ create: true, data: { members, custom: { title, description } } })`.
+- **Go live:** hosts call `call.goLive()`; end with `call.stopLive()`. Listeners join the live room directly. Gate host-only UI on `OwnCapability.JOIN_BACKSTAGE` via `call.permissionsContext.hasPermission(...)`.
+- **Request to speak:** a listener calls `call.requestPermissions({ permissions: [OwnCapability.SEND_AUDIO] })`. A host listens with `call.on("call.permission_request", (event) => { ... })` and grants via `call.updateUserPermissions({ user_id, grant_permissions: [OwnCapability.SEND_AUDIO] })`. Read your own granted capabilities with `useCallStateHooks().useHasPermissions(...)`.
+- **State:** `useCallStateHooks().useParticipants()`, `useDominantSpeaker()`, and `useMicrophoneState()` for the speaking/mute UI.
+- **Audio role:** an audience member can run `callManager.start({ audioRole: "listener" })`; a speaker/host stays the default `"communicator"`.
+- **Cleanup:** `call.leave()` on unmount, guarded by `call.state.callingState !== CallingState.LEFT`.
+
+```tsx
+import { useEffect } from "react";
+import {
+  CallingState,
+  OwnCapability,
+  StreamCall,
+  useCall,
+  useCallStateHooks,
+} from "@stream-io/video-react-native-sdk";
+
+// Inside <StreamCall call={audioRoomCall}>:
+export const AudioRoom = () => {
+  const call = useCall();
+  const { useCallCallingState, useParticipants } = useCallStateHooks();
+  const callingState = useCallCallingState();
+  const participants = useParticipants();
+
+  useEffect(() => {
+    return () => {
+      if (call && call.state.callingState !== CallingState.LEFT) {
+        call.leave().catch((err) => console.error(err));
+      }
+    };
+  }, [call]);
+
+  const requestToSpeak = () =>
+    call?.requestPermissions({ permissions: [OwnCapability.SEND_AUDIO] });
+
+  // host side: grant a pending request
+  // call.on("call.permission_request", (e) =>
+  //   call.updateUserPermissions({ user_id: e.user.id, grant_permissions: [OwnCapability.SEND_AUDIO] }));
+
+  // ...render participant list, speaking indicators, and controls from `participants` + `callingState`
+  return null;
+};
+```
+
+---
+
+## Chat + Video Blueprint
+
+Use this when one app runs both `stream-chat-react-native` (or `stream-chat-expo`) and `@stream-io/video-react-native-sdk` - e.g. a "start a call" button inside a chat channel. Build both clients with the same API key (and they can share one user token if both products are enabled for the key). For combined-product gotchas, fetch the manifest-selected `https://getstream.io/video/docs/react-native/advanced/chat-with-video.md`.
+
+**Provider nesting** (the full tree lives in [../sdk.md](../sdk.md) - nest, never sibling):
+
+```tsx
+<GestureHandlerRootView style={{ flex: 1 }}>
+  <SafeAreaProvider>
+    <StreamVideo client={videoClient} style={themeWithInsets}>
+      <OverlayProvider>
+        <Chat client={chatClient}>
+          <NavigationContainer>{/* navigator */}</NavigationContainer>
+        </Chat>
+      </OverlayProvider>
+    </StreamVideo>
+  </SafeAreaProvider>
+</GestureHandlerRootView>
+```
+
+**Start a ringing call from inside a channel.** The button reads the Video client and rings the channel's other members; the shell-level `RingingCalls` watcher (see Ringing Blueprint) surfaces the call UI - the channel screen does not mount `CallContent` itself.
+
+```tsx
+import { useCallback } from "react";
+import { Button } from "react-native";
+import { useChannelContext } from "stream-chat-react-native"; // or stream-chat-expo
+import { useStreamVideoClient } from "@stream-io/video-react-native-sdk";
+
+export const StartCallButton = ({ myId }: { myId: string }) => {
+  const client = useStreamVideoClient();
+  const { channel } = useChannelContext();
+
+  const startCall = useCallback(async () => {
+    if (!client) return;
+    const memberIds = Object.keys(channel?.state.members ?? {});
+    const callId = `call-${Date.now()}`; // fresh id per ring
+    const call = client.call("default", callId);
+    await call.getOrCreate({
+      ring: true,
+      video: true,
+      data: { members: memberIds.map((user_id) => ({ user_id })) },
+    });
+  }, [client, channel]);
+
+  return <Button onPress={startCall} title="Start call" />;
+};
+```
+
+Disconnect **both** clients on sign-out before building new ones for a different user. Both providers stay mounted above the navigator for the whole session.
+
+---
+
 ## Fresh App Scaffold
 
 Use this when there is no existing app. Otherwise prefer the App Provider blueprint inside the existing root.
@@ -723,5 +906,6 @@ After install:
 
 - RN CLI: declare iOS permissions in `Info.plist`, Android permissions in `AndroidManifest.xml`, bump Android `minSdkVersion` to 24, enable Java 8 source.
 - Expo: add `@stream-io/video-react-native-sdk` and `@config-plugins/react-native-webrtc` to `app.json` plugins, then `npx expo prebuild --clean`.
+- Recommended: install `react-native-reanimated`, `react-native-worklets`, and `react-native-gesture-handler` (Stream's sample apps do, even video-only) for the animated floating-participant tile, and add `react-native-worklets/plugin` as the last Babel plugin. They are optional - the SDK falls back to the RN `Animated` API without them.
 
 Then drop in the App Provider and Auth Gate blueprint above, hook up the Navigation Shell, and add Home + Active Call screens.

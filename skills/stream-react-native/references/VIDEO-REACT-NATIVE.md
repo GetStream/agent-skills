@@ -63,6 +63,10 @@ npx expo install @stream-io/video-react-native-sdk \
 
 Install `@latest` only after confirming the npm dist-tag matches the selected docs. If not, use the manifest-selected docs' tag or exact version.
 
+### Animation peers (recommended)
+
+`react-native-reanimated`, `react-native-worklets`, and `react-native-gesture-handler` are **optional** for Video - the SDK dynamically `require`s reanimated and falls back to the React Native `Animated` API when it (and gesture-handler) are absent, so calls still work without them. But Stream's own sample apps install all three (even the video-only ones) for the smoother animated floating-participant tile, and wrap the root in `GestureHandlerRootView`. If you install them, add the Reanimated/Worklets Babel plugin as the **last** Babel plugin (`react-native-worklets/plugin` for Reanimated 4+, `react-native-reanimated/plugin` for Reanimated 3) - the same requirement as Chat. When Chat is also in scope these are already required, so install once.
+
 ### Expo config plugins
 
 Add both plugins to `app.json` so `npx expo prebuild` wires the native side:
@@ -290,7 +294,7 @@ A call is initialized after any of `await call.get()`, `await call.create()`, `a
 
 `callManager` is started and stopped **automatically** by `call.join()` and `call.leave()` with `audioRole: "communicator"` as the default. Do not call `callManager.start()` / `callManager.stop()` from your code for the standard call flow - the SDK already does it on the right boundaries.
 
-The only reason to invoke `callManager` directly is to override the defaults (for example, an audio-room with `audioRole: "broadcaster"`, or a custom initial output device). When you do override, still rely on the SDK's automatic teardown on `call.leave()` rather than calling `stop()` yourself.
+The only reason to invoke `callManager` directly is to override the default role. The only two roles are `audioRole: "communicator"` (the default - full-duplex routing for anyone who publishes audio, including an audio-room host) and `audioRole: "listener"` (playback-optimized output for a view-only experience such as a livestream viewer or audio-room audience member). You may also set a custom initial output device. When you do override, still rely on the SDK's automatic teardown on `call.leave()` rather than calling `stop()` yourself.
 
 ### Call types
 
@@ -313,7 +317,7 @@ const callingState = useCallCallingState(); // idle, joining, joined, reconnecti
 
 ### Ringing state
 
-`useCallStateHooks().useCallRingingState()` exposes the ringing phase for incoming/outgoing ringing calls. Pair with `client.on("call.ring", ...)` at the app shell so an incoming call can surface UI even when no screen has the call mounted yet.
+Surface ringing calls with the client-level `useCalls()` hook and filter by the `call.ringing` flag: `useCalls().filter((c) => c.ringing)`. Read the phase from `useCallStateHooks().useCallCallingState()` (`CallingState.RINGING`, `JOINING`, `JOINED`, ...). Pair with `client.on("call.ring", ...)` at the app shell so an incoming call can surface UI even when no screen has the call mounted yet. (There is no `useCallRingingState` hook - the ringing list comes from `useCalls()` and the phase from `useCallCallingState()`.)
 
 ### Participants
 
@@ -323,7 +327,7 @@ const participants = useParticipants();
 const local = useLocalParticipant();
 ```
 
-`ParticipantState` exposes `userId`, `name`, `image`, `audioStream`, `videoStream`, `isSpeaking`, `audioLevel`, `connectionQuality`, `pinned`, `roles`, and reaction state.
+Each participant is a `StreamVideoParticipant` and exposes `userId`, `name`, `image`, `audioStream`, `videoStream`, `isSpeaking`, `isDominantSpeaker`, `audioLevel`, `connectionQuality`, `pinned`, `roles`, and reaction state.
 
 ### Client-level call routing
 
@@ -342,12 +346,14 @@ client.on("call.ended", ...);
 |---|---|
 | `StreamVideo` | App-root provider; supplies the `StreamVideoClient` to descendants |
 | `StreamCall` | Scopes a single `Call` to its children; required by every call screen |
-| `CallContent` | Default in-call UI; slot props for `CallTopView`, `ParticipantsInfoBadge`, `CallControls`, `CallParticipantsList` |
+| `CallContent` | Default in-call UI; slot props `CallControls`, `CallParticipantsList`, `FloatingParticipantView`, `ParticipantView` (plus `layout` and `onHangupCallHandler`) |
 | `CallControls` | Mic / camera / screenshare / reactions / hangup row |
+| `RingingCallContent` | Routes between `IncomingCall`, `OutgoingCall`, and the accepted `CallContent` (all three are overridable slot props) |
 | `IncomingCall` | Built-in incoming-call screen UI |
 | `OutgoingCall` | Built-in outgoing-call screen UI |
 | `ParticipantView` | Renders one participant's video tile |
-| `LivestreamPlayer` | Viewer-only livestream player |
+| `LivestreamPlayer` | Low-level viewer-only livestream player (HLS / WebRTC playback) |
+| `ViewerLivestream` | Full viewer-side livestream UI (live badge, duration, participant count) |
 | `HostLivestream` | Host-side livestream UI |
 | `useStreamVideoClient` | Reads the provided client inside `StreamVideo` |
 | `useCall` | Reads the current `Call` inside `StreamCall` |
@@ -409,7 +415,7 @@ Status-bar / nav-bar styling: **Expo** apps use `expo-status-bar` (and optionall
 Use [DOCS.md](DOCS.md) to fetch the manifest-selected UI Cookbook page first. Prefer these in order:
 
 1. Props on `CallContent` for behavior changes (e.g., `layout`, `disablePictureInPicture`).
-2. Slot props on `CallContent` for swapping a section (`CallControls`, `CallTopView`, `CallParticipantsList`).
+2. Slot props on `CallContent` for swapping a section (`CallControls`, `CallParticipantsList`, `FloatingParticipantView`).
 3. Theme via the `style` prop on `<StreamVideo style={theme}>` (global) or `<StreamTheme style={theme}>` (scoped), plus individual component style props.
 4. Custom `ParticipantView` only when the smaller slots cannot satisfy the request.
 

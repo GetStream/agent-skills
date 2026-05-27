@@ -1,25 +1,30 @@
 # Stream React Native - credentials, token, and demo data
 
-Run this once per session for tracks A, B, and D before writing connected Chat code or creating requested demo data. Track C does not need credentials.
+Run this once per session for tracks A, B, and D before writing connected Chat or Video code or creating requested demo data. Track C does not need credentials.
 
 ## Goal
 
-Collect the Stream API key, user id, user token, and optional demo data so the app can connect to real Chat data on first run. For a brand-new app, scaffolding may happen before this file if the runtime or target directory must be resolved first.
+Collect the Stream API key, user id, and user token so the app can connect to real Stream data on first run. The API key + token flow is identical for Chat and Video.
+
+- **Chat** can also seed optional **demo data** (channels, users, messages) - see Step C.
+- **Video** needs **no demo/seed data**: calls are ephemeral and created at runtime by `client.call(type, id)`, so skip Step C for Video-only sessions and confirm only the API key, user, and token.
+
+For a brand-new app, scaffolding may happen before this file if the runtime or target directory must be resolved first.
 
 This flow uses the **`stream`** CLI (binary name `stream`). It is the same CLI used by [`../stream-cli`](../stream-cli/SKILL.md). If the CLI is missing, use [`../stream-cli/bootstrap.md`](../stream-cli/bootstrap.md) for the install flow.
 
 ## Single upfront question (ask exactly once, then act immediately)
 
-Post one message asking all relevant things together. Do not split into multiple rounds:
+Post one message asking all relevant things together. Do not split into multiple rounds. Include question 4 (demo data) **only when Chat is in scope** - for Video-only sessions, drop it (calls need no seed data):
 
-> To wire Chat RN with real data, I need a few quick answers:
+> To wire Stream with real data, I need a few quick answers:
 >
 > 1. **Credentials** - Should I fetch your API key via the Stream CLI and generate a token, or will you paste them yourself?
 > 2. **User** - What user id and display name should the app connect as?
 > 3. **Token expiry** - If I am generating the token: should it expire? (for example `1h`, `1d`, `30m`) or never expire?
-> 4. **Demo data** - Do you want me to create demo channels? If you want more demo data, say whether to add demo users and messages too.
+> 4. **Demo data** *(Chat only)* - Do you want me to create demo channels? If you want more demo data, say whether to add demo users and messages too.
 >
-> If you want to handle credentials yourself, paste your API key and token and tell me whether to create demo data.
+> If you want to handle credentials yourself, paste your API key and token (and, for Chat, tell me whether to create demo data).
 
 ## After the user replies - act without further prompting
 
@@ -74,9 +79,9 @@ Hold the token in context for code edits. Do not print it in summaries.
 
 If the user pastes a token, hold it in context and skip generation.
 
-### Step C - Demo data (only if the user asked)
+### Step C - Demo data (Chat only, and only if the user asked)
 
-Create 3 to 5 channels with realistic usernames. Use `messaging` as the channel type. The connected user must be a member of at least one demo channel, or `ChannelList` will render empty.
+Video needs no demo data - skip this step for Video-only sessions. For Chat, create 3 to 5 channels with realistic usernames. Use `messaging` as the channel type. The connected user must be a member of at least one demo channel, or `ChannelList` will render empty.
 
 These calls are mutating. Announce briefly:
 
