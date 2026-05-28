@@ -258,7 +258,11 @@ export const ActiveCallScreen = () => {
 
     (async () => {
       try {
-        await c.join();
+        // `create: true` lets a "join by id" flow work even when the
+        // (type, id) doesn't exist server-side yet - the SDK creates it on
+        // join. Drop the flag if you only want to join calls created upstream
+        // (ringing, host livestream, audio room, etc.).
+        await c.join({ create: true });
       } catch (err) {
         console.error("Failed to join", err);
       }
