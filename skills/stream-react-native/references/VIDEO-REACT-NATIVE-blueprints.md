@@ -253,14 +253,12 @@ export const ActiveCallScreen = () => {
     setCall(c);
 
     // Tune the reconnect window (seconds). The SDK keeps the call alive
-    // through brief network drops instead of ending it; 30s is a good default.
-    c.setDisconnectionTimeout(30);
+    // through brief network drops instead of ending it; 120s is a good default.
+    c.setDisconnectionTimeout(120);
 
     (async () => {
       try {
-        // `maxJoinRetries: 1` opts into a fast-fail UI. Omit it to keep the
-        // SDK's default exponential-backoff retry.
-        await c.join({ create: true, maxJoinRetries: 1 });
+        await c.join();
       } catch (err) {
         console.error("Failed to join", err);
       }
