@@ -398,7 +398,7 @@ Follow [`sdk.md`](sdk.md) for shared patterns (client lifecycle, auth, provider 
 
 - `StreamVideoClient.getOrCreateInstance({ apiKey, user, tokenProvider, options? })` inside a `useEffect`, with `client.disconnectUser()` on cleanup
 - `<StreamVideo client={client}>` mounted once near the app root, above the navigator
-- `Call` created **exactly once** in the destination call screen via `client.call(type, id)`; mount `<StreamCall call={call}>`; descendants read it via `useCall()` and never call `client.call(...)` again; navigation hands off only the call id, not the Call instance
+- `Call` created **exactly once** in the destination call screen via `client.call(type, id, { reuseInstance: true })` (the flag is mandatory - the same `(type, id)` may already be live from a ring/deep link/push, and without it the SDK constructs a duplicate); mount `<StreamCall call={call}>`; descendants read it via `useCall()` and never call `client.call(...)` again; navigation hands off only the call id, not the Call instance. Use `join({ create: true })` only for create-on-join lobby flows; ringing, livestream-host, and audio-room flows join without `create`.
 - `call.leave()` on screen unmount, **guarded by `call.state.callingState !== CallingState.LEFT`** (a second `leave()` throws `Cannot leave call that has already been left`); hangup handlers only navigate
 - audio routing is automatic on `call.join()` / `call.leave()` (default `audioRole: "communicator"`); only call `callManager.start/stop` to override the role - the only other value is `"listener"` (playback-optimized, for a view-only livestream viewer or audio-room audience member)
 - error handling around `call.join()`, `call.camera.enable()`, `client.connectUser()`
@@ -477,7 +477,7 @@ Use the project's existing verification commands. Prefer the smallest checks tha
 - Android `minSdkVersion = 24` set (RN CLI direct, Expo via `expo-build-properties`)
 - client created via `StreamVideoClient.getOrCreateInstance(...)` (not `new StreamVideoClient(...)`) and disposed on cleanup
 - `<StreamVideo>` mounted once near the app root, above the navigator
-- `Call` created **exactly once** with `client.call(type, id)` in the destination call screen, joined inside `useEffect`, and mounted via `<StreamCall>`; descendants read it via `useCall()` and never call `client.call(...)` again; upstream screens (lobby, home) only hand off the call id, do not pre-create the Call
+- `Call` created **exactly once** with `client.call(type, id, { reuseInstance: true })` in the destination call screen, joined inside `useEffect` (use `join({ create: true })` only for create-on-join lobby flows; ringing / livestream-host / audio-room join calls created upstream and pass no `create`), and mounted via `<StreamCall>`; descendants read it via `useCall()` and never call `client.call(...)` again; upstream screens (lobby, home) only hand off the call id, do not pre-create the Call
 - `call.leave()` called on cleanup **guarded by `callingState !== CallingState.LEFT`** (avoids `Cannot leave call that has already been left`); hangup handlers only navigate
 - audio routing left to the SDK (automatic on `call.join()` / `call.leave()`); no manual `callManager.start/stop` unless overriding the default `audioRole: "communicator"`
 - call navigation passes only the call id, not a `Call` object

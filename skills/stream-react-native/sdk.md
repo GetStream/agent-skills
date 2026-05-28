@@ -119,9 +119,16 @@ const [call, setCall] = useState<Call>();
 
 useEffect(() => {
   if (!client) return;
-  const c = client.call(type, id);
+  // `{ reuseInstance: true }` returns the cached Call when the same (type, id)
+  // is already live in the SDK (outgoing ring, ringing watcher, deep link, push).
+  // Required on every destination call screen; without it the SDK constructs a
+  // duplicate that leaks SFU connections and breaks state.
+  const c = client.call(type, id, { reuseInstance: true });
   setCall(c);
-  c.join().catch((err) => console.error("Failed to join", err));
+  // `{ create: true }` lets a "join by id" lobby flow work even when the
+  // (type, id) doesn't exist server-side yet. Drop it for flows that only
+  // join calls created upstream (ringing, livestream host, audio room).
+  c.join({ create: true }).catch((err) => console.error("Failed to join", err));
   return () => {
     if (c.state.callingState !== CallingState.LEFT) {
       c.leave().catch((err) => console.error(err));
@@ -139,18 +146,18 @@ A `Call` initializes after any of `call.get()`, `call.create()`, `call.getOrCrea
 
 Use the simplest token shape that matches the user's environment:
 
-- **Backend exists:** prefer a backend-issued Stream token via a `tokenProvider` callback. The SDK calls it again automatically when the token nears expiry or reconnects.
-- **No backend / demo flow:** generate a token with the Stream CLI (`stream token <user_id>`; expiring: `stream token <user_id> --ttl 1h`). See [`credentials.md`](credentials.md).
-- **User pastes their own:** accept it and pass to the client.
+- **Backend exists (production path):** the backend authenticates the request, derives the Stream `user_id` **from its own session** (cookie / JWT / OAuth subject), and mints a Stream token for that id. The client wires a `tokenProvider` callback that re-hits the same authenticated endpoint when the token nears expiry. The SDK calls it again automatically on reconnect. The client must **never** send a `user_id` query/body parameter to the token endpoint - that lets any signed-in user impersonate any other Stream user. See [`references/VIDEO-REACT-NATIVE-blueprints.md` > Production auth gate](references/VIDEO-REACT-NATIVE-blueprints.md#production-auth-gate-replace-the-demo-loginscreen-for-real-apps) for the canonical wiring.
+- **No backend / demo flow:** generate a token with the Stream CLI (`stream token <user_id>`; expiring: `stream token <user_id> --ttl 1h`) and paste it into a dev-only login form. See [`credentials.md`](credentials.md). Gate any such form behind `__DEV__` or a feature flag so it never ships in a production build.
+- **User pastes their own:** accept it and pass to the client. Same dev-only caveat applies.
 
 Keep the split clear:
 
-- **client:** API key, `User` (`id`, `name`, `image`), user token
-- **server:** API secret and token minting (the CLI handles this automatically)
+- **client:** API key, `User` (`id`, `name`, `image`), user token. The client never decides which Stream user the token represents.
+- **server:** API secret and token minting (the CLI handles this automatically). The server is the only place that names a Stream `user_id` when minting.
 
 If the app already has its own auth system, extend that flow instead of adding a second login model beside it. Connect / build once per user session, not on every screen entry.
 
-Never use `devToken()` (Chat) for production. Never invent credentials.
+Never use `devToken()` (Chat) for production. Never invent credentials. Never accept a client-supplied `user_id` on the token endpoint.
 
 ---
 
@@ -177,7 +184,7 @@ Never use `devToken()` (Chat) for production. Never invent credentials.
 Pass references through navigation params, not live objects:
 
 - Chat: pass `channel.cid` (string), not the `Channel` instance. Recreate from `useChatContext().client.channel(type, id)` on the destination screen.
-- Video: pass only the call id through navigation, not the `Call` instance. The destination call screen is the **sole** Call owner - it calls `client.call(type, id)` once, joins, and mounts `<StreamCall>`. Descendants read via `useCall()` and must **not** call `client.call(...)` again to obtain the same instance. Upstream screens (lobby, home) hand off the id without pre-creating the Call.
+- Video: pass only the call id through navigation, not the `Call` instance. The destination call screen is the **sole** Call owner - it calls `client.call(type, id, { reuseInstance: true })` once, joins (with `{ create: true }` only for create-on-join lobby flows), and mounts `<StreamCall>`. Descendants read via `useCall()` and must **not** call `client.call(...)` again to obtain the same instance. Upstream screens (lobby, home) hand off the id without pre-creating the Call.
 
 ---
 
@@ -240,5 +247,5 @@ Before calling the work done, confirm:
 - optional dependencies are installed only for requested capabilities
 - app entry is wrapped in `GestureHandlerRootView` (Chat required; Video recommended)
 - Chat: `OverlayProvider` and `<Chat>` are stable and high in the tree; navigation passes channel CID, not channel object; `Channel` owns `MessageList` and `MessageComposer`; thread state is shared between channel and thread screens; offline sign-out resets DB before disconnect when offline is enabled
-- Video: client created via `StreamVideoClient.getOrCreateInstance(...)` and disposed on cleanup; `<StreamVideo>` mounted once near the app root above the navigator; **`Call` created exactly once** with `client.call(type, id)` in the destination call screen, joined inside `useEffect`, mounted via `<StreamCall>`, and descendants read via `useCall()` (never `client.call(...)` again); `call.leave()` on cleanup **guarded by `callingState !== CallingState.LEFT`**; hangup handlers only navigate (no manual `leave()` - `CallContent` already calls it); audio routing left to the SDK (no manual `callManager.start/stop` unless overriding the role); navigation passes only the call id (not `Call` instances); permissions declared (iOS `Info.plist`, Android `AndroidManifest.xml`, Expo `app.json` plugins)
+- Video: client created via `StreamVideoClient.getOrCreateInstance(...)` and disposed on cleanup; `<StreamVideo>` mounted once near the app root above the navigator; **`Call` created exactly once** with `client.call(type, id, { reuseInstance: true })` in the destination call screen, joined inside `useEffect` (use `join({ create: true })` only for create-on-join lobby flows; ringing / livestream-host / audio-room flows join without `create`), mounted via `<StreamCall>`, and descendants read via `useCall()` (never `client.call(...)` again); `call.leave()` on cleanup **guarded by `callingState !== CallingState.LEFT`**; hangup handlers only navigate (no manual `leave()` - `CallContent` already calls it); audio routing left to the SDK (no manual `callManager.start/stop` unless overriding the role); navigation passes only the call id (not `Call` instances); permissions declared (iOS `Info.plist`, Android `AndroidManifest.xml`, Expo `app.json` plugins)
 - when combined Chat + Video: both providers nested (not siblings); both clients disconnect on sign-out

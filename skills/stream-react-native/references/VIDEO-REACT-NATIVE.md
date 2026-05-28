@@ -277,9 +277,16 @@ const [call, setCall] = useState<Call>();
 
 useEffect(() => {
   if (!client) return;
-  const c = client.call(type, id);
+  // `{ reuseInstance: true }` is required on every destination call screen:
+  // the same (type, id) may already be live in the SDK (outgoing ring, ringing
+  // watcher, deep link, push), and without it the SDK constructs a duplicate
+  // that leaks SFU connections and breaks state.
+  const c = client.call(type, id, { reuseInstance: true });
   setCall(c);
-  c.join().catch((err) => console.error("Failed to join", err));
+  // `{ create: true }` lets a "join by id" lobby flow work even when the
+  // (type, id) doesn't exist server-side yet. Drop it for ringing, livestream
+  // host, audio room, and other flows that join an upstream-created call.
+  c.join({ create: true }).catch((err) => console.error("Failed to join", err));
   return () => {
     if (c.state.callingState !== CallingState.LEFT) {
       c.leave().catch((err) => console.error(err));
@@ -378,7 +385,7 @@ client.on("call.ended", ...);
 - Put `StreamVideo` above any screen that needs a call. With React Navigation, prefer it above `NavigationContainer` so deep links land inside the provider.
 - Keep one `StreamVideo` mounted for the whole authenticated session. Tearing it down restarts the WebSocket.
 - Pass only the call id (string) through navigation params, not the `Call` object itself.
-- **Create the `Call` instance exactly once** in the destination call screen via `client.call(type, id)`, join inside `useEffect`, and mount `<StreamCall call={call}>`. Descendants of `<StreamCall>` read the call via `useCall()` - they must **not** call `client.call(...)` again. Upstream screens (lobby, home) hand off the id without pre-creating the Call.
+- **Create the `Call` instance exactly once** in the destination call screen via `client.call(type, id, { reuseInstance: true })`, join inside `useEffect` (pass `join({ create: true })` only for create-on-join lobby flows - ringing, livestream host, and audio-room flows join calls created upstream), and mount `<StreamCall call={call}>`. The `{ reuseInstance: true }` flag is required because the same `(type, id)` may already be in the SDK's managed state (outgoing ring, ringing watcher, deep link, push); without it the SDK constructs a duplicate `Call`. Descendants of `<StreamCall>` read the call via `useCall()` - they must **not** call `client.call(...)` again. Upstream screens (lobby, home) hand off the id without pre-creating the Call.
 - For ringing, register `client.on("call.ring", ...)` at the app shell, push the incoming-call screen, and let the user accept/reject before mounting `CallContent`.
 
 ---
@@ -522,7 +529,7 @@ try {
 - `react-native-gesture-handler` is recommended at the app root if any feature uses gestures; wrap with `GestureHandlerRootView`.
 - Re-run `npx expo prebuild --clean` after any change to `app.json` plugins, package versions, or native config.
 - Use `StreamVideoClient.getOrCreateInstance` only - never `new StreamVideoClient(...)`. Multiple instances break push and state.
-- Create each `Call` instance **exactly once** in the destination call screen via `client.call(type, id)`. Components inside `<StreamCall>` read it with `useCall()` - never call `client.call(...)` again to "retrieve" the same call. Recreating leaks SFU connections and breaks state.
+- Create each `Call` instance **exactly once** in the destination call screen via `client.call(type, id, { reuseInstance: true })`. `{ reuseInstance: true }` is required because the same `(type, id)` may already exist (outgoing ring, ringing watcher, deep link, push); without it the SDK constructs a duplicate. Components inside `<StreamCall>` read it with `useCall()` - never call `client.call(...)` again to "retrieve" the same call. Recreating leaks SFU connections and breaks state.
 - `call.leave()` on cleanup, **guarded by `call.state.callingState !== CallingState.LEFT`** - dangling calls keep publishing audio/video, but a second `leave()` (custom hangup + unmount, or React 18 strict-mode double-effect) throws `Cannot leave call that has already been left`.
 - Pass only the call id through navigation params, not `Call` objects. Upstream screens hand off the id; the destination owns single creation.
 - Permissions are prompted on first media access by default; request them explicitly with `react-native-permissions` if you need them before the call screen mounts.

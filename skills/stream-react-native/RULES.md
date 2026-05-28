@@ -20,11 +20,11 @@ Never put a Stream API secret in React Native code, Expo config, app config, nat
 
 Default token model:
 
-- Existing backend: use a backend-issued Stream token or token provider.
-- Local dev/demo: use a CLI-generated token from [`credentials.md`](credentials.md).
-- User-managed: accept a pasted API key/token if the user chooses that path.
+- Existing backend: use a backend-issued Stream token or token provider. **The backend must derive the Stream `user_id` from its own authenticated session (cookie / JWT / OAuth subject), not from a client-supplied query or body parameter.** Sending `user_id` to the token endpoint from the client is an impersonation bug - any signed-in user could mint a Stream token for any other user. The client wires a `tokenProvider` that re-hits the same authenticated endpoint on expiry. See [`sdk.md` > Auth model](sdk.md#auth-model) and the Production auth gate blueprint in [`references/VIDEO-REACT-NATIVE-blueprints.md`](references/VIDEO-REACT-NATIVE-blueprints.md).
+- Local dev/demo: use a CLI-generated token from [`credentials.md`](credentials.md). Gate any pasted-credential login form behind `__DEV__` or a feature flag so it cannot ship.
+- User-managed: accept a pasted API key/token if the user chooses that path. Same dev-only caveat.
 
-Never use `devToken()` for production. Never invent credentials.
+Never use `devToken()` for production. Never invent credentials. Never accept a client-supplied `user_id` on the token endpoint.
 
 Prefer not to commit static user tokens. If the user wants a local-only demo and accepts a static token, keep the blast radius clear and avoid putting that token in shared docs or final summaries.
 

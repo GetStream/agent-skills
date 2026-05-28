@@ -83,6 +83,10 @@ const VideoWithInsets = ({
   );
 };
 
+// LOCAL-DEMO ONLY. Editable API key / token / user id are convenient for
+// pasted Stream CLI credentials during development. They are NOT a production
+// auth flow - a real client must never choose its own Stream user id (see
+// "Production auth gate" below for the safe pattern).
 const LoginScreen = ({
   demoDefaults,
   onSession,
@@ -95,21 +99,9 @@ const LoginScreen = ({
   const [userId, setUserId] = useState(demoDefaults?.userId ?? "");
   const [userName, setUserName] = useState(demoDefaults?.userName ?? "");
 
-  const signIn = useCallback(async () => {
-    if (apiKey && token && userId) {
-      onSession({ apiKey, token, userId, userName: userName || userId });
-      return;
-    }
-    const res = await fetch(
-      `https://your-api.example.com/stream-token?user_id=${encodeURIComponent(userId)}`,
-    );
-    const body = await res.json();
-    onSession({
-      apiKey: body.apiKey,
-      token: body.token,
-      userId,
-      userName: body.userName || userName || userId,
-    });
+  const signIn = useCallback(() => {
+    if (!apiKey || !token || !userId) return;
+    onSession({ apiKey, token, userId, userName: userName || userId });
   }, [apiKey, onSession, token, userId, userName]);
 
   return (
@@ -118,7 +110,7 @@ const LoginScreen = ({
       <TextInput autoCapitalize="none" onChangeText={setToken} placeholder="User token" value={token} />
       <TextInput autoCapitalize="none" onChangeText={setUserId} placeholder="User id" value={userId} />
       <TextInput autoCapitalize="words" onChangeText={setUserName} placeholder="User name" value={userName} />
-      <Button disabled={!userId} onPress={signIn} title="Sign in" />
+      <Button disabled={!apiKey || !token || !userId} onPress={signIn} title="Sign in (demo)" />
     </View>
   );
 };
@@ -175,6 +167,105 @@ export default function App() {
 ```
 
 Always use `StreamVideoClient.getOrCreateInstance(...)` (not `new StreamVideoClient(...)`); the SDK relies on the singleton for push notifications and call state. Pair with a `tokenProvider` (~4-hour tokens) in production so the SDK refreshes automatically. See [VIDEO-REACT-NATIVE.md > Client setup](VIDEO-REACT-NATIVE.md#client-setup) and the live [Integration Best Practices](https://getstream.io/video/docs/react-native/advanced/integration-best-practices.md) page.
+
+### Production auth gate (replace the demo `LoginScreen` for real apps)
+
+**The Stream user id must be derived server-side from the authenticated session, never sent by the client.** A client-supplied `user_id` query/body parameter on a token endpoint is a trust-boundary bug: any signed-in user could mint a Stream token for any other user and impersonate them in calls.
+
+The mobile app authenticates with the customer's own auth system (cookie, bearer token, OAuth, Firebase Auth, Clerk, Auth0, etc.). The backend reads the authenticated principal from the request and returns the Stream `apiKey`, the Stream `user_id` it picked, and either a freshly minted Stream token or a refreshable token endpoint:
+
+```ts
+// Customer backend - e.g. Node + Stream server SDK:
+import { StreamClient } from "@stream-io/node-sdk";
+const stream = new StreamClient(STREAM_API_KEY, STREAM_API_SECRET);
+
+app.get("/api/stream/session", requireAuth, (req, res) => {
+  const user = req.user;                       // from your session/JWT middleware
+  const token = stream.generateUserToken({     // ~4h TTL recommended
+    user_id: user.id,
+    validity_in_seconds: 60 * 60 * 4,
+  });
+  res.json({
+    apiKey: STREAM_API_KEY,
+    userId: user.id,                            // server-chosen, never client-supplied
+    userName: user.displayName,
+    userImage: user.avatarUrl,
+    token,
+  });
+});
+```
+
+The mobile app then fetches that session and wires a `tokenProvider` that re-hits the same authenticated endpoint when the token nears expiry - the SDK never sees a refresh secret, and the client never names a Stream user id:
+
+```tsx
+import { useEffect, useState } from "react";
+import {
+  StreamVideoClient,
+  type TokenProvider,
+  type User,
+} from "@stream-io/video-react-native-sdk";
+
+type ServerSession = {
+  apiKey: string;
+  userId: string;
+  userName?: string;
+  userImage?: string;
+  token: string;
+};
+
+// `fetchAuthed` is the app's own authenticated fetch wrapper - it forwards the
+// signed-in user's cookie / bearer / OAuth header. It does NOT take a user id.
+const fetchStreamSession = async (): Promise<ServerSession> => {
+  const res = await fetchAuthed("/api/stream/session");
+  if (!res.ok) throw new Error(`Stream session failed: ${res.status}`);
+  return res.json();
+};
+
+export const useProductionStreamClient = () => {
+  const [client, setClient] = useState<StreamVideoClient>();
+
+  useEffect(() => {
+    let cancelled = false;
+    let current: StreamVideoClient | undefined;
+    (async () => {
+      const session = await fetchStreamSession();
+      if (cancelled) return;
+      const user: User = {
+        id: session.userId,
+        name: session.userName,
+        image: session.userImage,
+      };
+      // tokenProvider re-hits the SAME authenticated endpoint - the server
+      // re-derives user id from the session and mints a fresh token.
+      const tokenProvider: TokenProvider = async () => {
+        const fresh = await fetchStreamSession();
+        return fresh.token;
+      };
+      current = StreamVideoClient.getOrCreateInstance({
+        apiKey: session.apiKey,
+        user,
+        token: session.token,
+        tokenProvider,
+      });
+      setClient(current);
+    })().catch((err) => console.error("Stream auth failed", err));
+    return () => {
+      cancelled = true;
+      current?.disconnectUser().catch((err) => console.error(err));
+      setClient(undefined);
+    };
+  }, []);
+
+  return client;
+};
+```
+
+What this rules out:
+- No client input controls which Stream user the token is minted for - the server reads it from its own session.
+- The Stream **API secret** stays on the customer's backend; the SDK only ever receives short-lived user tokens.
+- The same endpoint serves the initial session and the refresh, so token rotation reuses the existing auth check.
+
+The demo `LoginScreen` above remains useful for local development with pasted Stream CLI credentials (see [`../credentials.md`](../credentials.md)) and for the Stream sample apps - keep it gated behind a build-time check (`__DEV__` or a feature flag) so it cannot ship in a production build.
 
 `SafeAreaProvider` + `VideoWithInsets` is the canonical safe-area wiring: `SafeAreaProvider` exposes device insets, and `VideoWithInsets` bridges them into `<StreamVideo>`'s theme so `CallContent`, `RingingCallContent`, and participant views respect notches and system bars without an extra `SafeAreaView` wrap. `<StatusBar style="auto" />` handles status-bar text contrast against the app's background.
 
@@ -305,7 +396,7 @@ Notice the screen does **not** wrap `<CallContent />` in a `SafeAreaView`. `Call
 
 The destructured `callType` defaults to `"default"` for the simple join-by-id case but accepts whatever the deep-link / ringing watcher / push handler delivers (`livestream`, `audio_room`, custom call types).
 
-**When to use `{ reuseInstance: true }`:** pass it when the same `(type, id)` may already exist in the SDK's managed state (an outgoing ring, a ringing watcher, a deep link, a push wake-up) so the SDK returns the cached instance instead of duplicating it. For a plain user-initiated join-by-id, a bare `client.call(type, id)` is also sufficient. And for calls that arrive via **ringing**, the canonical pattern is to read the existing instance from `useCalls()` (see the Ringing Blueprint) rather than reconstructing it with `client.call(...)` at all - reach for `reuseInstance` only when you must call `client.call(...)` yourself for an id that might already be live.
+**Always pass `{ reuseInstance: true }` from a destination call screen.** Any screen the user can land on - via deep link, push, ringing accept, navigation from a lobby, or external linking - may find the same `(type, id)` already live in the SDK (outgoing ring, ringing watcher, push wake-up, deep link). Without the flag the SDK constructs a duplicate that leaks SFU connections and breaks state. The cost when the call is not yet known is zero - the SDK simply creates and caches it. For calls that arrive via **ringing**, the canonical pattern is still to read the existing instance from `useCalls()` (see the Ringing Blueprint) rather than reconstructing it; reach for `client.call(...)` only when you must obtain a `Call` reference yourself for an id you were handed through navigation or a payload.
 
 ---
 
@@ -713,7 +804,8 @@ export const useCallDeepLink = () => {
       const parsed = parseCallLink(url);
       if (!parsed) return;
       // Pass the id (and type if dynamic) through navigation only.
-      // ActiveCallScreen creates the Call exactly once via client.call(type, id).
+      // ActiveCallScreen creates the Call exactly once via
+      // client.call(type, id, { reuseInstance: true }).
       navigation.navigate("ActiveCall", parsed);
     };
 
@@ -767,7 +859,7 @@ export const HostLivestreamScreen = ({ callId }: { callId: string }) => {
   const me = useConnectedUser();
 
   const call = useMemo<Call | undefined>(
-    () => (client ? client.call("livestream", callId) : undefined),
+    () => (client ? client.call("livestream", callId, { reuseInstance: true }) : undefined),
     [client, callId],
   );
 
@@ -814,7 +906,7 @@ export const ViewerScreen = ({ callId }: { callId: string }) => {
 };
 ```
 
-For the full viewer UI (live badge, duration, participant count, leave button), create the call yourself (`client.call("livestream", id)` + `join()`) and render `<ViewerLivestream />` inside `<StreamCall>` instead of `LivestreamPlayer`. Either way, a watch-only viewer uses `audioRole: "listener"`; for an ordinary call you never touch `callManager`.
+For the full viewer UI (live badge, duration, participant count, leave button), create the call yourself (`client.call("livestream", id, { reuseInstance: true })` + `join()`) and render `<ViewerLivestream />` inside `<StreamCall>` instead of `LivestreamPlayer`. Either way, a watch-only viewer uses `audioRole: "listener"`; for an ordinary call you never touch `callManager`.
 
 ---
 
@@ -824,7 +916,7 @@ Audio rooms use the `audio_room` call type. There is **no single `AudioRoom` com
 
 Verified building blocks (all confirmed in the SDK source):
 
-- **Create / join:** `client.call("audio_room", id)`, then `call.join({ create: true, data: { members, custom: { title, description } } })`.
+- **Create / join:** `client.call("audio_room", id, { reuseInstance: true })`, then `call.join({ create: true, data: { members, custom: { title, description } } })`.
 - **Go live:** hosts call `call.goLive()`; end with `call.stopLive()`. Listeners join the live room directly. Gate host-only UI on `OwnCapability.JOIN_BACKSTAGE` via `call.permissionsContext.hasPermission(...)`.
 - **Request to speak:** a listener calls `call.requestPermissions({ permissions: [OwnCapability.SEND_AUDIO] })`. A host listens with `call.on("call.permission_request", (event) => { ... })` and grants via `call.updateUserPermissions({ user_id, grant_permissions: [OwnCapability.SEND_AUDIO] })`. Read your own granted capabilities with `useCallStateHooks().useHasPermissions(...)`.
 - **State:** `useCallStateHooks().useParticipants()`, `useDominantSpeaker()`, and `useMicrophoneState()` for the speaking/mute UI.
@@ -906,7 +998,7 @@ export const StartCallButton = ({ myId }: { myId: string }) => {
     if (!client) return;
     const memberIds = Object.keys(channel?.state.members ?? {});
     const callId = `call-${Date.now()}`; // fresh id per ring
-    const call = client.call("default", callId);
+    const call = client.call("default", callId, { reuseInstance: true });
     await call.getOrCreate({
       ring: true,
       video: true,
