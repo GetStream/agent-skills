@@ -139,6 +139,9 @@ const ConnectedVideo = ({
       apiKey: session.apiKey,
       user,
       tokenProvider,
+      // Optional: auto-reject incoming calls while another is active.
+      // Pair with `shouldRejectCallWhenBusy: true` on setPushConfig (see Ringing).
+      // options: { rejectCallWhenBusy: true },
     });
     setClient(c);
     return () => {
@@ -248,7 +251,21 @@ export const ActiveCallScreen = () => {
     if (!client) return;
     const c = client.call(callType, callId, { reuseInstance: true });
     setCall(c);
-    c.join({ create: true }).catch((err) => console.error("Failed to join", err));
+
+    // Tune the reconnect window (seconds). The SDK keeps the call alive
+    // through brief network drops instead of ending it; 30s is a good default.
+    c.setDisconnectionTimeout(30);
+
+    (async () => {
+      try {
+        // `maxJoinRetries: 1` opts into a fast-fail UI. Omit it to keep the
+        // SDK's default exponential-backoff retry.
+        await c.join({ create: true, maxJoinRetries: 1 });
+      } catch (err) {
+        console.error("Failed to join", err);
+      }
+    })();
+
     return () => {
       if (c.state.callingState !== CallingState.LEFT) {
         c.leave().catch((err) => console.error(err));
@@ -266,6 +283,19 @@ export const ActiveCallScreen = () => {
   );
 };
 ```
+
+**Pre-call device enable (lobby / permission gate).** When you need cameras and mics live *before* `join()` - e.g. a lobby preview where the user checks themselves on camera - `enable()` them explicitly with `try/catch` so a denied permission surfaces a meaningful error rather than a silent black tile:
+
+```tsx
+try {
+  await call.camera.enable();
+  await call.microphone.enable();
+} catch (err) {
+  console.error("Failed to enable a device", err);
+}
+```
+
+For a plain join-by-id flow, you do not need this block - `call.join()` brings up devices per the call type's defaults.
 
 `CallContent` provides the full default UI - top bar, participant grid, and call controls. Inside `<StreamCall>`, any child component (custom controls, participant tile, ringing UI, in-call toolbar) reads the current call via `useCall()` - never `client.call(...)` again. Replace any slot via its props; see Custom Call Controls and Custom Participant Tile blueprints below. Audio routing (speaker/earpiece/Bluetooth) is handled automatically by `call.join()` / `call.leave()` with `audioRole: "communicator"` as the default - do not call `callManager.start/stop` yourself unless you are overriding the role (the only other value is `"listener"`, for a view-only livestream viewer or audio-room audience member).
 
@@ -407,7 +437,17 @@ export const IncomingCallButtons = () => {
 - `call.join()` is the accept action on RN - it records acceptance with the backend and enters the media session in one step. Audio routing (`audioRole: "communicator"`) is auto-managed by `join()` / `leave()`; do not call `callManager.start/stop` here.
 - Reject an incoming call with `call.leave({ reject: true, reason: "decline" })`. Cancel an outgoing call with `call.leave({ reject: true, reason: "cancel" })` before the first callee accepts.
 - Replace the default ringing UIs by passing `IncomingCall`, `OutgoingCall`, or `CallContent` component refs to `<RingingCallContent ... />`. Match the prop signatures on the live [RingingCallContent](https://getstream.io/video/docs/react-native/ui-components/call/ringing-call-content.md) page; the [Incoming & Outgoing Call cookbook](https://getstream.io/video/docs/react-native/ui-cookbook/incoming-and-outgoing-call.md) shows full custom replacements built from `useCallMembers` and the accept/reject buttons above.
-- For background and terminated ringing (CallKit on iOS, Telecom + FCM on Android), call `StreamVideoRN.setPushConfig({...})` once at module load - including a `createStreamVideoClient` callback that builds the client with `StreamVideoClient.getOrCreateInstance(...)`. Full wiring (Info.plist keys, AppDelegate PushKit hooks, Firebase listeners, `@stream-io/react-native-callingx`) is documented at [Ringing Setup - React Native](https://getstream.io/video/docs/react-native/incoming-calls/ringing-setup/react-native.md).
+- For background and terminated ringing (CallKit on iOS, Telecom + FCM on Android), call `StreamVideoRN.setPushConfig({...})` once at module load - including a `createStreamVideoClient` callback that builds the client with `StreamVideoClient.getOrCreateInstance(...)`. To auto-reject a second incoming call while one is active, pair `options: { rejectCallWhenBusy: true }` on `getOrCreateInstance` with `shouldRejectCallWhenBusy: true` on `setPushConfig` (both keys are required - the client option covers the foreground/socket path, the push-config option covers the CallKit/Telecom path):
+  ```ts
+  const clientOptions = { apiKey, user, tokenProvider, options: { rejectCallWhenBusy: true } };
+  StreamVideoClient.getOrCreateInstance(clientOptions);
+  StreamVideoRN.setPushConfig({
+    createStreamVideoClient: async () => StreamVideoClient.getOrCreateInstance(clientOptions),
+    shouldRejectCallWhenBusy: true,
+  });
+  ```
+  Full wiring (Info.plist keys, AppDelegate PushKit hooks, Firebase listeners, `@stream-io/react-native-callingx`) is documented at [Ringing Setup - React Native](https://getstream.io/video/docs/react-native/incoming-calls/ringing-setup/react-native.md).
+- **Android 13+ (API 33+) runtime notification permission.** Push delivery for ringing requires the user to grant `POST_NOTIFICATIONS` at runtime - the SDK will not display incoming-call notifications without it. Request it explicitly (via `react-native-permissions`, `expo-notifications`, `PermissionsAndroid.request("android.permission.POST_NOTIFICATIONS")`, or your push library's helper) **before** the first ringing call is expected. Declare `<uses-permission android:name="android.permission.POST_NOTIFICATIONS" />` in `AndroidManifest.xml` (Expo's notification config plugin or the SDK config plugin emit it for you).
 - To let the app's own ringing UI take over when a ringing push arrives while the app is foregrounded, set `skipIncomingPushInForeground: true` on the per-platform `ios` / `android` keys of `setPushConfig`. On iOS 26.4+ this branch also requires the PushKit `didReceiveIncomingVoIPPushWith:metadata:withCompletionHandler:` delegate forwarding to `StreamVideoReactNative.didReceiveIncomingVoIPPush(...)` on RN CLI; Expo apps inject this automatically via the SDK config plugin. Full details on the same Ringing Setup pages above.
 - **Non-ringing notifications** (`call.missed`, `call.notification`, `call.live_started` - the SDK's `NonRingingPushEvent` type) are NOT handled by `setPushConfig` - they are entirely app-owned. Register the device token via `client.addDevice(token, push_provider, push_provider_name)` and display/route the push yourself using any library. See manifest-selected `/incoming-calls/non-ringing-notifications-setup/overview/`.
 
@@ -483,6 +523,11 @@ If the screen also adds a **custom top bar above `CallContent`**, zero `theme.ca
 
 - `call.microphone.toggle()` / `call.camera.toggle()` flip the published track; await them since they are async. Read the live state from `useMicrophoneState().status` and `useCameraState().status` (`"enabled" | "disabled"`) - the hooks re-render on change.
 - `call.camera.flip()` swaps front/back; `useCameraState().direction` (`"front" | "back"`) is available if you need to label the button.
+- **Speaking-while-muted hint.** `useMicrophoneState().isSpeakingWhileMuted` becomes `true` when the SDK detects voice activity but the mic track is off - surface a small "You're muted" tooltip so the user notices:
+  ```tsx
+  const { isSpeakingWhileMuted } = useMicrophoneState();
+  // {isSpeakingWhileMuted ? <Text>You're muted</Text> : null}
+  ```
 - For hangup, call `call.leave()` and navigate. Guard with `callingState !== CallingState.LEFT` so the call-screen unmount effect does not double-leave. Do **not** use `call.endCall()` here unless you intend to terminate the call for every participant.
 
 ---
