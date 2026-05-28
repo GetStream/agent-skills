@@ -906,6 +906,7 @@ After install:
 
 - RN CLI: declare iOS permissions in `Info.plist`, Android permissions in `AndroidManifest.xml`, bump Android `minSdkVersion` to 24, enable Java 8 source.
 - Expo: add `@stream-io/video-react-native-sdk` and `@config-plugins/react-native-webrtc` to `app.json` plugins, then `npx expo prebuild --clean`.
+- **Navigation (required - blueprints below assume it):** RN CLI has no navigation by default, install React Navigation: `npm install @react-navigation/native @react-navigation/native-stack @react-navigation/elements react-native-screens`. Expo apps from `create-expo-app` already have **Expo Router** under `app/` - use the Expo Router branch of the Navigation Shell blueprint instead. Skipping this step will cause `import` errors on the first build.
 - Recommended: install `react-native-reanimated`, `react-native-worklets`, and `react-native-gesture-handler` (Stream's sample apps do, even video-only) for the animated floating-participant tile, and add `react-native-worklets/plugin` as the last Babel plugin. They are optional - the SDK falls back to the RN `Animated` API without them.
 
 Then drop in the App Provider and Auth Gate blueprint above, hook up the Navigation Shell, and add Home + Active Call screens.

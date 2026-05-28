@@ -109,6 +109,24 @@ If you installed the animation peers, add `react-native-worklets/plugin` as the 
 
 If the new app uses yarn or pnpm, translate package-manager commands without changing package names. Run pods after native dependency changes in RN CLI apps. Use `npx expo install` for Expo dependencies so versions match the Expo SDK.
 
+### Navigation setup (required - blueprints assume it)
+
+The bundled blueprints (App Provider, Navigation Shell, Channel List, Channel Screen, Home/Join-or-Start, Active Call, Ringing) import from `@react-navigation/*` or `expo-router`. Install the matching stack **before** generating screens or imports will break the first build:
+
+- **RN CLI (no navigation by default)** - install React Navigation explicitly:
+
+```bash
+npm install @react-navigation/native @react-navigation/native-stack @react-navigation/elements react-native-screens
+# react-native-safe-area-context is already installed above; reuse it
+npx pod-install
+```
+
+- **Expo, default template (recommended)** - `npx create-expo-app@latest` already scaffolds **Expo Router** under `app/`. Skip the React Navigation install and use the Expo Router branch of the Navigation Shell blueprint (and `app/*.tsx` files for routes). The dogfood sample uses React Navigation; the Expo-only samples use Expo Router - both are documented in the blueprints.
+
+- **Expo opting into React Navigation instead** - `npx expo install @react-navigation/native @react-navigation/native-stack @react-navigation/elements react-native-screens` and follow the React Navigation branch.
+
+Chat blueprints read `useHeaderHeight()` from `@react-navigation/elements`; that's why `elements` is in the React Navigation install line above.
+
 ### New app continuation
 
 After scaffold and packages:
