@@ -81,7 +81,7 @@ For Video RN, required setup includes:
 - Android minSdk 24 (RN CLI: `android/build.gradle`; Expo: `expo-build-properties` plugin)
 - Android Java 8 source / Java 11 target compatibility for the WebRTC module (RN CLI: `android/app/build.gradle` compileOptions)
 - `NSCameraUsageDescription` and `NSMicrophoneUsageDescription` in `Info.plist`
-- `CAMERA`, `RECORD_AUDIO`, `MODIFY_AUDIO_SETTINGS`, foreground-service permissions in `AndroidManifest.xml`
+- `CAMERA`, `RECORD_AUDIO`, `MODIFY_AUDIO_SETTINGS` (and `BLUETOOTH_CONNECT` if Bluetooth audio routing is wanted) in `AndroidManifest.xml`. **Foreground-service permissions are capability-owned** - the Expo config plugin only adds them when `androidKeepCallAlive` (background calls) or `enableScreenshare` is enabled, and you should mirror that on RN CLI. Don't declare `FOREGROUND_SERVICE*` for a plain foreground call - it over-broadens the manifest and creates Android 14 / Play policy review work for no reason.
 - Expo only: add `@stream-io/video-react-native-sdk` and `@config-plugins/react-native-webrtc` to `app.json` plugins, then `npx expo prebuild --clean`
 
 Both Chat and Video Expo apps use a dev-client/native-build lane by default because both SDKs include native code. Do not target Expo Go.

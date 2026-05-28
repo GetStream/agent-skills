@@ -212,7 +212,7 @@ Required Android setup in the host app:
 
 - `android/build.gradle`: `minSdkVersion = 24`
 - `android/app/build.gradle`: `compileOptions { sourceCompatibility JavaVersion.VERSION_1_8; targetCompatibility JavaVersion.VERSION_11 }`
-- `AndroidManifest.xml`: declare `CAMERA`, `RECORD_AUDIO`, `MODIFY_AUDIO_SETTINGS`, and foreground-service permissions
+- `AndroidManifest.xml`: declare `CAMERA`, `RECORD_AUDIO`, `MODIFY_AUDIO_SETTINGS` (add `BLUETOOTH_CONNECT` for Bluetooth audio). **Foreground-service permissions are capability-owned** - declare them only for background calls (`androidKeepCallAlive`) or screenshare; see the per-capability list below
 - `android/app/src/main/res/values/styles.xml`: swap the app theme parent to a `Theme.EdgeToEdge` variant (e.g. `Theme.EdgeToEdge.Material3`) so Android draws under the system bars. Add `<item name="enforceNavigationBarContrast">false</item>` if you want a fully transparent nav bar.
 
 Required iOS setup:
@@ -352,7 +352,7 @@ For Expo Router, the entry point is usually `app/_layout.tsx`. For RN CLI, it is
 If Video is in scope, ensure runtime camera/microphone access is configured:
 
 - RN CLI iOS: `NSCameraUsageDescription` and `NSMicrophoneUsageDescription` in `Info.plist`. Add `voip` and `audio` to `UIBackgroundModes` if ringing is in scope.
-- RN CLI Android: declare `CAMERA`, `RECORD_AUDIO`, `MODIFY_AUDIO_SETTINGS`, and foreground-service permissions in `AndroidManifest.xml`.
+- RN CLI Android: declare `CAMERA`, `RECORD_AUDIO`, `MODIFY_AUDIO_SETTINGS` (and `BLUETOOTH_CONNECT` if Bluetooth audio is wanted) in `AndroidManifest.xml`. Add `FOREGROUND_SERVICE` / `FOREGROUND_SERVICE_CAMERA` / `FOREGROUND_SERVICE_MICROPHONE` / `FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK` **only** for background calls (matches Expo plugin's `androidKeepCallAlive`); add `FOREGROUND_SERVICE` + `FOREGROUND_SERVICE_MEDIA_PROJECTION` **only** for screenshare. A plain foreground call needs none of those.
 - Expo: handled by the `@config-plugins/react-native-webrtc` plugin entry in `app.json` plus `npx expo prebuild --clean`.
 
 Use `react-native-permissions` if the app needs to request permissions before the first call screen mounts; otherwise the SDK prompts at the first media access.

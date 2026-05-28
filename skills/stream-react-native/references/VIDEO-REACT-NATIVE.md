@@ -121,16 +121,27 @@ iOS `Info.plist`:
 - `NSMicrophoneUsageDescription` - "{appName} requires microphone access to capture and transmit audio"
 - For ringing/VoIP, also `UIBackgroundModes` includes `voip` and `audio`.
 
-Android `AndroidManifest.xml` (before `<application>`):
+Android `AndroidManifest.xml` (before `<application>`) - **base permissions for a foreground call**:
 
 ```xml
 <uses-permission android:name="android.permission.CAMERA" />
 <uses-permission android:name="android.permission.RECORD_AUDIO" />
 <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
 <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+```
+
+**Capability-owned foreground-service permissions** - add only for the matching capability (this is exactly how the Expo config plugin gates them in `withAndroidPermissions.ts`; over-declaring increases Android 14 / Play policy review work for no reason):
+
+```xml
+<!-- Background calls (Expo plugin: androidKeepCallAlive: true) -->
 <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-<uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
 <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CAMERA" />
+<uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+<uses-permission android:name="android.permission.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK" />
+
+<!-- Screen share (Expo plugin: enableScreenshare: true) -->
+<uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+<uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
 ```
 
 Camera and microphone are prompted automatically when the stream is first requested. Request other permissions (Bluetooth, notifications) manually; `react-native-permissions` is the recommended runtime helper.
