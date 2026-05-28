@@ -99,11 +99,16 @@ Add `@stream-io/video-react-native-sdk` and `@config-plugins/react-native-webrtc
 npm view @stream-io/video-react-native-sdk version dist-tags --json
 npm install @stream-io/video-react-native-sdk
 npm install @stream-io/react-native-webrtc react-native-svg @react-native-community/netinfo
-npm install react-native-safe-area-context react-native-edge-to-edge
+npm install react-native-safe-area-context
 # recommended (animated floating-participant tile; matches Stream's sample apps):
 npm install react-native-reanimated react-native-worklets react-native-gesture-handler
 npx pod-install
 ```
+
+**Android edge-to-edge** (pick the branch that matches the host RN version):
+
+- **RN 0.81+** (dogfood is RN 0.83): set `edgeToEdgeEnabled=true` in `android/gradle.properties`. The RN Gradle plugin handles the rest - **no `react-native-edge-to-edge` install, no `styles.xml` edit**.
+- **Older RN CLI**: `npm install react-native-edge-to-edge` and inherit a `Theme.EdgeToEdge` variant (e.g. `Theme.EdgeToEdge.Material3`) in `android/app/src/main/res/values/styles.xml`. Add `<item name="enforceNavigationBarContrast">false</item>` for a fully transparent nav bar.
 
 If you installed the animation peers, add `react-native-worklets/plugin` as the last Babel plugin. Set `minSdkVersion = 24` in `android/build.gradle` and add Java 8 source compatibility in `android/app/build.gradle`. Add camera/microphone usage descriptions to `Info.plist` and camera/audio permissions to `AndroidManifest.xml`. In `android/app/src/main/res/values/styles.xml`, set the app theme parent to a `Theme.EdgeToEdge` variant (e.g. `Theme.EdgeToEdge.Material3`) so Android draws under the system bars.
 
@@ -202,18 +207,20 @@ Do not target Expo Go for `stream-chat-expo`. Also set `useNativeMultipartUpload
 npm view @stream-io/video-react-native-sdk version dist-tags --json
 npm install @stream-io/video-react-native-sdk
 npm install @stream-io/react-native-webrtc react-native-svg @react-native-community/netinfo
-npm install react-native-safe-area-context react-native-edge-to-edge
+npm install react-native-safe-area-context
 npx pod-install
 ```
 
-If the project uses yarn or pnpm, translate the command without changing package names. Run pods after native dependencies change.
+For Android edge-to-edge, pick the branch matching the host RN version (see "Required Android setup" below) - on RN 0.81+ you do **not** install `react-native-edge-to-edge`. If the project uses yarn or pnpm, translate the command without changing package names. Run pods after native dependencies change.
 
 Required Android setup in the host app:
 
 - `android/build.gradle`: `minSdkVersion = 24`
 - `android/app/build.gradle`: `compileOptions { sourceCompatibility JavaVersion.VERSION_1_8; targetCompatibility JavaVersion.VERSION_11 }`
 - `AndroidManifest.xml`: declare `CAMERA`, `RECORD_AUDIO`, `MODIFY_AUDIO_SETTINGS` (add `BLUETOOTH_CONNECT` for Bluetooth audio). **Foreground-service permissions are capability-owned** - declare them only for background calls (`androidKeepCallAlive`) or screenshare; see the per-capability list below
-- `android/app/src/main/res/values/styles.xml`: swap the app theme parent to a `Theme.EdgeToEdge` variant (e.g. `Theme.EdgeToEdge.Material3`) so Android draws under the system bars. Add `<item name="enforceNavigationBarContrast">false</item>` if you want a fully transparent nav bar.
+- **Android edge-to-edge** (pick the branch matching the host RN version):
+  - **RN 0.81+** (dogfood is RN 0.83): set `edgeToEdgeEnabled=true` in `android/gradle.properties` - the RN Gradle plugin handles the rest. **No `react-native-edge-to-edge` install, no `styles.xml` edit.**
+  - **Older RN CLI**: `npm install react-native-edge-to-edge` and inherit a `Theme.EdgeToEdge` variant (e.g. `Theme.EdgeToEdge.Material3`) in `android/app/src/main/res/values/styles.xml`. Add `<item name="enforceNavigationBarContrast">false</item>` for a fully transparent nav bar.
 
 Required iOS setup:
 
