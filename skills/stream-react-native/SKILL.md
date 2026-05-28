@@ -107,7 +107,7 @@ For Track A, it is acceptable to scaffold the app first if the runtime or target
 Read-only local probe. Use it to detect empty/new workspace, RN CLI vs Expo, New Architecture hints, navigation setup, and existing Stream packages.
 
 ```bash
-bash -c 'echo "=== PACKAGE ==="; test -f package.json && grep -oE "\"(stream-chat-react-native|stream-chat-expo|@stream-io/video-react-native-sdk|@stream-io/react-native-webrtc|@stream-io/react-native-callingx|react-native|expo|@react-navigation/[^\"]+|expo-router|react-native-reanimated|react-native-worklets|react-native-teleport|@op-engineering/op-sqlite)\": *\"[^\"]*\"" package.json 2>/dev/null; echo "=== EXPO ==="; find . -maxdepth 2 \( -name "app.json" -o -name "app.config.js" -o -name "app.config.ts" -o -path "./app/_layout.*" \) -print 2>/dev/null; echo "=== NATIVE ==="; find . -maxdepth 2 \( -name "ios" -o -name "android" \) -type d -print 2>/dev/null; echo "=== CONFIG ==="; find . -maxdepth 2 \( -name "babel.config.js" -o -name "metro.config.js" \) -print 2>/dev/null; echo "=== EMPTY ==="; test -z "$(ls -A 2>/dev/null)" && echo "EMPTY_CWD" || echo "NON_EMPTY"'
+bash -c 'echo "=== PACKAGE ==="; test -f package.json && grep -oE "\"(stream-chat-react-native|stream-chat-expo|@stream-io/video-react-native-sdk|@stream-io/react-native-webrtc|@stream-io/react-native-callingx|react-native|expo|@react-navigation/[^\"]+|expo-router|react-native-reanimated|react-native-worklets|react-native-teleport|@op-engineering/op-sqlite)\": *\"[^\"]*\"" package.json 2>/dev/null; echo "=== EXPO ==="; find . -maxdepth 2 \( -name "app.json" -o -name "app.config.js" -o -name "app.config.ts" -o -path "./app/_layout.*" \) -print 2>/dev/null; echo "=== NATIVE ==="; find . -maxdepth 2 \( -name "ios" -o -name "android" \) -type d -print 2>/dev/null; echo "=== CONFIG ==="; find . -maxdepth 2 \( -name "babel.config.js" -o -name "metro.config.js" \) -print 2>/dev/null; echo "=== EXPO_SDK ==="; node -e "try{console.log(require(\"./node_modules/expo/package.json\").version)}catch(e){try{console.log(require(\"./package.json\").dependencies.expo)}catch(e){console.log(\"-\")}}" 2>/dev/null; echo "=== EMPTY ==="; test -z "$(ls -A 2>/dev/null)" && echo "EMPTY_CWD" || echo "NON_EMPTY"'
 ```
 
 Hold the result in conversation context. Do not re-run unless the user changes directory, packages are installed, or the project shape changes.
@@ -116,6 +116,7 @@ Use the result to produce a one-line status, for example:
 
 - `Empty workspace detected - defaulting to Expo new app unless the user asked for RN CLI`
 - `Expo app detected - stream-chat-expo absent - Expo Router present - ready for Chat setup`
+- `Expo app detected - Expo SDK 56+ - apply RULES.md > Expo Router SDK 56+ rule (no @react-navigation/*)`
 - `Expo app detected - @stream-io/video-react-native-sdk absent - ready for Video setup`
 - `RN CLI app detected - ios/android present - stream-chat-react-native installed - checking provider placement`
 - `RN CLI app detected - both @stream-io/video-react-native-sdk and stream-chat-react-native installed - Chat + Video interop applies`

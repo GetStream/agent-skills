@@ -128,9 +128,11 @@ npx pod-install
 
 - **Expo, default template (recommended)** - `npx create-expo-app@latest` already scaffolds **Expo Router** under `app/`. Skip the React Navigation install and use the Expo Router branch of the Navigation Shell blueprint (and `app/*.tsx` files for routes). Both React Navigation and Expo Router branches are documented in the blueprints - pick the one that matches the chosen template.
 
-- **Expo opting into React Navigation instead** - `npx expo install @react-navigation/native @react-navigation/native-stack @react-navigation/elements react-native-screens` and follow the React Navigation branch.
+- **Expo Router on SDK 56+ — never install `@react-navigation/*`.** Expo Router ships its own navigation runtime from SDK 56 onward and Metro fails to bundle if any `@react-navigation/*` package is present (see [`RULES.md`](RULES.md) > Expo Router SDK 56+ — no React Navigation). The Chat blueprints' `useHeaderHeight()` pattern from `@react-navigation/elements` does not apply on this lane — use the Expo-Router-SDK-56 swap documented in [`references/CHAT-REACT-NATIVE-blueprints.md`](references/CHAT-REACT-NATIVE-blueprints.md) > Channel Screen.
 
-Chat blueprints read `useHeaderHeight()` from `@react-navigation/elements`; that's why `elements` is in the React Navigation install line above.
+- **Expo opting into React Navigation instead (SDK ≤ 55 only)** - `npx expo install @react-navigation/native @react-navigation/native-stack @react-navigation/elements react-native-screens` and follow the React Navigation branch. Not applicable on Expo Router SDK 56+.
+
+On RN CLI and Expo Router SDK ≤ 55, Chat blueprints read `useHeaderHeight()` from `@react-navigation/elements`; that's why `elements` is in the React Navigation install line above. On Expo Router SDK 56+, do **not** install or import it — see the Channel Screen blueprint for the Platform-based swap.
 
 ### New app continuation
 

@@ -155,6 +155,21 @@ For Chat threads, keep thread state explicit. When a thread screen is open, pass
 
 ---
 
+## Expo Router SDK 56+ — no React Navigation
+
+Expo Router on SDK 56+ ships its own navigation runtime and **refuses to bundle alongside `@react-navigation/*`**. Metro halts with:
+
+> As of SDK 56, expo-router is no longer compatible with react-navigation.
+
+Rules:
+
+- Do not install `@react-navigation/native`, `@react-navigation/native-stack`, `@react-navigation/elements`, or any other `@react-navigation/*` package in an Expo Router SDK 56+ app, even transitively (the bundler fails before runtime). If one is already there (often pulled in to satisfy a `useHeaderHeight` import), `npm uninstall` it.
+- The Chat blueprint pattern that calls `useHeaderHeight()` from `@react-navigation/elements` only applies to **RN CLI** and **Expo Router SDK ≤ 55**. For Expo Router SDK 56+, compute the header offset from `Platform.OS` + the top safe-area inset (see [`references/CHAT-REACT-NATIVE-blueprints.md`](references/CHAT-REACT-NATIVE-blueprints.md) > Channel Screen).
+- For RN CLI apps where React Navigation is the navigation stack, the existing blueprint stands — there is no Expo Router conflict to manage.
+- Detect the lane via the `EXPO_SDK` line in the project-signals probe in [`SKILL.md`](SKILL.md). Expo SDK 56+ goes through the SDK-56 recipe; everything else uses the original blueprint.
+
+---
+
 ## Safe areas and Android edge-to-edge
 
 Every screen the skill ships must respect safe areas on iOS and edge-to-edge layout on Android. Apply these rules without exception:
