@@ -273,7 +273,7 @@ Notice the screen does **not** wrap `<CallContent />` in a `SafeAreaView`. `Call
 
 The destructured `callType` defaults to `"default"` for the simple join-by-id case but accepts whatever the deep-link / ringing watcher / push handler delivers (`livestream`, `audio_room`, custom call types).
 
-**When to use `{ reuseInstance: true }`:** pass it when the same `(type, id)` may already exist in the SDK's managed state (an outgoing ring, a ringing watcher, a deep link, a push wake-up) so the SDK returns the cached instance instead of duplicating it. For a plain user-initiated join-by-id, a bare `client.call(type, id)` is sufficient - Stream's `dogfood` sample does exactly that. And for calls that arrive via **ringing**, the canonical pattern in all of Stream's sample apps is to read the existing instance from `useCalls()` (see the Ringing Blueprint) rather than reconstructing it with `client.call(...)` at all - reach for `reuseInstance` only when you must call `client.call(...)` yourself for an id that might already be live.
+**When to use `{ reuseInstance: true }`:** pass it when the same `(type, id)` may already exist in the SDK's managed state (an outgoing ring, a ringing watcher, a deep link, a push wake-up) so the SDK returns the cached instance instead of duplicating it. For a plain user-initiated join-by-id, a bare `client.call(type, id)` is also sufficient. And for calls that arrive via **ringing**, the canonical pattern is to read the existing instance from `useCalls()` (see the Ringing Blueprint) rather than reconstructing it with `client.call(...)` at all - reach for `reuseInstance` only when you must call `client.call(...)` yourself for an id that might already be live.
 
 ---
 
@@ -648,7 +648,7 @@ import { useEffect } from "react";
 import { Linking } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 
-// matches stream-calls-dogfood.example.com/join/<callType>/<callId>
+// matches https://your-app.example.com/join/<callType>/<callId>
 // or myapp://call/<callType>/<callId>
 const CALL_LINK_REGEX = /(?:\/join\/|:\/\/call\/)([^/]+)\/([^/?#]+)/;
 

@@ -107,7 +107,7 @@ npx pod-install
 
 **Android edge-to-edge** (pick the branch that matches the host RN version):
 
-- **RN 0.81+** (dogfood is RN 0.83): set `edgeToEdgeEnabled=true` in `android/gradle.properties`. The RN Gradle plugin handles the rest - **no `react-native-edge-to-edge` install, no `styles.xml` edit**.
+- **RN 0.81+**: set `edgeToEdgeEnabled=true` in `android/gradle.properties`. The RN Gradle plugin handles the rest - **no `react-native-edge-to-edge` install, no `styles.xml` edit**.
 - **Older RN CLI**: `npm install react-native-edge-to-edge` and inherit a `Theme.EdgeToEdge` variant (e.g. `Theme.EdgeToEdge.Material3`) in `android/app/src/main/res/values/styles.xml`. Add `<item name="enforceNavigationBarContrast">false</item>` for a fully transparent nav bar.
 
 If you installed the animation peers, add `react-native-worklets/plugin` as the last Babel plugin. Set `minSdkVersion = 24` in `android/build.gradle` and add Java 8 source compatibility in `android/app/build.gradle`. Add camera/microphone usage descriptions to `Info.plist` and camera/audio permissions to `AndroidManifest.xml`. In `android/app/src/main/res/values/styles.xml`, set the app theme parent to a `Theme.EdgeToEdge` variant (e.g. `Theme.EdgeToEdge.Material3`) so Android draws under the system bars.
@@ -126,7 +126,7 @@ npm install @react-navigation/native @react-navigation/native-stack @react-navig
 npx pod-install
 ```
 
-- **Expo, default template (recommended)** - `npx create-expo-app@latest` already scaffolds **Expo Router** under `app/`. Skip the React Navigation install and use the Expo Router branch of the Navigation Shell blueprint (and `app/*.tsx` files for routes). The dogfood sample uses React Navigation; the Expo-only samples use Expo Router - both are documented in the blueprints.
+- **Expo, default template (recommended)** - `npx create-expo-app@latest` already scaffolds **Expo Router** under `app/`. Skip the React Navigation install and use the Expo Router branch of the Navigation Shell blueprint (and `app/*.tsx` files for routes). Both React Navigation and Expo Router branches are documented in the blueprints - pick the one that matches the chosen template.
 
 - **Expo opting into React Navigation instead** - `npx expo install @react-navigation/native @react-navigation/native-stack @react-navigation/elements react-native-screens` and follow the React Navigation branch.
 
@@ -219,7 +219,7 @@ Required Android setup in the host app:
 - `android/app/build.gradle`: `compileOptions { sourceCompatibility JavaVersion.VERSION_1_8; targetCompatibility JavaVersion.VERSION_11 }`
 - `AndroidManifest.xml`: declare `CAMERA`, `RECORD_AUDIO`, `MODIFY_AUDIO_SETTINGS` (add `BLUETOOTH_CONNECT` for Bluetooth audio). **Foreground-service permissions are capability-owned** - declare them only for background calls (`androidKeepCallAlive`) or screenshare; see the per-capability list below
 - **Android edge-to-edge** (pick the branch matching the host RN version):
-  - **RN 0.81+** (dogfood is RN 0.83): set `edgeToEdgeEnabled=true` in `android/gradle.properties` - the RN Gradle plugin handles the rest. **No `react-native-edge-to-edge` install, no `styles.xml` edit.**
+  - **RN 0.81+**: set `edgeToEdgeEnabled=true` in `android/gradle.properties` - the RN Gradle plugin handles the rest. **No `react-native-edge-to-edge` install, no `styles.xml` edit.**
   - **Older RN CLI**: `npm install react-native-edge-to-edge` and inherit a `Theme.EdgeToEdge` variant (e.g. `Theme.EdgeToEdge.Material3`) in `android/app/src/main/res/values/styles.xml`. Add `<item name="enforceNavigationBarContrast">false</item>` for a fully transparent nav bar.
 
 Required iOS setup:
