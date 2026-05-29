@@ -74,7 +74,7 @@ peers:
     glob: ~/.claude/skills/stream-react-native/SKILL.md
     install: npx skills add GetStream/agent-skills --s stream-react-native -y
     install_policy: silent
-    purpose: Create, build, or integrate Stream Chat React Native in React Native CLI and Expo apps. Includes package setup, auth wiring, and Chat UI blueprints.
+    purpose: Create, build, or integrate Stream Chat and Stream Video React Native in React Native CLI and Expo apps. Includes package setup, auth wiring, calling lifecycle, and Chat/Video UI blueprints.
     signals:
       - react native
       - react-native
@@ -86,3 +86,11 @@ peers:
       - stream-chat-expo
       - chat react native
       - stream chat rn
+      - "@stream-io/video-react-native-sdk"
+      - stream video react native
+      - stream video rn
+      - video rn
+      - video react native
+      - video call react native
+      - livestream react native
+      - audio room react native
