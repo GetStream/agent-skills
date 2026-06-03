@@ -202,9 +202,8 @@ Local demo tokens can come from [`../credentials.md`](../credentials.md).
 - Keep `Chat` high and stable so screen transitions do not reconnect the socket.
 - Pass `channel.cid` through navigation params. Do not pass `Channel` objects.
 - Recreate a channel from `client.channel(type, id)` in the destination screen.
-- Use `keyboardVerticalOffset={headerHeight}` on `Channel`.
-- Do not add `topInset` or `bottomInset` by default. Add them only after a specific layout or attachment-picker issue proves they are needed.
-- Field note: in our Expo dev-client app, adding `topInset` and `bottomInset` made the layout wrong.
+- Use `keyboardVerticalOffset={headerHeight}` on `Channel`, and pair it with `topInset={headerHeight}` so the attachment picker bottom sheet reaches its full snap point when a native navigation header is present.
+- `bottomInset` stays opt-in. Add it only when a specific layout requires it (e.g. a tab bar that owns the bottom safe-area).
 - For threads, pass the active `thread` to the main `Channel` while the thread screen is open and render the thread screen with `threadList`.
 
 ---
@@ -254,6 +253,19 @@ Caveats from the manifest-selected docs:
 await chatClient.offlineDb?.resetDB();
 await chatClient.disconnectUser();
 ```
+
+---
+
+## Expo SDK 55 → 56 changes
+
+Expo SDK 56 changed several Chat-relevant defaults. Pick the right blueprint based on the SDK version reported by the project-signals probe in [../SKILL.md](../SKILL.md):
+
+- **`@react-navigation/*` is no longer co-installable with `expo-router`.** Metro halts with "As of SDK 56, expo-router is no longer compatible with react-navigation." On SDK 56+ use the Platform-based header-offset swap in [CHAT-REACT-NATIVE-blueprints.md](CHAT-REACT-NATIVE-blueprints.md) > Channel Screen. See also [../RULES.md](../RULES.md) > Expo Router SDK 56+ — no React Navigation.
+- **`"edgeToEdgeEnabled": true` is no longer needed in `app.json`.** Android 16 makes edge-to-edge mandatory; `expo prebuild` warns and ignores the entry. Safe to omit on SDK 56+; still required on SDK 53–55.
+- **Reanimated 4 ships by default**, so the last Babel plugin should be `react-native-worklets/plugin`. Use `react-native-reanimated/plugin` only when the project pinned Reanimated 3.
+- **React 19 / RN 0.85 baseline.** Most Chat blueprints work unchanged, but third-party libraries that haven't bumped their peer ranges may need `--legacy-peer-deps` during install.
+
+When in doubt, run the probe and check the `EXPO_SDK` line before applying any blueprint.
 
 ---
 

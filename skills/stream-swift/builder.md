@@ -48,7 +48,7 @@ Install only the packages needed for the requested Stream products.
 Follow [`sdk.md`](sdk.md) for:
 
 - client lifetime and app ownership
-- auth and token transport - use the real API key and token from Step 0.5, never placeholder strings
+- auth and token transport - reference credentials via named constants (e.g., `Config.apiKey`, `Config.userToken`) defined in a dedicated config file, never embed raw credential values inline
 - state management and main-actor boundaries
 - disconnect/reconnect rules when changing users
 

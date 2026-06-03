@@ -76,7 +76,7 @@ chatClient.connectUser(userInfo: userInfo, token: token) { error in
 }
 ```
 
-**Token provider (expiring tokens - use only if the user asks for it):**
+**Token provider (expiring tokens):**
 
 ```swift
 let userInfo = UserInfo(id: currentUser.id, name: currentUser.name)
