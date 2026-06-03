@@ -13,6 +13,7 @@ The pack has a generic router, core specialists, and platform peers declared in 
 | [`skills/stream-docs/SKILL.md`](skills/stream-docs/SKILL.md) | Search live SDK documentation from getstream.io (no CLI required) |
 | [`skills/stream-builder/SKILL.md`](skills/stream-builder/SKILL.md) | Scaffold a new app, or add Chat/Video/Feeds/Moderation to an existing one |
 | [`skills/stream-swift/SKILL.md`](skills/stream-swift/SKILL.md) | Build or integrate Stream Chat/Video/Feeds in Swift/SwiftUI/UIKit/iOS apps |
+| [`skills/stream-flutter/SKILL.md`](skills/stream-flutter/SKILL.md) | Build or integrate Stream Chat in Flutter apps (stream_chat_flutter and stream_chat_flutter_core) |
 
 ---
 
