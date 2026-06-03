@@ -12,6 +12,7 @@ Rules: [../RULES.md](../RULES.md) (secrets, no dev tokens in production, proper 
 
 - **Package (pre-built UI):** `stream_video_flutter` via pub.dev
 - **Package (core only):** `stream_video` via pub.dev
+- **Version:** `^1.4.0` | **Dart SDK:** `^3.8.0` | **Flutter:** `>=3.32.0`
 - **First:** Installation -> platform setup -> client init -> `call.getOrCreate()` -> `call.join()` -> show `StreamCallContainer`
 - **Per feature:** Jump to the relevant section or blueprint when implementing a screen
 - **Docs:** If you can't find information here, check the docs: `https://getstream.io/video/docs/flutter/`
@@ -24,14 +25,14 @@ Full widget blueprints: [VIDEO-FLUTTER-blueprints.md](VIDEO-FLUTTER-blueprints.m
 
 ### Installation
 
-Check pub.dev for the latest version before adding. At time of writing:
-
 ```yaml
 # pubspec.yaml
 dependencies:
-  stream_video_flutter: ^0.8.0   # pre-built UI + core
+  stream_video_flutter: ^1.4.0   # pre-built UI + core
   # OR for core only (no pre-built widgets)
-  stream_video: ^0.8.0
+  stream_video: ^1.4.0
+  # Video filters (separate package since v1.0.0)
+  stream_video_filters: ^1.4.0   # optional, only if using blur/virtual background
 ```
 
 ```bash
@@ -57,14 +58,32 @@ Add permissions to `android/app/src/main/AndroidManifest.xml`:
 <uses-permission android:name="android.permission.BLUETOOTH_CONNECT"/>
 ```
 
-Set the minimum SDK version in `android/app/build.gradle`:
+Set the minimum SDK version and compile SDK in `android/app/build.gradle`:
 
 ```groovy
 android {
+    compileSdkVersion 36  // required since stream_video_flutter v0.11.0
     defaultConfig {
         minSdkVersion 24  // stream_video_flutter requires API 24+
     }
 }
+```
+
+Also update the project-level `android/build.gradle` to use AGP ≥8.12.1 and Gradle ≥8.13, and Kotlin 2.2.0+ (required since v0.11.0):
+
+```groovy
+// android/settings.gradle (or build.gradle depending on project structure)
+id 'com.android.application' version '8.12.1' apply false
+// Kotlin 2.2.0+
+id 'org.jetbrains.kotlin.android' version '2.2.0' apply false
+```
+
+**Android PiP (Picture-in-Picture):** Since v0.10.0, extend `StreamFlutterActivity` instead of `FlutterActivity` in `MainActivity.kt`:
+
+```kotlin
+import io.getstream.video.flutter.stream_video_flutter.StreamFlutterActivity
+
+class MainActivity : StreamFlutterActivity()
 ```
 
 On Android 6+ (API 23+), camera and microphone are **runtime** permissions. The manifest entries are required but not sufficient - request them before joining a call:
@@ -234,6 +253,31 @@ await call.getOrCreate(
 
 `ringing: true` sends push notifications to all members. Requires push configuration for each target platform.
 
+To ring members of an **existing** call (v1.0.0+):
+
+```dart
+await call.ring(memberIds: ['alice', 'bob']);
+```
+
+### Ringing events (v1.0.0 — renamed from CallKit API)
+
+`flutter_callkit_incoming` was removed in v1.0.0. The ringing event API was renamed:
+
+| v0.x | v1.x |
+|---|---|
+| `onCallKitEvent` | `onRingingEvent` |
+| `CallKitEvent` | `RingingEvent` |
+| `nameCaller` | `callerName` |
+| `pushParams` | `pushConfiguration` (`StreamVideoPushConfiguration`) |
+| `callerCustomizationCallback` | **Removed** |
+| `backgroundVoipCallHandler` | **Removed** |
+
+```dart
+StreamVideo.instance.onRingingEvent = (event) {
+  // handle RingingEvent
+};
+```
+
 ---
 
 ## Call Controls
@@ -243,6 +287,8 @@ await call.getOrCreate(
 await call.camera.enable();
 await call.camera.disable();
 await call.camera.flip();     // switch front/back
+await call.camera.setZoom(2.0);  // zoom (v0.9.1+)
+await call.camera.focus(offset);  // tap-to-focus (v0.9.1+)
 
 // Microphone
 await call.microphone.enable();
@@ -251,6 +297,15 @@ await call.microphone.disable();
 // Speaker
 await call.speakerphone.enable();
 await call.speakerphone.disable();
+
+// Kick a participant (requires host/admin)
+await call.kickUser(userId: 'alice');  // v0.10.4+
+
+// Ring specific members of an existing call (v1.0.0+)
+await call.ring(memberIds: ['alice', 'bob']);
+
+// Track call duration
+call.callDurationStream  // Stream<Duration> (v0.9.3+)
 ```
 
 **Read current device state** from the local participant:
@@ -299,6 +354,31 @@ StreamBuilder<CallState>(
 | `isSpeaking` | `bool` | Currently speaking |
 | `isDominantSpeaker` | `bool` | Loudest active speaker |
 | `videoTrack` | `RtcVideoTrack?` | Renderable video track |
+| `audioLevels` | `List<double>?` | Audio level samples (v0.8.3+) |
+| `pin` | `ParticipantPin?` | Pin state (v0.8.4+, replaced `isPinned`) |
+| `participantSource` | `ParticipantSource?` | WebRTC / RTMP / WHIP source (v0.10.4+) |
+
+**Active speakers** (available as top-level `CallState` property since v0.8.3):
+
+```dart
+final activeSpeakers = call.state.value.activeSpeakers; // List<CallParticipantState>
+```
+
+**Partial state** — subscribe only to participant-level changes (more efficient than full `CallState` rebuilds):
+
+```dart
+call.partialState  // Stream<CallStatePartial> (v0.10.0+)
+```
+
+**Participant pinning** (v0.8.4+):
+
+```dart
+// Pin locally only
+await call.setParticipantPinnedLocally(userId: 'alice', sessionId: session);
+
+// Pin for everyone (requires admin/host)
+await call.setParticipantPinnedForEveryone(userId: 'alice', sessionId: session);
+```
 
 ---
 
@@ -356,6 +436,55 @@ Do not embed `StreamCallContainer` inside a `SingleChildScrollView` or `CustomSc
 
 ---
 
+## Audio Configuration (v1.3.0+)
+
+`audioConfigurationPolicy` replaces the old `androidAudioConfiguration` parameter:
+
+```dart
+StreamVideo(
+  'your_api_key',
+  user: User.regular(userId: 'alice'),
+  userToken: UserToken.jwt(token),
+  streamVideoOptions: StreamVideoOptions(
+    audioConfigurationPolicy: AudioConfigurationPolicy.broadcaster(),
+    // or: .viewer(), .hiFi(), .custom(...)
+  ),
+);
+```
+
+Predefined policies:
+
+| Policy | Use case |
+|---|---|
+| `AudioConfigurationPolicy.broadcaster()` | Host/sender — optimized for publishing |
+| `AudioConfigurationPolicy.viewer()` | Viewer/listener — optimized for receiving |
+| `AudioConfigurationPolicy.hiFi()` | Music or high-fidelity audio calls |
+| `AudioConfigurationPolicy.custom(...)` | Full manual control |
+
+For per-call audio config overrides, set on `DefaultCallPreferences` (v1.4.0+).
+
+> **`androidAudioConfiguration` is deprecated** — use `audioConfigurationPolicy` instead.
+
+---
+
+## Noise Cancellation (v0.8.0+)
+
+Noise cancellation is built in and can be enabled via call preferences. No additional package is needed.
+
+---
+
+## Video Filters (v1.0.0+)
+
+Since v1.0.0, video filters (blur background, virtual background) are in a **separate package**:
+
+```yaml
+stream_video_filters: ^1.4.0
+```
+
+Do not import from `stream_video_flutter` for filters — import from `stream_video_filters`.
+
+---
+
 ## Call Types
 
 | Type | Use case |
@@ -400,6 +529,39 @@ Source: `https://getstream.io/video/docs/flutter/`
 
 ---
 
+---
+
+## v1.x Breaking Changes Summary (from v0.8.0)
+
+| Area | v0.x | v1.x |
+|---|---|---|
+| Package version | `^0.8.0` | `^1.4.0` |
+| Dart SDK | `^3.6.x` | `^3.8.0` |
+| Flutter min | `3.27.4` | `>=3.32.0` |
+| Android compileSDK | 34 | **36** |
+| Android AGP | any | **≥8.12.1** |
+| Android Kotlin | any | **2.2.0+** |
+| Android `MainActivity` | extends `FlutterActivity` | extends `StreamFlutterActivity` (PiP) |
+| Ringing events | `onCallKitEvent` / `CallKitEvent` | `onRingingEvent` / `RingingEvent` |
+| Push config | `pushParams` | `pushConfiguration` (`StreamVideoPushConfiguration`) |
+| Caller name param | `nameCaller` | `callerName` |
+| Video filters | bundled | separate `stream_video_filters` package |
+| `CallPreferences` | on `CallStateNotifier` | on `CallState` → `DefaultCallPreferences` |
+| Participant pin | `isPinned: bool` / `setParticipantPinned()` | `pin: ParticipantPin?` / `setParticipantPinnedLocally()` |
+| Audio config | `androidAudioConfiguration` | `audioConfigurationPolicy` (deprecated) |
+
+**New APIs since v0.8.0:**
+- `call.ring(memberIds:)` — ring members of an existing call
+- `call.kickUser(userId:)` — remove a participant
+- `call.callDurationStream` — live call timer
+- `call.partialState` — efficient participant-level state updates
+- `call.camera.setZoom()` / `call.camera.focus()` — camera control
+- `call.statsReporter` — aggregated call metrics, battery/thermal tracking
+- `AudioConfigurationPolicy` — broadcaster / viewer / hiFi / custom presets
+- `Call.ensureNativeFactory()` — per-call native factory for multi-call scenarios
+
+---
+
 ## Gotchas
 
 - **Initialize `StreamVideo` before `runApp`.** Creating it inside a `build` method creates a new instance on every rebuild - each construction resets the singleton.
@@ -410,3 +572,9 @@ Source: `https://getstream.io/video/docs/flutter/`
 - **Never put the API secret in app code.** Only the API key and user token belong in the app; the secret stays server-side.
 - **The API key is shared between Chat and Video.** One Stream project, one key - token generation with the CLI is the same command for both products.
 - **`StreamVideo.instance` throws before construction.** Always construct `StreamVideo(...)` in `main()` before any widget or service accesses the singleton.
+- **`flutter_callkit_incoming` removed in v1.0.0.** If upgrading from v0.x, replace `onCallKitEvent`/`CallKitEvent` with `onRingingEvent`/`RingingEvent` and update push configuration from `pushParams` to `pushConfiguration`.
+- **Video filters moved to `stream_video_filters` in v1.0.0.** Add the separate package if you use blur/virtual background.
+- **Android PiP requires `StreamFlutterActivity` since v0.10.0.** Extend `StreamFlutterActivity` in `MainActivity.kt` instead of `FlutterActivity`.
+- **Android build tooling updated in v0.11.0.** Requires compileSDK 36, AGP ≥8.12.1, Gradle ≥8.13, Kotlin 2.2.0.
+- **`isPinned` replaced by `pin` object in v0.8.4.** Use `participant.pin != null` instead of `participant.isPinned`.
+- **`androidAudioConfiguration` deprecated in v1.3.0.** Use `audioConfigurationPolicy` instead.

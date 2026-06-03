@@ -156,7 +156,7 @@ final channel = StreamChannel.of(context).channel;
 Stateful SDK controllers must have explicit ownership:
 
 - `StreamChannelListController` -> stored as a `late final` field on a `State` object, disposed in `dispose()`
-- `StreamMessageInputController` -> stored as a `late final` field on a `State` object, disposed in `dispose()`
+- `StreamMessageComposerController` (was `StreamMessageInputController` before v10) -> stored as a `late final` field on a `State` object, disposed in `dispose()`
 - Never create controllers inside `build` methods
 
 ```dart
@@ -251,5 +251,5 @@ Before calling the work done, confirm:
 - `StreamChat` widget appears in the tree before any Stream widget renders
 - the requested user connects without exposing the API secret
 - the requested channel list, message list, or input surface appears where expected
-- `StreamChannelListController` and `StreamMessageInputController` are disposed in `dispose()`
+- `StreamChannelListController` and `StreamMessageComposerController` are disposed in `dispose()`
 - switching users tears down the previous session cleanly

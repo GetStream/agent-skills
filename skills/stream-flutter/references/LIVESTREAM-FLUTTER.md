@@ -222,6 +222,20 @@ class _HLSPlayerWidgetState extends State<HLSPlayerWidget> {
 
 ---
 
+## Large-scale livestreams (v1.3.1+)
+
+For high-viewer-count broadcasts, pass `hintHighScaleLivestreamPublisher: true` when creating the call. This hints the SFU to optimize for one-to-many distribution:
+
+```dart
+await call.getOrCreate(
+  video: CallSettingsRequest(
+    hintHighScaleLivestreamPublisher: true,
+  ),
+);
+```
+
+---
+
 ## Participant and viewer count
 
 For WebRTC-connected viewers, read participant count from call state:

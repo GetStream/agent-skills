@@ -348,6 +348,44 @@ runApp(MyApp(client: client));
 
 ---
 
+## Partial activity updates (v0.5.1+)
+
+Update specific fields of an existing activity without replacing it entirely:
+
+```dart
+await client.partialUpdateActivity(
+  id: activity.id,
+  set: {'text': 'Updated post text', 'custom_field': 'value'},
+  unset: ['obsolete_field'],
+);
+```
+
+## Batch follow / unfollow (v0.5.1+)
+
+Follow or unfollow multiple feeds in a single call:
+
+```dart
+await timelineFeed.followMany(targets: [
+  FeedId.user('alice'),
+  FeedId.user('bob'),
+]);
+
+await timelineFeed.unfollowMany(targets: [
+  FeedId.user('charlie'),
+]);
+```
+
+---
+
+## v0.5.x Changes
+
+- **`ActivitiesFilterField.type` renamed to `ActivitiesFilterField.activityType`** (v0.5.0 breaking) — update any `filter` calls that used `.type`.
+- **`ThreadedCommentData` unified into `CommentData`** (v0.5.0) — `ThreadedCommentData` no longer exists as a separate class.
+- **Activities from other users now ignored by default** in `ActivityList` queries (v0.5.0) — if you previously relied on cross-user activity visibility without explicit follows, you must now use follows or adjust the query.
+- **`FeedData.activityCount` and `FeedData.ownFollowings`** — new fields available on feed metadata (v0.5.1).
+
+---
+
 ## Gotchas
 
 - **Package is `stream_feeds` (plural)** — `stream_feed` is deprecated and fails to compile on Dart 3. Never recommend or use the old package.
@@ -358,3 +396,5 @@ runApp(MyApp(client: client));
 - **Cursor-based pagination** — use `queryMoreActivities()` on the `ActivityList`, not offset arithmetic.
 - **Reactions are on the `Feed`** — use `feed.addActivityReaction(...)` / `feed.deleteActivityReaction(...)`, not a separate reactions client.
 - **Token generation** — use `stream token <user_id>` (Stream CLI) for local dev. Never use the API secret in Flutter code.
+- **`ActivitiesFilterField.type` removed in v0.5.0** — use `ActivitiesFilterField.activityType` instead.
+- **`ThreadedCommentData` removed in v0.5.0** — use `CommentData` for both flat and threaded comments.

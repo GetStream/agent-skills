@@ -11,7 +11,7 @@ Rules: [../RULES.md](../RULES.md) (secrets, no dev tokens in production, proper 
 ## Quick ref
 
 - **Package:** `stream_chat_flutter` via pub.dev
-- **Version:** `^10.0.0-beta.13` (v10 branch: https://github.com/GetStream/stream-chat-flutter/tree/v10.0.0)
+- **Version:** `^10.0.0` (v10 branch: https://github.com/GetStream/stream-chat-flutter/tree/v10.0.0)
 - **Dart SDK:** `^3.10.0` | **Flutter:** `>=3.38.1`
 - **First:** Install -> platform setup -> client init -> `StreamChat` widget -> `connectUser` -> show widgets
 - **Per feature:** Jump to the relevant section or blueprint when implementing a screen
@@ -28,8 +28,8 @@ Full widget blueprints: [CHAT-FLUTTER-blueprints.md](CHAT-FLUTTER-blueprints.md)
 ```yaml
 # pubspec.yaml
 dependencies:
-  stream_chat_flutter: ^10.0.0-beta.13
-  stream_chat_localizations: ^10.0.0-beta.13  # optional - localized UI strings
+  stream_chat_flutter: ^10.0.0
+  stream_chat_localizations: ^10.0.0  # optional - localized UI strings
 ```
 
 ```bash
@@ -220,26 +220,47 @@ Scaffold(
 )
 ```
 
+In v10, many `StreamMessageListView` parameters were moved into two dedicated objects:
+
+- **`StreamMessageListViewConfiguration`** (passed as `config:`) — boolean flags like `swipeToReply`, `markReadWhenAtTheBottom`, `enableDraftMessages`, etc.
+- **`StreamMessageListViewBuilders`** (passed as `builders:`) — builder callbacks like `messageBuilder`, `threadBuilder`, `loadingBuilder`, `emptyBuilder`, etc.
+
+```dart
+StreamMessageListView(
+  config: const StreamMessageListViewConfiguration(
+    swipeToReply: true,
+    markReadWhenAtTheBottom: true,
+  ),
+  builders: StreamMessageListViewBuilders(
+    threadBuilder: (context, parent) => ThreadPage(parent: parent!),
+  ),
+)
+```
+
+> Simple flags like `onReplyTap` may still be top-level parameters — check the widget signature for the version you're on. When in doubt, use the `config:` / `builders:` path for any flag that is no longer accepted at the top level.
+
 ### StreamMessageInput
 
 The composer widget for sending messages, attachments, and voice recordings. Must be a descendant of `StreamChannel`.
 
+Voice recording is **enabled by default** in v10 — no need to pass `enableVoiceRecording: true`.
+
 ```dart
-StreamMessageInput(
-  enableVoiceRecording: true,
-)
+StreamMessageInput()
 ```
 
-**With `StreamMessageInputController` for quote-reply:**
+**With `StreamMessageComposerController` for quote-reply:**
+
+`StreamMessageInputController` was renamed to `StreamMessageComposerController` in v10. The parameter on `StreamMessageInput` changed from `messageInputController` to `messageComposerController`.
 
 ```dart
 class _ChannelPageState extends State<ChannelPage> {
-  late final _inputController = StreamMessageInputController();
+  late final _composerController = StreamMessageComposerController();
   final _focusNode = FocusNode();
 
   @override
   void dispose() {
-    _inputController.dispose();
+    _composerController.dispose();
     _focusNode.dispose();
     super.dispose();
   }
@@ -249,21 +270,22 @@ class _ChannelPageState extends State<ChannelPage> {
     children: [
       Expanded(
         child: StreamMessageListView(
+          config: const StreamMessageListViewConfiguration(
+            swipeToReply: true,
+          ),
           onReplyTap: _reply,
-          swipeToReply: true,
         ),
       ),
       StreamMessageInput(
-        messageInputController: _inputController,
+        messageComposerController: _composerController,
         focusNode: _focusNode,
-        onQuotedMessageCleared: _inputController.clearQuotedMessage,
-        enableVoiceRecording: true,
+        onQuotedMessageCleared: _composerController.clearQuotedMessage,
       ),
     ],
   );
 
   void _reply(Message message) {
-    _inputController.quotedMessage = message;
+    _composerController.quotedMessage = message;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _focusNode.requestFocus();
     });
@@ -290,7 +312,7 @@ class ThreadPage extends StatelessWidget {
           child: StreamMessageListView(parentMessage: parent),
         ),
         StreamMessageInput(
-          messageInputController: StreamMessageInputController(
+          messageComposerController: StreamMessageComposerController(
             message: Message(parentId: parent.id),
           ),
         ),
@@ -300,11 +322,13 @@ class ThreadPage extends StatelessWidget {
 }
 ```
 
-Wire the thread navigation in `StreamMessageListView` via `threadBuilder`:
+Wire the thread navigation in `StreamMessageListView` via `builders.threadBuilder` (v10):
 
 ```dart
 StreamMessageListView(
-  threadBuilder: (context, parent) => ThreadPage(parent: parent!),
+  builders: StreamMessageListViewBuilders(
+    threadBuilder: (context, parent) => ThreadPage(parent: parent!),
+  ),
 )
 ```
 
@@ -342,8 +366,9 @@ StreamChat(
 |---|---|
 | `StreamColorTheme` | Accent colors, backgrounds, borders across all widgets |
 | `StreamChannelHeaderThemeData` | Channel screen header colors and typography |
-| `StreamChannelPreviewThemeData` | Channel list item appearance, unread badge |
 | `StreamMessageListViewThemeData` | Message list background and spacing |
+
+> **v10 breaking change:** `StreamMessageThemeData`, `StreamMessageInputThemeData`, and `StreamChannelPreviewThemeData` were **removed** in v10. Do not use them — check the [theming docs](https://getstream.io/chat/docs/sdk/flutter/stream_chat_flutter/stream_chat_and_theming/) for the replacement tokens.
 
 > **Never guess `StreamChatThemeData` property names.** Use only tokens listed above or fetched from the [theming docs](https://getstream.io/chat/docs/sdk/flutter/stream_chat_flutter/stream_chat_and_theming/). Names look guessable but are often wrong.
 
@@ -439,6 +464,41 @@ final client = StreamChatClient(
 
 ---
 
+---
+
+## v10 Breaking Changes Summary
+
+| v9 | v10 |
+|---|---|
+| `StreamMessageInputController` | `StreamMessageComposerController` |
+| `messageInputController:` param | `messageComposerController:` param |
+| `StreamMessageWidget` | `StreamMessageItem` |
+| `StreamMessageAnnotations` | `StreamMessageHeader` |
+| `StreamMessageMetadata` | `StreamMessageFooter` |
+| `StreamMessageComposerInput` | `StreamMessageComposerInputCenter` |
+| `StreamAttachmentPackage` | `StreamMediaGalleryAttachment` |
+| `StreamFullScreenMedia` | `StreamMediaGalleryPreview` |
+| `StreamGalleryHeader`/`Footer` | `StreamMediaGalleryPreviewHeader`/`Footer` |
+| `StreamPollOptionsDialog` | `StreamPollOptionsSheet` |
+| `StreamPollResultsDialog` | `StreamPollResultsSheet` |
+| `StreamPollCreatorDialog` | `StreamPollCreatorSheet` |
+| `threadBuilder:` top-level | `builders: StreamMessageListViewBuilders(threadBuilder:)` |
+| `StreamMessageThemeData` | **Removed** |
+| `StreamMessageInputThemeData` | **Removed** |
+| `StreamChannelPreviewThemeData` | **Removed** |
+| `StreamDraftListView`/`Tile` | **Removed** (draft messages managed internally) |
+| `enableVoiceRecording: true` | **Default true** - no longer required |
+| `enforceUniqueReactions: true` | **Default false** in v10 |
+| `draftMessagesEnabled: false` | **Default true** in v10 |
+
+**New in v10:**
+- `messageLeading`, `messageHeader`, `messageFooter` factory slots on `StreamMessageListView` builders for granular widget overrides
+- `BlockUser`/`UnblockUser` default message actions
+- `StreamMediaGalleryPreview` — cross-platform media gallery with thumbnail grid and video player
+- Slow-mode UI: input disabled with countdown during slow mode periods
+
+---
+
 ## Gotchas
 
 - **Never use dev tokens in production.** A development token disables token auth and allows any client to impersonate any user.
@@ -448,6 +508,7 @@ final client = StreamChatClient(
 - **`StreamChannelListController` must be disposed.** Failing to call `dispose()` leaks WebSocket listeners.
 - **Never create `StreamChannelListController` in `build`.** It must be a `late final` field on `State` - a new controller on every rebuild resets pagination and breaks the list.
 - **`connectUser` is async - always `await` it before `runApp`.** Starting the app before the user is connected shows an empty or errored channel list.
-- **`StreamMessageInputController` must be disposed.** Always dispose it alongside the `FocusNode` in `State.dispose()`.
+- **`StreamMessageComposerController` must be disposed** (renamed from `StreamMessageInputController` in v10). Always dispose it alongside the `FocusNode` in `State.dispose()`.
 - **`StreamChannelListView` handles pagination automatically.** Do not manually call `loadMore` - the built-in infinite scroll triggers it.
 - **`StreamChannel` scopes channel context.** Every channel screen must be wrapped with `StreamChannel(channel: channel, child: ...)` so descendant widgets can read channel state.
+- **`StreamMessageListView` config split in v10.** Flags like `swipeToReply` moved to `config: StreamMessageListViewConfiguration(...)` and builders moved to `builders: StreamMessageListViewBuilders(...)`. Passing them at the top level is a compile error in v10.

@@ -131,12 +131,12 @@ class ChannelPage extends StatefulWidget {
 }
 
 class _ChannelPageState extends State<ChannelPage> {
-  late final _inputController = StreamMessageInputController();
+  late final _composerController = StreamMessageComposerController();
   final _focusNode = FocusNode();
 
   @override
   void dispose() {
-    _inputController.dispose();
+    _composerController.dispose();
     _focusNode.dispose();
     super.dispose();
   }
@@ -148,23 +148,26 @@ class _ChannelPageState extends State<ChannelPage> {
       children: [
         Expanded(
           child: StreamMessageListView(
-            threadBuilder: (_, parent) => ThreadPage(parent: parent!),
+            config: const StreamMessageListViewConfiguration(
+              swipeToReply: true,
+            ),
+            builders: StreamMessageListViewBuilders(
+              threadBuilder: (_, parent) => ThreadPage(parent: parent!),
+            ),
             onReplyTap: _reply,
-            swipeToReply: true,
           ),
         ),
         StreamMessageInput(
-          enableVoiceRecording: true,
-          messageInputController: _inputController,
+          messageComposerController: _composerController,
           focusNode: _focusNode,
-          onQuotedMessageCleared: _inputController.clearQuotedMessage,
+          onQuotedMessageCleared: _composerController.clearQuotedMessage,
         ),
       ],
     ),
   );
 
   void _reply(Message message) {
-    _inputController.quotedMessage = message;
+    _composerController.quotedMessage = message;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _focusNode.requestFocus();
     });
@@ -175,10 +178,11 @@ class _ChannelPageState extends State<ChannelPage> {
 **Wiring:**
 - `StreamChannelHeader` reads channel name and state from the `StreamChannel` ancestor
 - `StreamMessageListView` handles message loading, pagination, and reactions automatically
-- `threadBuilder` receives the parent message and returns the thread screen
-- `swipeToReply: true` enables swipe-to-quote gesture
-- `onReplyTap` sets `quotedMessage` on the controller and focuses the input
-- Dispose both `_inputController` and `_focusNode` in `dispose()`
+- `builders.threadBuilder` receives the parent message and returns the thread screen (v10: moved from top-level to `builders:`)
+- `config.swipeToReply: true` enables swipe-to-quote gesture (v10: moved from top-level to `config:`)
+- `onReplyTap` sets `quotedMessage` on the composer controller and focuses the input
+- `StreamMessageComposerController` replaced `StreamMessageInputController` in v10; `messageComposerController:` replaced `messageInputController:`
+- Dispose both `_composerController` and `_focusNode` in `dispose()`
 
 ---
 
@@ -203,8 +207,7 @@ class ThreadPage extends StatelessWidget {
           child: StreamMessageListView(parentMessage: parent),
         ),
         StreamMessageInput(
-          enableVoiceRecording: true,
-          messageInputController: StreamMessageInputController(
+          messageComposerController: StreamMessageComposerController(
             message: Message(parentId: parent.id),
           ),
         ),
@@ -217,7 +220,7 @@ class ThreadPage extends StatelessWidget {
 **Wiring:**
 - `StreamThreadHeader` shows the parent message context in the app bar
 - `parentMessage: parent` tells `StreamMessageListView` to show thread replies only
-- `Message(parentId: parent.id)` pre-configures the input to send replies into the thread
+- `StreamMessageComposerController(message: Message(parentId: parent.id))` pre-configures the composer to send replies into the thread (v10: `StreamMessageInputController` → `StreamMessageComposerController`, `messageInputController:` → `messageComposerController:`)
 
 ---
 

@@ -44,11 +44,11 @@ Add the dependency to `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  stream_chat_flutter: ^10.0.0-beta.13      # pre-built UI
+  stream_chat_flutter: ^10.0.0      # pre-built UI
   # OR
-  stream_chat_flutter_core: ^10.0.0-beta.13  # custom UI only
+  stream_chat_flutter_core: ^10.0.0  # custom UI only
   # Optional - localized strings for SDK widgets
-  stream_chat_localizations: ^10.0.0-beta.13
+  stream_chat_localizations: ^10.0.0
 ```
 
 Install only the packages needed for the requested scope. Do not add `stream_chat_flutter_core` when `stream_chat_flutter` was chosen - the UI package already re-exports it.
@@ -59,9 +59,11 @@ Add the dependency to `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  stream_video_flutter: ^0.8.0   # pre-built UI + core (check pub.dev for latest)
+  stream_video_flutter: ^1.4.0   # pre-built UI + core
+  # optional — video filters (blur/virtual background); separate package since v1.0.0
+  stream_video_filters: ^1.4.0
   # OR for core only (no pre-built call UI)
-  stream_video: ^0.8.0
+  stream_video: ^1.4.0
 ```
 
 Do not add `stream_video` separately when `stream_video_flutter` is chosen - the UI package re-exports it.

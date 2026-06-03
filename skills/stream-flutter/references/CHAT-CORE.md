@@ -7,7 +7,7 @@ Rules: [../RULES.md](../RULES.md) (secrets, no dev tokens in production, proper 
 ## Quick ref
 
 - **Package:** `stream_chat_flutter_core` via pub.dev
-- **Version:** `^10.0.0-beta.13`
+- **Version:** `^10.0.0`
 - **Dart SDK:** `^3.10.0` | **Flutter:** `>=3.38.1`
 - **Use when:** `stream_chat_flutter` pre-built widgets don't fit your design system
 - **First:** Install -> client init -> `StreamChatCore` widget -> `connectUser` -> controllers -> custom widgets
@@ -22,7 +22,7 @@ For shared client setup patterns, see [`../sdk.md`](../sdk.md).
 ```yaml
 # pubspec.yaml
 dependencies:
-  stream_chat_flutter_core: ^10.0.0-beta.13
+  stream_chat_flutter_core: ^10.0.0
 ```
 
 ```bash
@@ -53,6 +53,10 @@ Access the client anywhere below `StreamChatCore`:
 final client = StreamChatCore.of(context).client;
 final currentUser = StreamChatCore.of(context).currentUser;
 ```
+
+**v10 behavioural changes in `StreamChatCore`:**
+- Sets `client.recoverStateOnReconnect = false` on mount — apps watching channels outside list controllers must manually subscribe to `connectionRecovered` events to re-query.
+- Default `backgroundKeepAlive` reduced from 1 minute to **15 seconds**.
 
 ---
 
@@ -229,13 +233,17 @@ await channel.sendMessage(Message(
 
 ## Reactions
 
-```dart
-// Add a reaction
-await channel.sendReaction(messageId, 'like');
+In v10, `sendReaction` accepts a full `Reaction` object instead of individual string parameters.
 
-// Remove a reaction
+```dart
+// Add a reaction (v10)
+await channel.sendReaction(messageId, Reaction(type: 'like'));
+
+// Remove a reaction (unchanged)
 await channel.deleteReaction(messageId, 'like');
 ```
+
+Reaction counts and scores are now accessed via `message.reactionGroups` (a `Map<String, ReactionGroup>`). The old `reactionCounts` and `reactionScores` getters were removed in v10.
 
 ---
 
@@ -250,24 +258,68 @@ await channel.query(
 
 ---
 
-## StreamMessageInputController
+## StreamMessageComposerController
 
-Available in `stream_chat_flutter_core` for managing compose state independently of any UI:
+`StreamMessageInputController` was renamed to `StreamMessageComposerController` in v10. Available in `stream_chat_flutter_core` for managing compose state independently of any UI.
 
 ```dart
-final inputController = StreamMessageInputController();
+final composerController = StreamMessageComposerController();
 
 // Set quoted message for reply
-inputController.quotedMessage = message;
+composerController.quotedMessage = message;
 
 // Clear quote
-inputController.clearQuotedMessage();
+composerController.clearQuotedMessage();
+
+// Enter edit mode (v10: constructor no longer accepts non-initial messages)
+composerController.editMessage(existingMessage);
+
+// Check if in edit mode
+final editing = composerController.isEditing;
+
+// Access the message being edited (was editingOriginalMessage in v9)
+final original = composerController.messageBeingEdited;
+
+// Cancel edit
+composerController.cancelEditMessage();
+
+// Clear a set command
+composerController.clearCommand();
 
 // Current text
-final text = inputController.text;
+final text = composerController.text;
 
 // Always dispose
-inputController.dispose();
+composerController.dispose();
+```
+
+**v10 behavioral changes:**
+- Constructor no longer accepts non-initial messages; call `editMessage()` to enter edit mode
+- `clear()` no longer exits edit mode; call `cancelEditMessage()` instead
+- `cancelEditMessage()` is a no-op when no edit is active (safe to call unconditionally)
+
+---
+
+## Deleting Messages
+
+```dart
+// Delete for everyone (hard delete)
+await channel.deleteMessage(message);
+
+// Delete only for the current user (v10 new)
+await channel.deleteMessageForMe(message.id);
+```
+
+`deleteMessageForMe` hides the message only for the calling user; other participants still see it. The `Message.deletedOnlyForMe` field reflects this state.
+
+## Channel helpers (v10 new)
+
+```dart
+// True if distinct channel with exactly 2 members
+final isDm = channel.isOneToOne;
+
+// Stricter than before: memberCount > 2 || !isDistinct
+final isGroup = channel.isGroup;
 ```
 
 ---
@@ -300,8 +352,13 @@ Use `StreamChannelListController` + `PagedValueListenableBuilder` for new code -
 ## Gotchas
 
 - **`doInitialLoad()` must be called manually.** Unlike `stream_chat_flutter`'s `StreamChannelListView`, the core controller does not auto-fetch. Call it in `initState`.
-- **Dispose all controllers.** `StreamChannelListController`, `StreamMessageInputController`, and any manual stream subscriptions must be disposed in `State.dispose()`.
+- **Dispose all controllers.** `StreamChannelListController`, `StreamMessageComposerController` (was `StreamMessageInputController` in v9), and any manual stream subscriptions must be disposed in `State.dispose()`.
 - **`channel.state` can be null before watch.** Call `await channel.watch()` or `await channel.query(...)` before reading `channel.state`.
 - **`StreamChatCore` vs `StreamChat`.** `stream_chat_flutter_core` uses `StreamChatCore`; `stream_chat_flutter` uses `StreamChat`. Don't mix them in the same tree - pick one.
 - **Message pagination is manual.** Call `channel.query(messagesPagination: ...)` when the user scrolls to the top - `StreamMessageListView` handles this automatically but your custom list does not.
 - **Never create channels in `build`.** Channel objects should be stable references held in state, not recreated on every rebuild.
+- **`sendReaction` signature changed in v10.** Pass a `Reaction` object: `channel.sendReaction(id, Reaction(type: 'like'))`. The old `(id, 'like')` string shorthand is removed.
+- **`reactionCounts`/`reactionScores` removed in v10.** Use `message.reactionGroups` (`Map<String, ReactionGroup>`) instead.
+- **`StreamChatCore` sets `recoverStateOnReconnect = false` in v10.** If your app manually watches channels outside a list controller, subscribe to `client.on(EventType.connectionRecovered)` to re-query them on reconnect.
+- **`StreamMessageComposerController` edit mode changed in v10.** Do not pass a non-initial message to the constructor; call `controller.editMessage(msg)` instead. `clear()` no longer exits edit mode — call `cancelEditMessage()`.
+- **`ClientState` collection getters are unmodifiable in v10.** Use `addChannels()`, `removeChannel()`, etc. instead of mutating the list directly.

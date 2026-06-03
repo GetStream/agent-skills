@@ -4,7 +4,7 @@ Load only the section you are implementing. For client initialization, feed type
 
 **Default style:** Twitter-style — build it directly without asking. Only switch to Instagram, Reddit, or a custom layout if the user explicitly requests it; the SDK calls are identical regardless of style.
 
-**Package:** `stream_feeds: ^0.5.1` (not the deprecated `stream_feed`).
+**Package:** `stream_feeds: ^0.5.1` (not the deprecated `stream_feed`). See [FEEDS-FLUTTER.md](FEEDS-FLUTTER.md) for v0.5.x breaking changes.
 
 ---
 
