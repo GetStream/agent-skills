@@ -194,6 +194,7 @@ Rules:
 Every screen the skill ships must respect safe areas on iOS and edge-to-edge layout on Android. Apply these rules without exception:
 
 - Use **`react-native-safe-area-context`** for all inset handling: `SafeAreaProvider` at the app root (required, not optional), `SafeAreaView` from this package for full-screen wrappers, and `useSafeAreaInsets()` for custom padding. Never import `SafeAreaView` from `"react-native"`.
+- **Toolchain caveat (RN 0.85 + Expo 56 + new architecture):** `react-native-safe-area-context@5.7` `SafeAreaView` wraps a native `NativeSafeAreaView` that appears to no-op on this toolchain - the JS render returns but the inset never actually applies, leaving content under the notch / home indicator. The `useSafeAreaInsets()` hook reads from the same context through a different code path and works correctly. When in doubt on RN 0.85+, prefer `View` + `useSafeAreaInsets()` + explicit `paddingTop` / `paddingBottom` over `<SafeAreaView edges={...}>`. Add `paddingBottom: insets.bottom + N` to any `FlatList`'s `contentContainerStyle` that sits under a native tab bar so the last items clear it.
 - **Android edge-to-edge is mandatory.** Pick the branch that matches the app:
   - **Expo**: set `"edgeToEdgeEnabled": true` under `android` in `app.json` (default-on from Expo SDK 54).
   - **RN CLI 0.81+**: set `edgeToEdgeEnabled=true` in `android/gradle.properties`. The RN Gradle plugin handles the rest - no `react-native-edge-to-edge` install, no `styles.xml` edit.

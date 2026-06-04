@@ -163,12 +163,34 @@ Load and watch a feed:
 await userFeed.getOrCreate({ watch: true });
 await timeline.getOrCreate({ watch: true });
 
-// `foryou` uses the popular activity selector and does NOT support watch.
-// Passing watch: true is not an error but does nothing here.
+// `foryou` uses selector-driven content (following + popular + interest).
+// It does NOT support watch (passing watch: true is a silent no-op) AND it
+// returns empty in a fresh single-user app because there is no follow /
+// popularity / interest signal yet. For a general "Explore / Discover" tab
+// you almost certainly want `client.queryActivities(...)` instead - see
+// below. Only use `foryou` once the app has real follow/popularity signal.
 await forYou.getOrCreate({ limit: 10 });
 ```
 
 `feed.getOrCreate()` is idempotent. Call it again to refresh the feed state. After a WebSocket reconnect, the SDK automatically re-fetches any feed that was previously loaded with `watch: true`.
+
+### Exploring across feeds (`queryActivities`)
+
+For an "Explore" / "Discover" / "newest posts across the app" view, use `client.queryActivities(...)` instead of any feed group. It is purpose-built for "exploratory search and filtering across all activities" (per the live docs) and respects activity visibility rules.
+
+```ts
+const res = await client.queryActivities({
+  sort: [{ field: "created_at", direction: -1 }], // newest first
+  limit: 20,
+  // Optional filter. Field is `activity_type` (NOT `type` - that is a different
+  // field used internally; a filter on `type` silently matches zero rows).
+  // filter: { activity_type: "post" },
+});
+const activities = res.activities; // ActivityResponse[]
+const nextCursor = res.next;       // pass back as { next } for the next page
+```
+
+Unlike a feed, `queryActivities` returns a one-shot response. Manage state locally (a `useState<ActivityResponse[]>` plus a `next` cursor) rather than relying on `<StreamFeed>` and `useFeedActivities`. Pagination passes the prior response's `next`; pull-to-refresh re-issues the query without `next`.
 
 ### Self-follow
 
@@ -351,13 +373,21 @@ When you are inside `<StreamFeed>` and `<StreamActivityWithStateUpdates>` provid
 
 ### Activity details (e.g. comments modal)
 
-When you navigate to a screen that needs to show comments for an activity that may not be in the current feed (a "For You" item, a deep link), use `client.activityWithStateUpdates(id)`. This returns an `ActivityWithStateUpdates` handle that subscribes to live state for that activity and can be disposed on unmount:
+When you navigate to a screen that needs to show comments for an activity that may not be in the current feed (an explore tap, a deep link), use `client.activityWithStateUpdates(id)`. This returns an `ActivityWithStateUpdates` handle that subscribes to live state for that activity and can be disposed on unmount.
+
+**Critical:** pass a `comments` request to `get(...)`. Without it, `get()` fetches the activity itself but does **not** hydrate `state.comments_by_entity_id[activityId]`, which is the state slice `useActivityComments` reads from. The `comments` array on the raw activity response is a different field that the comment-rendering path does not consult - so calling bare `get()` results in an empty comment list even when the activity has comments.
 
 ```tsx
 const activity = client.activityWithStateUpdates(activityId);
-await activity.get();
-// ... render with activity.currentState
-activity.dispose(); // on unmount
+await activity.get({
+  comments: {
+    limit: 25,       // initial page size
+    sort: "last",   // "first" | "last" | "top" | "controversial"
+    depth: 2,        // how many reply levels to pre-hydrate
+  },
+});
+// ... render with useActivityComments({ activity }) and useStateStore(activity.state, selector)
+activity.dispose(); // on unmount - prevents the SDK from refetching after WS reconnect
 ```
 
 Pass `activityId` (string) through navigation params - never serialize the full `ActivityResponse`.
@@ -497,10 +527,14 @@ See [Contexts and hooks docs](https://getstream.io/activity-feeds/docs/react-nat
 - **Same package across RN CLI and Expo.** `@stream-io/feeds-react-native-sdk` works on both runtimes - there is no `-expo` variant.
 - **`useCreateFeedsClient` returns `undefined` while connecting.** Always render `null` (or a spinner) until the client resolves; never pass `undefined` to `<StreamFeeds client={...}>`.
 - **Built-in feed groups must exist in the dashboard.** `user`, `timeline`, `notification`, and `foryou` are pre-created on most apps, but custom groups need to exist before `feed.getOrCreate(...)` can use them.
-- **`foryou` does not support real-time `watch: true`.** It uses the popular activity selector; passing `watch: true` is not an error but does nothing. Reload with `getOrCreate({ limit })` to refresh.
+- **`foryou` is selector-driven and renders empty for a fresh single-user app.** Its selectors are following + popular + interest; with no follows, no popularity signal, and no interest tags, the API succeeds but the activity list is empty by design. For a general Explore / Discover tab, use `client.queryActivities({ sort: [{ field: "created_at", direction: -1 }] })` instead. Reserve `foryou` for apps that already have real follow / popularity signal.
+- **`queryActivities` filter field is `activity_type`, not `type`.** A `filter: { type: "post" }` clause silently matches zero rows because `type` here means a different internal field. Use `filter: { activity_type: "post" }` if you want only one activity type - or leave `filter` off entirely if you want every post.
+- **`foryou` does not support real-time `watch: true`.** Passing `watch: true` is not an error but does nothing. Reload with `getOrCreate({ limit })` to refresh.
 - **Self-follow is required.** A user's own posts go to their `user` feed and do not appear on their own `timeline` without a `timeline.follow("user:<id>")` relationship. Make this call idempotently on first run.
 - **Reactions live on the client.** Use `client.addActivityReaction` / `client.deleteActivityReaction` (not `feed.addReaction` like Flutter / Swift).
 - **For activity-details pages, use `client.activityWithStateUpdates(id)`.** Pass `activityId` (string) through navigation params, not the `ActivityResponse`. Call `activity.dispose()` on unmount so the SDK does not keep refetching after the screen closes.
+- **`activityWithStateUpdates.get()` must be called with a `comments` request to populate the comment list.** Bare `get()` fetches the activity but does NOT hydrate `state.comments_by_entity_id[activityId]`, which is what `useActivityComments` reads from. The `comments` array on the raw activity response is a separate field that the rendering path does not consult. Always call `get({ comments: { limit, sort, depth } })` on a screen that renders comments.
+- **`react-native-safe-area-context@5.7` `SafeAreaView` no-ops on RN 0.85 + Expo 56 + new architecture.** The JS render returns but the native inset never lands - content sits under the notch / home indicator. The `useSafeAreaInsets()` hook works because it reads via a different code path. Prefer `View` + `useSafeAreaInsets()` + explicit `paddingTop` / `paddingBottom` over `<SafeAreaView edges={...}>` on this toolchain, and add `paddingBottom: insets.bottom + N` to `FlatList` `contentContainerStyle` that sits under a native iOS tab bar.
 - **JS uses snake_case for `markActivity` parameters.** `mark_all_read`, `mark_all_seen`, `mark_read`, `mark_seen` - not the camelCase shown in other SDKs.
 - **Keep selectors stable in `useStateStore`.** Unstable selectors run on every render. Use module-scope selectors or memoize.
 - **Never put the API secret in client code.** Token generation must happen server-side.

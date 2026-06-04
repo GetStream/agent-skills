@@ -420,6 +420,7 @@ Use `react-native-permissions` if the app needs to request permissions before th
 Always wire safe areas:
 
 - Install `react-native-safe-area-context` and mount `SafeAreaProvider` near the root (above the navigator) on every app. Use `SafeAreaView` (from `react-native-safe-area-context`, not `react-native`) for full-screen wrappers and `useSafeAreaInsets()` when you need fine-grained padding.
+- **RN 0.85 + Expo 56 + new architecture caveat:** the package's `SafeAreaView` (v5.7) appears to no-op at the native boundary on this toolchain - inset never applies. The `useSafeAreaInsets()` hook still works. Prefer `View` + `useSafeAreaInsets()` + explicit `paddingTop` / `paddingBottom` for full-screen wrappers when shipping on this stack. Add `paddingBottom: insets.bottom + N` to `FlatList` `contentContainerStyle` under a native tab bar so the last items clear it.
 - **Android edge-to-edge** is required so the app draws under transparent system bars.
   - **Expo**: set `"edgeToEdgeEnabled": true` in `app.json` under `android` (default-on Expo SDK 54+).
   - **RN CLI 0.81+**: set `edgeToEdgeEnabled=true` in `android/gradle.properties`. The RN Gradle plugin enables the edge-to-edge feature flag automatically - no `react-native-edge-to-edge` install, no `styles.xml` edit.

@@ -18,7 +18,8 @@ The blueprints use generic React Native primitives (`View`, `Text`, `FlatList`, 
 | timeline / home feed, activity list | Activity List Screen |
 | activity row UI | Activity Component |
 | compose / post an activity | Activity Composer |
-| For You / Explore feed | Explore (For You) Screen |
+| Explore / discover feed (newest posts across the app) | Explore Screen |
+| For You feed (algorithmic, requires follows + popularity signal) | For You Feed (selector-based, see note) |
 | follow / unfollow another user's feed | Follow Button |
 | like / heart / unreact | Reactions |
 | comments modal, activity-details navigation | Comments Modal |
@@ -560,47 +561,134 @@ Wiring:
 
 ---
 
-## Explore (For You) Screen
+## Explore Screen
 
-The `foryou` feed uses the popular activity selector. It does not support real-time `watch: true`; reload with `getOrCreate({ limit })` to refresh.
+The right tool for a general "Explore" / "Discover" tab that shows newest posts across the whole app is `client.queryActivities(...)`, **not** the `foryou` feed. Reasons:
+
+- `foryou` is a selector-driven feed (its built-in selectors are following + popular + interest). In a fresh app with no follows, no popularity signal, and no interest tags, it returns an empty list **by design** - the API call succeeds but there is nothing matching the selectors yet.
+- `queryActivities` is purpose-built for "exploratory search and filtering across all activities" (per the live docs). It searches across all visible feeds, respects activity visibility, and accepts simple filter + sort + pagination.
+
+The trade-off: `queryActivities` returns a one-shot response, not a reactive feed. You manage state locally instead of using `<StreamFeed>` + `useFeedActivities`. Pull-to-refresh re-issues the query without `next`; pagination passes the prior response's `next` cursor.
 
 ```tsx
-import React, { useEffect, useMemo } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
-  StreamFeed,
-  useClientConnectedUser,
-  useFeedsClient,
-} from "@stream-io/feeds-react-native-sdk";
-import { ActivityList } from "@/components/activity/ActivityList";
+  ActivityIndicator,
+  FlatList,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+import type { ActivityResponse } from "@stream-io/feeds-react-native-sdk";
+import { useFeedsClient } from "@stream-io/feeds-react-native-sdk";
+import { Activity } from "@/components/activity/Activity";
+
+const PAGE_SIZE = 20;
+const keyExtractor = (item: ActivityResponse) => item.id;
+const renderItem = ({ item }: { item: ActivityResponse }) => (
+  <Activity activity={item} />
+);
 
 export const ExploreScreen = () => {
   const client = useFeedsClient();
-  const connectedUser = useClientConnectedUser();
+  const [activities, setActivities] = useState<ActivityResponse[]>([]);
+  const [nextCursor, setNextCursor] = useState<string | undefined>();
+  const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingNext, setIsLoadingNext] = useState(false);
 
-  const feed = useMemo(() => {
-    if (!client || !connectedUser?.id) return undefined;
-    return client.feed("foryou", connectedUser.id);
-  }, [client, connectedUser?.id]);
+  const load = useCallback(async () => {
+    if (!client) return;
+    setIsLoading(true);
+    // No filter = every post across the app. The filter field is
+    // `activity_type` (NOT `type` - that's a different field on activities and
+    // a filter on `type` silently matches zero rows).
+    const res = await client.queryActivities({
+      sort: [{ field: "created_at", direction: -1 }],
+      limit: PAGE_SIZE,
+    });
+    setActivities(res.activities ?? []);
+    setNextCursor(res.next);
+    setIsLoading(false);
+  }, [client]);
+
+  const loadNext = useCallback(async () => {
+    if (!client || !nextCursor || isLoadingNext) return;
+    setIsLoadingNext(true);
+    const res = await client.queryActivities({
+      sort: [{ field: "created_at", direction: -1 }],
+      limit: PAGE_SIZE,
+      next: nextCursor,
+    });
+    setActivities((prev) => [...prev, ...(res.activities ?? [])]);
+    setNextCursor(res.next);
+    setIsLoadingNext(false);
+  }, [client, nextCursor, isLoadingNext]);
 
   useEffect(() => {
-    if (feed) feed.getOrCreate({ limit: 10 });
-  }, [feed]);
+    load();
+  }, [load]);
 
-  if (!feed) return null;
+  if (isLoading && activities.length === 0) {
+    return (
+      <View style={styles.empty}>
+        <ActivityIndicator />
+      </View>
+    );
+  }
+
+  if (activities.length === 0) {
+    return (
+      <View style={styles.empty}>
+        <Text style={styles.emptyText}>No posts yet</Text>
+      </View>
+    );
+  }
 
   return (
-    <StreamFeed feed={feed}>
-      <ActivityList />
-    </StreamFeed>
+    <FlatList
+      data={activities}
+      keyExtractor={keyExtractor}
+      renderItem={renderItem}
+      onEndReachedThreshold={0.2}
+      onEndReached={loadNext}
+      ListFooterComponent={isLoadingNext ? <ActivityIndicator /> : null}
+      refreshing={isLoading}
+      onRefresh={load}
+    />
   );
 };
+
+const styles = StyleSheet.create({
+  empty: { alignItems: "center", flex: 1, justifyContent: "center" },
+  emptyText: { color: "#6B7280", fontSize: 14 },
+});
 ```
 
 Wiring:
 
-- Do not pass `watch: true`. The popular selector does not push real-time updates; the call is silently ignored.
-- Re-call `feed.getOrCreate({ limit })` (for example on pull-to-refresh) to refresh.
-- Reuse the `ActivityList` from above - it is feed-agnostic.
+- Default sort `[{ field: "created_at", direction: -1 }]` gives newest-first - the right default for an Explore tab.
+- Filter field is **`activity_type`** (not `type`). A `filter: { type: "post" }` clause silently matches zero rows because `type` here means something else internally. If you want only one activity type, use `filter: { activity_type: "post" }`. Most explore tabs want every post type, so leave `filter` off entirely.
+- Reuse the same `Activity` component the timeline uses - it accepts any `ActivityResponse`.
+- Pagination cursor is `res.next`. Pass it back in as `{ next }` on the follow-up call.
+- For a tab nested in a navigator with a native iOS tab bar, add `contentContainerStyle={{ paddingBottom: insets.bottom + 12 }}` to the `FlatList` so the last item clears the tab bar.
+- For real-time updates of new explore posts (out of scope for a basic showcase), you'd subscribe to client-level events. `queryActivities` itself is non-reactive.
+
+### For You Feed (selector-based)
+
+If you specifically want the algorithmic For You feed (only useful once your app has follow + popularity signal), the `foryou` group does still exist:
+
+```tsx
+const feed = useMemo(() => client?.feed("foryou", connectedUser?.id), [client, connectedUser?.id]);
+useEffect(() => {
+  if (feed) feed.getOrCreate({ limit: 10 });
+}, [feed]);
+// Render with <StreamFeed feed={feed}><ActivityList /></StreamFeed>
+```
+
+Note that `foryou`:
+
+- Does not support real-time `watch: true` (passing it is a silent no-op).
+- Returns empty in a fresh single-user app because there is no follow / popularity / interest signal yet. Seed follows and a few activities first (or use the Explore Screen pattern above).
 
 ---
 
@@ -778,8 +866,8 @@ Loads comments for an activity that may not be present in the current feed (e.g.
 
 ```tsx
 import React, { useEffect, useState } from "react";
-import { StyleSheet } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { StyleSheet, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams } from "expo-router";
 import {
   ActivityWithStateUpdates,
@@ -790,17 +878,21 @@ import { CommentComposer } from "@/components/comments/CommentComposer";
 
 export default function CommentsModal() {
   const client = useFeedsClient();
+  const insets = useSafeAreaInsets();
   const { activityId } = useLocalSearchParams<{ activityId: string }>();
   const [activity, setActivity] = useState<ActivityWithStateUpdates>();
 
   useEffect(() => {
     if (!client || !activityId) return;
     const handle = client.activityWithStateUpdates(activityId);
-    if (typeof handle.currentState.activity?.comments === "undefined") {
-      handle.get().then(() => setActivity(handle));
-    } else {
-      setActivity(handle);
-    }
+    // The `comments` request shape is REQUIRED here. Without it, get() fetches
+    // the activity but does NOT hydrate state.comments_by_entity_id, which is
+    // what useActivityComments reads from - so the comment list would render
+    // empty even when the activity has comments. See FEEDS-REACT-NATIVE.md
+    // > Activity details for the full explanation.
+    handle
+      .get({ comments: { limit: 25, sort: "last", depth: 2 } })
+      .then(() => setActivity(handle));
     return () => {
       handle.dispose();
     };
@@ -809,15 +901,20 @@ export default function CommentsModal() {
   if (!activity) return null;
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <View
+      style={[
+        styles.container,
+        { paddingTop: insets.top, paddingBottom: insets.bottom },
+      ]}
+    >
       <CommentList activity={activity} />
       <CommentComposer activity={activity} />
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: { backgroundColor: "white", flex: 1 },
+  container: { backgroundColor: "white", flex: 1 },
 });
 ```
 
@@ -1047,9 +1144,11 @@ const styles = StyleSheet.create({
 Wiring:
 
 - Pass only `activityId` (string) through navigation params, never the `ActivityResponse`.
-- `client.activityWithStateUpdates(id)` returns a handle that subscribes to live state. Call `.get()` once to load comments, then `.dispose()` on unmount.
+- `client.activityWithStateUpdates(id)` returns a handle that subscribes to live state. Call `.get({ comments: { limit, sort, depth } })` to load the activity **and** hydrate the comments state slice, then `.dispose()` on unmount.
+- **Do not call `handle.get()` without the `comments` request.** Bare `get()` fetches the activity but skips comment hydration entirely - `state.comments_by_entity_id[activityId]` stays undefined, and `useActivityComments` (which reads from that slice) renders an empty list even when comments exist. The `comments` field on the activity response itself is NOT what the hook reads.
 - `useActivityComments({ activity })` resolves comments from the handle. Inside `<StreamActivityWithStateUpdates>` you can omit the `activity` argument.
-- For nested replies, pass `parent_id` to `addComment` and `parentComment` to `useActivityComments`.
+- For nested replies, pass `parent_id` to `addComment` and `parentComment` to `useActivityComments`. The `depth` option on `get({ comments })` controls how many reply levels are pre-hydrated.
+- Use `View` + `useSafeAreaInsets()` + explicit padding rather than `<SafeAreaView>` from `react-native-safe-area-context`. On RN 0.85 + Expo 56 + new architecture, the package's `SafeAreaView` no-ops at the native boundary, so the inset never lands (the reply composer ends up behind the home indicator). The hook works because it goes through a different code path.
 - Register the modal route in your navigator: with Expo Router, `presentation: "modal"` on `<Stack.Screen name="comments-modal" />` in the parent layout.
 
 ---
