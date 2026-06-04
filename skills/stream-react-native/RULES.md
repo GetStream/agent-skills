@@ -251,7 +251,7 @@ Before writing or editing **any** Stream Chat, Stream Video, or Stream Feeds Rea
 - Video work -> [`references/VIDEO-REACT-NATIVE-blueprints.md`](references/VIDEO-REACT-NATIVE-blueprints.md)
 - Feeds work -> [`references/FEEDS-REACT-NATIVE-blueprints.md`](references/FEEDS-REACT-NATIVE-blueprints.md)
 
-This applies on **every turn**, not just the first time the skill is invoked in a session. Follow-up requests like *"add navigation to the channel screen"*, *"open a channel on tap"*, *"add a button to start a call"*, *"customize the call controls"*, *"theme the call screen"*, *"add a ringing screen"*, *"add a comments modal"*, *"wire the follow button"*, or *"render the notification feed"* count as new screen work and require a fresh blueprint read.
+This applies on **every turn**, not just the first time the skill is invoked in a session. Follow-up requests like *"add navigation to the channel screen"*, *"open a channel on tap"*, *"add a button to start a call"*, *"customize the call controls"*, *"theme the call screen"*, *"add a ringing screen"*, *"add a comments modal"*, *"wire the follow button"*, *"render the notification feed"*, *"attach an image to a post"*, or *"register the device for push"* count as new screen work and require a fresh blueprint read.
 
 Use the **Request -> Blueprint section** table at the top of each blueprints file. If no section matches, say so before improvising. Do not rely on a blueprint read earlier in the session; re-read the relevant section before each Stream screen edit.
 

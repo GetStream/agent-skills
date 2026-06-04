@@ -27,9 +27,9 @@ allowed-tools: >-
 
 # Stream React Native - skill router + execution flow
 
-**Rules:** Read **[`RULES.md`](RULES.md)** once per session. Every non-negotiable React Native Chat and Video rule is stated there.
+**Rules:** Read **[`RULES.md`](RULES.md)** once per session. Every non-negotiable React Native Chat, Video, and Feeds rule is stated there.
 
-This file is the single entrypoint: intent classification, product selection, project detection, and module pointers for Stream Chat React Native and Stream Video React Native work.
+This file is the single entrypoint: intent classification, product selection, project detection, and module pointers for Stream Chat React Native, Stream Video React Native, and Stream Feeds React Native work.
 
 ---
 

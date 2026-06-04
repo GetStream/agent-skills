@@ -1,6 +1,6 @@
 # Feeds React Native - Setup and Integration
 
-Stream Feeds React Native (`@stream-io/feeds-react-native-sdk`) provides a **headless** activity feed SDK - there are no pre-built UI components. You build every screen yourself against reactive contexts (`StreamFeeds`, `StreamFeed`) and state hooks (`useFeedActivities`, `useActivityComments`, `useOwnFollows`, etc.). This file covers package install, client/auth, core hooks and contexts, follow graph, comments, notification feeds, and gotchas. For `llms.txt` docs lookup, see [DOCS.md](DOCS.md). For screen structure, see [FEEDS-REACT-NATIVE-blueprints.md](FEEDS-REACT-NATIVE-blueprints.md).
+Stream Feeds React Native (`@stream-io/feeds-react-native-sdk`) provides a **headless** activity feed SDK - there are no pre-built UI components. You build every screen yourself against reactive contexts (`StreamFeeds`, `StreamFeed`) and state hooks (`useFeedActivities`, `useActivityComments`, `useOwnFollows`, etc.). This file covers package install, optional dependencies, client/auth, core hooks and contexts, feed identifiers, activities, attachments/file uploads, reactions, follow graph, comments, notification feeds, navigation, push notifications, and gotchas. For `llms.txt` docs lookup, see [DOCS.md](DOCS.md). For screen structure, see [FEEDS-REACT-NATIVE-blueprints.md](FEEDS-REACT-NATIVE-blueprints.md).
 
 Rules: [../RULES.md](../RULES.md) (Feeds is bundled alongside Chat and Video; New Architecture; secrets; runtime lane; provider placement; blueprint reads on every turn).
 
@@ -54,6 +54,20 @@ npx expo install @stream-io/feeds-react-native-sdk @react-native-community/netin
 Use `@latest` only after confirming the npm dist-tag matches the selected docs. The Feeds package is the same across RN CLI and Expo - there is no separate `-expo` package as Chat has.
 
 Feeds has no Reanimated, gesture-handler, or SVG requirement of its own. If you also wire Chat or Video, those products bring their own peer set.
+
+### Optional dependency map
+
+The Feeds SDK is headless and ships no native code beyond `@react-native-community/netinfo`. Everything below is an **opt-in capability package** - install one only after the user asks for that capability, with the runtime's normal lane (`npx expo install` for Expo so versions match the SDK; the project's package manager + `npx pod-install` for RN CLI). Adding a native package puts an Expo app on the dev-client/native-build lane (Expo Go is not supported by this skill).
+
+| Capability | RN CLI | Expo | Notes |
+|---|---|---|---|
+| Pick an image for an attachment | `react-native-image-picker` | `expo-image-picker` | Pick from library / camera; upload via `client.uploadImage` (see Attachments). Expo: add the plugin so `NSPhotoLibraryUsageDescription` is generated |
+| Pick a document/file attachment | `@react-native-documents/picker` | `expo-document-picker` | Upload via `client.uploadFile` |
+| Acquire an OS push token | `@react-native-firebase/messaging` | `expo-notifications` (+ `expo-device`) | Gets the APNs/FCM token you pass to `client.createDevice` (see Push notifications). The SDK does not bundle a push library |
+| Display/route a push (background, banners) | `@notifee/react-native` (optional) | `expo-notifications` | App-owned display + tap handling |
+| High-performance activity / comment list | `@shopify/flash-list` | `@shopify/flash-list` | Swap for `FlatList` on high-volume feeds |
+
+There is **no Stream upload package** - image/file uploads go through the already-connected `FeedsClient` (`client.uploadImage` / `client.uploadFile`), so do not add an S3/storage SDK.
 
 ### Client setup
 
@@ -133,6 +147,21 @@ Local demo tokens can come from [`../credentials.md`](../credentials.md) (`strea
 | `useStateStore` | Generic selector hook over a state store (escape hatch when no dedicated hook fits) |
 
 State hooks accept an optional argument (`feed`, `activity`, `searchController`, `source`). When omitted, the hook resolves it from the nearest matching context provider.
+
+---
+
+## Navigation rules
+
+For the full provider tree see [sdk.md](../sdk.md) > Provider tree and navigation. The Feeds-specific rules:
+
+- Mount `<StreamFeeds>` above any screen that reads Feeds state and keep it stable for the whole authenticated session, so transitions do not reconnect the WebSocket.
+- Share the user's `user` + `timeline` feeds through an `OwnFeedsContextProvider` (see blueprints), **not** navigation params - `Feed` instances are not serializable through router state.
+- Wrap each feed-scoped subtree in `<StreamFeed feed={feed}>` so descendant hooks (`useFeedActivities`, `useOwnFollows`, ...) resolve the feed from context.
+- Pass **`activityId` (string)** through navigation params, never the `ActivityResponse`. On the destination screen create a live handle with `client.activityWithStateUpdates(activityId)` and call `.dispose()` on unmount.
+- For a comments / activity-details screen, register a **modal** route and pass only `activityId`:
+  - Expo Router: `<Stack.Screen name="comments-modal" options={{ presentation: "modal" }} />`
+  - React Navigation: `<Stack.Screen name="CommentsModal" component={CommentsModal} options={{ presentation: "modal" }} />`
+- `KeyboardAvoidingView` is unreliable inside native-stack modal sheets - handle the keyboard at the modal root. See [FEEDS-REACT-NATIVE-blueprints.md](FEEDS-REACT-NATIVE-blueprints.md) > Comments Modal.
 
 ---
 
@@ -248,6 +277,47 @@ Useful fields on the `addActivity` request: `text`, `type` (required string), `a
 await feed.updateActivity({ id: activity.id, text: "Updated text" });
 await client.deleteActivities({ ids: [activity.id] });
 ```
+
+---
+
+## Attachments and file uploads
+
+Activities (and comments) can carry image / video / file attachments. Uploads go through the **connected `FeedsClient`** (Stream CDN by default) - there is no upload method on `Feed` and no separate storage SDK. Pick the file with a platform picker (see [Optional dependency map](#optional-dependency-map)), then upload and attach:
+
+```ts
+// `file` is a StreamFile. In React Native, build it as { uri, name, type }.
+// expo-image-picker assets expose `uri`, `fileName`, `mimeType` - map them across.
+const img = await client.uploadImage({
+  file: {
+    uri: asset.uri,
+    name: asset.fileName ?? "photo.jpg",
+    type: asset.mimeType ?? "image/jpeg",
+  },
+  // optional server-side resize variants:
+  // upload_sizes: [{ width: 100, height: 100, resize: "scale", crop: "center" }],
+});
+
+const doc = await client.uploadFile({ file: { uri, name, type } });
+
+// The resulting URL is on `.file`. Images use `image_url`; non-images use `asset_url`.
+await feed.addActivity({
+  type: "post",
+  text,
+  attachments: [
+    { type: "image", image_url: img.file, custom: {} },
+    { type: "file", asset_url: doc.file, custom: {} },
+  ],
+});
+```
+
+Key facts (verify against the manifest-selected [File Uploads](https://getstream.io/activity-feeds/docs/react-native/file-uploads.md) page for the installed SDK version):
+
+- The response URL is on **`response.file`** - not `.url` or `.image_url`.
+- Image attachments use **`image_url`**; non-image (`type: "file"`) attachments use **`asset_url`**.
+- Max upload size is **100MB**. Supported image types: bmp, gif, jpeg, png, webp, heic/heif, svg+xml. An image can be server-resized only when the source is <= 16.8M pixels.
+- Defaults to the Stream CDN; swap your own CDN if needed.
+- Read attachments back from `activity.attachments` on any `ActivityResponse`.
+- For posting an image from the composer, see [FEEDS-REACT-NATIVE-blueprints.md](FEEDS-REACT-NATIVE-blueprints.md) > Activity Composer with Image.
 
 ---
 
@@ -430,6 +500,61 @@ await notificationFeed.markActivity({ mark_seen: [groupId] });
 
 ---
 
+## Push notifications
+
+Feeds push is **opt-in** and mostly dashboard/backend-driven. Do not confuse it with the in-app notification feed: `useAggregatedActivities` / `useNotificationStatus` render notifications **inside a running app** over the WebSocket, while OS push is a separate channel (device token -> Stream -> APNs/FCM -> OS) that wakes a backgrounded or killed app. The same events feed both layers; a push tap typically deep-links into the notification screen.
+
+**Triggering events:** new follower, comment, reaction, comment reaction, and mention. There are two delivery modes, chosen server-side per call: **direct push** (default, `skip_push: false`) and **notification-feed push** (`create_notification_activity: true` + `skip_push: true`), which writes to the notification feed and pushes from there. Pass `skip_push: true` on a comment/reaction/follow call to suppress its push.
+
+### Dashboard
+
+Create a push provider under your app's **Push Notifications** settings (FCM for Android, APNs for iOS) and note each provider's **name** - you reference it from the client. Customize payloads with push templates. Fetch the manifest-selected [Push Overview](https://getstream.io/activity-feeds/docs/react-native/push-introduction.md) and [Push Providers & Multi Bundle](https://getstream.io/activity-feeds/docs/react-native/push-providers-and-multi-bundle.md) pages.
+
+### Client - register the device
+
+Register **after** the user is connected. Feeds uses `createDevice` / `deleteDevice` - note this is **`createDevice`, not the Video SDK's `addDevice`**:
+
+```ts
+// token = the native APNs / FCM device token (e.g. expo-notifications
+// getDevicePushTokenAsync(), or @react-native-firebase/messaging getToken()).
+await client.createDevice({
+  id: token,
+  push_provider: "apn",                  // "apn" (iOS) | "firebase" (Android)
+  push_provider_name: "production-ios",  // the name configured on the dashboard
+});
+
+// On sign-out (before disconnectUser, so the next user does not inherit pushes):
+await client.deleteDevice({ id: token });
+```
+
+Acquiring the OS token (permission prompt, `expo-notifications` / Firebase, Expo dev-client requirement) is the same app-owned pipeline as any RN push app - the Feeds SDK only stores the token via `createDevice`. See the [Optional dependency map](#optional-dependency-map).
+
+### Push preferences
+
+- **Per-follow:** `timeline.follow("user:alice", { push_preference: "all" })` - values `"all"` | `"none"` (default `"none"`). Change later with `client.updateFollow({ source, target, push_preference })`.
+- **Per-user / global** via `updatePushNotificationPreferences`:
+
+```ts
+await client.updatePushNotificationPreferences({
+  preferences: [{
+    feeds_level: "all", // "all" | "none"
+    feeds_preferences: { comment: "all", reaction: "all", follow: "none", mention: "all", comment_reaction: "all" },
+    // custom_activity_types: { milestone: "all" },
+    // disabled_until: someIsoString, // temporary mute
+  }],
+});
+```
+
+### Backend trigger and handling the tap
+
+Push **emission** is owned by the backend + dashboard, not the client: follows / comments / reactions written through Stream generate pushes according to your dashboard push config and the recipient's preferences. Whether a given event pushes by default, and exactly which preference gates it (the follower's per-follow `push_preference` vs the recipient's `feeds_preferences`), is configured server-side - confirm the precise gating on the manifest-selected Push Overview / Push Preferences pages rather than assuming. Mint tokens and configure providers from your backend with `@stream-io/node-sdk`.
+
+**Handling the notification** (foreground display, tapping a push to deep-link into the activity / notification screen) is app-owned - wire it with your push library's listeners (e.g. `expo-notifications` `addNotificationResponseReceivedListener`). The Feeds SDK only stores the device token via `createDevice`; it does not display pushes or route taps.
+
+Confirm the device-registration and preference shapes against the manifest-selected [Registering Push Devices](https://getstream.io/activity-feeds/docs/react-native/push-devices.md) and [Push Preferences](https://getstream.io/activity-feeds/docs/react-native/push-preferences.md) pages for the installed SDK version.
+
+---
+
 ## Search
 
 The SDK exposes a `SearchController` plus three search sources:
@@ -533,11 +658,14 @@ See [Contexts and hooks docs](https://getstream.io/activity-feeds/docs/react-nat
 - **Self-follow is required.** A user's own posts go to their `user` feed and do not appear on their own `timeline` without a `timeline.follow("user:<id>")` relationship. Make this call idempotently on first run.
 - **Reactions live on the client.** Use `client.addActivityReaction` / `client.deleteActivityReaction` (not `feed.addReaction` like Flutter / Swift).
 - **For activity-details pages, use `client.activityWithStateUpdates(id)`.** Pass `activityId` (string) through navigation params, not the `ActivityResponse`. Call `activity.dispose()` on unmount so the SDK does not keep refetching after the screen closes.
-- **`activityWithStateUpdates.get()` must be called with a `comments` request to populate the comment list.** Bare `get()` fetches the activity but does NOT hydrate `state.comments_by_entity_id[activityId]`, which is what `useActivityComments` reads from. The `comments` array on the raw activity response is a separate field that the rendering path does not consult. Always call `get({ comments: { limit, sort, depth } })` on a screen that renders comments.
+- **`activityWithStateUpdates.get()` must be called with a `comments` request to populate the comment list.** Bare `get()` fetches the activity but does NOT hydrate `state.comments_by_entity_id[activityId]`, which is what `useActivityComments` reads from. The `comments` array on the raw activity response is a separate field that the rendering path does not consult. Always call `get({ comments: { limit, sort, depth } })` on a screen that renders comments. (This reflects the SDK's current state-store internals - if comments still render empty after a version bump, re-verify the slice name against the installed package.)
 - **`react-native-safe-area-context@5.7` `SafeAreaView` no-ops on RN 0.85 + Expo 56 + new architecture.** The JS render returns but the native inset never lands - content sits under the notch / home indicator. The `useSafeAreaInsets()` hook works because it reads via a different code path. Prefer `View` + `useSafeAreaInsets()` + explicit `paddingTop` / `paddingBottom` over `<SafeAreaView edges={...}>` on this toolchain, and add `paddingBottom: insets.bottom + N` to `FlatList` `contentContainerStyle` that sits under a native iOS tab bar.
 - **`KeyboardAvoidingView` is unreliable inside native-stack `presentation: "modal"` sheets.** RN's KAV computes `frame.y + frame.height - keyboardScreenY`, mixing parent-relative `onLayout` coordinates with screen-relative event coordinates. Inside a modal sheet the two spaces don't match, so `keyboardVerticalOffset` becomes a magic-number knob (commonly 88 / 96 / 128) that drifts by device, header style, and sheet style. On Android with `behavior={undefined}` (RN's recommended Android default), KAV does literally nothing. For modal screens with a composer / input at the bottom (comments modal, reply sheet, search prompt), handle the keyboard at the modal root with `Keyboard.addListener("keyboardWillShow"/"keyboardWillHide")` and adjust `paddingBottom` on the root `View`. iOS `endCoordinates.height` already covers the home indicator; Android (edge-to-edge) `endCoordinates.height` is just the IME and needs `insets.bottom` added back. See the Comments Modal blueprint for the full snippet.
 - **Do not use `useHeaderHeight` from `@react-navigation/elements`.** It does not solve modal-sheet keyboard math, and every helper exported from that package is deprecated and scheduled for removal in expo-router 56.
 - **JS uses snake_case for `markActivity` parameters.** `mark_all_read`, `mark_all_seen`, `mark_read`, `mark_seen` - not the camelCase shown in other SDKs.
+- **Uploads go through the client, and the URL is on `response.file`.** `client.uploadImage({ file })` / `client.uploadFile({ file })` return an object whose URL is `response.file` (not `.url` / `.image_url`). Image attachments use `image_url`; non-image attachments use `asset_url`. There is no upload method on `Feed` and no separate storage SDK.
+- **Push uses `createDevice` / `deleteDevice`, NOT `addDevice`.** The Video RN SDK registers devices with `client.addDevice(token, provider, name)`; the **Feeds** SDK uses `client.createDevice({ id, push_provider, push_provider_name })` and `client.deleteDevice({ id })`. Don't copy the Video call shape.
+- **The notification feed is in-app, not OS push.** `useAggregatedActivities` / `useNotificationStatus` render over the WebSocket inside a running app. OS push (APNs/FCM) is a separate channel that needs `createDevice` + dashboard provider config. See Push notifications.
 - **Keep selectors stable in `useStateStore`.** Unstable selectors run on every render. Use module-scope selectors or memoize.
 - **Never put the API secret in client code.** Token generation must happen server-side.
 - **Never use dev tokens in production.** They disable token auth and let any client impersonate any user.

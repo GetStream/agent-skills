@@ -18,12 +18,14 @@ The blueprints use generic React Native primitives (`View`, `Text`, `FlatList`, 
 | timeline / home feed, activity list | Activity List Screen |
 | activity row UI | Activity Component |
 | compose / post an activity | Activity Composer |
+| attach a photo / image / file to a post | Activity Composer with Image |
 | Explore / discover feed (newest posts across the app) | Explore Screen |
 | For You feed (algorithmic, requires follows + popularity signal) | For You Feed (selector-based, see note) |
 | follow / unfollow another user's feed | Follow Button |
 | like / heart / unreact | Reactions |
 | comments modal, activity-details navigation | Comments Modal |
 | notification feed, unread badge, mark read | Notification Feed |
+| register a device for OS push notifications | Push Device Registration |
 | theming, design tokens | Theming / Customization Note |
 | sign-out cleanup | Sign-out |
 
@@ -180,16 +182,22 @@ export const OwnFeedsContextProvider = ({ children }: PropsWithChildren) => {
     setOwnFeed(feed);
     setOwnTimeline(timeline);
 
-    Promise.all([
-      feed.getOrCreate({ watch: true }),
-      timeline.getOrCreate({ watch: true }),
-    ]).then(() => {
-      // Self-follow: own posts only appear on own timeline once timeline follows user.
-      const alreadyFollows = feed.currentState.own_follows?.find(
-        (follow) => follow.source_feed.feed === timeline.feed,
-      );
-      if (!alreadyFollows) timeline.follow(feed.feed);
-    });
+    const setup = async () => {
+      try {
+        await Promise.all([
+          feed.getOrCreate({ watch: true }),
+          timeline.getOrCreate({ watch: true }),
+        ]);
+        // Self-follow: own posts only appear on own timeline once timeline follows user.
+        const alreadyFollows = feed.currentState.own_follows?.find(
+          (follow) => follow.source_feed.feed === timeline.feed,
+        );
+        if (!alreadyFollows) await timeline.follow(feed.feed);
+      } catch (err) {
+        console.error("Failed to set up own feeds / self-follow", err);
+      }
+    };
+    setup();
 
     return () => {
       setOwnFeed(undefined);
@@ -556,8 +564,177 @@ export const HomeScreen = () => {
 Wiring:
 
 - The composer posts to `ownFeed` (user feed); the list reads `ownTimeline`. Self-follow makes own posts appear on the timeline automatically.
-- For attachments, use `client.uploadImage(...)` and pass `attachments: [{ type: "image", image_url, custom: {} }]` to `addActivity`. The blueprint stays text-only for brevity.
+- This blueprint is text-only. To attach an image or file, use the **Activity Composer with Image** blueprint below.
 - Disable the post button while `canPost === false` so the user cannot submit empty content.
+
+---
+
+## Activity Composer with Image
+
+Adds image attachment to the text composer. Picks a photo with `expo-image-picker` (Expo lane), uploads it through the **client** (`useFeedsClient`, not the `Feed`), and attaches the returned URL. The upload API and attachment shape are documented in [FEEDS-REACT-NATIVE.md](FEEDS-REACT-NATIVE.md) > Attachments and file uploads. Install the picker first - see [FEEDS-REACT-NATIVE.md](FEEDS-REACT-NATIVE.md) > Optional dependency map (`expo-image-picker` for Expo, `react-native-image-picker` for RN CLI).
+
+```tsx
+import React, { useCallback, useState } from "react";
+import {
+  Image,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
+import * as ImagePicker from "expo-image-picker";
+import {
+  useFeedContext,
+  useFeedsClient,
+} from "@stream-io/feeds-react-native-sdk";
+
+export const ActivityComposerWithImage = () => {
+  const feed = useFeedContext();
+  const client = useFeedsClient();
+  const [draft, setDraft] = useState("");
+  const [asset, setAsset] = useState<ImagePicker.ImagePickerAsset>();
+  const [isPosting, setIsPosting] = useState(false);
+  const canPost = (draft.trim().length > 0 || !!asset) && !isPosting;
+
+  const pickImage = useCallback(async () => {
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) return;
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"], // older expo-image-picker: ImagePicker.MediaTypeOptions.Images
+      quality: 0.8,
+    });
+    if (!result.canceled) setAsset(result.assets[0]);
+  }, []);
+
+  const post = useCallback(async () => {
+    if (!feed || !client || !canPost) return;
+    setIsPosting(true);
+    try {
+      const attachments = [];
+      if (asset) {
+        // Upload goes through the client. The resulting URL is on `response.file`.
+        const uploaded = await client.uploadImage({
+          file: {
+            uri: asset.uri,
+            name: asset.fileName ?? "photo.jpg",
+            type: asset.mimeType ?? "image/jpeg",
+          },
+        });
+        attachments.push({ type: "image", image_url: uploaded.file, custom: {} });
+      }
+      await feed.addActivity({
+        type: "post",
+        text: draft,
+        ...(attachments.length ? { attachments } : {}),
+      });
+      setDraft("");
+      setAsset(undefined);
+    } catch (err) {
+      console.error("Failed to post activity", err);
+    } finally {
+      setIsPosting(false);
+    }
+  }, [feed, client, canPost, draft, asset]);
+
+  return (
+    <View style={styles.card}>
+      <TextInput
+        multiline
+        onChangeText={setDraft}
+        placeholder="What is happening?"
+        placeholderTextColor="#9CA3AF"
+        style={styles.input}
+        textAlignVertical="top"
+        value={draft}
+      />
+      {asset ? (
+        <View style={styles.previewWrap}>
+          <Image source={{ uri: asset.uri }} style={styles.preview} />
+          <Pressable onPress={() => setAsset(undefined)} style={styles.remove}>
+            <Text style={styles.removeText}>Remove</Text>
+          </Pressable>
+        </View>
+      ) : null}
+      <View style={styles.footerRow}>
+        <Pressable onPress={pickImage} style={styles.attachButton}>
+          <Text style={styles.attachText}>Add photo</Text>
+        </Pressable>
+        <Pressable
+          disabled={!canPost}
+          onPress={post}
+          style={({ pressed }) => [
+            styles.button,
+            !canPost && styles.buttonDisabled,
+            pressed && canPost && styles.buttonPressed,
+          ]}
+        >
+          <Text style={styles.buttonText}>{isPosting ? "Posting…" : "Post"}</Text>
+        </Pressable>
+      </View>
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  card: {
+    backgroundColor: "#FFFFFF",
+    borderColor: "#E5E7EB",
+    borderRadius: 12,
+    borderWidth: 1,
+    margin: 12,
+    padding: 12,
+  },
+  input: {
+    borderColor: "#E5E7EB",
+    borderRadius: 10,
+    borderWidth: 1,
+    color: "#111827",
+    fontSize: 14,
+    maxHeight: 160,
+    minHeight: 80,
+    paddingHorizontal: 12,
+    paddingVertical: Platform.OS === "ios" ? 10 : 8,
+  },
+  previewWrap: { marginTop: 8 },
+  preview: { borderRadius: 10, height: 180, width: "100%" },
+  remove: { marginTop: 4 },
+  removeText: { color: "#DC2626", fontSize: 13, fontWeight: "600" },
+  footerRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 8,
+  },
+  attachButton: { paddingHorizontal: 4, paddingVertical: 8 },
+  attachText: { color: "#2563EB", fontSize: 14, fontWeight: "600" },
+  button: {
+    backgroundColor: "#2563EB",
+    borderRadius: 999,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  buttonDisabled: { backgroundColor: "#93C5FD" },
+  buttonPressed: { opacity: 0.8 },
+  buttonText: { color: "#FFFFFF", fontSize: 14, fontWeight: "600" },
+});
+```
+
+Wiring:
+
+- Install first (Expo): `npx expo install expo-image-picker`. `expo-image-picker` ships native code, so add its config plugin to `app.json`, then rebuild the dev client (`npx expo prebuild` if you keep native dirs, then a dev-client build) - Expo Go cannot use it:
+
+  ```json
+  { "expo": { "plugins": [["expo-image-picker", { "photosPermission": "Allow $(PRODUCT_NAME) to attach photos to your posts." }]] } }
+  ```
+
+  The plugin generates `NSPhotoLibraryUsageDescription` on iOS. RN CLI: `npm install react-native-image-picker` + `npx pod-install`.
+- Mount inside `<StreamFeed feed={ownFeed}>` exactly like the text composer - `feed.addActivity` posts to the user's own feed.
+- Upload through `useFeedsClient()`, **not** the `Feed`. The returned URL is `uploaded.file`. Images use `image_url`; for a document use `client.uploadFile({ file })` + `expo-document-picker` and attach `{ type: "file", asset_url: uploaded.file, custom: {} }`. `custom` is optional per-attachment metadata - pass `{}` when you have none.
+- Uploads are capped at 100MB. For large photos, downscale first with `expo-image-manipulator` to cut upload time.
+- `mediaTypes: ["images"]` is the current `expo-image-picker` API; SDKs before the array form used `ImagePicker.MediaTypeOptions.Images`.
+- `asset.mimeType` / `asset.fileName` can be undefined on some library picks; the `?? "image/jpeg"` fallback then mislabels a PNG/HEIC. Prefer the asset's real `mimeType` (or derive `type` from the file extension) and only fall back when nothing is available.
 
 ---
 
@@ -1273,6 +1450,71 @@ Wiring:
 
 ---
 
+## Push Device Registration
+
+Registers the device's OS push token with Stream so a backgrounded / killed app receives pushes for follows, comments, reactions, and mentions. This is **separate** from the in-app notification feed above. Read [FEEDS-REACT-NATIVE.md](FEEDS-REACT-NATIVE.md) > Push notifications first - the dashboard provider must exist and its **name** must match `push_provider_name`. Feeds uses `createDevice` / `deleteDevice` (the Video SDK's `addDevice` does not apply here).
+
+```tsx
+import { useEffect } from "react";
+import { Platform } from "react-native";
+import * as Notifications from "expo-notifications";
+import * as Device from "expo-device";
+import { useFeedsClient } from "@stream-io/feeds-react-native-sdk";
+
+// Provider names must match what you configured on the Stream dashboard.
+const PROVIDER_NAME_IOS = "your-apn-provider";
+const PROVIDER_NAME_ANDROID = "your-firebase-provider";
+
+export const usePushRegistration = () => {
+  const client = useFeedsClient();
+
+  useEffect(() => {
+    if (!client || !Device.isDevice) return;
+    let token: string | undefined;
+
+    const register = async () => {
+      const existing = await Notifications.getPermissionsAsync();
+      let granted = existing.granted;
+      if (!granted) {
+        granted = (await Notifications.requestPermissionsAsync()).granted;
+      }
+      if (!granted) return;
+
+      // Native APNs / FCM device token (NOT the Expo push token).
+      const devicePushToken = await Notifications.getDevicePushTokenAsync();
+      token = devicePushToken.data;
+
+      await client.createDevice({
+        id: token,
+        push_provider: Platform.OS === "ios" ? "apn" : "firebase",
+        push_provider_name:
+          Platform.OS === "ios" ? PROVIDER_NAME_IOS : PROVIDER_NAME_ANDROID,
+      });
+    };
+
+    register().catch((err) => console.error("Push registration failed", err));
+
+    return () => {
+      if (token) {
+        client.deleteDevice({ id: token }).catch((err) => console.error(err));
+      }
+    };
+  }, [client]);
+};
+```
+
+Wiring:
+
+- Call `usePushRegistration()` from a component mounted **under** `<StreamFeeds>` after the user is connected (e.g. the navigator root). The hook no-ops until the client resolves.
+- Needs a dev-client / native build - Expo Go cannot receive remote push. Android also needs `google-services.json` + FCM set up; iOS needs the Push Notifications capability and an APNs key uploaded to the dashboard.
+- **RN CLI:** swap `expo-notifications` for `@react-native-firebase/messaging` - get the token with `messaging().getToken()` (FCM) / `messaging().getAPNSToken()` (iOS) and make the same `createDevice` call.
+- On sign-out, `deleteDevice` so the next user on the same device does not inherit these pushes (this hook does it on unmount; pair it with `client.disconnectUser()` in the Sign-out blueprint).
+- `push_provider` is `"apn"` (iOS) | `"firebase"` (Android); `push_provider_name` must match the dashboard provider name.
+- On iOS the native APNs token can be unavailable for a moment after permission is granted (the device registers with APNs asynchronously). If `getDevicePushTokenAsync()` rejects on first launch, retry or register from your push library's token-received listener instead of inline.
+- Displaying the push and handling the tap (deep-link to the activity / notification screen) is app-owned - see [FEEDS-REACT-NATIVE.md](FEEDS-REACT-NATIVE.md) > Push notifications > Backend trigger and handling the tap.
+
+---
+
 ## Theming / Customization Note
 
 The Feeds RN SDK is headless. There is no `WithComponents` slot system (Chat) or theme variant object (Video). Customization is the same as customizing any React Native UI:
@@ -1310,4 +1552,5 @@ Wiring:
 
 - `client.disconnectUser()` releases the WebSocket and clears the connected user.
 - Call `activity.dispose()` (where applicable) on any open `activityWithStateUpdates` handles before signing out, or rely on screen unmount to dispose them.
+- If push is wired, unregister the device with `client.deleteDevice({ id: token })` before `disconnectUser()` so the next user on the device does not inherit these pushes (see Push Device Registration).
 - Do not print user tokens in final summaries or logs.

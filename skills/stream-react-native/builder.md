@@ -1,6 +1,6 @@
 # Stream React Native - build and integration flow
 
-Use this module after intent classification, **product selection (Chat / Video / Chat + Video)**, and the Project signals probe from [`SKILL.md`](SKILL.md). Run [`credentials.md`](credentials.md) before writing connected Chat or Video code or creating requested demo data.
+Use this module after intent classification, **product selection (Chat / Video / Feeds / any combination)**, and the Project signals probe from [`SKILL.md`](SKILL.md). Run [`credentials.md`](credentials.md) before writing connected Chat, Video, or Feeds code or creating requested demo data.
 
 ---
 
@@ -30,7 +30,7 @@ For Track A, default to Expo if the user did not specify Expo vs RN CLI. Keep th
 
 ## 2. New app scaffold
 
-Use this when the user asks for a brand-new Chat, Video, or Chat + Video RN app, or the workspace is empty and Track A applies.
+Use this when the user asks for a brand-new Chat, Video, or Feeds RN app (or any combination), or the workspace is empty and Track A applies.
 
 ### Pick target directory
 
@@ -165,7 +165,7 @@ Pass only the `activityId` (string) as a navigation param. The modal screen crea
 
 After scaffold and packages:
 
-1. Use [`references/DOCS.md`](references/DOCS.md) to fetch the appropriate manifest (Chat or Video) and selected `Installation` markdown page.
+1. Use [`references/DOCS.md`](references/DOCS.md) to fetch the appropriate manifest (Chat, Video, or Feeds) and selected `Installation` markdown page.
 2. Confirm the installed Stream package matches the selected docs and npm dist-tag.
 3. Run [`credentials.md`](credentials.md) or wire the app's token provider plan.
 4. Configure Babel (Chat: Reanimated/Worklets plugin) and root providers.
@@ -193,7 +193,7 @@ If the user only asked for setup, stop after the shared wiring in [`sdk.md`](sdk
 
 ## 4. Install packages
 
-Use [`references/DOCS.md`](references/DOCS.md) first: fetch the appropriate manifest (Chat or Video), select `Installation`, then fetch that markdown page.
+Use [`references/DOCS.md`](references/DOCS.md) first: fetch the appropriate manifest (Chat, Video, or Feeds), select `Installation`, then fetch that markdown page.
 
 Preserve the project's package manager. Use `npx expo install` for Expo packages so versions match the Expo SDK.
 
@@ -501,10 +501,10 @@ For requested optional native capabilities, read the **Optional dependency map**
 
 ## 8. Existing app modification flow
 
-Use this when the request is a targeted Chat or Video change in an existing app.
+Use this when the request is a targeted Chat, Video, or Feeds change in an existing app.
 
 1. Detect runtime, product(s), and currently installed Stream packages.
-2. Use [`references/DOCS.md`](references/DOCS.md) to fetch the relevant manifest (Chat or Video) and selected markdown page for the requested area.
+2. Use [`references/DOCS.md`](references/DOCS.md) to fetch the relevant manifest (Chat, Video, or Feeds) and selected markdown page for the requested area.
 3. Open the matching blueprint section in the product's `*-blueprints.md`.
 4. For cookbook-style requests, use [`references/DOCS.md`](references/DOCS.md) manifest search and fetch the best matching cookbook/customization markdown page.
 5. Prefer the smallest change that preserves the app's architecture:
