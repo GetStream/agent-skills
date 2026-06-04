@@ -36,6 +36,11 @@ This skill picks the track from the user's input and delegates to a specialized 
 - Existing project + "add Chat to this app", "integrate Video", "drop Feeds into ..." and **no platform signal**
 - Same SDK wiring as scaffold; skips Next.js init and theme pick
 
+**Audit an existing Stream Video integration against best practices** -> the matching platform pack runs its **read-only** Integration best-practices audit (no scaffolding, no CLI, no build steps)
+- Peer signal (`react native` / `expo`) -> `stream-react-native`; web / React / Next.js or no platform signal -> `stream-builder` (Track F)
+- Triggers: "audit/review my video integration", "check my app against best practices", "is my video app production-ready?", "what am I missing before launch?"
+- Routes here even when the request contains "check" - the audit intent takes precedence over the `stream-cli` "check {anything}" route below
+
 **Query Stream data via the CLI** -> use the `stream-cli` skill
 - "list calls", "show channels", "any flagged", "find users"
 - Literal CLI: `stream api ...`, `stream config ...`, `stream auth ...`
@@ -62,6 +67,7 @@ Scan the user's input for the signals below in order. The classifier is determin
 | Explicit SDK/framework token: `Chat React`, `Video iOS`, `Feeds Node`, `Moderation`, etc. (with or without version), and **no build/integrate verb** | `stream-docs` |
 | Words "docs" or "documentation" (and no build/integrate verb) | `stream-docs` |
 | "How do I {X} in {framework}?", "How does {hook/component/method} work?", "What does {SDK thing} do?" - and **no build/integrate verb**. If the request is "how do I add/build/integrate/scaffold {X} in {framework}" and `{framework}` matches a peer signal, the peer row below wins instead. | `stream-docs` |
+| **Audit/review an existing Stream Video integration** (read-only): "audit/review my video integration", "check my app against Stream's best practices", "is my video app production-ready?", "what am I missing before launch?" - **no build/integrate verb**. Peer signal (`react native` / `expo`) -> `stream-react-native`; web / React / Next.js or no platform signal -> `stream-builder` (Track F). **This row is matched before - and wins over - the `stream-cli` "check {anything}" row below** whenever the request frames a best-practices / production-readiness review rather than a data query. | matching platform pack (read-only audit) |
 | Operational verbs + Stream noun: "list calls", "show channels", "any flagged", "find users", "check {anything}" | `stream-cli` |
 | `stream api`, `stream config`, `stream auth` (literal CLI invocation) | `stream-cli` |
 | "Install the CLI", "set up stream" with no project context | `stream-cli` |

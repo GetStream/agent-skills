@@ -537,7 +537,7 @@ Source of truth: [`/video/docs/react-native/advanced/integration-best-practices.
 
 ### Output contract
 
-One line per check: **Verdict** (PASS / FAIL / N/A / NEEDS-REVIEW) · **Severity** (Blocker / High / Medium / Low) · **Evidence** (`file:line`, or "not found") · **Fix** (one line). Close with a prioritized remediation list, Blockers first.
+One line per check: **Verdict** (PASS / FAIL / N/A / NEEDS-REVIEW) | **Severity** (Blocker / High / Medium / Low) | **Evidence** (`file:line`, or "not found") | **Fix** (one line). Close with a prioritized remediation list, Blockers first.
 
 Severity guide: **Blocker** = call won't reliably connect, leaks/keeps publishing media, or breaks push/security; **High** = real production stability or UX gap; **Medium/Low** = polish and hardening.
 
