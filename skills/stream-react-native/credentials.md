@@ -87,15 +87,15 @@ If the user pastes a token, hold it in context and skip generation.
 Video needs no demo data - skip this step for Video-only sessions. Chat and Feeds both have a demo-data flow; pick the branch(es) that match the products in scope:
 
 - **Chat** - C1 (users), C2 (channels), C3 (messages)
-- **Feeds** - C1 (users, shared with Chat), C4 (follows), C5 (activities)
+- **Feeds** - C1 (users, shared with Chat), C4 (follows), C5 (activities), C6 (`foryou` feed group config), C7 (reactions so `foryou` has content)
 
-For Chat, create 3 to 5 channels with realistic usernames; the connected user must be a member of at least one demo channel, or `ChannelList` will render empty. For Feeds, create 3 to 5 demo users, have the connected user's `timeline` follow each of their `user` feeds, and post a few activities on each demo user's feed so the timeline has content.
+For Chat, create 3 to 5 channels with realistic usernames; the connected user must be a member of at least one demo channel, or `ChannelList` will render empty. For Feeds, create 3 to 5 demo users, have the connected user's `timeline` follow each of their `user` feeds, post a few activities on each demo user's feed so the timeline has content, configure the `foryou` feed group with the `popular` selector, and seed one reaction per activity so the popular score clears `min_popularity` and `foryou` is not empty on first launch.
 
 These calls are mutating. **All demo ids must be namespaced** so they cannot collide with real users, channels, follows, or activities that already exist in the selected Stream app.
 
 #### C0 - Pre-mutation safety check
 
-Before running any `UpdateUsers` / `GetOrCreateChannel` / `SendMessage` / `GetOrCreateFollows` / `AddActivity`:
+Before running any `UpdateUsers` / `GetOrCreateChannel` / `SendMessage` / `GetOrCreateFollows` / `AddActivity` / `UpdateFeedGroup` / `AddActivityReaction`:
 
 1. **Generate a per-session demo prefix** and hold it in context. Default form: `demo-<short_random>-` where `<short_random>` is 4-6 lowercase chars (e.g., `demo-k3p9-`). Every demo user id, channel id, activity id, and seeded record custom field uses this prefix. Do not reuse a prefix across sessions - generate a fresh one each time so retries land in a fresh namespace.
 2. **Detect whether the selected app already has real data.** For Chat in scope, run `stream --safe api QueryChannels --body '{"filter_conditions":{"type":"messaging"},"limit":1}'`. For Feeds in scope, run `stream --safe api QueryActivities --body '{"limit":1}'`. Check whether either response includes records that do **not** start with a `demo-` prefix.
@@ -181,11 +181,41 @@ stream api AddActivity --body '{"id":"<demo_prefix>carol-1","feeds":["user:<demo
 
 Generate ids deterministically per user + index (`<demo_prefix>alice-1`, `:alice-2`, ...). Tag every seeded activity with `custom.seeded_by_skill: true` and `custom.demo_prefix: <demo_prefix>` so later runs can identify this skill's seeded data.
 
-After the follows and activities are in place, the connected user's timeline will render the demo users' posts on first launch. Summarize without printing tokens:
+After the follows and activities are in place, the connected user's timeline will render the demo users' posts on first launch.
 
-> Created Feeds demo data in `"<app_name>"`: 3 users (`<demo_prefix>alice`, `<demo_prefix>bob`, `<demo_prefix>carol`), 3 follows from `timeline:<token_user_id>`, and 4 activities on their `user:` feeds. The connected user's home timeline should render these on first launch.
+#### C6 - Configure the `foryou` feed group [Feeds]
 
-Do not run C4 or C5 when Feeds is not in scope, or when the user only asked for credentials.
+`foryou` ships with no `activity_selectors` configured, so the connected user's `foryou` feed returns empty until a selector is set on the group. `UpdateFeedGroup` is idempotent (PUT) - safe to re-run with the same body.
+
+```bash
+# `popular` formula: reactions + comments*2 + bookmarks*3 + shares*3.
+# min_popularity: 1 means "at least one reaction-equivalent in cutoff_window".
+# cutoff_window 7d is the default but worth making explicit so the selector
+# does not silently drift if defaults change.
+stream api UpdateFeedGroup id=foryou \
+  --body '{"activity_selectors":[{"type":"popular","min_popularity":1,"cutoff_window":"7d"}]}'
+```
+
+This is a **server-side config on the feed group itself**, not on a per-user feed. It applies to every `foryou:<user_id>` feed in the app. Once configured, every user's `foryou` feed will return activities that match the selector.
+
+#### C7 - Seed one reaction per activity [Feeds]
+
+The `popular` selector picks activities by their popularity score. A freshly seeded activity has score 0, so it does not clear `min_popularity: 1` and does **not** appear in `foryou` even after C6. Adding one reaction per activity bumps the score to 1 and makes the activity eligible. Use `AddActivityReaction` (one call per activity). Use a non-`<token_user_id>` reactor (e.g. carol reacts to alice) so the demo looks realistic - the connected user does not see their own reaction pre-filled on every post.
+
+```bash
+stream api AddActivityReaction activity_id=<demo_prefix>alice-1 --body '{"type":"like","user_id":"<demo_prefix>carol"}'
+stream api AddActivityReaction activity_id=<demo_prefix>alice-2 --body '{"type":"like","user_id":"<demo_prefix>bob"}'
+stream api AddActivityReaction activity_id=<demo_prefix>bob-1 --body '{"type":"like","user_id":"<demo_prefix>alice"}'
+stream api AddActivityReaction activity_id=<demo_prefix>carol-1 --body '{"type":"like","user_id":"<demo_prefix>alice"}'
+```
+
+`AddActivityReaction` is **not** idempotent by default - a second call with the same `(activity_id, type, user_id)` will fail with "reaction already exists" or, with `enforce_unique: true`, replace the existing reaction. The safest pattern for re-runs is to skip silently on the "already exists" error rather than crash the seeding flow. Adding more variety (`type: "love"` from one user, `type: "like"` from another) is fine - the popularity formula counts all reactions equally.
+
+After C6 + C7, summarize without printing tokens:
+
+> Configured `foryou` feed group with `popular` selector (`min_popularity: 1`, `cutoff_window: 7d`). Seeded 1 like per demo activity so they clear the popularity threshold. The connected user's `foryou` tab should render these on first launch.
+
+Do not run C4 through C7 when Feeds is not in scope, or when the user only asked for credentials. If only C4 + C5 ran (timeline-only demo, no Explore tab), `foryou` stays empty and that is fine - the Home tab still works.
 
 ### Step D - Proceed automatically
 

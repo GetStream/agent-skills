@@ -161,16 +161,19 @@ import {
 type OwnFeedsContextValue = {
   ownFeed: Feed | undefined;
   ownTimeline: Feed | undefined;
+  forYouFeed: Feed | undefined;
 };
 
 const OwnFeedsContext = createContext<OwnFeedsContextValue>({
   ownFeed: undefined,
   ownTimeline: undefined,
+  forYouFeed: undefined,
 });
 
 export const OwnFeedsContextProvider = ({ children }: PropsWithChildren) => {
   const [ownFeed, setOwnFeed] = useState<Feed>();
   const [ownTimeline, setOwnTimeline] = useState<Feed>();
+  const [forYouFeed, setForYouFeed] = useState<Feed>();
   const client = useFeedsClient();
   const connectedUser = useClientConnectedUser();
 
@@ -179,14 +182,24 @@ export const OwnFeedsContextProvider = ({ children }: PropsWithChildren) => {
 
     const feed = client.feed("user", connectedUser.id);
     const timeline = client.feed("timeline", connectedUser.id);
+    // foryou is the connected user's explore / discover feed. The selector
+    // (e.g. `popular`) is configured server-side on the feed group itself;
+    // see FEEDS-REACT-NATIVE.md > For You feed / Explore for the prerequisite
+    // dashboard or `stream api UpdateFeedGroup id=foryou` setup.
+    const foryou = client.feed("foryou", connectedUser.id);
     setOwnFeed(feed);
     setOwnTimeline(timeline);
+    setForYouFeed(foryou);
 
     const setup = async () => {
       try {
         await Promise.all([
           feed.getOrCreate({ watch: true }),
           timeline.getOrCreate({ watch: true }),
+          // Watch foryou so reactions / new activities / follows propagate
+          // through the WebSocket and the Explore tab re-renders reactively.
+          // queryActivities cannot do this - it has no reactive subscription.
+          foryou.getOrCreate({ watch: true }),
         ]);
         // Self-follow: own posts only appear on own timeline once timeline follows user.
         const alreadyFollows = feed.currentState.own_follows?.find(
@@ -202,11 +215,12 @@ export const OwnFeedsContextProvider = ({ children }: PropsWithChildren) => {
     return () => {
       setOwnFeed(undefined);
       setOwnTimeline(undefined);
+      setForYouFeed(undefined);
     };
   }, [client, connectedUser]);
 
   return (
-    <OwnFeedsContext.Provider value={{ ownFeed, ownTimeline }}>
+    <OwnFeedsContext.Provider value={{ ownFeed, ownTimeline, forYouFeed }}>
       {children}
     </OwnFeedsContext.Provider>
   );
@@ -217,10 +231,11 @@ export const useOwnFeedsContext = () => useContext(OwnFeedsContext);
 
 Wiring:
 
-- The context is `undefined` until both feeds have been created and loaded.
+- The context is `undefined` until the feeds have been created and loaded.
 - Self-follow is idempotent: the `own_follows` check skips it after the first run.
 - Most apps mount this exactly once, above the navigator.
 - Do not pass `Feed` objects through navigation params. Instead, read them from this context on the destination screen.
+- **`foryou` requires a server-side selector config to return any activities** (its default is empty). Configure it once per app with `stream api UpdateFeedGroup id=foryou --body '{"activity_selectors":[{"type":"popular","min_popularity":1,"cutoff_window":"7d"}]}'` (or via the dashboard) and seed at least one reaction per activity in dev so the popularity score clears `min_popularity`. See [`../credentials.md`](../credentials.md) > Step C6 / C7. If foryou is not in scope for your app, drop it from the context value - all three feeds are independent.
 
 ---
 
@@ -740,132 +755,37 @@ Wiring:
 
 ## Explore Screen
 
-The right tool for a general "Explore" / "Discover" tab that shows newest posts across the whole app is `client.queryActivities(...)`, **not** the `foryou` feed. Reasons:
+For a tab that shows cross-user activity **and reacts live** to follows, reactions, and new posts from other parts of the app, the right primitive is a **watched feed group** - same pattern Home uses for `timeline`, not `client.queryActivities()`.
 
-- `foryou` is a selector-driven feed (its built-in selectors are following + popular + interest). In a fresh app with no follows, no popularity signal, and no interest tags, it returns an empty list **by design** - the API call succeeds but there is nothing matching the selectors yet.
-- `queryActivities` is purpose-built for "exploratory search and filtering across all activities" (per the live docs). It searches across all visible feeds, respects activity visibility, and accepts simple filter + sort + pagination.
+Why not `queryActivities`: it is a one-shot HTTP call with **no reactive subscription**. The SDK only applies incoming WebSocket events (`feeds.activity.added`, `feeds.activity.reaction.added`, etc.) to feeds you have loaded with `getOrCreate({ watch: true })`. A `queryActivities` result lives in your local `useState` and never updates - so if the user likes a post on Home, the same post on the Explore tab will not reflect the new reaction until you re-issue the query manually. (`queryActivities` still has a use - one-shot lookups like search and exports - see [FEEDS-REACT-NATIVE.md](FEEDS-REACT-NATIVE.md) > Querying activities for one-shot lookups.)
 
-The trade-off: `queryActivities` returns a one-shot response, not a reactive feed. You manage state locally instead of using `<StreamFeed>` + `useFeedActivities`. Pull-to-refresh re-issues the query without `next`; pagination passes the prior response's `next` cursor.
+The reactive primitive is the **`foryou` feed group** (or any custom group you've configured). The selector that decides which activities show up is configured server-side on the group (`popular`, `following`, `current_feed`, ...). For a showcase / demo with seeded data, `popular` with `min_popularity: 1` is the practical floor - see [FEEDS-REACT-NATIVE.md](FEEDS-REACT-NATIVE.md) > For You feed / Explore prerequisite for the `UpdateFeedGroup` setup + the reaction-seeding requirement.
 
 ```tsx
-import React, { useCallback, useEffect, useState } from "react";
-import {
-  ActivityIndicator,
-  FlatList,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
-import type { ActivityResponse } from "@stream-io/feeds-react-native-sdk";
-import { useFeedsClient } from "@stream-io/feeds-react-native-sdk";
-import { Activity } from "@/components/activity/Activity";
-
-const PAGE_SIZE = 20;
-const keyExtractor = (item: ActivityResponse) => item.id;
-const renderItem = ({ item }: { item: ActivityResponse }) => (
-  <Activity activity={item} />
-);
+import React from "react";
+import { StreamFeed } from "@stream-io/feeds-react-native-sdk";
+import { ActivityList } from "@/components/activity/ActivityList";
+import { useOwnFeedsContext } from "@/contexts/own-feeds-context";
 
 export const ExploreScreen = () => {
-  const client = useFeedsClient();
-  const [activities, setActivities] = useState<ActivityResponse[]>([]);
-  const [nextCursor, setNextCursor] = useState<string | undefined>();
-  const [isLoading, setIsLoading] = useState(true);
-  const [isLoadingNext, setIsLoadingNext] = useState(false);
-
-  const load = useCallback(async () => {
-    if (!client) return;
-    setIsLoading(true);
-    // No filter = every post across the app. The filter field is
-    // `activity_type` (NOT `type` - that's a different field on activities and
-    // a filter on `type` silently matches zero rows).
-    const res = await client.queryActivities({
-      sort: [{ field: "created_at", direction: -1 }],
-      limit: PAGE_SIZE,
-    });
-    setActivities(res.activities ?? []);
-    setNextCursor(res.next);
-    setIsLoading(false);
-  }, [client]);
-
-  const loadNext = useCallback(async () => {
-    if (!client || !nextCursor || isLoadingNext) return;
-    setIsLoadingNext(true);
-    const res = await client.queryActivities({
-      sort: [{ field: "created_at", direction: -1 }],
-      limit: PAGE_SIZE,
-      next: nextCursor,
-    });
-    setActivities((prev) => [...prev, ...(res.activities ?? [])]);
-    setNextCursor(res.next);
-    setIsLoadingNext(false);
-  }, [client, nextCursor, isLoadingNext]);
-
-  useEffect(() => {
-    load();
-  }, [load]);
-
-  if (isLoading && activities.length === 0) {
-    return (
-      <View style={styles.empty}>
-        <ActivityIndicator />
-      </View>
-    );
-  }
-
-  if (activities.length === 0) {
-    return (
-      <View style={styles.empty}>
-        <Text style={styles.emptyText}>No posts yet</Text>
-      </View>
-    );
-  }
+  const { forYouFeed } = useOwnFeedsContext();
+  if (!forYouFeed) return null;
 
   return (
-    <FlatList
-      data={activities}
-      keyExtractor={keyExtractor}
-      renderItem={renderItem}
-      onEndReachedThreshold={0.2}
-      onEndReached={loadNext}
-      ListFooterComponent={isLoadingNext ? <ActivityIndicator /> : null}
-      refreshing={isLoading}
-      onRefresh={load}
-    />
+    <StreamFeed feed={forYouFeed}>
+      <ActivityList />
+    </StreamFeed>
   );
 };
-
-const styles = StyleSheet.create({
-  empty: { alignItems: "center", flex: 1, justifyContent: "center" },
-  emptyText: { color: "#6B7280", fontSize: 14 },
-});
 ```
 
 Wiring:
 
-- Default sort `[{ field: "created_at", direction: -1 }]` gives newest-first - the right default for an Explore tab.
-- Filter field is **`activity_type`** (not `type`). A `filter: { type: "post" }` clause silently matches zero rows because `type` here means something else internally. If you want only one activity type, use `filter: { activity_type: "post" }`. Most explore tabs want every post type, so leave `filter` off entirely.
-- Reuse the same `Activity` component the timeline uses - it accepts any `ActivityResponse`.
-- Pagination cursor is `res.next`. Pass it back in as `{ next }` on the follow-up call.
-- For a tab nested in a navigator with a native iOS tab bar, add `contentContainerStyle={{ paddingBottom: insets.bottom + 12 }}` to the `FlatList` so the last item clears the tab bar.
-- For real-time updates of new explore posts (out of scope for a basic showcase), you'd subscribe to client-level events. `queryActivities` itself is non-reactive.
-
-### For You Feed (selector-based)
-
-If you specifically want the algorithmic For You feed (only useful once your app has follow + popularity signal), the `foryou` group does still exist:
-
-```tsx
-const feed = useMemo(() => client?.feed("foryou", connectedUser?.id), [client, connectedUser?.id]);
-useEffect(() => {
-  if (feed) feed.getOrCreate({ limit: 10 });
-}, [feed]);
-// Render with <StreamFeed feed={feed}><ActivityList /></StreamFeed>
-```
-
-Note that `foryou`:
-
-- Does not support real-time `watch: true` (passing it is a silent no-op).
-- Returns empty in a fresh single-user app because there is no follow / popularity / interest signal yet. Seed follows and a few activities first (or use the Explore Screen pattern above).
+- Reuses the same `ActivityList` the timeline uses - it reads `useFeedActivities()` from the nearest `<StreamFeed>` context, so reactions / new activities / follows propagate through the WebSocket and the list re-renders automatically.
+- `forYouFeed` comes from `OwnFeedsContextProvider`, which already calls `getOrCreate({ watch: true })` on it. Do not create / `getOrCreate` it again on this screen.
+- For a tab nested in a navigator with a native iOS tab bar, pass `contentContainerStyle={{ paddingBottom: insets.bottom + 12 }}` to the `ActivityList`'s underlying `FlatList` so the last item clears the tab bar.
+- **Empty list at first run?** That is almost always the server-side selector, not your code. Check that the `foryou` feed group has `activity_selectors` configured (the default is none = empty), and that the seeded activities meet the selector's threshold. With `popular` + `min_popularity: 1`, an activity needs at least one reaction / comment / bookmark / share. Seed one reaction per activity during demo setup ([`../credentials.md`](../credentials.md) > Step C7).
+- Layering selectors (e.g. `popular` and `following` together) is a way to show activities the user follows even when they have no reactions yet - useful in real apps where most activities will not be "popular" by the time the user first opens the tab.
 
 ---
 
@@ -925,7 +845,14 @@ export const FollowButton = ({ feed: activityFeed }: FollowButtonProps) => {
         pressed && styles.pressed,
       ]}
     >
-      <Text style={styles.label}>{isFollowing ? "Unfollow" : "Follow"}</Text>
+      <Text
+        style={[
+          styles.label,
+          isFollowing ? styles.unfollowLabel : styles.followLabel,
+        ]}
+      >
+        {isFollowing ? "Unfollow" : "Follow"}
+      </Text>
     </Pressable>
   );
 };
@@ -939,10 +866,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 6,
   },
+  // Follow: solid blue pill with white text.
   follow: { backgroundColor: "#2563EB" },
-  unfollow: { backgroundColor: "#DC2626" },
+  followLabel: { color: "#FFFFFF" },
+  // Unfollow: transparent pill with gray border + gray text. Twitter/Instagram
+  // "Following" pattern - less aggressive than a solid red destructive style,
+  // and stays readable on any card background. Keep the label color tied to
+  // the border color or it goes invisible the moment someone restyles the pill.
+  unfollow: { backgroundColor: "transparent", borderColor: "#9CA3AF", borderWidth: 1 },
+  unfollowLabel: { color: "#9CA3AF" },
   pressed: { opacity: 0.8 },
-  label: { color: "#FFFFFF", fontSize: 14, fontWeight: "600" },
+  label: { fontSize: 14, fontWeight: "600" },
 });
 ```
 

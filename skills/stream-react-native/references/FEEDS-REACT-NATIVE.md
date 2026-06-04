@@ -191,35 +191,47 @@ Load and watch a feed:
 // Required for real-time updates on regular feeds
 await userFeed.getOrCreate({ watch: true });
 await timeline.getOrCreate({ watch: true });
-
-// `foryou` uses selector-driven content (following + popular + interest).
-// It does NOT support watch (passing watch: true is a silent no-op) AND it
-// returns empty in a fresh single-user app because there is no follow /
-// popularity / interest signal yet. For a general "Explore / Discover" tab
-// you almost certainly want `client.queryActivities(...)` instead - see
-// below. Only use `foryou` once the app has real follow/popularity signal.
-await forYou.getOrCreate({ limit: 10 });
+// `foryou` is a watchable feed too - its content depends on the
+// activity_selectors configured server-side on the feed group. See
+// "For You feed / Explore" below.
+await forYou.getOrCreate({ watch: true });
 ```
 
 `feed.getOrCreate()` is idempotent. Call it again to refresh the feed state. After a WebSocket reconnect, the SDK automatically re-fetches any feed that was previously loaded with `watch: true`.
 
-### Exploring across feeds (`queryActivities`)
+### For You feed / Explore prerequisite
 
-For an "Explore" / "Discover" / "newest posts across the app" view, use `client.queryActivities(...)` instead of any feed group. It is purpose-built for "exploratory search and filtering across all activities" (per the live docs) and respects activity visibility rules.
+The `foryou` group exists by default but ships with **no `activity_selectors` configured**, which means a freshly loaded `foryou` feed returns an empty list - the API call succeeds, the WebSocket subscription is live, the selector just matches nothing. Configure the group once per app (dashboard or CLI):
 
-```ts
-const res = await client.queryActivities({
-  sort: [{ field: "created_at", direction: -1 }], // newest first
-  limit: 20,
-  // Optional filter. Field is `activity_type` (NOT `type` - that is a different
-  // field used internally; a filter on `type` silently matches zero rows).
-  // filter: { activity_type: "post" },
-});
-const activities = res.activities; // ActivityResponse[]
-const nextCursor = res.next;       // pass back as { next } for the next page
+```bash
+# `popular` formula: reactions + comments*2 + bookmarks*3 + shares*3.
+# min_popularity: 1 means "at least one reaction-equivalent in cutoff_window".
+stream api UpdateFeedGroup id=foryou \
+  --body '{"activity_selectors":[{"type":"popular","min_popularity":1,"cutoff_window":"7d"}]}'
 ```
 
-Unlike a feed, `queryActivities` returns a one-shot response. Manage state locally (a `useState<ActivityResponse[]>` plus a `next` cursor) rather than relying on `<StreamFeed>` and `useFeedActivities`. Pagination passes the prior response's `next`; pull-to-refresh re-issues the query without `next`.
+For a showcase / demo where you have just seeded activities but no engagement, you also have to seed **at least one reaction per activity** - otherwise the popular score stays at 0 and the activity does not clear `min_popularity`. See [`../credentials.md`](../credentials.md) > Step C7. Once configured, you can layer additional selectors (`following`, `current_feed`, ...) - each picks the latest 1000 activities it matches, and the union is what foryou returns.
+
+### Querying activities for one-shot lookups
+
+`client.queryActivities(...)` is the right tool for **search, exports, and any other one-shot lookup** - cases where you do not need the result to react to live events.
+
+```ts
+// Search: find recent posts mentioning a keyword.
+const res = await client.queryActivities({
+  filter: { activity_type: "post", text: { $q: "stream" } },
+  sort: [{ field: "created_at", direction: -1 }],
+  limit: 20,
+});
+```
+
+> **Rule of thumb: never use `queryActivities` to back a live-reactive screen.** It is a one-shot HTTP call with no WebSocket subscription. The SDK applies incoming `feeds.activity.added` / `feeds.activity.reaction.added` / `feeds.follow.created` events to feeds you have called `getOrCreate({ watch: true })` on - never to a `queryActivities` result. For an Explore / For You tab that should re-render when other parts of the app change activity state, use a **watched feed group**, not `queryActivities`. See [FEEDS-REACT-NATIVE-blueprints.md](FEEDS-REACT-NATIVE-blueprints.md) > Explore Screen.
+
+Filter notes when you do use `queryActivities`:
+
+- Filter field is `activity_type` (not `type`). A `filter: { type: "post" }` clause silently matches zero rows.
+- Default sort is newest-first if you do not pass `sort`.
+- Pagination is cursor-based: `res.next` -> pass back as `{ next }`. There is no offset.
 
 ### Self-follow
 
@@ -652,9 +664,9 @@ See [Contexts and hooks docs](https://getstream.io/activity-feeds/docs/react-nat
 - **Same package across RN CLI and Expo.** `@stream-io/feeds-react-native-sdk` works on both runtimes - there is no `-expo` variant.
 - **`useCreateFeedsClient` returns `undefined` while connecting.** Always render `null` (or a spinner) until the client resolves; never pass `undefined` to `<StreamFeeds client={...}>`.
 - **Built-in feed groups must exist in the dashboard.** `user`, `timeline`, `notification`, and `foryou` are pre-created on most apps, but custom groups need to exist before `feed.getOrCreate(...)` can use them.
-- **`foryou` is selector-driven and renders empty for a fresh single-user app.** Its selectors are following + popular + interest; with no follows, no popularity signal, and no interest tags, the API succeeds but the activity list is empty by design. For a general Explore / Discover tab, use `client.queryActivities({ sort: [{ field: "created_at", direction: -1 }] })` instead. Reserve `foryou` for apps that already have real follow / popularity signal.
+- **For any screen that should react live to other users' activity, back it with a watched feed (`feed.getOrCreate({ watch: true })`), never with `client.queryActivities()`.** `queryActivities` is for one-shot lookups (search, exports) - it returns raw data and the SDK has no place to apply incoming WebSocket events to it. The SDK only applies `feeds.activity.added` / `feeds.activity.reaction.added` / `feeds.follow.created` events to feeds you have loaded with `watch: true`. If reactions / follows / new posts from elsewhere in the app fail to update a list, you are almost certainly looking at a `queryActivities`-backed screen that should be a `<StreamFeed>` + `useFeedActivities()` screen instead.
+- **`foryou` ships with no `activity_selectors` configured and returns empty until you configure one.** This is server-side on the feed group, not a client setup step. Configure via dashboard or `stream api UpdateFeedGroup id=foryou --body '{"activity_selectors":[{"type":"popular","min_popularity":1,"cutoff_window":"7d"}]}'`. With the `popular` selector, an activity needs popularity >= `min_popularity` to appear (formula: `reactions + comments*2 + bookmarks*3 + shares*3`); seed at least one reaction per activity in demos.
 - **`queryActivities` filter field is `activity_type`, not `type`.** A `filter: { type: "post" }` clause silently matches zero rows because `type` here means a different internal field. Use `filter: { activity_type: "post" }` if you want only one activity type - or leave `filter` off entirely if you want every post.
-- **`foryou` does not support real-time `watch: true`.** Passing `watch: true` is not an error but does nothing. Reload with `getOrCreate({ limit })` to refresh.
 - **Self-follow is required.** A user's own posts go to their `user` feed and do not appear on their own `timeline` without a `timeline.follow("user:<id>")` relationship. Make this call idempotently on first run.
 - **Reactions live on the client.** Use `client.addActivityReaction` / `client.deleteActivityReaction` (not `feed.addReaction` like Flutter / Swift).
 - **For activity-details pages, use `client.activityWithStateUpdates(id)`.** Pass `activityId` (string) through navigation params, not the `ActivityResponse`. Call `activity.dispose()` on unmount so the SDK does not keep refetching after the screen closes.
