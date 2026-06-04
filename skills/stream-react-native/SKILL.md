@@ -46,6 +46,7 @@ Before any tool call, decide the track from the user's input alone. Do not probe
 | Explicit product/runtime token: `Chat React Native`, `Chat Expo`, `Video React Native`, `Video Expo` | **C - Reference lookup** |
 | Words "docs" or "documentation" around Stream Chat or Stream Video React Native / Expo work | **C - Reference lookup** |
 | "How do I {X} in React Native/Expo?", "What does {SDK component/hook/prop} do?" | **C - Reference lookup** |
+| "Audit/review/check an existing Stream **Video** integration against best practices", "is my video app production-ready?", "what am I missing before launch?" | **C - Reference lookup** (read-only) - run the **Integration best-practices audit** in [`references/VIDEO-REACT-NATIVE.md`](references/VIDEO-REACT-NATIVE.md) |
 | "Install Stream packages", "set up Chat RN", "set up Video RN", "wire auth/token flow" with no broader feature request | **D - Bootstrap / setup** |
 | Stream Feeds, Stream Moderation review UI, or other non-Chat / non-Video Stream RN product | **Reject bundled scope** and route to live docs only if the user wants docs |
 | Bare `/stream-react-native` with no args | List the tracks briefly and wait |
@@ -190,6 +191,7 @@ Load only the relevant files for the requested product:
 - Chat RN screen/component structure -> [`references/CHAT-REACT-NATIVE-blueprints.md`](references/CHAT-REACT-NATIVE-blueprints.md)
 - Video RN setup and gotchas -> [`references/VIDEO-REACT-NATIVE.md`](references/VIDEO-REACT-NATIVE.md)
 - Video RN screen/component structure -> [`references/VIDEO-REACT-NATIVE-blueprints.md`](references/VIDEO-REACT-NATIVE-blueprints.md)
+- **Audit an existing Video integration against best practices** -> the **Integration best-practices audit** section in [`references/VIDEO-REACT-NATIVE.md`](references/VIDEO-REACT-NATIVE.md) (read-only review; produce findings before changing any code)
 
 If the user asks for exact API details not bundled here, use [`references/DOCS.md`](references/DOCS.md) to fetch the right manifest and selected markdown page. If implementation still needs source-level confirmation, inspect the installed package under the target app's `node_modules` after dependencies are installed. Do not use machine-specific documentation paths.
 

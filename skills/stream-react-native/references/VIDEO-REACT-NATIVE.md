@@ -521,6 +521,91 @@ try {
 
 ---
 
+## Integration best-practices audit (existing apps)
+
+Use this when the user wants to **review, audit, or check** an existing Stream Video React Native integration against Stream's best practices - e.g. *"is my video integration production-ready?"*, *"check my app against Stream's best practices"*, *"what am I missing before launch?"*. This is a **read-only review**: produce findings first; only edit code if the user then asks you to fix them.
+
+Source of truth: [`/video/docs/react-native/advanced/integration-best-practices.md`](https://getstream.io/video/docs/react-native/advanced/integration-best-practices.md). The checklist below folds that page together with this skill's stricter house rules in [`../RULES.md`](../RULES.md). **When the live doc and a house rule differ, the house rule wins** - it is the stricter, RN-specific guidance (e.g. `getOrCreateInstance` is mandatory here, and audio routing is auto-managed - see the carve-outs below).
+
+### How to run it
+
+1. **Detect the app.** Run the Project signals probe in [`SKILL.md`](../SKILL.md) to confirm RN CLI vs Expo and which Stream packages are installed. If `@stream-io/video-react-native-sdk` is absent, stop - there is nothing to audit.
+2. **Locate the integration surface.** Grep the app source (`app/`, `src/`, `App.tsx`/`index.*`) and native/config files (`app.json`, `app.config.*`, `ios/**/Info.plist`, `android/**/AndroidManifest.xml`, `android/gradle.properties`) for the anchor symbols in the checklist.
+3. **Walk every row.** Most checks are **absence checks** - the failure is a *missing* hook, call, permission, or provider, not visibly wrong code. If the anchor symbol is not found, the row is **FAIL** (or **NEEDS-REVIEW** if it could legitimately live in a file you cannot see, e.g. a backend token route).
+4. **Mark `N/A` only when the feature genuinely does not apply** (e.g. ringing-only rows in an app with no ringing) - and say *why*.
+5. **Report with the output contract below. Never silently skip a row** - silent omission reads as "covered" when it wasn't.
+
+### Output contract
+
+One line per check: **Verdict** (PASS / FAIL / N/A / NEEDS-REVIEW) · **Severity** (Blocker / High / Medium / Low) · **Evidence** (`file:line`, or "not found") · **Fix** (one line). Close with a prioritized remediation list, Blockers first.
+
+Severity guide: **Blocker** = call won't reliably connect, leaks/keeps publishing media, or breaks push/security; **High** = real production stability or UX gap; **Medium/Low** = polish and hardening.
+
+### Carve-outs (do not raise these as findings)
+
+- **Audio routing (`callManager`).** Do **not** flag missing `callManager.start()/stop()`. The SDK starts/stops audio routing automatically on `call.join()`/`call.leave()`. Only inspect `callManager` when the app deliberately overrides `audioRole` (e.g. a livestream/audio-room *listener*); a wrong/missing role there is the only valid finding.
+- **Animation peers.** `react-native-reanimated`/`-worklets`/`-gesture-handler` are optional for Video; their absence is not a failure (the SDK falls back to RN `Animated`). Only note them as a Low "nice-to-have" for smoother floating-tile animation.
+
+### Checklist
+
+**Client & call lifecycle**
+
+| Check | Detect (anchor) | Pass condition | Severity |
+|---|---|---|---|
+| Singleton client | `new StreamVideoClient(` vs `StreamVideoClient.getOrCreateInstance(` | Only `getOrCreateInstance` is used; never `new` | Blocker |
+| Client created in `useEffect`, disposed on unmount/sign-out | `disconnectUser(` in a cleanup; client effect keyed on `apiKey`/`user.id` | `client.disconnectUser()` runs on cleanup; client not rebuilt per screen | High |
+| `tokenProvider` with ~4h tokens; no committed no-expiry token | `tokenProvider` vs literal `token:`/`devToken(` in client code | A `tokenProvider` fetches from a backend; no static prod token in source | Blocker |
+| One `<StreamVideo>` mounted once, above the navigator | `<StreamVideo`, its position vs `NavigationContainer`/root layout | Single provider near app root, survives screen transitions | High |
+| `Call` created once with `{ reuseInstance: true }` in the destination screen | `client.call(`, `reuseInstance` | Exactly one `client.call(type, id, { reuseInstance: true })`; descendants use `useCall()` | High |
+| Guarded `call.leave()` on cleanup | `.leave(`, `CallingState.LEFT` | `leave()` runs on unmount, guarded by `callingState !== CallingState.LEFT` | Blocker |
+| Only the call id/type passed through navigation params | nav `params`/route props | No `Call` object serialized through navigation | Medium |
+| All calling states handled in UI | `useCallCallingState` | UI reacts to `JOINING`/`RECONNECTING`/`RECONNECTING_FAILED`/`OFFLINE`/`LEFT` | High |
+| Ringing/push: same client options in app & `setPushConfig`, with `createStreamVideoClient` | `setPushConfig`, `createStreamVideoClient` | Identical options; `createStreamVideoClient` returns the singleton | High (N/A if no ringing/push) |
+
+**Permissions & native config**
+
+| Check | Detect (anchor) | Pass condition | Severity |
+|---|---|---|---|
+| iOS camera/mic usage strings | `NSCameraUsageDescription`, `NSMicrophoneUsageDescription` (Info.plist or Expo webrtc plugin params) | Both present with real copy | Blocker |
+| Android base call permissions | `CAMERA`, `RECORD_AUDIO`, `MODIFY_AUDIO_SETTINGS`, `BLUETOOTH_CONNECT` (AndroidManifest or Expo plugin) | All declared | Blocker |
+| Expo: SDK + webrtc config plugins + `expo-build-properties` (minSdk 24) | `app.json` `plugins` array | `@stream-io/video-react-native-sdk`, `@config-plugins/react-native-webrtc`, `expo-build-properties` all present | Blocker (Expo lane) |
+| Foreground-service perms only when earned | `FOREGROUND_SERVICE*` | Declared **only** if background calls (`androidKeepCallAlive`) or screenshare are enabled; not over-declared | Medium |
+| Android 13+ runtime `POST_NOTIFICATIONS` (if background/ringing) | `POST_NOTIFICATIONS`, runtime request | Requested at runtime when needed | Medium (N/A if no background/ringing) |
+| Permissions requested at a contextual moment, not on app launch | call sites of permission requests | Prompted when entering a call/lobby, not at cold start | Medium |
+
+**Devices & layout**
+
+| Check | Detect (anchor) | Pass condition | Severity |
+|---|---|---|---|
+| Lobby / device check before joining | a pre-join screen, `useCameraState`/`useMicrophoneState` preview | Users can verify devices before connecting | Medium |
+| Camera flip + audio route switching available | `useCameraState().camera.flip`, audio-output route UI | Flip control present (multi-camera devices); users can switch audio output route | Low |
+| Speaking-while-muted handled or intentionally disabled | `isSpeakingWhileMuted`, `disableSpeakingWhileMutedNotification` | Either surfaced to the user or explicitly disabled | Medium |
+| Safe areas + Android edge-to-edge | `SafeAreaProvider`, `variants.insets`/`useSafeAreaInsets`, `edgeToEdgeEnabled` | `SafeAreaProvider` at root, insets bridged into `<StreamVideo style>`, edge-to-edge on (Android) | High |
+| Filters expose a manual toggle on low-end devices | `@stream-io/video-filters-react-native`, `@stream-io/noise-cancellation-react-native` | If filters are used, a user toggle exists | Medium (N/A if no filters) |
+
+**Error handling & network**
+
+| Check | Detect (anchor) | Pass condition | Severity |
+|---|---|---|---|
+| `call.join()` awaited and in try/catch | `call.join(` | Awaited, wrapped, errors surfaced (not a floating promise) | Blocker |
+| `camera.enable()`/`microphone.enable()` in try/catch | `.enable(` | Each wrapped; failure doesn't strand the UI | High |
+| `connectUser`/token errors handled | `connectUser`, tokenProvider body | Rejections caught and surfaced | High |
+| Reconnection handled via state, not by ending the call; `setDisconnectionTimeout` tuned | `setDisconnectionTimeout`, calling-state usage | App waits for SDK reconnect; doesn't end on transient drop | Medium |
+| Low-bandwidth indicator on custom layouts | custom layout + low-bandwidth UI | Built-in layouts pass automatically; custom layouts notify the user | Medium |
+| Firewall/proxy guidance for restrictive networks | n/a | Networking/firewall settings applied, or users advised to switch networks | Low |
+
+**Concurrency, security & ops**
+
+| Check | Detect (anchor) | Pass condition | Severity |
+|---|---|---|---|
+| Single-call concurrency (if concurrent calls are unwanted) | `rejectCallWhenBusy`, `shouldRejectCallWhenBusy` | Set on both `getOrCreateInstance` options and `setPushConfig` | Medium (N/A if concurrent calls are intended) |
+| Role permissions enforced in the dashboard, not just hidden in the UI | n/a (server-side) | Confirm with the user that dashboard roles are configured | High (NEEDS-REVIEW) |
+| User feedback / rating collected | rating/feedback UI | Some quality-feedback path exists | Low |
+| Tested on real devices | n/a | iOS Simulator has no camera/mic; confirm real-device testing | Low (NEEDS-REVIEW) |
+| SDK dependencies reasonably current | `package.json` versions vs `npm view` dist-tags | Not far behind latest; review [GitHub Releases](https://github.com/GetStream/stream-video-js/releases) | Low |
+
+---
+
 ## Gotchas
 
 - The SDK includes native code; Expo apps must use a development build (not Expo Go).
