@@ -289,7 +289,7 @@ Do not target Expo Go for Video; the SDK includes native code.
 
 | User asks for | Packages | Notes |
 |---|---|---|
-| Ringing (CallKit iOS, Android Telecom) | `@stream-io/react-native-callingx` | Wires CallKit/Telecom; see manifest-selected `/incoming-calls/*` pages. `skipIncomingPushInForeground: true` on `setPushConfig` lets the app's in-foreground ringing UI take over; on iOS 26.4+ RN CLI also needs the PushKit `metadata:` delegate calling `StreamVideoReactNative.didReceiveIncomingVoIPPush(...)` (Expo auto-injects) |
+| Ringing (CallKit iOS, Android Telecom) | `@stream-io/react-native-callingx` | Wires CallKit/Telecom; see manifest-selected `/incoming-calls/*` pages |
 | Background blur / virtual background | `@stream-io/video-filters-react-native` | Optional filter pipeline |
 | Noise cancellation | `@stream-io/noise-cancellation-react-native` | Audio quality improvement |
 | Ringing push delivery (Android FCM) | `@react-native-firebase/app`, `@react-native-firebase/messaging` | Required for ringing on Android; `@react-native-firebase/messaging` is also the typical library for app-owned non-ringing handling |

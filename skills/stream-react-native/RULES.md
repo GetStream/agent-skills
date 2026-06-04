@@ -136,9 +136,11 @@ StreamVideoRN.setPushConfig({
 });
 ```
 
-For single-call concurrency, set `options: { rejectCallWhenBusy: true }` on `getOrCreateInstance` and add `shouldRejectCallWhenBusy: true` to `setPushConfig` (alongside `createStreamVideoClient`). On iOS 26.4+ (RN CLI only), pair this with the new `pushRegistry(_:didReceiveIncomingVoIPPushWith:metadata:withCompletionHandler:)` PushKit delegate that forwards to `StreamVideoReactNative.didReceiveIncomingVoIPPush(...)` so CallKit can be suppressed when the app is foregrounded; Expo handles this automatically via the SDK config plugin.
+For single-call concurrency, set `options: { rejectCallWhenBusy: true }` on `getOrCreateInstance` and add `shouldRejectCallWhenBusy: true` to `setPushConfig` (alongside `createStreamVideoClient`).
 
 For app-owned in-foreground ringing UI (instead of CallKit/Telecom), set `skipIncomingPushInForeground: true` on the per-platform `ios` / `android` keys of `setPushConfig` (alongside `createStreamVideoClient`).
+
+On iOS, call `StreamVideoReactNative.voipRegistration()` once from `didFinishLaunchingWithOptions` to register for VoIP push (Expo injects this call via the SDK config plugin).
 
 **Non-ringing notifications** (`call.missed`, `call.notification`, `call.live_started` - the SDK's `NonRingingPushEvent` type) are entirely app-owned - the SDK does not display them or route taps. Register the device token explicitly via `client.addDevice(token, push_provider, push_provider_name)`; on iOS this is a separate APN token because the ringing VoIP token is PushKit-only.
 
