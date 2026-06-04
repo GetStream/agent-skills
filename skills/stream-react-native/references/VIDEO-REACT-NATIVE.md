@@ -554,7 +554,7 @@ Severity guide: **Blocker** = call won't reliably connect, leaks/keeps publishin
 |---|---|---|---|
 | Singleton client | `new StreamVideoClient(` vs `StreamVideoClient.getOrCreateInstance(` | Only `getOrCreateInstance` is used; never `new` | Blocker |
 | Client created in `useEffect`, disposed on unmount/sign-out | `disconnectUser(` in a cleanup; client effect keyed on `apiKey`/`user.id` | `client.disconnectUser()` runs on cleanup; client not rebuilt per screen | High |
-| `tokenProvider` with ~4h tokens; no committed no-expiry token | `tokenProvider` vs literal `token:`/`devToken(` in client code | A `tokenProvider` fetches from a backend; no static prod token in source | Blocker |
+| `tokenProvider` with ~4h tokens; no committed no-expiry token | `tokenProvider` vs literal `token: devToken` in client code | A `tokenProvider` fetches from a backend; no static prod token in source | Blocker |
 | One `<StreamVideo>` mounted once, above the navigator | `<StreamVideo`, its position vs `NavigationContainer`/root layout | Single provider near app root, survives screen transitions | High |
 | `Call` created once with `{ reuseInstance: true }` in the destination screen | `client.call(`, `reuseInstance` | Exactly one `client.call(type, id, { reuseInstance: true })`; descendants use `useCall()` | High |
 | Guarded `call.leave()` on cleanup | `.leave(`, `CallingState.LEFT` | `leave()` runs on unmount, guarded by `callingState !== CallingState.LEFT` | Blocker |
