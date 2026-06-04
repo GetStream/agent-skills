@@ -1,8 +1,8 @@
-# Stream React Native - llms.txt docs lookup (Chat and Video)
+# Stream React Native - llms.txt docs lookup (Chat, Video, Feeds)
 
-Use `llms.txt` manifests as the only docs entrypoint for both Stream Chat and Stream Video React Native work. Do not maintain direct page URLs in this skill. The manifest is an index, not the source: fetch the selected markdown page from the manifest before coding or making API-specific claims.
+Use `llms.txt` manifests as the only docs entrypoint for Stream Chat, Stream Video, and Stream Feeds React Native work. Do not maintain direct page URLs in this skill. The manifest is an index, not the source: fetch the selected markdown page from the manifest before coding or making API-specific claims.
 
-Pick the manifest set that matches the requested product. Most requests touch one product only; for Chat + Video interop, consult both.
+Pick the manifest set that matches the requested product. Most requests touch one product only; for combined apps (Chat + Video interop, Feeds + Chat, etc.), consult each product's manifest.
 
 ---
 
@@ -21,16 +21,22 @@ Pick the manifest set that matches the requested product. Most requests touch on
 |---|---|
 | `https://getstream.io/video/docs/react-native/llms.txt` | Primary source for Stream Video React Native: installation (RN CLI and Expo), quickstart, calls and call lifecycle, call types, components (CallContent, CallControls, ParticipantView, LivestreamPlayer, HostLivestream, IncomingCall, OutgoingCall), UI cookbook, incoming calls / ringing setup, push providers (Firebase, APNs/PushKit), advanced topics (Chat-with-Video interop, PiP, broadcasting, custom video filters, screenshots), migration guides. |
 
-The primary Chat manifest should identify itself as the current React Native docs. If it does not, treat that as a docs-version problem and verify from the manifest title before continuing. The same applies to the Video manifest.
+### Feeds (React Native)
+
+| Manifest | Use for |
+|---|---|
+| `https://getstream.io/activity-feeds/docs/react-native/llms.txt` | Primary source for Stream Feeds React Native: installation, tokens and authentication, user permissions, feed groups, aggregation, activity selectors, processors, stories, search, feed visibility, membership levels, activities, activity feedback, reactions, comments, user mentions, pins, event handling, contexts and hooks, state layer, logging, importing data, push providers and multi-bundle setup, ranking, notification feeds, For You feed, follows, members, query activities, bookmarks, file uploads, URL previews, polls, moderation, error handling, V2-to-V3 migration. |
+
+The primary Chat manifest should identify itself as the current React Native docs. If it does not, treat that as a docs-version problem and verify from the manifest title before continuing. The same applies to the Video and Feeds manifests.
 
 ---
 
 ## Lookup workflow
 
-1. Identify the product (Chat or Video) from the user request, then fetch the matching primary manifest.
+1. Identify the product (Chat, Video, or Feeds) from the user request, then fetch the matching primary manifest.
 2. Search manifest link text for the exact component, hook, guide, or feature name.
 3. Fetch the selected markdown URL from the manifest.
-4. Confirm the markdown page matches the current React Native UI SDK docs when doing UI SDK work.
+4. Confirm the markdown page matches the current React Native SDK docs when doing SDK work.
 5. Code from the fetched markdown page plus this skill's rules and blueprints.
 6. If the Chat primary manifest does not contain the topic and the request is low-level Chat API/client behavior, repeat the lookup in the Chat secondary manifest.
 7. If multiple titles match, prefer the exact component or guide title over generic `Overview` pages.
@@ -46,6 +52,9 @@ npm view stream-chat-expo version dist-tags --json
 
 # Video
 npm view @stream-io/video-react-native-sdk version dist-tags --json
+
+# Feeds
+npm view @stream-io/feeds-react-native-sdk version dist-tags --json
 ```
 
 Install `@latest` when the npm dist-tag matches the selected docs. If it does not, use the tag or exact version recommended by the manifest-selected installation page.
@@ -82,4 +91,6 @@ Do not convert these heuristics into a static mapping. If the docs add, rename, 
 
 **Video work.** Use the Video manifest for everything: installation (RN CLI + Expo), client and call lifecycle, ringing/push, UI components and cookbook, advanced topics. Video does not have a separate API/client manifest; the same manifest covers both UI and lower-level call/state behavior.
 
-**Chat + Video interop.** Consult both Chat and Video manifests as needed. The canonical interop entrypoint is the Video manifest's `https://getstream.io/video/docs/react-native/advanced/chat-with-video.md`.
+**Feeds work.** Use the Feeds manifest for everything: installation, client creation (`useCreateFeedsClient`, `StreamFeeds`), feed groups, activities, reactions, comments, follows, notification feeds, For You feed, activity selectors, contexts and hooks (state layer), error handling, push, polls, moderation. Feeds does not have a separate API/client manifest; the same manifest covers both contexts/hooks and lower-level state behavior.
+
+**Combined apps (Chat + Video, Feeds + Chat, Feeds + Video, or all three).** Consult each product's manifest. The canonical Chat-with-Video interop entrypoint is the Video manifest's `https://getstream.io/video/docs/react-native/advanced/chat-with-video.md`. Feeds has no built-in cross-product integration page; link out from your own UI.

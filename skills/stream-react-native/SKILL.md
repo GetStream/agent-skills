@@ -1,6 +1,6 @@
 ---
 name: stream-react-native
-description: "Use when creating, building, or integrating Stream Chat and Stream Video in React Native Community CLI or Expo apps - new RN/Expo Chat or Video apps from scratch, existing-app integration, stream-chat-react-native, stream-chat-expo, @stream-io/video-react-native-sdk, migration/setup, channel list, message list, MessageComposer, attachment picker, image/file attachments, media picker, audio messages, threads, thread list, video call, livestream, audio room, ringing, CallContent, ParticipantView, React Navigation, Expo Router, theming, offline support, push notifications, and Chat or Video UI customization. Not for Feeds or Moderation UI."
+description: "Use when creating, building, or integrating Stream Chat, Stream Video, or Stream Feeds in React Native Community CLI or Expo apps - new RN/Expo Chat / Video / Feeds apps from scratch, existing-app integration, stream-chat-react-native, stream-chat-expo, @stream-io/video-react-native-sdk, @stream-io/feeds-react-native-sdk, useCreateFeedsClient, StreamFeeds, StreamFeed, activity feed, timeline feed, notification feed, for-you feed, useFeedActivities, useActivityComments, reactions, comments, follows, migration/setup, channel list, message list, MessageComposer, attachment picker, image/file attachments, media picker, audio messages, threads, thread list, video call, livestream, audio room, ringing, CallContent, ParticipantView, React Navigation, Expo Router, theming, offline support, push notifications, and Chat / Video / Feeds UI customization. Not for Moderation review UI."
 license: See LICENSE in repository root
 compatibility: Supports new or existing React Native CLI and Expo apps running Stream Chat RN or Stream Video RN with React Native New Architecture. The `stream` CLI is the default credentials and requested demo-data path; pasted API key and token are accepted as fallback.
 metadata:
@@ -17,6 +17,7 @@ allowed-tools: >-
   Bash(curl -Ls https://getstream.io/chat/docs/sdk/react-native/llms.txt),
   Bash(curl -Ls https://getstream.io/chat/docs/react-native/llms.txt),
   Bash(curl -Ls https://getstream.io/video/docs/react-native/llms.txt),
+  Bash(curl -Ls https://getstream.io/activity-feeds/docs/react-native/llms.txt),
   Bash(npx create-expo-app@latest *), Bash(npx create-expo-app *),
   Bash(npx @react-native-community/cli@latest init *),
   Bash(npx expo install *), Bash(npx expo prebuild *), Bash(npx expo start *),
@@ -26,9 +27,9 @@ allowed-tools: >-
 
 # Stream React Native - skill router + execution flow
 
-**Rules:** Read **[`RULES.md`](RULES.md)** once per session. Every non-negotiable React Native Chat and Video rule is stated there.
+**Rules:** Read **[`RULES.md`](RULES.md)** once per session. Every non-negotiable React Native Chat, Video, and Feeds rule is stated there.
 
-This file is the single entrypoint: intent classification, product selection, project detection, and module pointers for Stream Chat React Native and Stream Video React Native work.
+This file is the single entrypoint: intent classification, product selection, project detection, and module pointers for Stream Chat React Native, Stream Video React Native, and Stream Feeds React Native work.
 
 ---
 
@@ -40,15 +41,15 @@ Before any tool call, decide the track from the user's input alone. Do not probe
 
 | Signal in user input | Track |
 |---|---|
-| "Build/create/scaffold a new React Native app", "create an Expo app", "new Stream Chat RN app", "new Stream Video RN app", empty directory + React Native/Expo Chat or Video | **A - New app** |
-| "Add/integrate Stream Chat into this app", "wire Chat RN", "set up stream-chat-expo", "add a video call", "wire Stream Video", "set up @stream-io/video-react-native-sdk", "change/customize this Chat or Video UI" | **B - Existing app** |
-| `React Native`, `Expo`, `Expo Router`, `stream-chat-react-native`, `stream-chat-expo`, `@stream-io/video-react-native-sdk`, `Stream Chat RN`, `Stream Video RN`, `Chat React Native`, `Video React Native`, migration | **C - Reference lookup** if the user only asks how/docs; otherwise **B - Existing app** |
-| Explicit product/runtime token: `Chat React Native`, `Chat Expo`, `Video React Native`, `Video Expo` | **C - Reference lookup** |
-| Words "docs" or "documentation" around Stream Chat or Stream Video React Native / Expo work | **C - Reference lookup** |
+| "Build/create/scaffold a new React Native app", "create an Expo app", "new Stream Chat RN app", "new Stream Video RN app", "new Stream Feeds RN app", empty directory + React Native/Expo Chat / Video / Feeds | **A - New app** |
+| "Add/integrate Stream Chat into this app", "wire Chat RN", "set up stream-chat-expo", "add a video call", "wire Stream Video", "set up @stream-io/video-react-native-sdk", "add an activity feed", "wire Stream Feeds", "set up @stream-io/feeds-react-native-sdk", "change/customize this Chat / Video / Feeds UI" | **B - Existing app** |
+| `React Native`, `Expo`, `Expo Router`, `stream-chat-react-native`, `stream-chat-expo`, `@stream-io/video-react-native-sdk`, `@stream-io/feeds-react-native-sdk`, `Stream Chat RN`, `Stream Video RN`, `Stream Feeds RN`, `Chat React Native`, `Video React Native`, `Feeds React Native`, migration | **C - Reference lookup** if the user only asks how/docs; otherwise **B - Existing app** |
+| Explicit product/runtime token: `Chat React Native`, `Chat Expo`, `Video React Native`, `Video Expo`, `Feeds React Native`, `Feeds Expo` | **C - Reference lookup** |
+| Words "docs" or "documentation" around Stream Chat, Stream Video, or Stream Feeds React Native / Expo work | **C - Reference lookup** |
 | "How do I {X} in React Native/Expo?", "What does {SDK component/hook/prop} do?" | **C - Reference lookup** |
 | "Audit/review/check an existing Stream **Video** integration against best practices", "is my video app production-ready?", "what am I missing before launch?" | **C - Reference lookup** (read-only) - run the **Integration best-practices audit** in [`references/VIDEO-REACT-NATIVE.md`](references/VIDEO-REACT-NATIVE.md) |
-| "Install Stream packages", "set up Chat RN", "set up Video RN", "wire auth/token flow" with no broader feature request | **D - Bootstrap / setup** |
-| Stream Feeds, Stream Moderation review UI, or other non-Chat / non-Video Stream RN product | **Reject bundled scope** and route to live docs only if the user wants docs |
+| "Install Stream packages", "set up Chat RN", "set up Video RN", "set up Feeds RN", "wire auth/token flow" with no broader feature request | **D - Bootstrap / setup** |
+| Stream Moderation review UI or any other non-Chat / non-Video / non-Feeds Stream RN product | **Reject bundled scope** and route to live docs only if the user wants docs |
 | Bare `/stream-react-native` with no args | List the tracks briefly and wait |
 
 ### Disambiguation flow
@@ -67,39 +68,40 @@ Identify the product from the user's input or detected packages. Tracks A, B, an
 |---|---|---|
 | `stream-chat-react-native`, `stream-chat-expo`, channel, message, MessageComposer, thread, attachment, offline support | **Chat** | [`references/CHAT-REACT-NATIVE.md`](references/CHAT-REACT-NATIVE.md) + [`references/CHAT-REACT-NATIVE-blueprints.md`](references/CHAT-REACT-NATIVE-blueprints.md) |
 | `@stream-io/video-react-native-sdk`, video call, livestream, audio room, ringing, CallContent, ParticipantView, screenshare, picture in picture | **Video** | [`references/VIDEO-REACT-NATIVE.md`](references/VIDEO-REACT-NATIVE.md) + [`references/VIDEO-REACT-NATIVE-blueprints.md`](references/VIDEO-REACT-NATIVE-blueprints.md) |
-| Both products in one app (chat alongside a video call) | **Chat + Video** | Both reference pairs; see Chat + Video interop in [`RULES.md`](RULES.md) and the manifest-selected `/video/docs/react-native/advanced/chat-with-video.md` |
+| `@stream-io/feeds-react-native-sdk`, `useCreateFeedsClient`, `StreamFeeds`, `StreamFeed`, activity feed, timeline feed, notification feed, for-you feed, `useFeedActivities`, `useActivityComments`, reactions, comments, follows, follow / unfollow, activity composer, `activityWithStateUpdates` | **Feeds** | [`references/FEEDS-REACT-NATIVE.md`](references/FEEDS-REACT-NATIVE.md) + [`references/FEEDS-REACT-NATIVE-blueprints.md`](references/FEEDS-REACT-NATIVE-blueprints.md) |
+| Two or more products in one app (chat alongside a video call, feeds + chat, feeds + video, etc.) | **Combined** | Load only the reference pairs for the products in scope. Nest the providers (e.g. `<StreamVideo>` inside `<OverlayProvider><Chat>` inside `<StreamFeeds>`); do not place them as siblings. See [`RULES.md`](RULES.md) and the manifest-selected `/video/docs/react-native/advanced/chat-with-video.md` for the Chat + Video interop notes |
 
-If the request is ambiguous between Chat and Video, ask one short question and wait:
+If the request is ambiguous between products, ask one short question and wait:
 
-> Are you wiring Stream Chat (channels, messages) or Stream Video (calls, livestream, audio rooms)? Or both in the same app?
+> Are you wiring Stream Chat (channels, messages), Stream Video (calls, livestream, audio rooms), or Stream Feeds (activity feed, timeline, comments, reactions, follows)? Or more than one in the same app?
 
 ### Scope rejection
 
-This skill bundles **Chat React Native and Video React Native**. If the user asks for Stream Feeds or Stream Moderation review UI in React Native, say:
+This skill bundles **Chat, Video, and Feeds React Native**. If the user asks for Stream Moderation review UI or another non-bundled Stream RN product, say:
 
-> The React Native skill currently bundles Chat and Video references only. I can help with Chat or Video here, or switch to live docs for Feeds.
+> The React Native skill currently bundles Chat, Video, and Feeds references. I can help with any combination of those here, or switch to live docs for other products.
 
-Do not invent missing React Native Feeds or Moderation API details from memory.
+Do not invent missing React Native Moderation API details from memory.
 
 ### After classification
 
-- **Tracks A, B, D** -> run Project signals, then continue in [`builder.md`](builder.md) and [`sdk.md`](sdk.md). Run [`credentials.md`](credentials.md) before writing Chat or Video connection code or creating requested demo data.
+- **Tracks A, B, D** -> run Project signals, then continue in [`builder.md`](builder.md) and [`sdk.md`](sdk.md). Run [`credentials.md`](credentials.md) before writing Chat, Video, or Feeds connection code or creating requested demo data.
 - **Track C** -> skip credentials and project probes if the product + runtime are explicit. Only run a read-only probe if RN CLI vs Expo is ambiguous and the answer affects the guidance.
 
 ---
 
 ## Step 0.5: Credentials, token, and demo data (tracks A, B, D only)
 
-Use [`credentials.md`](credentials.md) once per session before writing code that connects to Stream Chat or Stream Video.
+Use [`credentials.md`](credentials.md) once per session before writing code that connects to Stream Chat, Stream Video, or Stream Feeds.
 
 It resolves:
 
 - Stream API key
 - user id and display name
 - user token or token provider plan
-- optional demo data, only when requested, via Stream CLI calls (Chat: `UpdateUsers`, `GetOrCreateChannel`, `SendMessage`; Video does not require seed data because calls are ephemeral)
+- optional demo data, only when requested, via Stream CLI calls (Chat: `UpdateUsers`, `GetOrCreateChannel`, `SendMessage`; Video and Feeds do not require seed data because calls are ephemeral and activities can be posted at runtime)
 
-For Track A, it is acceptable to scaffold the app first if the runtime or target directory must be resolved before credentials. Do not render a connected Chat or Video UI until credentials or a token-provider plan are resolved.
+For Track A, it is acceptable to scaffold the app first if the runtime or target directory must be resolved before credentials. Do not render a connected Chat, Video, or Feeds UI until credentials or a token-provider plan are resolved.
 
 ---
 
@@ -108,7 +110,7 @@ For Track A, it is acceptable to scaffold the app first if the runtime or target
 Read-only local probe. Use it to detect empty/new workspace, RN CLI vs Expo, New Architecture hints, navigation setup, and existing Stream packages.
 
 ```bash
-bash -c 'echo "=== PACKAGE ==="; test -f package.json && grep -oE "\"(stream-chat-react-native|stream-chat-expo|@stream-io/video-react-native-sdk|@stream-io/react-native-webrtc|@stream-io/react-native-callingx|react-native|expo|@react-navigation/[^\"]+|expo-router|react-native-reanimated|react-native-worklets|react-native-teleport|@op-engineering/op-sqlite)\": *\"[^\"]*\"" package.json 2>/dev/null; echo "=== EXPO ==="; find . -maxdepth 2 \( -name "app.json" -o -name "app.config.js" -o -name "app.config.ts" -o -path "./app/_layout.*" \) -print 2>/dev/null; echo "=== NATIVE ==="; find . -maxdepth 2 \( -name "ios" -o -name "android" \) -type d -print 2>/dev/null; echo "=== CONFIG ==="; find . -maxdepth 2 \( -name "babel.config.js" -o -name "metro.config.js" \) -print 2>/dev/null; echo "=== EXPO_SDK ==="; node -e "try{console.log(require(\"./node_modules/expo/package.json\").version)}catch(e){try{console.log(require(\"./package.json\").dependencies.expo)}catch(e){console.log(\"-\")}}" 2>/dev/null; echo "=== EMPTY ==="; test -z "$(ls -A 2>/dev/null)" && echo "EMPTY_CWD" || echo "NON_EMPTY"'
+bash -c 'echo "=== PACKAGE ==="; test -f package.json && grep -oE "\"(stream-chat-react-native|stream-chat-expo|@stream-io/video-react-native-sdk|@stream-io/feeds-react-native-sdk|@stream-io/react-native-webrtc|@stream-io/react-native-callingx|react-native|expo|@react-navigation/[^\"]+|expo-router|react-native-reanimated|react-native-worklets|react-native-teleport|@op-engineering/op-sqlite)\": *\"[^\"]*\"" package.json 2>/dev/null; echo "=== EXPO ==="; find . -maxdepth 2 \( -name "app.json" -o -name "app.config.js" -o -name "app.config.ts" -o -path "./app/_layout.*" \) -print 2>/dev/null; echo "=== NATIVE ==="; find . -maxdepth 2 \( -name "ios" -o -name "android" \) -type d -print 2>/dev/null; echo "=== CONFIG ==="; find . -maxdepth 2 \( -name "babel.config.js" -o -name "metro.config.js" \) -print 2>/dev/null; echo "=== EXPO_SDK ==="; node -e "try{console.log(require(\"./node_modules/expo/package.json\").version)}catch(e){try{console.log(require(\"./package.json\").dependencies.expo)}catch(e){console.log(\"-\")}}" 2>/dev/null; echo "=== EMPTY ==="; test -z "$(ls -A 2>/dev/null)" && echo "EMPTY_CWD" || echo "NON_EMPTY"'
 ```
 
 Hold the result in conversation context. Do not re-run unless the user changes directory, packages are installed, or the project shape changes.
@@ -119,8 +121,10 @@ Use the result to produce a one-line status, for example:
 - `Expo app detected - stream-chat-expo absent - Expo Router present - ready for Chat setup`
 - `Expo app detected - Expo SDK 56+ - apply RULES.md > Expo Router SDK 56+ rule (no @react-navigation/*)`
 - `Expo app detected - @stream-io/video-react-native-sdk absent - ready for Video setup`
+- `Expo app detected - @stream-io/feeds-react-native-sdk absent - ready for Feeds setup`
 - `RN CLI app detected - ios/android present - stream-chat-react-native installed - checking provider placement`
 - `RN CLI app detected - both @stream-io/video-react-native-sdk and stream-chat-react-native installed - Chat + Video interop applies`
+- `Expo app detected - @stream-io/feeds-react-native-sdk and stream-chat-expo installed - nest StreamFeeds + Chat providers (no sibling mounts)`
 - `No RN/Expo app detected in a non-empty directory - create a new app in a child directory or ask before reusing this directory`
 
 If there is no RN/Expo project and Track A applies, scaffold one through [`builder.md`](builder.md) > **2. New app scaffold**. If Track B/D applies in a non-RN directory, ask before creating a child app because that changes project ownership.
@@ -131,8 +135,8 @@ If there is no RN/Expo project and Track A applies, scaffold one through [`build
 
 | Track | Module(s) |
 |---|---|
-| A - New app | [`builder.md`](builder.md) + [`sdk.md`](sdk.md) + `llms.txt` docs lookup + product references (Chat and/or Video) |
-| B - Existing app | [`builder.md`](builder.md) + [`sdk.md`](sdk.md) + `llms.txt` docs lookup + product references (Chat and/or Video) |
+| A - New app | [`builder.md`](builder.md) + [`sdk.md`](sdk.md) + `llms.txt` docs lookup + product references (Chat / Video / Feeds) |
+| B - Existing app | [`builder.md`](builder.md) + [`sdk.md`](sdk.md) + `llms.txt` docs lookup + product references (Chat / Video / Feeds) |
 | C - Reference lookup | [`sdk.md`](sdk.md) + [`references/DOCS.md`](references/DOCS.md) + relevant product reference files |
 | D - Bootstrap / setup | [`builder.md`](builder.md) + [`sdk.md`](sdk.md) + `llms.txt` docs lookup |
 
@@ -144,11 +148,13 @@ Shared React Native and Expo patterns live in **[`sdk.md`](sdk.md)**.
 
 Product-specific setup, docs lookup, gotchas, and UI blueprints live under **`references/`**:
 
-- **`llms.txt` docs lookup (Chat and Video):** [`references/DOCS.md`](references/DOCS.md)
+- **`llms.txt` docs lookup (Chat, Video, Feeds):** [`references/DOCS.md`](references/DOCS.md)
 - **Chat setup/reference:** [`references/CHAT-REACT-NATIVE.md`](references/CHAT-REACT-NATIVE.md)
 - **Chat screen/component blueprints:** [`references/CHAT-REACT-NATIVE-blueprints.md`](references/CHAT-REACT-NATIVE-blueprints.md)
 - **Video setup/reference:** [`references/VIDEO-REACT-NATIVE.md`](references/VIDEO-REACT-NATIVE.md)
 - **Video screen/component blueprints:** [`references/VIDEO-REACT-NATIVE-blueprints.md`](references/VIDEO-REACT-NATIVE-blueprints.md)
+- **Feeds setup/reference:** [`references/FEEDS-REACT-NATIVE.md`](references/FEEDS-REACT-NATIVE.md)
+- **Feeds screen/component blueprints:** [`references/FEEDS-REACT-NATIVE-blueprints.md`](references/FEEDS-REACT-NATIVE-blueprints.md)
 
 If the requested product file is not bundled yet, say so plainly and only switch to live docs if the user asks.
 
@@ -161,10 +167,10 @@ If the requested product file is not bundled yet, say so plainly and only switch
 | Phase | Name | What you do |
 |---|---|---|
 | **A1** | Detect | Run Project signals. Empty workspace is valid for Track A. |
-| **A2** | Choose lane and product | Default to Expo if unspecified; use RN CLI when requested. Confirm product (Chat, Video, or Chat + Video). |
+| **A2** | Choose lane and product | Default to Expo if unspecified; use RN CLI when requested. Confirm product (Chat, Video, Feeds, or any combination). |
 | **A3** | Scaffold | Create the app with current framework tooling; do not explain full RN/Expo environment setup. |
 | **A4** | Install + wire | Use the manifest-selected Installation docs for each product, verify npm dist-tags, install package and peers, then wire providers and first UI. |
-| **A5** | Verify | Confirm install, root providers, permissions (Video: camera/mic), auth, and first rendered Chat or Video screen. |
+| **A5** | Verify | Confirm install, root providers, permissions (Video: camera/mic), auth, and first rendered Chat / Video / Feeds screen. |
 
 ---
 
@@ -174,10 +180,10 @@ If the requested product file is not bundled yet, say so plainly and only switch
 
 | Phase | Name | What you do |
 |---|---|---|
-| **B1** | Detect | Run Project signals and inspect existing app structure before editing. Note any existing Chat or Video packages. |
+| **B1** | Detect | Run Project signals and inspect existing app structure before editing. Note any existing Chat / Video / Feeds packages. |
 | **B2** | Preserve | Keep Expo/RN CLI lane, package manager, navigation stack, and auth architecture unless asked to migrate. |
-| **B3** | Integrate | Use `llms.txt` lookup for the requested area, then load only the Chat or Video reference/blueprint sections needed. |
-| **B4** | Verify | Confirm the requested Stream Chat or Video flow builds and renders in the existing app. |
+| **B3** | Integrate | Use `llms.txt` lookup for the requested area, then load only the Chat / Video / Feeds reference/blueprint sections needed. |
+| **B4** | Verify | Confirm the requested Stream Chat / Video / Feeds flow builds and renders in the existing app. |
 
 ---
 
@@ -191,6 +197,8 @@ Load only the relevant files for the requested product:
 - Chat RN screen/component structure -> [`references/CHAT-REACT-NATIVE-blueprints.md`](references/CHAT-REACT-NATIVE-blueprints.md)
 - Video RN setup and gotchas -> [`references/VIDEO-REACT-NATIVE.md`](references/VIDEO-REACT-NATIVE.md)
 - Video RN screen/component structure -> [`references/VIDEO-REACT-NATIVE-blueprints.md`](references/VIDEO-REACT-NATIVE-blueprints.md)
+- Feeds RN setup and gotchas -> [`references/FEEDS-REACT-NATIVE.md`](references/FEEDS-REACT-NATIVE.md)
+- Feeds RN screen/component structure -> [`references/FEEDS-REACT-NATIVE-blueprints.md`](references/FEEDS-REACT-NATIVE-blueprints.md)
 - **Audit an existing Video integration against best practices** -> the **Integration best-practices audit** section in [`references/VIDEO-REACT-NATIVE.md`](references/VIDEO-REACT-NATIVE.md) (read-only review; produce findings before changing any code)
 
 If the user asks for exact API details not bundled here, use [`references/DOCS.md`](references/DOCS.md) to fetch the right manifest and selected markdown page. If implementation still needs source-level confirmation, inspect the installed package under the target app's `node_modules` after dependencies are installed. Do not use machine-specific documentation paths.
@@ -203,7 +211,8 @@ Use when the user wants package install and shared wiring more than a full featu
 
 - detect RN CLI vs Expo
 - use `llms.txt` lookup for the matching product's Installation docs and verify current npm dist-tags
-- install the correct package and required peers (Chat: `stream-chat-react-native` or `stream-chat-expo`; Video: `@stream-io/video-react-native-sdk`)
+- install the correct package and required peers (Chat: `stream-chat-react-native` or `stream-chat-expo`; Video: `@stream-io/video-react-native-sdk`; Feeds: `@stream-io/feeds-react-native-sdk` + `@react-native-community/netinfo`)
 - Chat-specific wiring: add Reanimated/Worklets Babel plugin as the last plugin, wrap the entry point with `GestureHandlerRootView`, place `OverlayProvider` and `Chat`, wire `useCreateChatClient` or the app's backend token provider
 - Video-specific wiring: declare camera/mic permissions, add Expo config plugins where applicable, create `StreamVideoClient` and mount `StreamVideo`
+- Feeds-specific wiring: call `useCreateFeedsClient` (returns `undefined` while connecting), mount `<StreamFeeds client={client}>` once near the app root, and (typically) wrap an `OwnFeedsContextProvider` that creates the user + timeline feeds and the self-follow
 - stop before product-specific UI if the user only asked for setup

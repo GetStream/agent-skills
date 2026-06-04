@@ -1,6 +1,6 @@
 # Stream React Native - build and integration flow
 
-Use this module after intent classification, **product selection (Chat / Video / Chat + Video)**, and the Project signals probe from [`SKILL.md`](SKILL.md). Run [`credentials.md`](credentials.md) before writing connected Chat or Video code or creating requested demo data.
+Use this module after intent classification, **product selection (Chat / Video / Feeds / any combination)**, and the Project signals probe from [`SKILL.md`](SKILL.md). Run [`credentials.md`](credentials.md) before writing connected Chat, Video, or Feeds code or creating requested demo data.
 
 ---
 
@@ -21,15 +21,16 @@ Also note any installed Stream packages:
 - `stream-chat-react-native` or `stream-chat-expo` -> Chat already present
 - `@stream-io/video-react-native-sdk` -> Video already present
 - `@stream-io/react-native-callingx`, `@stream-io/react-native-webrtc` -> Video peers already present
-- both Chat and Video packages -> Chat + Video interop applies; see [`RULES.md`](RULES.md)
+- `@stream-io/feeds-react-native-sdk` -> Feeds already present
+- two or more Stream RN packages present -> nest the providers; see [`RULES.md`](RULES.md) and [`sdk.md`](sdk.md) > Provider tree
 
-For Track A, default to Expo if the user did not specify Expo vs RN CLI. Keep the new-app guidance minimal: app creation, Stream package install, root providers, auth/token flow, first Chat or Video screen, and verification. Do not explain full React Native, Expo, Xcode, Android Studio, simulator, device, or account setup.
+For Track A, default to Expo if the user did not specify Expo vs RN CLI. Keep the new-app guidance minimal: app creation, Stream package install, root providers, auth/token flow, first Chat / Video / Feeds screen, and verification. Do not explain full React Native, Expo, Xcode, Android Studio, simulator, device, or account setup.
 
 ---
 
 ## 2. New app scaffold
 
-Use this when the user asks for a brand-new Chat, Video, or Chat + Video RN app, or the workspace is empty and Track A applies.
+Use this when the user asks for a brand-new Chat, Video, or Feeds RN app (or any combination), or the workspace is empty and Track A applies.
 
 ### Pick target directory
 
@@ -56,7 +57,7 @@ cd MyApp
 
 ### Install Stream packages by product
 
-Pick the product(s) confirmed in Step 0 of [`SKILL.md`](SKILL.md). For Chat + Video, install both.
+Pick the product(s) confirmed in Step 0 of [`SKILL.md`](SKILL.md). Install one block per product in scope (Chat, Video, Feeds, or any combination).
 
 **Chat - Expo:**
 
@@ -112,6 +113,25 @@ npx pod-install
 
 If you installed the animation peers, add `react-native-worklets/plugin` as the last Babel plugin. Set `minSdkVersion = 24` in `android/build.gradle` and add Java 8 source compatibility in `android/app/build.gradle`. Add camera/microphone usage descriptions to `Info.plist` and camera/audio permissions to `AndroidManifest.xml`. In `android/app/src/main/res/values/styles.xml`, set the app theme parent to a `Theme.EdgeToEdge` variant (e.g. `Theme.EdgeToEdge.Material3`) so Android draws under the system bars.
 
+**Feeds - Expo:**
+
+```bash
+npm view @stream-io/feeds-react-native-sdk version dist-tags --json
+npx expo install @stream-io/feeds-react-native-sdk @react-native-community/netinfo
+npx expo install react-native-safe-area-context
+```
+
+Feeds has no Reanimated, gesture-handler, SVG, or worklets requirement. No Expo config plugin entries are needed. If the app is already in the Expo dev-client lane (because Chat or Video is also installed), keep that lane; an Expo Feeds-only app can stay on the managed workflow.
+
+**Feeds - RN CLI:**
+
+```bash
+npm view @stream-io/feeds-react-native-sdk version dist-tags --json
+npm install @stream-io/feeds-react-native-sdk @react-native-community/netinfo
+npm install react-native-safe-area-context
+npx pod-install
+```
+
 If the new app uses yarn or pnpm, translate package-manager commands without changing package names. Run pods after native dependency changes in RN CLI apps. Use `npx expo install` for Expo dependencies so versions match the Expo SDK.
 
 ### Navigation setup (required - blueprints assume it)
@@ -132,19 +152,27 @@ npx pod-install
 
 - **Expo opting into React Navigation instead (SDK ≤ 55 only)** - `npx expo install @react-navigation/native @react-navigation/native-stack @react-navigation/elements react-native-screens` and follow the React Navigation branch. Not applicable on Expo Router SDK 56+.
 
-On RN CLI and Expo Router SDK ≤ 55, Chat blueprints read `useHeaderHeight()` from `@react-navigation/elements`; that's why `elements` is in the React Navigation install line above. On Expo Router SDK 56+, do **not** install or import it — see the Channel Screen blueprint for the Platform-based swap.
+On RN CLI and Expo Router SDK <= 55, Chat blueprints read `useHeaderHeight()` from `@react-navigation/elements`; that's why `elements` is in the React Navigation install line above. On Expo Router SDK 56+, do **not** install or import it - see the Channel Screen blueprint for the Platform-based swap.
+
+For Feeds apps that use a comments modal (the typical activity-details flow), register the route with `presentation: "modal"`:
+
+- **Expo Router:** add `<Stack.Screen name="comments-modal" options={{ presentation: "modal", title: "Comments" }} />` in the parent `_layout.tsx` and create `app/comments-modal.tsx` with the blueprint code.
+- **React Navigation:** add `<Stack.Screen name="CommentsModal" component={CommentsModal} options={{ presentation: "modal" }} />` and navigate with `navigation.navigate("CommentsModal", { activityId })`.
+
+Pass only the `activityId` (string) as a navigation param. The modal screen creates `client.activityWithStateUpdates(activityId)` and disposes it on unmount.
 
 ### New app continuation
 
 After scaffold and packages:
 
-1. Use [`references/DOCS.md`](references/DOCS.md) to fetch the appropriate manifest (Chat or Video) and selected `Installation` markdown page.
+1. Use [`references/DOCS.md`](references/DOCS.md) to fetch the appropriate manifest (Chat, Video, or Feeds) and selected `Installation` markdown page.
 2. Confirm the installed Stream package matches the selected docs and npm dist-tag.
 3. Run [`credentials.md`](credentials.md) or wire the app's token provider plan.
 4. Configure Babel (Chat: Reanimated/Worklets plugin) and root providers.
 5. Implement the first screen set:
    - **Chat:** [`references/CHAT-REACT-NATIVE-blueprints.md`](references/CHAT-REACT-NATIVE-blueprints.md) -> App Provider and Auth Gate, Navigation Shell, Channel List Screen, Channel Screen.
    - **Video:** [`references/VIDEO-REACT-NATIVE-blueprints.md`](references/VIDEO-REACT-NATIVE-blueprints.md) -> App Provider and Auth Gate, Navigation Shell, Home / Join-or-Start Call, Active Call Screen.
+   - **Feeds:** [`references/FEEDS-REACT-NATIVE-blueprints.md`](references/FEEDS-REACT-NATIVE-blueprints.md) -> App Provider and Auth Gate, Own Feeds Context, Activity List Screen, Activity Composer, Comments Modal.
 6. Start the dev server only when useful and feasible for the environment (`npx expo start --dev-client`, `npm run ios`, or `npm run android`).
 
 ---
@@ -154,9 +182,9 @@ After scaffold and packages:
 Resolve five things before editing an existing app:
 
 1. **Runtime:** Expo or RN CLI
-2. **Product:** Chat, Video, or Chat + Video (from Step 0 of [`SKILL.md`](SKILL.md))
+2. **Product:** Chat, Video, Feeds, or any combination (from Step 0 of [`SKILL.md`](SKILL.md))
 3. **Navigation:** React Navigation, Expo Router, existing custom navigation, or no navigation
-4. **Scope:** setup only, core Chat / Video screens, optional native capability, or customization
+4. **Scope:** setup only, core Chat / Video / Feeds screens, optional native capability, or customization
 5. **Auth model:** backend token endpoint, CLI-generated local token, or pasted static token
 
 If the user only asked for setup, stop after the shared wiring in [`sdk.md`](sdk.md).
@@ -165,7 +193,7 @@ If the user only asked for setup, stop after the shared wiring in [`sdk.md`](sdk
 
 ## 4. Install packages
 
-Use [`references/DOCS.md`](references/DOCS.md) first: fetch the appropriate manifest (Chat or Video), select `Installation`, then fetch that markdown page.
+Use [`references/DOCS.md`](references/DOCS.md) first: fetch the appropriate manifest (Chat, Video, or Feeds), select `Installation`, then fetch that markdown page.
 
 Preserve the project's package manager. Use `npx expo install` for Expo packages so versions match the Expo SDK.
 
@@ -285,6 +313,27 @@ npx expo prebuild --clean
 
 Do not target Expo Go for Video; the SDK includes native code.
 
+### Feeds - RN CLI lane
+
+```bash
+npm view @stream-io/feeds-react-native-sdk version dist-tags --json
+npm install @stream-io/feeds-react-native-sdk @react-native-community/netinfo
+npm install react-native-safe-area-context
+npx pod-install
+```
+
+Feeds has no Reanimated, gesture-handler, SVG, or worklets requirement of its own. If the project uses yarn or pnpm, translate the command without changing package names. Run pods after native dependency changes.
+
+### Feeds - Expo lane
+
+```bash
+npm view @stream-io/feeds-react-native-sdk version dist-tags --json
+npx expo install @stream-io/feeds-react-native-sdk @react-native-community/netinfo
+npx expo install react-native-safe-area-context
+```
+
+No Expo config plugin entries are needed for Feeds. A Feeds-only Expo app can stay on the managed workflow; if Chat or Video is also installed, the dev-client lane is required for that other product, and Feeds continues to work alongside.
+
 ### Video - optional capabilities
 
 | User asks for | Packages | Notes |
@@ -371,6 +420,7 @@ Use `react-native-permissions` if the app needs to request permissions before th
 Always wire safe areas:
 
 - Install `react-native-safe-area-context` and mount `SafeAreaProvider` near the root (above the navigator) on every app. Use `SafeAreaView` (from `react-native-safe-area-context`, not `react-native`) for full-screen wrappers and `useSafeAreaInsets()` when you need fine-grained padding.
+- **RN 0.85 + Expo 56 + new architecture caveat:** the package's `SafeAreaView` (v5.7) appears to no-op at the native boundary on this toolchain - inset never applies. The `useSafeAreaInsets()` hook still works. Prefer `View` + `useSafeAreaInsets()` + explicit `paddingTop` / `paddingBottom` for full-screen wrappers when shipping on this stack. Add `paddingBottom: insets.bottom + N` to `FlatList` `contentContainerStyle` under a native tab bar so the last items clear it.
 - **Android edge-to-edge** is required so the app draws under transparent system bars.
   - **Expo**: set `"edgeToEdgeEnabled": true` in `app.json` under `android` (default-on Expo SDK 54+).
   - **RN CLI 0.81+**: set `edgeToEdgeEnabled=true` in `android/gradle.properties`. The RN Gradle plugin enables the edge-to-edge feature flag automatically - no `react-native-edge-to-edge` install, no `styles.xml` edit.
@@ -395,6 +445,15 @@ Follow [`sdk.md`](sdk.md) for shared patterns (client lifecycle, auth, provider 
 - channel selection and CID navigation
 - thread state
 - sign-out and offline cleanup
+
+**Feeds:**
+
+- `useCreateFeedsClient({ apiKey, tokenOrProvider, userData })` for client lifecycle (returns `undefined` while connecting; do not pass `undefined` to `<StreamFeeds>`)
+- `<StreamFeeds client={feedsClient}>` mounted once near the app root, above the navigator
+- `OwnFeedsContextProvider` that creates `user` + `timeline` feeds with `client.feed(group, id)`, loads them with `getOrCreate({ watch: true })`, and establishes the self-follow (`timeline.follow(userFeed.feed)`) on first run
+- `<StreamFeed feed={...}>` around each screen subtree that reads feed state, so descendant hooks resolve the feed from context
+- Navigation passes `activityId` strings (not `ActivityResponse` objects); activity-details modal creates `client.activityWithStateUpdates(id)` and disposes on unmount
+- Sign-out: unmount or change `useCreateFeedsClient` inputs (or call `client.disconnectUser()` directly)
 
 **Video:**
 
@@ -429,7 +488,12 @@ Then load the matching product references:
 - [`references/VIDEO-REACT-NATIVE.md`](references/VIDEO-REACT-NATIVE.md) for setup and gotchas
 - [`references/VIDEO-REACT-NATIVE-blueprints.md`](references/VIDEO-REACT-NATIVE-blueprints.md) for screen/component blueprints
 
-Per [`RULES.md`](RULES.md), re-open the relevant blueprint section before every Stream Chat or Stream Video screen, navigation handler, thread flow, ringing handler, call control, participant tile, theming override, offline flow, or component customization edit.
+**Feeds work:**
+
+- [`references/FEEDS-REACT-NATIVE.md`](references/FEEDS-REACT-NATIVE.md) for setup and gotchas
+- [`references/FEEDS-REACT-NATIVE-blueprints.md`](references/FEEDS-REACT-NATIVE-blueprints.md) for screen/component blueprints
+
+Per [`RULES.md`](RULES.md), re-open the relevant blueprint section before every Stream Chat, Stream Video, or Stream Feeds screen, navigation handler, thread / comments flow, ringing handler, call control, participant tile, theming override, offline flow, activity row, composer, follow button, or component customization edit.
 
 For requested optional native capabilities, read the **Optional dependency map** in the matching product reference file before installing packages.
 
@@ -437,18 +501,19 @@ For requested optional native capabilities, read the **Optional dependency map**
 
 ## 8. Existing app modification flow
 
-Use this when the request is a targeted Chat or Video change in an existing app.
+Use this when the request is a targeted Chat, Video, or Feeds change in an existing app.
 
 1. Detect runtime, product(s), and currently installed Stream packages.
-2. Use [`references/DOCS.md`](references/DOCS.md) to fetch the relevant manifest (Chat or Video) and selected markdown page for the requested area.
+2. Use [`references/DOCS.md`](references/DOCS.md) to fetch the relevant manifest (Chat, Video, or Feeds) and selected markdown page for the requested area.
 3. Open the matching blueprint section in the product's `*-blueprints.md`.
 4. For cookbook-style requests, use [`references/DOCS.md`](references/DOCS.md) manifest search and fetch the best matching cookbook/customization markdown page.
 5. Prefer the smallest change that preserves the app's architecture:
    - **Chat:** style-only -> theme object; slot-level UI -> `WithComponents`; behavior -> component prop or documented hook; native capability -> install only the optional package(s) for that capability
    - **Video:** style-only -> pass a theme via `<StreamVideo style={theme}>` (or scope it with `<StreamTheme style={theme}>`); slot-level UI -> `CallContent` slot props (`CallControls`, `CallParticipantsList`, `FloatingParticipantView`, `ParticipantView`); behavior -> documented `Call` method or `useCallStateHooks()` value; native capability -> install only the optional package(s) for that capability
+   - **Feeds:** the SDK is headless. Style and structure live in the components you wrote (Activity, ActivityComposer, Reaction, FollowButton, comments UI). Behavior changes go through the state hooks (`useFeedActivities`, `useActivityComments`, `useOwnFollows`, ...) or direct client / feed methods (`client.addActivityReaction`, `feed.addActivity`, `timeline.follow`, ...).
 6. Verify with the existing project commands.
 
-For Chat message visual or layout changes, fetch the manifest-selected theming/customization pages, then prefer theme values before replacing core message components. For Video customization, prefer slot replacement over full `CallContent` replacement.
+For Chat message visual or layout changes, fetch the manifest-selected theming/customization pages, then prefer theme values before replacing core message components. For Video customization, prefer slot replacement over full `CallContent` replacement. For Feeds, edit the components you wrote directly - there is no `WithComponents` analog.
 
 ---
 
@@ -485,6 +550,17 @@ Use the project's existing verification commands. Prefer the smallest checks tha
 - call navigation passes only the call id, not a `Call` object
 - error handling around `call.join()`, `call.camera.enable()`, `client.connectUser()`
 - ringing-related setup matches manifest-selected `/incoming-calls/*` pages when ringing is in scope
+
+**Feeds:**
+
+- `useCreateFeedsClient` host renders `null` (or a spinner) while the hook returns `undefined`; `<StreamFeeds client={...}>` is never rendered with `undefined`
+- `<StreamFeeds>` mounted once near the app root, above the navigator
+- `OwnFeedsContextProvider` (or equivalent) creates `user` and `timeline` feeds once and shares them via context, not via navigation params
+- Self-follow established once after both feeds load (`timeline.follow(userFeed.feed)` if not already present in `userFeed.currentState.own_follows`); self-follow runs unconditionally on every start (idempotent), not buried in seed logic
+- Activity rendering uses the state hooks (`useFeedActivities`, `useActivityComments`, `useOwnFollows`, `useAggregatedActivities`, `useNotificationStatus`) and reads `activity.reaction_groups[type]?.count` / `activity.own_reactions` for reactive reaction state
+- Reactions go through `client.addActivityReaction` / `client.deleteActivityReaction` (on the client, not on the feed)
+- Comments modal passes `activityId` (string) through navigation params; creates `client.activityWithStateUpdates(id)` once on mount and calls `.dispose()` on unmount
+- `client.disconnectUser()` runs on sign-out (or the `useCreateFeedsClient` host unmounts)
 
 Common commands:
 
