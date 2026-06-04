@@ -55,9 +55,9 @@ Use `@latest` only after confirming the npm dist-tag matches the selected docs. 
 
 Feeds has no Reanimated, gesture-handler, or SVG requirement of its own. If you also wire Chat or Video, those products bring their own peer set.
 
-### Optional dependency map
+### App-side helpers for common Feeds UI
 
-The Feeds SDK is headless and ships no native code beyond `@react-native-community/netinfo`. Everything below is an **opt-in capability package** - install one only after the user asks for that capability, with the runtime's normal lane (`npx expo install` for Expo so versions match the SDK; the project's package manager + `npx pod-install` for RN CLI). Adding a native package puts an Expo app on the dev-client/native-build lane (Expo Go is not supported by this skill).
+**These are not Feeds SDK peers.** The Feeds SDK has exactly one mandatory peer (`@react-native-community/netinfo`) and **zero opt-in native integrations** - none of the packages below plug into the SDK, unlike Chat where `@op-engineering/op-sqlite` powers `enableOfflineSupport`, `@shopify/flash-list` has a built-in integration, etc. This table is a quick pointer to which platform picker / push library to install in **your app code** when you build UI that calls Feeds API methods (`client.uploadImage`, `client.createDevice`, etc.). Install one only after the user asks for that capability, with the runtime's normal lane (`npx expo install` for Expo so versions match the SDK; the project's package manager + `npx pod-install` for RN CLI). Adding a native package puts an Expo app on the dev-client/native-build lane (Expo Go is not supported by this skill).
 
 | Capability | RN CLI | Expo | Notes |
 |---|---|---|---|
@@ -282,7 +282,7 @@ await client.deleteActivities({ ids: [activity.id] });
 
 ## Attachments and file uploads
 
-Activities (and comments) can carry image / video / file attachments. Uploads go through the **connected `FeedsClient`** (Stream CDN by default) - there is no upload method on `Feed` and no separate storage SDK. Pick the file with a platform picker (see [Optional dependency map](#optional-dependency-map)), then upload and attach:
+Activities (and comments) can carry image / video / file attachments. Uploads go through the **connected `FeedsClient`** (Stream CDN by default) - there is no upload method on `Feed` and no separate storage SDK. Pick the file with a platform picker (see [App-side helpers for common Feeds UI](#app-side-helpers-for-common-feeds-ui)), then upload and attach:
 
 ```ts
 // `file` is a StreamFile. In React Native, build it as { uri, name, type }.
@@ -527,7 +527,7 @@ await client.createDevice({
 await client.deleteDevice({ id: token });
 ```
 
-Acquiring the OS token (permission prompt, `expo-notifications` / Firebase, Expo dev-client requirement) is the same app-owned pipeline as any RN push app - the Feeds SDK only stores the token via `createDevice`. See the [Optional dependency map](#optional-dependency-map).
+Acquiring the OS token (permission prompt, `expo-notifications` / Firebase, Expo dev-client requirement) is the same app-owned pipeline as any RN push app - the Feeds SDK only stores the token via `createDevice`. See [App-side helpers for common Feeds UI](#app-side-helpers-for-common-feeds-ui) for the platform-specific push token libraries.
 
 ### Push preferences
 

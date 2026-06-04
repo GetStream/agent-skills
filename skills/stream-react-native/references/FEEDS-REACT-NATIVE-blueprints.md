@@ -571,7 +571,7 @@ Wiring:
 
 ## Activity Composer with Image
 
-Adds image attachment to the text composer. Picks a photo with `expo-image-picker` (Expo lane), uploads it through the **client** (`useFeedsClient`, not the `Feed`), and attaches the returned URL. The upload API and attachment shape are documented in [FEEDS-REACT-NATIVE.md](FEEDS-REACT-NATIVE.md) > Attachments and file uploads. Install the picker first - see [FEEDS-REACT-NATIVE.md](FEEDS-REACT-NATIVE.md) > Optional dependency map (`expo-image-picker` for Expo, `react-native-image-picker` for RN CLI).
+Adds image attachment to the text composer. Picks a photo with `expo-image-picker` (Expo lane), uploads it through the **client** (`useFeedsClient`, not the `Feed`), and attaches the returned URL. The upload API and attachment shape are documented in [FEEDS-REACT-NATIVE.md](FEEDS-REACT-NATIVE.md) > Attachments and file uploads. Install the picker first - see [FEEDS-REACT-NATIVE.md](FEEDS-REACT-NATIVE.md) > App-side helpers for common Feeds UI (`expo-image-picker` for Expo, `react-native-image-picker` for RN CLI).
 
 ```tsx
 import React, { useCallback, useState } from "react";
@@ -670,7 +670,7 @@ export const ActivityComposerWithImage = () => {
             pressed && canPost && styles.buttonPressed,
           ]}
         >
-          <Text style={styles.buttonText}>{isPosting ? "Posting…" : "Post"}</Text>
+          <Text style={styles.buttonText}>{isPosting ? "Posting..." : "Post"}</Text>
         </Pressable>
       </View>
     </View>
