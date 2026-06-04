@@ -561,6 +561,7 @@ Severity guide: **Blocker** = call won't reliably connect, leaks/keeps publishin
 | Only the call id/type passed through navigation params | nav `params`/route props | No `Call` object serialized through navigation | Medium |
 | All calling states handled in UI | `useCallCallingState` | UI reacts to `JOINING`/`RECONNECTING`/`RECONNECTING_FAILED`/`OFFLINE`/`LEFT` | High |
 | Ringing/push: same client options in app & `setPushConfig`, with `createStreamVideoClient` | `setPushConfig`, `createStreamVideoClient` | Identical options; `createStreamVideoClient` returns the singleton | High (N/A if no ringing/push) |
+| Ringing/push: `pushProviderName` is defined in `setPushConfig` | `setPushConfig`, `pushProviderName` | `pushProviderName` value should be defined for ringing flow to function | High (N/A if no ringing/push) |
 
 **Permissions & native config**
 
