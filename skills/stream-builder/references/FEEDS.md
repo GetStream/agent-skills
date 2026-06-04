@@ -153,6 +153,9 @@ await userFeed.getOrCreate({ watch: true });
 // User's timeline (read here - shows posts from followed users)
 const timelineFeed = client.feed('timeline', userId);
 await timelineFeed.getOrCreate({ watch: true });
+
+// User's timeline follows user's feed so user can see their own posts on their own timeline
+await client.getOrCreateFollow({ source: timelineFeed.feed, target: userFeed.feed });
 ```
 
 - **Strict mode:** `useCreateFeedsClient()` handles connection internally. But `feed.getOrCreate()` must be wrapped in `setTimeout(50ms)` + `mounted` guard pattern (RULES.md > Strict mode protection).
