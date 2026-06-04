@@ -2,6 +2,8 @@
 
 For adding Stream products to an **existing Next.js project**. Reuses the references files and SDK patterns from the scaffold flow but skips the scaffold entirely.
 
+> **Reviewing, not adding?** If the user wants to **audit/check an existing Stream Video integration against best practices** ("is my video app production-ready?", "what am I missing?") rather than add a feature, run the **Integration best-practices audit** section in [`references/VIDEO.md`](references/VIDEO.md). It is a read-only review with a fixed checklist + output contract - produce findings first, fix only if asked.
+
 **Rules:** the `stream` skill's [`RULES.md`](../stream/RULES.md) (secrets, no auto-seeding, login screen first, package manager).
 **Preflight:** hand off to the `stream-cli` skill before any npm installs, `stream api` setup, or token routes - it owns install, credentials, and auth. Wait for its `OK` readout, then continue here. Do not inline-read its files; the hand-off primes its endpoint cache + cookbook for any ad-hoc query you need later (RULES.md > CLI safety).
 **SDK wiring (shared with the scaffold flow):** [`sdk.md`](sdk.md) and the relevant [`references/<Product>.md`](references/) - enhance uses the same wiring patterns as scaffold; only the surrounding setup differs.

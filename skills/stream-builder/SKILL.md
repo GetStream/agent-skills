@@ -28,14 +28,17 @@ allowed-tools: >-
 
 > **Read first (every session):** Glob `../stream/SKILL.md`. If the path is empty, install with `npx skills add GetStream/agent-skills --s stream -y` (no confirmation, just run). Then Read [`../stream/RULES.md`](../stream/RULES.md) - it includes a **Peer skills** table for installing/invoking any other pack skills on demand.
 
-This skill covers **two flows**:
+This skill covers **three flows**:
 
 - **Track A - Scaffold a new app:** Steps 0-7 below. Use when the cwd is empty / new and the user said "build me a ... app".
 - **Track E - Enhance an existing app:** see [`enhance.md`](enhance.md). Skips scaffold + theme; reuses the same SDK wiring and component blueprints.
+- **Track F - Audit an existing integration (read-only):** for "audit/review my video integration", "check my app against best practices", "is my video app production-ready?", "what am I missing before launch?". Load the **Integration best-practices audit** section in [`references/VIDEO.md`](references/VIDEO.md) and follow its protocol. **Skip preflight, auth, the CLI, and all build steps** - this track does not scaffold, install, or run the CLI; it only reads the app and reports findings. Fix issues only if the user then asks.
 
 ---
 
 ## Start
+
+> **Track F (audit) skips this entire section.** A read-only best-practices review runs no preflight, no auth, no CLI, and none of Steps 0-7 - go straight to the **Integration best-practices audit** section in [`references/VIDEO.md`](references/VIDEO.md) and report findings. Only fall into the build flow below if the user asks you to fix what the audit found.
 
 Once preflight has reported `OK Stream CLI vN.N.N | ...`, announce the network plan once, then **immediately start executing Steps 0-7** - no interactive prompts at the start (the user has authorized the build by asking for it).
 

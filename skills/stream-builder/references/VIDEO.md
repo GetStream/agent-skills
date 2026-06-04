@@ -118,3 +118,77 @@ Do NOT roll your own host detection via `participants.find(p => p.roles.includes
 - Call vs session: a **call** is the persistent entity; a **session** is one continuous period where participants are connected
 - `upsertUsers` takes an **array** of user objects: `client.upsertUsers([{ id, name }])` - NOT an object keyed by ID
 - **`ParticipantView` does not fill its container by default** - the SDK applies its own sizing/border-radius. For edge-to-edge video (e.g. livestream player), add CSS overrides: `.str-video__participant-view { width: 100% !important; height: 100% !important; border-radius: 0 !important; }` and `.str-video__participant-view video { width: 100% !important; height: 100% !important; object-fit: cover !important; border-radius: 0 !important; }`. Or use `<LivestreamPlayer>` for viewers - it handles sizing automatically.
+
+---
+
+## Integration best-practices audit (existing apps)
+
+Use this when the user wants to **review, audit, or check** an existing React (web) Stream Video integration against Stream's best practices - e.g. *"is my video integration production-ready?"*, *"check my app against Stream's best practices"*, *"what am I missing before launch?"*. This is a **read-only review**: produce findings first; only edit code if the user then asks you to fix them. (For *adding* Video to an existing app, use [`../enhance.md`](../enhance.md) instead.)
+
+Source of truth: [`/video/docs/react/advanced/integration-best-practices.md`](https://getstream.io/video/docs/react/advanced/integration-best-practices.md). The checklist below folds that page together with the strict-mode rules in [`../../stream/RULES.md`](../../stream/RULES.md).
+
+### How to run it
+
+1. **Locate the integration surface.** Grep the app source (`app/`, `src/`, `components/`, the AppShell / call screens, and any `/api/token` route) for the anchor symbols in the checklist. Confirm `@stream-io/video-react-sdk` is installed before auditing.
+2. **Walk every row.** Most checks are **absence checks** - the failure is a *missing* hook, prop, or cleanup, not visibly wrong code. If the anchor symbol is not found, the row is **FAIL** (or **NEEDS-REVIEW** if it could live in a file you cannot see, e.g. a backend token route or dashboard config).
+3. **Mark `N/A` only when the feature genuinely does not apply** (e.g. livestream-only or filter-only rows) - and say *why*.
+4. **Report with the output contract below. Never silently skip a row.**
+
+### Output contract
+
+One line per check: **Verdict** (PASS / FAIL / N/A / NEEDS-REVIEW) | **Severity** (Blocker / High / Medium / Low) | **Evidence** (`file:line`, or "not found") | **Fix** (one line). Close with a prioritized remediation list, Blockers first.
+
+Severity guide: **Blocker** = call won't reliably connect, leaks/keeps publishing media, or breaks security; **High** = real production stability or UX gap; **Medium/Low** = polish and hardening.
+
+### Carve-out (do not raise as a finding)
+
+- **`<CallControls />` is not a best-practices violation.** "Custom controls only" is a *builder scaffold convention* for apps this skill generates, not an integration best practice. Stream officially ships `<CallControls />`; do not FAIL an existing app for using it. (You may note it as a Low builder-style preference only if the user asked for builder-convention conformance.)
+
+### Checklist
+
+**Client & call lifecycle**
+
+| Check | Detect (anchor) | Pass condition | Severity |
+|---|---|---|---|
+| Single client, created in `useEffect`/`useState`, disposed on cleanup | `new StreamVideoClient(`/`getOrCreateInstance(`, `disconnectUser(`, `useMemo` | One client; `disconnectUser()` runs in cleanup; **not** built with `useMemo` | Blocker |
+| Strict-mode safe setup | `useMemo` for the client, `useRef` locks (`initRan`), a `mounted` flag in cleanup | No `useMemo` client, no `useRef` setup locks; uses a `mounted` flag | High |
+| `tokenProvider` with ~4h tokens; token from a backend route, not committed | `tokenProvider`, `/api/token`, literal `token:` | Short-lived token fetched from `/api/token`; no static prod token in client code | Blocker |
+| One `<StreamVideo>` per session, hoisted to AppShell (not per screen) | `<StreamVideo`, its placement | Single provider at the app root | High |
+| Join with `call.join({ create: true })`, not `getOrCreate()` | `call.join(`, `getOrCreate(` | `join()` is what connects WebRTC; `getOrCreate()` alone never connects media | Blocker |
+| `call.leave()` when the call is no longer needed | `.leave(` | Call disposed on unmount/leave; not left dangling and publishing | High |
+| All calling states handled in UI | `useCallCallingState` | UI reacts to joining/reconnecting/offline/left states | High |
+
+**Device management & UX**
+
+| Check | Detect (anchor) | Pass condition | Severity |
+|---|---|---|---|
+| Browser permission state surfaced (one-shot prompt) | `hasBrowserPermission`, `isPromptingPermission` | UI explains denied/pending permissions (the user gets only one prompt) | High |
+| Device switcher (camera / mic / speaker) | device-settings components, `useCameraState`/`useMicrophoneState` device lists | Users can pick a non-default device | Medium |
+| Device verification before joining | `AudioVolumeIndicator`, `SpeakerTest`, `MicCaptureErrorNotification` | Devices are *verified working*, not just selected | Medium |
+| Persist device selection | `usePersistedDevicePreferences` | Selection persists across sessions | Low |
+| Lobby / preview before joining | a lobby screen | Users check devices/frame before connecting | Medium |
+| Audio connecting indicator | audio-connecting UI | Distinguishes "connecting" from "muted"/"broken" | Low |
+| Speaking-while-muted handled or disabled | `useMicrophoneState().isSpeakingWhileMuted`, `disableSpeakingWhileMutedNotification` | Surfaced to the user or explicitly disabled | Medium |
+| Autoplay-blocked audio handled | `useIsAutoplayBlocked`, `call.resumeAudio(` | A user-gesture element calls `resumeAudio()` when audio is blocked | High |
+| Filters expose a manual toggle on low-end devices | noise-cancellation / background-blur usage | If filters are used, a user toggle exists (blur isn't auto-disabled) | Medium (N/A if no filters) |
+
+**Error handling & network**
+
+| Check | Detect (anchor) | Pass condition | Severity |
+|---|---|---|---|
+| `call.join()` in try/catch | `call.join(` | Awaited and wrapped; errors surfaced | Blocker |
+| `camera.enable()`/`microphone.enable()` in try/catch (or `onError` on control components) | `.enable(`, `onError` | Device failures caught; UI not stranded | High |
+| `connectUser` errors handled | `connectUser` | Rejections caught and surfaced | High |
+| Reconnection handled via state, not by ending the call; `setDisconnectionTimeout` tuned | `setDisconnectionTimeout`, calling-state usage | Waits ~60s for SDK reconnect on transient drops; doesn't end the call immediately | Medium |
+| Low-bandwidth indicator on custom layouts | custom layout + low-bandwidth UI | Built-in layouts pass automatically; custom layouts notify the user | Medium |
+| Firewall/proxy guidance for restrictive networks | n/a | Networking settings applied, or users advised to switch networks | Low |
+
+**Security & ops**
+
+| Check | Detect (anchor) | Pass condition | Severity |
+|---|---|---|---|
+| Role permissions enforced in the dashboard, not just hidden in the UI | n/a (server-side) | Confirm with the user that dashboard roles are configured (hiding UI is bypassable via the API) | High (NEEDS-REVIEW) |
+| SDK CSS imported | `@stream-io/video-react-sdk/dist/css/styles.css` | Default styles imported once | Low |
+| User feedback / rating collected | rating/feedback UI | Some quality-feedback path exists | Low |
+| Supported-browser detection/advice | supported-platforms utility | Users on unsupported browsers are advised | Low |
+| SDK dependencies reasonably current | `package.json` versions vs `npm view` dist-tags | Not far behind latest; review [GitHub Releases](https://github.com/GetStream/stream-video-js/releases) | Low |
