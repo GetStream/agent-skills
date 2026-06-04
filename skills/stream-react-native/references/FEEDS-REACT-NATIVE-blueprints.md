@@ -866,7 +866,7 @@ Loads comments for an activity that may not be present in the current feed (e.g.
 
 ```tsx
 import React, { useEffect, useState } from "react";
-import { StyleSheet, View } from "react-native";
+import { Keyboard, Platform, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams } from "expo-router";
 import {
@@ -881,6 +881,7 @@ export default function CommentsModal() {
   const insets = useSafeAreaInsets();
   const { activityId } = useLocalSearchParams<{ activityId: string }>();
   const [activity, setActivity] = useState<ActivityWithStateUpdates>();
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
 
   useEffect(() => {
     if (!client || !activityId) return;
@@ -898,13 +899,41 @@ export default function CommentsModal() {
     };
   }, [client, activityId]);
 
+  // Keyboard avoidance via OS events + paddingBottom on the modal root.
+  // KeyboardAvoidingView is unreliable inside native-stack `presentation: "modal"`
+  // sheets - its math mixes parent-relative (frame.y from onLayout) with screen-
+  // relative (keyboardScreenY from the event), which don't agree inside a modal
+  // sheet, leaving keyboardVerticalOffset as a magic-number knob. The OS events
+  // are absolute and work everywhere.
+  useEffect(() => {
+    const showEvent = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
+    const hideEvent = Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
+    const showSub = Keyboard.addListener(showEvent, (e) =>
+      setKeyboardHeight(e.endCoordinates.height),
+    );
+    const hideSub = Keyboard.addListener(hideEvent, () => setKeyboardHeight(0));
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
+
   if (!activity) return null;
+
+  // iOS: endCoordinates.height already extends to the screen bottom (covers the
+  // home-indicator area). Adding insets.bottom on top would double-count.
+  // Android edge-to-edge: endCoordinates.height is just the IME, so the nav-bar
+  // inset has to be added back. +16 is a visual breather on both.
+  const bottomPadding =
+    keyboardHeight > 0
+      ? keyboardHeight + (Platform.OS === "android" ? insets.bottom + 16 : 16)
+      : insets.bottom;
 
   return (
     <View
       style={[
         styles.container,
-        { paddingTop: insets.top, paddingBottom: insets.bottom },
+        { paddingTop: insets.top, paddingBottom: bottomPadding },
       ]}
     >
       <CommentList activity={activity} />
@@ -1044,15 +1073,17 @@ const styles = StyleSheet.create({
 
 `CommentComposer`:
 
+Note: `CommentComposer` is a leaf component. The parent modal screen is responsible for keyboard avoidance (see `app/comments-modal.tsx` above) - do NOT wrap this component in a `KeyboardAvoidingView`. KAV inside a `presentation: "modal"` sheet mixes parent-relative and screen-relative coordinates and produces drift that varies by device, header style, and sheet style; the modal-root `Keyboard.addListener` + `paddingBottom` pattern is the cross-platform fix.
+
 ```tsx
 import React, { useCallback, useState } from "react";
 import {
-  KeyboardAvoidingView,
   Platform,
   Pressable,
   StyleSheet,
   Text,
   TextInput,
+  View,
 } from "react-native";
 import {
   ActivityWithStateUpdates,
@@ -1077,11 +1108,7 @@ export const CommentComposer = ({ activity }: CommentComposerProps) => {
   }, [client, activity.id, draft, canReply]);
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-      keyboardVerticalOffset={Platform.OS === "ios" ? 128 : 0}
-      style={styles.container}
-    >
+    <View style={styles.container}>
       <TextInput
         onChangeText={setDraft}
         onSubmitEditing={submit}
@@ -1102,7 +1129,7 @@ export const CommentComposer = ({ activity }: CommentComposerProps) => {
       >
         <Text style={styles.buttonText}>Reply</Text>
       </Pressable>
-    </KeyboardAvoidingView>
+    </View>
   );
 };
 
@@ -1149,6 +1176,9 @@ Wiring:
 - `useActivityComments({ activity })` resolves comments from the handle. Inside `<StreamActivityWithStateUpdates>` you can omit the `activity` argument.
 - For nested replies, pass `parent_id` to `addComment` and `parentComment` to `useActivityComments`. The `depth` option on `get({ comments })` controls how many reply levels are pre-hydrated.
 - Use `View` + `useSafeAreaInsets()` + explicit padding rather than `<SafeAreaView>` from `react-native-safe-area-context`. On RN 0.85 + Expo 56 + new architecture, the package's `SafeAreaView` no-ops at the native boundary, so the inset never lands (the reply composer ends up behind the home indicator). The hook works because it goes through a different code path.
+- **Do not use `KeyboardAvoidingView` inside a native-stack `presentation: "modal"` sheet.** KAV's internal math computes `frame.y + frame.height - keyboardScreenY`, mixing parent-relative coordinates (from `onLayout`) with screen-relative coordinates (from the keyboard event). Inside a modal sheet those two spaces don't agree, so `keyboardVerticalOffset` becomes a magic-number knob that varies by device, header style, and sheet style. On Android with `behavior={undefined}` KAV does nothing at all. Handle keyboard avoidance at the modal root with `Keyboard.addListener` and adjust `paddingBottom` on the root `View` (see snippet). OS keyboard events are absolute and work the same in modals and non-modals.
+- iOS / Android padding math is asymmetric: iOS `endCoordinates.height` already covers the home-indicator area, so adding `insets.bottom` would double-count - use `keyboardHeight + 16`. Android (edge-to-edge) `endCoordinates.height` is just the IME, so add `insets.bottom + 16` back for the nav bar. When the keyboard is hidden, fall back to `insets.bottom` so the composer sits above the home indicator / nav bar.
+- Do not reach for `useHeaderHeight` from `@react-navigation/elements` to compute the offset - it only solves half the problem (header height is not the modal sheet's screen-top offset), and every helper from that package is deprecated and scheduled for removal in expo-router 56.
 - Register the modal route in your navigator: with Expo Router, `presentation: "modal"` on `<Stack.Screen name="comments-modal" />` in the parent layout.
 
 ---
