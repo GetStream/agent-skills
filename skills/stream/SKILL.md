@@ -32,6 +32,10 @@ This skill picks the track from the user's input and delegates to a specialized 
 - Empty/new directory + "build me a Chat/Video/Feeds app", "scaffold", "create a new ..." and **no platform signal** (no `react native`, `expo`, `swift`, `ios`, `android`, etc.)
 - Covers Steps 0-7 (scaffold, theme, auth, env, SDK install, component generation)
 
+**Build an AI support agent / support bot (web)** -> use the `stream-builder` skill, AI Support Agent use case (no platform signal present)
+- Signals: "AI support agent", "support bot", "help desk bot", "RAG chat", "customer support AI"
+- This is a Chat build **plus a server-side LLM agent** - not plain Chat. The builder loads `references/AI-AGENT.md` and asks the user for the LLM provider/model, knowledge source (local index vs external vector store like TurboPuffer), trigger (webhook vs client), and capabilities. Never degrade this to a generic messaging app.
+
 **Add Stream to an existing app (web)** -> use the `stream-builder` skill (default when no peer signal is present)
 - Existing project + "add Chat to this app", "integrate Video", "drop Feeds into ..." and **no platform signal**
 - Same SDK wiring as scaffold; skips Next.js init and theme pick
@@ -73,6 +77,7 @@ Scan the user's input for the signals below in order. The classifier is determin
 | "Install the CLI", "set up stream" with no project context | `stream-cli` |
 | **Build/integration intent + a token matching a peer's `signals` in [`peers.yaml`](peers.yaml)** (e.g. `swift` / `.xcodeproj` -> `stream-swift`; `react native` / `expo` / `stream video react native` / `stream video rn` -> `stream-react-native`). **This row takes precedence over the web `stream-builder` rows below whenever a peer signal is present, and also wins over the docs how-to rows above whenever the request contains a build/integrate verb (`add`, `build`, `integrate`, `scaffold`, `wire`, `set up`, `create`) alongside the peer signal.** | matching peer (installed silently if missing) |
 | "Build me a ... app", "scaffold", "create a new ..." + Stream product, in an empty/new directory, **and no peer signal present** | `stream-builder` (web/Next.js, the default when no platform signal is given) |
+| "AI support agent", "support bot", "help desk", "RAG chat", "customer support AI" + Stream, **and no peer signal present** | `stream-builder` (AI Support Agent use case - also loads `references/AI-AGENT.md`) |
 | "Add Chat/Video/Feeds to this app", "integrate Stream into" - existing project, **and no peer signal present** | `stream-builder` (web/Next.js, the default when no platform signal is given) |
 | Operational verb wrapped in how-to phrasing (e.g. "how do I list my calls?" - docs *or* CLI) | **Ask one disambiguator** |
 
