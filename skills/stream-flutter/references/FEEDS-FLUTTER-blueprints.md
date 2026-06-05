@@ -2,7 +2,7 @@
 
 Load only the section you are implementing. For client initialization, feed types, and gotchas, see [FEEDS-FLUTTER.md](FEEDS-FLUTTER.md).
 
-**Default style:** Twitter-style — build it directly without asking. Only switch to Instagram, Reddit, or a custom layout if the user explicitly requests it; the SDK calls are identical regardless of style.
+**Default style:** Twitter-style - build it directly without asking. Only switch to Instagram, Reddit, or a custom layout if the user explicitly requests it; the SDK calls are identical regardless of style.
 
 **Package:** `stream_feeds: ^0.5.1` (not the deprecated `stream_feed`). See [FEEDS-FLUTTER.md](FEEDS-FLUTTER.md) for v0.5.x breaking changes.
 
@@ -28,10 +28,10 @@ Future<void> main() async {
   await client.connect();
 
   // Required: timeline must follow the user feed or posts never appear there.
-  // This is unconditional — it must run on every start, not just during seeding.
+  // This is unconditional - it must run on every start, not just during seeding.
   await _setupFollows(client);
 
-  // Optional dev seed — remove for production.
+  // Optional dev seed - remove for production.
   await _seedPosts(client);
 
   runApp(MyApp(client: client));
@@ -40,7 +40,7 @@ Future<void> main() async {
 /// Establishes the self-follow so the user's own posts appear in their timeline.
 ///
 /// Without this, posting to the `user` feed has no effect on the `timeline`
-/// feed — the two are independent until a follow relationship is created.
+/// feed - the two are independent until a follow relationship is created.
 /// The call is idempotent (following an already-followed feed is a no-op).
 Future<void> _setupFollows(StreamFeedsClient client) async {
   final userId       = client.currentUser!.id;
@@ -61,7 +61,7 @@ Future<void> _seedPosts(StreamFeedsClient client) async {
   if (state.activities.isNotEmpty) return;
 
   for (final text in [
-    'Just shipped a new feature! 🚀',
+    'Just shipped a new feature!',
     'Loving the Flutter ecosystem lately.',
     'Stream Feeds makes social apps surprisingly simple.',
   ]) {
@@ -87,8 +87,8 @@ class MyApp extends StatelessWidget {
 ```
 
 **Wiring:**
-- Import only `stream_feeds` — do not import the deprecated `stream_feed`
-- `connect()` is async — always `await` before `runApp`
+- Import only `stream_feeds` - do not import the deprecated `stream_feed`
+- `connect()` is async - always `await` before `runApp`
 - Pass `client` down through the widget tree or inject via a DI system
 
 ---
@@ -273,7 +273,7 @@ class _ActivityCardState extends State<ActivityCard> {
                     const SizedBox(width: 4),
                     Text(handle, style: TextStyle(color: Colors.grey[600], fontSize: 13)),
                     const SizedBox(width: 4),
-                    Text('·', style: TextStyle(color: Colors.grey[600])),
+                    Text('\u00B7', style: TextStyle(color: Colors.grey[600])),
                     const SizedBox(width: 4),
                     Text(_formatTime(time), style: TextStyle(color: Colors.grey[600], fontSize: 13)),
                   ],
@@ -587,4 +587,4 @@ If the user explicitly asks for a style other than Twitter, adapt the following:
 | **Reddit** | Add upvote/downvote reactions; show score prominently; group by feed-group-style sections |
 | **Custom** | Ask the user what the feed card and action buttons should look like before writing widget code |
 
-The SDK calls (activities, reactions, follow/unfollow) are identical across all styles — only the widget layer changes.
+The SDK calls (activities, reactions, follow/unfollow) are identical across all styles - only the widget layer changes.

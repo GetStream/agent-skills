@@ -142,7 +142,7 @@ StreamBuilder<CallState>(
 
 ## Viewer flow (HLS)
 
-HLS is better for large audiences (thousands of viewers). It introduces higher latency (~10–30 s) but scales without per-viewer WebRTC connections. HLS viewers do **not** join the call via `join()`.
+HLS is better for large audiences (thousands of viewers). It introduces higher latency (~10-30 s) but scales without per-viewer WebRTC connections. HLS viewers do **not** join the call via `join()`.
 
 ### Get the HLS URL
 
@@ -285,6 +285,6 @@ Same as standard video calls - see [`VIDEO-FLUTTER.md`](VIDEO-FLUTTER.md) for th
 - **`call.end()` followed by `call.leave()`.** `end()` terminates the session server-side but does not reset local call state. Always follow it with `leave()`.
 - **`call.state.value.backstage` is `true` until `goLive()` is called.** A viewer who joins before `goLive()` will not see video until backstage ends. Show a "waiting for host" state and observe the state stream.
 - **Never publish from a viewer.** The `livestream` call type blocks viewer publishing via server-side permissions. Do not show camera/mic enable controls in the viewer UI.
-- **HLS latency is expected.** HLS viewers see the stream 10–30 seconds behind live. Do not attempt to synchronize WebRTC and HLS viewers.
+- **HLS latency is expected.** HLS viewers see the stream 10-30 seconds behind live. Do not attempt to synchronize WebRTC and HLS viewers.
 - **`VideoPlayerController` must be created in `initState`, not `build`.** Creating it in `build` reinitializes the player on every rebuild.
 - **HLS URL appears a few seconds after `goLive()`.** The HLS broadcast initialization is asynchronous. Poll `call.state.value.egress?.hls?.playlistUrl` until it is non-null before starting playback.

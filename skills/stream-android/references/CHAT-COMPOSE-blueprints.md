@@ -2,11 +2,11 @@
 
 Load only the section you are implementing. For setup, client initialization, and gotchas, see [CHAT-COMPOSE.md](CHAT-COMPOSE.md).
 
-Per [`RULES.md`](../RULES.md) → *Blueprints are mandatory, on every turn*: any Stream Chat screen, Composable, navigation handler, deep-link route, or UI customization must be preceded by reading the matching section below — including on follow-up turns inside an existing session.
+Per [`RULES.md`](../RULES.md) -> *Blueprints are mandatory, on every turn*: any Stream Chat screen, Composable, navigation handler, deep-link route, or UI customization must be preceded by reading the matching section below - including on follow-up turns inside an existing session.
 
 ---
 
-## Request → Blueprint section
+## Request -> Blueprint section
 
 Use this table to resolve a user request to the section(s) you must read before writing code. If multiple rows match, read all of them. If none match, say so explicitly instead of improvising.
 
@@ -19,13 +19,13 @@ Use this table to resolve a user request to the section(s) you must read before 
 | "channel list header", custom top bar above channels | [Custom Channel List Header Blueprint](#custom-channel-list-header-blueprint) |
 | "channel screen", "message list", "open a channel", `ChannelScreen`, `MessagesScreen`, message composer | [Channel (Message List) Blueprint](#channel-message-list-blueprint) |
 | "navigate to channel", "open channel on tap", "tap a channel", channel click handler, route from list to messages | [Channel Tap Handling / Deep-link Blueprint](#channel-tap-handling--deep-link-blueprint) + [Channel (Message List) Blueprint](#channel-message-list-blueprint) |
-| "deep link", push notification → channel, intent extras for `cid` | [Channel Tap Handling / Deep-link Blueprint](#channel-tap-handling--deep-link-blueprint) |
+| "deep link", push notification -> channel, intent extras for `cid` | [Channel Tap Handling / Deep-link Blueprint](#channel-tap-handling--deep-link-blueprint) |
 | "theme", colors, typography, dark mode, branding | [Custom ChatTheme Blueprint](#custom-chattheme-blueprint) |
 | "custom channel item", channel row layout, avatar/preview override | [Custom Channel Item Blueprint](#custom-channel-item-blueprint) |
 | "custom channel header", per-channel top bar, message-list header | [Custom Channel Header Blueprint](#custom-channel-header-blueprint) |
 | state flows, observing channels/messages outside the bundled screens | [State Layer Compose Blueprint](#state-layer-compose-blueprint) |
 
-If the request is something not covered (Video, Feeds, XML, or a Compose surface not listed above), do not fabricate APIs — say the blueprint is not bundled and fall back per [`RULES.md`](../RULES.md).
+If the request is something not covered (Video, Feeds, XML, or a Compose surface not listed above), do not fabricate APIs - say the blueprint is not bundled and fall back per [`RULES.md`](../RULES.md).
 
 ---
 
@@ -519,8 +519,8 @@ fun BrandedChannelsHost(onChannelClick: (Channel) -> Unit) {
 
 Two paths:
 
-- **Factory override** — override `ChatComponentFactory.ChannelHeader(...)` (or one of its sub-slots) and pass your factory to `ChatTheme(componentFactory = ...)`. Every `ChannelScreen` call *inside that `ChatTheme` subtree* picks it up.
-- **`topBarContent` lambda** — pass your own `topBarContent: @Composable (BackAction) -> Unit` to `ChannelScreen(...)`. Bypasses the factory entirely for that call site, even when the enclosing `ChatTheme` has a custom factory.
+- **Factory override** - override `ChatComponentFactory.ChannelHeader(...)` (or one of its sub-slots) and pass your factory to `ChatTheme(componentFactory = ...)`. Every `ChannelScreen` call *inside that `ChatTheme` subtree* picks it up.
+- **`topBarContent` lambda** - pass your own `topBarContent: @Composable (BackAction) -> Unit` to `ChannelScreen(...)`. Bypasses the factory entirely for that call site, even when the enclosing `ChatTheme` has a custom factory.
 
 ```kotlin
 import androidx.compose.foundation.layout.RowScope
@@ -558,8 +558,8 @@ fun BrandedChannelHost(
 ```
 
 **Wiring:**
-- The factory has three sub-slots — `ChannelHeaderLeadingContent` (back button), `ChannelHeaderCenterContent` (title + typing/connection state), `ChannelHeaderTrailingContent` (avatar). Override only the one you need; the others keep their SDK defaults.
-- To replace the *whole* bar (back + title + trailing as one Composable) override `ChatComponentFactory.ChannelHeader(params: ChannelHeaderParams)` instead — you lose the row scaffold but gain full layout control. Or, for a one-off swap at a single call site, pass `topBarContent` directly to `ChannelScreen(...)` without touching the factory.
+- The factory has three sub-slots - `ChannelHeaderLeadingContent` (back button), `ChannelHeaderCenterContent` (title + typing/connection state), `ChannelHeaderTrailingContent` (avatar). Override only the one you need; the others keep their SDK defaults.
+- To replace the *whole* bar (back + title + trailing as one Composable) override `ChatComponentFactory.ChannelHeader(params: ChannelHeaderParams)` instead - you lose the row scaffold but gain full layout control. Or, for a one-off swap at a single call site, pass `topBarContent` directly to `ChannelScreen(...)` without touching the factory.
 - Composables overridden on `ChatComponentFactory` need their original receiver (`RowScope` for these three slots) - copy the receiver from the interface declaration, otherwise the override won't compile.
 
 ---

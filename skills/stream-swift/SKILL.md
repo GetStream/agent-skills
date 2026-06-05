@@ -11,10 +11,7 @@ allowed-tools: >-
   Bash(grep *),
   Bash(find . *),
   Bash(cat Package.swift), Bash(cat Package.resolved), Bash(cat Podfile),
-  Bash(stream token *),
-  Bash(stream chat *),
-  Bash(stream config *),
-  Bash(stream --safe *)
+  Bash(stream *)
 ---
 
 # Stream Swift - skill router + execution flow
@@ -103,16 +100,10 @@ Once the user answers, execute all CLI steps in sequence **without pausing for c
 #### Step A - API key
 
 ```bash
-stream --safe keys
+stream keys
 ```
 
-`stream keys` auto-resolves the org and app and prints the API key on a line shaped `API Key:  <key>`. Output format is fixed — `-o json` is ignored. Extract with:
-
-```bash
-api_key=$(stream --safe keys | awk '/^API Key:/ {print $3}')
-```
-
-Note: `stream keys` also auto-copies the **app secret** to the system clipboard. The SDK never needs the secret — discard with `pbcopy </dev/null` if that's a concern.
+`stream keys` prints the app's public API key (run `stream keys -h` for output details). Hold the key in context. The API key is public - safe to put in app code; the API **secret** is never needed here.
 
 #### Step B - Token
 
@@ -124,22 +115,30 @@ stream token <user_id>
 stream token <user_id> --ttl <duration>
 ```
 
-Hold the token in context. In generated code, reference credentials via named constants (e.g., `Config.apiKey`, `Config.userToken` defined in a dedicated config file) — do not embed raw credential values directly in code snippets.
+Hold the token in context. In generated code, reference credentials via named constants (e.g., `Config.apiKey`, `Config.userToken` defined in a dedicated config file) - do not embed raw credential values directly in code snippets.
 
 #### Step C - Seed channels (Chat projects only; only if the user said yes)
 
-Create 3-5 channels with random realistic usernames. Use `messaging` as the default channel type.
+Create 3-5 channels with random realistic usernames. Use `messaging` as the channel type. These calls are mutating; the user's upfront "yes" covers consent.
+
+First create the user records (users must exist before they can be channel members):
 
 ```bash
-# Create a channel and add members (repeat for each channel)
-stream chat channel create --type messaging --id <channel-id> --members <user1>,<user2>
+stream api UpdateUsers --body '{"users":{"<token_user_id>":{"id":"<token_user_id>","name":"Token User"},"alice":{"id":"alice","name":"Alice"},"bob":{"id":"bob","name":"Bob"}}}'
 ```
 
-Generate short memorable channel IDs (e.g. `general`, `random`, `team-alpha`) and use a small set of random usernames (e.g. `alice`, `bob`, `carol`, `dave`, `eve`). Make sure the token user is a member of at least one channel so they can see it on first launch.
+Then create each channel, adding members via `data.members` (an array of `{"user_id":"..."}` objects - top-level `members` is a pagination shape, not membership):
+
+```bash
+stream api GetOrCreateChannel type=messaging id=<channel-id> \
+  --body '{"data":{"name":"<display name>","created_by_id":"<token_user_id>","members":[{"user_id":"<token_user_id>"},{"user_id":"alice"},{"user_id":"bob"}]}}'
+```
+
+Use short memorable channel IDs (e.g. `general`, `random`, `team-alpha`). The token user **must** appear in `data.members` for at least one channel, or the channel list renders empty on first launch. If a call fails with a parameter error, check `stream api GetOrCreateChannel -h`.
 
 After seeding, print a brief summary:
 
-> Created channels: `general` (alice, bob), `random` (carol, dave), `team-alpha` (alice, eve)
+> Created channels: `general` (token user, alice, bob), `random` (token user, carol, dave)
 
 #### Step D - Proceed automatically
 

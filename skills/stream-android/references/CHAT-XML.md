@@ -1,23 +1,23 @@
 # Chat - XML SDK Setup & Integration
 
-The Stream Chat XML SDK is the View-based Android SDK (artifact `stream-chat-android-ui-components`) — pre-built Views and Fragments for messaging UIs that drop into any AppCompat / Material project. This file covers Gradle setup, client setup, authentication, customization, and gotchas. For screen blueprints, see [CHAT-XML-blueprints.md](CHAT-XML-blueprints.md).
+The Stream Chat XML SDK is the View-based Android SDK (artifact `stream-chat-android-ui-components`) - pre-built Views and Fragments for messaging UIs that drop into any AppCompat / Material project. This file covers Gradle setup, client setup, authentication, customization, and gotchas. For screen blueprints, see [CHAT-XML-blueprints.md](CHAT-XML-blueprints.md).
 
 Rules: [../RULES.md](../RULES.md) (secrets, no dev tokens in production, proper logout).
 
-- **Blueprint** — Fragment / Activity structure and View wiring
-- **Wiring** — SDK calls for each View and ViewModel, exact extension paths
-- **Requirements** — `minSdk` 21+, AppCompat / Material theme on the host Activity, Kotlin
+- **Blueprint** - Fragment / Activity structure and View wiring
+- **Wiring** - SDK calls for each View and ViewModel, exact extension paths
+- **Requirements** - `minSdk` 21+, AppCompat / Material theme on the host Activity, Kotlin
 
 ## Quick ref
 
-- **Target version:** Stream Chat Android **v7.x** (see [RULES.md](../RULES.md) — if your memory disagrees with the docs, trust the docs)
+- **Target version:** Stream Chat Android **v7.x** (see [RULES.md](../RULES.md) - if your memory disagrees with the docs, trust the docs)
 - **Artifact (XML / Views):** `io.getstream:stream-chat-android-ui-components` via Maven Central
 - **Artifact (core only):** `io.getstream:stream-chat-android-client` (pulled in transitively)
 - **First:** Installation -> Manifest -> `ChatClient` build -> `connectUser` -> `ChannelListFragment` in an Activity
 - **Per feature:** Jump to the relevant section or blueprint when wiring a screen
 - **Docs:** If you can't find information here, check the docs: `https://getstream.io/chat/docs/sdk/android/ui/overview/`
 
-Full screen blueprints: [CHAT-XML-blueprints.md](CHAT-XML-blueprints.md) — load only the section you are implementing.
+Full screen blueprints: [CHAT-XML-blueprints.md](CHAT-XML-blueprints.md) - load only the section you are implementing.
 
 ---
 
@@ -53,13 +53,13 @@ dependencies {
 }
 ```
 
-If you don't know the latest version, follow [`RULES.md`](../RULES.md) → *Version lookup*.
+If you don't know the latest version, follow [`RULES.md`](../RULES.md) -> *Version lookup*.
 
-The host Activity's theme must descend from a `Theme.MaterialComponents.*` or `Theme.Material3.*` family — Stream Views read Material attributes (`colorPrimary`, `colorOnSurface`, …). Adding a fresh AppCompat-only theme will cause inflate-time crashes on Stream Views.
+The host Activity's theme must descend from a `Theme.MaterialComponents.*` or `Theme.Material3.*` family - Stream Views read Material attributes (`colorPrimary`, `colorOnSurface`, ...). Adding a fresh AppCompat-only theme will cause inflate-time crashes on Stream Views.
 
 ### Client Initialization
 
-Initialize once in your `Application` class. **Never** create `ChatClient` inside an `Activity.onCreate` that re-runs, a Fragment, or a callback — the Builder registers a singleton.
+Initialize once in your `Application` class. **Never** create `ChatClient` inside an `Activity.onCreate` that re-runs, a Fragment, or a callback - the Builder registers a singleton.
 
 ```kotlin
 import android.app.Application
@@ -88,11 +88,11 @@ Register the `Application` subclass in `AndroidManifest.xml`:
     ...>
 ```
 
-After build time, retrieve the client anywhere via `ChatClient.instance()`. The Builder registers the singleton automatically — do **not** store your own copy as a top-level `lateinit var`.
+After build time, retrieve the client anywhere via `ChatClient.instance()`. The Builder registers the singleton automatically - do **not** store your own copy as a top-level `lateinit var`.
 
 ### User Authentication
 
-**Default — hardcoded token (no expiry):**
+**Default - hardcoded token (no expiry):**
 
 ```kotlin
 import io.getstream.chat.android.client.ChatClient
@@ -130,11 +130,11 @@ ChatClient.instance()
     .enqueue { /* ... */ }
 ```
 
-`TokenProvider.loadToken()` is synchronous — block on your backend call inside it; the SDK runs the provider off the main thread and re-invokes it whenever the token expires.
+`TokenProvider.loadToken()` is synchronous - block on your backend call inside it; the SDK runs the provider off the main thread and re-invokes it whenever the token expires.
 
 ### Disconnecting / switching users
 
-For switching to another user, prefer `ChatClient.switchUser(...)` — it disconnects the current user, deletes the push device, and connects the new user atomically:
+For switching to another user, prefer `ChatClient.switchUser(...)` - it disconnects the current user, deletes the push device, and connects the new user atomically:
 
 ```kotlin
 ChatClient.instance().switchUser(nextUser, nextToken).enqueue { result ->
@@ -145,11 +145,11 @@ ChatClient.instance().switchUser(nextUser, nextToken).enqueue { result ->
 }
 ```
 
-For a full logout (no follow-up `connectUser`), call `disconnect(flushPersistence = true)` to clear the offline cache. If you do roll your own switch via `disconnect(...).enqueue { connectUser(...) }`, always wait for `disconnect()` to complete before connecting — connecting in flight risks state corruption.
+For a full logout (no follow-up `connectUser`), call `disconnect(flushPersistence = true)` to clear the offline cache. If you do roll your own switch via `disconnect(...).enqueue { connectUser(...) }`, always wait for `disconnect()` to complete before connecting - connecting in flight risks state corruption.
 
 ### Showing the Channel List
 
-The drop-in `ChannelListFragment` renders the channel list, header, and search. Host it inside an `AppCompatActivity` and implement listener interfaces on the host — the Fragment auto-discovers them via `findListener()`:
+The drop-in `ChannelListFragment` renders the channel list, header, and search. Host it inside an `AppCompatActivity` and implement listener interfaces on the host - the Fragment auto-discovers them via `findListener()`:
 
 ```kotlin
 import androidx.appcompat.app.AppCompatActivity
@@ -186,7 +186,7 @@ The host Activity's `R.layout.activity_channels` is a single `FrameLayout` with 
 
 ## ChatUI Global Config
 
-`ChatUI` is the XML SDK's process-wide configuration object — the View-based equivalent of Compose's `ChatTheme(componentFactory = ...)`. Set fields once before any Stream View inflates (typically in `Application.onCreate()` or the host Activity before `setContentView`).
+`ChatUI` is the XML SDK's process-wide configuration object - the View-based equivalent of Compose's `ChatTheme(componentFactory = ...)`. Set fields once before any Stream View inflates (typically in `Application.onCreate()` or the host Activity before `setContentView`).
 
 ```kotlin
 import io.getstream.chat.android.ui.ChatUI
@@ -203,9 +203,9 @@ ChatUI.userAvatarRenderer = MyUserAvatarRenderer()
 ChatUI.channelAvatarRenderer = MyChannelAvatarRenderer()
 ```
 
-> **Never guess `ChatUI` field names from training data.** Open `ChatUI.kt` in the SDK source before referencing a field — the public surface includes formatters (date, channel name, message preview), avatar renderers, attachment factory managers, fonts, and feature flags (`draftMessagesEnabled`, `autoTranslationEnabled`, `videoThumbnailsEnabled`, …).
+> **Never guess `ChatUI` field names from training data.** Open `ChatUI.kt` in the SDK source before referencing a field - the public surface includes formatters (date, channel name, message preview), avatar renderers, attachment factory managers, fonts, and feature flags (`draftMessagesEnabled`, `autoTranslationEnabled`, `videoThumbnailsEnabled`, ...).
 
-`ChatUI` is set-and-leave: changing fields after a Stream View is already inflated does not refresh the live View — kill and recreate the Fragment / Activity to pick up changes.
+`ChatUI` is set-and-leave: changing fields after a Stream View is already inflated does not refresh the live View - kill and recreate the Fragment / Activity to pick up changes.
 
 ---
 
@@ -226,7 +226,7 @@ TransformStyle.channelListStyleTransformer = StyleTransformer { defaultStyle ->
 }
 ```
 
-Common transformers: `channelListStyleTransformer`, `messageListStyleTransformer`, `messageListItemStyleTransformer`, `messageComposerStyleTransformer`, `channelHeaderStyleTransformer`. The full set in `TransformStyle.kt` covers ~25+ surfaces — avatars, reactions, scroll button, attachments (file / media / giphy / poll / quoted), search input, mention list, typing indicator, audio recorder, thread list, etc. Each `*Style` is a `data class` — use `.copy(...)` with named parameters. Open `TransformStyle.kt` and the matching style class in the SDK source before referencing a transformer or field; do not enumerate from memory.
+Common transformers: `channelListStyleTransformer`, `messageListStyleTransformer`, `messageListItemStyleTransformer`, `messageComposerStyleTransformer`, `channelHeaderStyleTransformer`. The full set in `TransformStyle.kt` covers ~25+ surfaces - avatars, reactions, scroll button, attachments (file / media / giphy / poll / quoted), search input, mention list, typing indicator, audio recorder, thread list, etc. Each `*Style` is a `data class` - use `.copy(...)` with named parameters. Open `TransformStyle.kt` and the matching style class in the SDK source before referencing a transformer or field; do not enumerate from memory.
 
 ### 2. XML theme attributes
 
@@ -241,7 +241,7 @@ Stream Views read attributes off the host Activity's theme via the `streamUiThem
 </style>
 ```
 
-Apply the theme in `AndroidManifest.xml` on the application or activity. Use individual `streamUi*` attributes only when you've verified them against the SDK's `attrs.xml` — do not invent attribute names.
+Apply the theme in `AndroidManifest.xml` on the application or activity. Use individual `streamUi*` attributes only when you've verified them against the SDK's `attrs.xml` - do not invent attribute names.
 
 For most theming, **prefer `TransformStyle`** over per-attribute XML; it's terser, type-safe, and easier to maintain.
 
@@ -249,7 +249,7 @@ For most theming, **prefer `TransformStyle`** over per-attribute XML; it's terse
 
 ## ViewModel Patterns
 
-Every Stream View has a matching ViewModel and a `bindView(view, lifecycleOwner)` extension that wires state and listeners in one call. **Always create ViewModels via a factory passed to `viewModels { factory }` (Activity / Fragment), or with Hilt via `by viewModels()` on a `@AndroidEntryPoint` host plus `@HiltViewModel` on the ViewModel — never inside a transient scope.** `hiltViewModel()` is a Compose-only API; do not use it from an Activity / Fragment.
+Every Stream View has a matching ViewModel and a `bindView(view, lifecycleOwner)` extension that wires state and listeners in one call. **Always create ViewModels via a factory passed to `viewModels { factory }` (Activity / Fragment), or with Hilt via `by viewModels()` on a `@AndroidEntryPoint` host plus `@HiltViewModel` on the ViewModel - never inside a transient scope.** `hiltViewModel()` is a Compose-only API; do not use it from an Activity / Fragment.
 
 ### Channel list
 
@@ -286,7 +286,7 @@ class CustomChannelListActivity : AppCompatActivity(R.layout.activity_custom_cha
 
 ### Channel screen (header + list + composer)
 
-The three Views share a single factory (`ChannelViewModelFactory`) — one factory creates all three ViewModels.
+The three Views share a single factory (`ChannelViewModelFactory`) - one factory creates all three ViewModels.
 
 ```kotlin
 import androidx.activity.viewModels
@@ -346,7 +346,7 @@ For finer control, pass a `ChatLoggerHandler` via `.loggerHandler(...)` and brid
 - **The host Activity must use a Material(Components) theme.** Stream Views read `colorPrimary`, `colorOnSurface`, and other Material attributes during inflation; a plain `Theme.AppCompat.*` will crash with a `MaterialAttributes` lookup failure.
 - **Always wait for `disconnect()` completion before connecting another user.** The SDK uses Room for offline persistence and runs optimistic updates; connecting a new user while disconnect is in flight risks state corruption.
 - **Build `ChatClient` once in `Application.onCreate()`, before any Stream View inflates.** `ChatClient.Builder(...).build()` registers a singleton (a second build orphans existing socket subscriptions); `ChatClient.instance()` throws until that first build completes.
-- **`ChatUI` and `TransformStyle` must be configured before the first Stream View inflates** — typically in `Application.onCreate()`. Setting them later does not retroactively refresh visible Views.
-- **Listener interfaces on `ChannelListFragment` are auto-discovered** via `findListener()` — implement them on the host Activity (or parent Fragment) instead of calling `.setOnXxxClickListener(...)` manually. Manual setters on the inner Views are overwritten when the Fragment re-binds.
+- **`ChatUI` and `TransformStyle` must be configured before the first Stream View inflates** - typically in `Application.onCreate()`. Setting them later does not retroactively refresh visible Views.
+- **Listener interfaces on `ChannelListFragment` are auto-discovered** via `findListener()` - implement them on the host Activity (or parent Fragment) instead of calling `.setOnXxxClickListener(...)` manually. Manual setters on the inner Views are overwritten when the Fragment re-binds.
 - **Never instantiate Stream ViewModels in arbitrary scopes.** Use `viewModels { factory }` or `hiltViewModel()`. Creating them in a callback or local `lazy` outside the Activity scope leaks listeners and breaks state restoration.
 - **`TokenProvider.loadToken()` is synchronous.** Block on your backend call inside it; the SDK runs the provider off the main thread and re-invokes it on expiry.

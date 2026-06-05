@@ -51,7 +51,7 @@ let isBackstage = callViewModel.call?.state.backstage ?? true
 ### 1. Join (enters backstage)
 
 ```swift
-// joinCall has no callSettings parameter — pass settings via CallViewModel.init(callSettings:) at the root
+// joinCall has no callSettings parameter - pass settings via CallViewModel.init(callSettings:) at the root
 callViewModel.joinCall(callType: "livestream", callId: callId)
 ```
 
@@ -112,7 +112,7 @@ If the call is still in backstage when the viewer joins, the `callingState` stay
 
 ## Viewer flow (HLS)
 
-HLS is better for large audiences (thousands of viewers). It introduces higher latency (~10–30 s) but scales without per-viewer WebRTC connections.
+HLS is better for large audiences (thousands of viewers). It introduces higher latency (~10-30 s) but scales without per-viewer WebRTC connections.
 
 ### Get the HLS URL
 
@@ -186,7 +186,7 @@ This count reflects only WebRTC-connected users. HLS viewers are not included. F
 `joinCall` has no `callSettings` parameter. Pass initial settings when constructing `CallViewModel`:
 
 ```swift
-// Host: camera and mic on (default — CallViewModel() is equivalent)
+// Host: camera and mic on (default - CallViewModel() is equivalent)
 @StateObject private var callViewModel = CallViewModel(callSettings: CallSettings(audioOn: true, videoOn: true))
 
 // Viewer: camera and mic off
@@ -216,13 +216,13 @@ Viewers do not publish, but iOS still requires the keys for any app that links `
 
 ## Gotchas
 
-- **Never use `CallModifier` in a livestream flow.** `CallModifier` wraps the content in `VideoViewOverlay`, which layers `CallContainer` on top of all child views whenever `callingState` is `.inCall`, `.joining`, or `.outgoing`. This completely replaces the custom creator/viewer UI with the SDK's default meeting screen (participant grid + controls). Livestream views own their call UI — `CallModifier` must not appear anywhere in the hierarchy above `CreatorLivestreamView` or `ViewerLivestreamView`.
-- **Always observe `callingState` to detect unexpected disconnects.** After `hangUp()`, `callingState` resets to `.idle`. Views must observe this with `.onChange(of: callViewModel.callingState)` and call `onExit()` when `.idle` is reached — both for the explicit "end stream" path and for network drops or server kicks. Without this, the view stays on screen after a disconnect and cannot be dismissed.
+- **Never use `CallModifier` in a livestream flow.** `CallModifier` wraps the content in `VideoViewOverlay`, which layers `CallContainer` on top of all child views whenever `callingState` is `.inCall`, `.joining`, or `.outgoing`. This completely replaces the custom creator/viewer UI with the SDK's default meeting screen (participant grid + controls). Livestream views own their call UI - `CallModifier` must not appear anywhere in the hierarchy above `CreatorLivestreamView` or `ViewerLivestreamView`.
+- **Always observe `callingState` to detect unexpected disconnects.** After `hangUp()`, `callingState` resets to `.idle`. Views must observe this with `.onChange(of: callViewModel.callingState)` and call `onExit()` when `.idle` is reached - both for the explicit "end stream" path and for network drops or server kicks. Without this, the view stays on screen after a disconnect and cannot be dismissed.
 - **Guard `joinCall` with `callingState == .idle`.** Call `joinCall` only when `callingState == .idle`. Without the guard, navigating back to a view and re-entering can trigger a second `joinCall` while a previous call session is still tearing down.
 - **Never skip backstage on the host.** The host must join first via `callViewModel.joinCall` before calling `goLive()`. Calling `goLive()` on a `nil` call crashes.
 - **`call.state.backstage` is the source of truth for live status.** Do not maintain a separate `isLive: Bool` property - observe `call.state.backstage` directly.
 - **`callViewModel.hangUp()` after `call.end()`.** `call.end()` terminates the session server-side but does not reset local `CallViewModel` state. Always follow it with `hangUp()`.
-- **HLS latency is expected.** HLS viewers see the stream 10–30 seconds behind live. Do not attempt to synchronize WebRTC and HLS viewers.
+- **HLS latency is expected.** HLS viewers see the stream 10-30 seconds behind live. Do not attempt to synchronize WebRTC and HLS viewers.
 - **Viewer join before host goes live.** A viewer who joins before `goLive()` is called will not see video until backstage ends. Show a "waiting for host" state and observe `call.state.backstage` transitioning to `false`.
 - **Never publish from a viewer.** The `livestream` call type blocks viewer publishing via server-side permissions. Do not show camera/mic controls in the viewer UI.
 - **AVPlayer must be `@State`, not inline.** Creating `AVPlayer(url:)` inside a SwiftUI `body` or computed property recreates the player on every redraw and interrupts playback.

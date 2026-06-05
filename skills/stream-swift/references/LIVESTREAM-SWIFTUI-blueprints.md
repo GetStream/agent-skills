@@ -43,7 +43,7 @@ struct LivestreamApp: App {
 
 ## Root View Blueprint
 
-> **Do NOT use `CallModifier` for livestreaming.** `CallModifier` wraps the content in `VideoViewOverlay`, which overlays `CallContainer` on top of all child views whenever `callingState` is `.inCall`, `.joining`, or `.outgoing`. This replaces your custom creator/viewer UI with the SDK's default meeting screen. Livestream views manage their own state — no `CallModifier` needed.
+> **Do NOT use `CallModifier` for livestreaming.** `CallModifier` wraps the content in `VideoViewOverlay`, which overlays `CallContainer` on top of all child views whenever `callingState` is `.inCall`, `.joining`, or `.outgoing`. This replaces your custom creator/viewer UI with the SDK's default meeting screen. Livestream views manage their own state - no `CallModifier` needed.
 
 ```swift
 import SwiftUI
@@ -54,14 +54,14 @@ struct LivestreamRootView: View {
 
     var body: some View {
         LivestreamModeSelectionView(callViewModel: callViewModel)
-        // No CallModifier — creator and viewer views own their call UI entirely
+        // No CallModifier - creator and viewer views own their call UI entirely
     }
 }
 ```
 
 **Wiring:**
-- `CallViewModel` is `@StateObject` — `LivestreamRootView` owns the call session for its lifetime
-- Pass `callViewModel` down as `@ObservedObject` — never create a second instance
+- `CallViewModel` is `@StateObject` - `LivestreamRootView` owns the call session for its lifetime
+- Pass `callViewModel` down as `@ObservedObject` - never create a second instance
 - `CallViewModel()` uses default settings (`audioOn: true`, `videoOn: true`). The `livestream` call type enforces no-publish for viewers via server-side permissions
 
 ---
@@ -137,7 +137,7 @@ enum LivestreamMode {
 ```
 
 **Wiring:**
-- `selectedMode` drives navigation — `onExit` sets it to `nil` to pop back
+- `selectedMode` drives navigation - `onExit` sets it to `nil` to pop back
 - Both destination views receive the same `callViewModel` instance
 
 ---
@@ -264,7 +264,7 @@ struct CreatorLivestreamView: View {
                 Text("LIVE")
                     .font(.caption.bold())
                     .foregroundStyle(.white)
-                Text("·")
+                Text("\u{00B7}")
                     .foregroundStyle(.white.opacity(0.6))
                 Image(systemName: "person.fill")
                     .font(.caption)
@@ -389,11 +389,11 @@ struct CreatorLivestreamView: View {
 ```
 
 **Wiring:**
-- **No `CallModifier`** — `CreatorLivestreamView` owns the call UI entirely. `CallModifier` would overlay the SDK's default meeting screen on top of this view the moment `callingState` becomes `.inCall`, replacing the custom livestream UI. Never wrap livestream flows with `CallModifier`.
+- **No `CallModifier`** - `CreatorLivestreamView` owns the call UI entirely. `CallModifier` would overlay the SDK's default meeting screen on top of this view the moment `callingState` becomes `.inCall`, replacing the custom livestream UI. Never wrap livestream flows with `CallModifier`.
 - `.onAppear` guards with `callingState == .idle` to prevent double-joining if the view re-appears
-- `.onChange(of: callingState)` watches for `.idle` to call `onExit()` — this handles both the explicit "End Stream" path and unexpected disconnects (network drop, kicked). `onExit()` is NOT called directly after `hangUp()` in `endStreamButton`; the observer fires it once `callingState` settles to `.idle`
-- `isLive` is derived from `call?.state.backstage` — no separate `Bool` state needed
-- `callSettings.audioOn` / `.videoOn` — no `is` prefix
+- `.onChange(of: callingState)` watches for `.idle` to call `onExit()` - this handles both the explicit "End Stream" path and unexpected disconnects (network drop, kicked). `onExit()` is NOT called directly after `hangUp()` in `endStreamButton`; the observer fires it once `callingState` settles to `.idle`
+- `isLive` is derived from `call?.state.backstage` - no separate `Bool` state needed
+- `callSettings.audioOn` / `.videoOn` - no `is` prefix
 - `VideoCallParticipantView` requires `contentMode`, `customData`, and `call`
 - `goLive()` and `stopLive()` are `@discardableResult async throws`
 - `call?.end()` terminates the session server-side; `hangUp()` resets local `CallViewModel` state
@@ -530,10 +530,10 @@ struct ViewerLivestreamView: View {
 ```
 
 **Wiring:**
-- **No `CallModifier`** — same reason as `CreatorLivestreamView`. Applying `CallModifier` at any level in the livestream hierarchy will intercept `.inCall` and show the default meeting UI
+- **No `CallModifier`** - same reason as `CreatorLivestreamView`. Applying `CallModifier` at any level in the livestream hierarchy will intercept `.inCall` and show the default meeting UI
 - `.onAppear` guards with `callingState == .idle` to prevent double-joining
-- `.onChange(of: callingState)` calls `onExit()` when state reaches `.idle` — handles both Leave button and unexpected disconnects
-- `isLive` is derived from `call?.state.backstage` — viewer shows the waiting overlay until host calls `goLive()`
+- `.onChange(of: callingState)` calls `onExit()` when state reaches `.idle` - handles both Leave button and unexpected disconnects
+- `isLive` is derived from `call?.state.backstage` - viewer shows the waiting overlay until host calls `goLive()`
 - `VideoCallParticipantView` requires `contentMode`, `customData`, and `call`
 
 ---
@@ -635,11 +635,11 @@ struct HLSViewerLivestreamView: View {
 ```
 
 **Wiring:**
-- `player` is `@State` — created once, never recreated in `body`
-- `waitAndStartHLS()` runs in `.task` — cancelled automatically when the view disappears
-- `call.state.egress?.hls?.playlistUrl` — `egress` is `EgressResponse?`, HLS URL is at `egress.hls.playlistUrl` (not `egress.broadcasting.hlsPlaylistUrl`)
+- `player` is `@State` - created once, never recreated in `body`
+- `waitAndStartHLS()` runs in `.task` - cancelled automatically when the view disappears
+- `call.state.egress?.hls?.playlistUrl` - `egress` is `EgressResponse?`, HLS URL is at `egress.hls.playlistUrl` (not `egress.broadcasting.hlsPlaylistUrl`)
 - HLS viewers do not join as WebRTC participants
-- HLS latency is 10–30 s by design
+- HLS latency is 10-30 s by design
 
 ---
 
@@ -647,10 +647,10 @@ struct HLSViewerLivestreamView: View {
 
 ```
 LivestreamApp
-  └── LivestreamRootView          (@StateObject CallViewModel — NO CallModifier)
-        └── LivestreamModeSelectionView  (enter stream ID, choose mode)
-              ├── CreatorLivestreamView  (join + backstage + goLive + controls)
-              └── ViewerLivestreamView   (join as subscriber + watch)
+  +-- LivestreamRootView          (@StateObject CallViewModel - NO CallModifier)
+        +-- LivestreamModeSelectionView  (enter stream ID, choose mode)
+              +-- CreatorLivestreamView  (join + backstage + goLive + controls)
+              +-- ViewerLivestreamView   (join as subscriber + watch)
 ```
 
 Each view passes the **same** `callViewModel` downward. No view below `LivestreamRootView` creates its own `CallViewModel`.

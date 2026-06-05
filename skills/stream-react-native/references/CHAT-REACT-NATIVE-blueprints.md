@@ -218,7 +218,7 @@ Use this when the user asks for a capability that needs extra native packages be
 
 Keep optional UI inside the same provider and `Channel` hierarchy as the core Chat screen unless the manifest-selected docs require otherwise.
 
-> **Expo Router SDK 56+ swap.** Same caveat as Channel Screen above — replace `useHeaderHeight()` with the `Platform.OS + useSafeAreaInsets().top` recipe so this screen doesn't drag `@react-navigation/elements` into an SDK 56+ project. See Channel Screen for the snippet.
+> **Expo Router SDK 56+ swap.** Same caveat as Channel Screen above - replace `useHeaderHeight()` with the `Platform.OS + useSafeAreaInsets().top` recipe so this screen doesn't drag `@react-navigation/elements` into an SDK 56+ project. See Channel Screen for the snippet.
 
 ```tsx
 import React, { useMemo } from "react";
@@ -256,7 +256,7 @@ export const ChannelScreenWithNativeCapability = ({ route }) => {
 Wiring:
 
 - Keep `MessageComposer` inside `Channel`.
-- Pair `keyboardVerticalOffset` with `topInset` set to the same header height — without it, the attachment picker bottom sheet gets clamped short of its full snap point.
+- Pair `keyboardVerticalOffset` with `topInset` set to the same header height - without it, the attachment picker bottom sheet gets clamped short of its full snap point.
 - Add `bottomInset` only when a specific layout requires it (e.g. tab bar that owns the bottom safe-area).
 - Use `WithComponents` for custom buttons, previews, rows, or capability-specific UI slots.
 
@@ -352,7 +352,7 @@ Wiring:
 
 Recreate the channel from CID using the provided Chat client. `Channel` owns `MessageList` and `MessageComposer`.
 
-> **Expo Router SDK 56+:** the `useHeaderHeight()` import below comes from `@react-navigation/elements`, which **must not be installed** on Expo Router 56+ — Metro halts with `expo-router is no longer compatible with react-navigation` (see [../RULES.md](../RULES.md) > Expo Router SDK 56+ — no React Navigation). Swap that one import + the `useHeaderHeight()` call for:
+> **Expo Router SDK 56+:** the `useHeaderHeight()` import below comes from `@react-navigation/elements`, which **must not be installed** on Expo Router 56+ - Metro halts with `expo-router is no longer compatible with react-navigation` (see [../RULES.md](../RULES.md) > Expo Router SDK 56+ - no React Navigation). Swap that one import + the `useHeaderHeight()` call for:
 >
 > ```tsx
 > import { Platform } from "react-native";
@@ -361,7 +361,7 @@ Recreate the channel from CID using the provided Chat client. `Channel` owns `Me
 > const headerHeight = (Platform.OS === "ios" ? 44 : 56) + top;
 > ```
 >
-> This matches what `useHeaderHeight()` returns internally (native-stack default 44pt iOS / 56dp Android + top safe-area inset). On RN CLI and Expo Router SDK ≤ 55, the original snippet stands unchanged.
+> This matches what `useHeaderHeight()` returns internally (native-stack default 44pt iOS / 56dp Android + top safe-area inset). On RN CLI and Expo Router SDK <= 55, the original snippet stands unchanged.
 
 ```tsx
 import React, { useMemo } from "react";

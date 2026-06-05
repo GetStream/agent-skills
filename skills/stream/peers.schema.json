@@ -31,8 +31,8 @@
         },
         "install": {
           "type": "string",
-          "pattern": "^npx skills add GetStream/agent-skills --s stream-[a-z0-9-]+ -y$",
-          "description": "Exact shell command the router runs to install the peer. -y suppresses the package CLI's own confirmation; the router enforces install_policy on top."
+          "pattern": "^stream skills stream-[a-z0-9-]+$",
+          "description": "Exact shell command the router runs to install the peer via the Stream CLI; the router enforces install_policy on top."
         },
         "install_policy": {
           "type": "string",

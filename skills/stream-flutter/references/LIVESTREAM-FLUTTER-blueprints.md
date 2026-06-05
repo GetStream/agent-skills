@@ -329,7 +329,7 @@ class _CreatorLivestreamPageState extends State<CreatorLivestreamPage> {
                 const Text('LIVE',
                     style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
                 const SizedBox(width: 6),
-                const Text('·', style: TextStyle(color: Colors.white54)),
+                const Text('\u00B7', style: TextStyle(color: Colors.white54)),
                 const SizedBox(width: 6),
                 const Icon(Icons.person, color: Colors.white70, size: 14),
                 const SizedBox(width: 4),
@@ -432,10 +432,10 @@ class _CreatorLivestreamPageState extends State<CreatorLivestreamPage> {
 ```
 
 **Wiring:**
-- **No `StreamCallContainer`** — `CreatorLivestreamPage` owns the call UI entirely
+- **No `StreamCallContainer`** - `CreatorLivestreamPage` owns the call UI entirely
 - `_joinAsHost()` is called from `initState`; the `_joined` flag prevents double-joining on re-render
-- `isLive` is derived from `state.backstage` — no separate `bool` state
-- `viewerCount` comes from `state.remoteParticipants.length` — excludes local participant
+- `isLive` is derived from `state.backstage` - no separate `bool` state
+- `viewerCount` comes from `state.remoteParticipants.length` - excludes local participant
 - `dispose()` calls `leave()` as a safety net for screen pops without the end-stream button
 - `goLive()` / `stopLive()` / `end()` / `leave()` is the correct end-stream sequence
 
@@ -634,10 +634,10 @@ class _WaitingForHostOverlay extends StatelessWidget {
 ```
 
 **Wiring:**
-- **No `StreamCallContainer`** — same reason as `CreatorLivestreamPage`
-- Disable camera/mic immediately after a successful join — the `livestream` call type also enforces this server-side, but disabling locally avoids spurious track creation
+- **No `StreamCallContainer`** - same reason as `CreatorLivestreamPage`
+- Disable camera/mic immediately after a successful join - the `livestream` call type also enforces this server-side, but disabling locally avoids spurious track creation
 - `state.backstage` is the source of truth for whether the stream is live
-- `state.remoteParticipants.firstOrNull` is the host's participant — null if backstage or not yet live
+- `state.remoteParticipants.firstOrNull` is the host's participant - null if backstage or not yet live
 - `dispose()` calls `leave()` as a safety net for OS back gestures
 
 ---
@@ -811,11 +811,11 @@ class _HLSViewerPageState extends State<HLSViewerPage> {
 ```
 
 **Wiring:**
-- HLS viewers do **not** call `call.join()` — they observe `call.state` for the HLS URL only
-- `VideoPlayerController` is created in `_startPlayback`, not in `build` — recreating it in `build` resets playback every frame
+- HLS viewers do **not** call `call.join()` - they observe `call.state` for the HLS URL only
+- `VideoPlayerController` is created in `_startPlayback`, not in `build` - recreating it in `build` resets playback every frame
 - The `StreamSubscription` is cancelled in `dispose()` to prevent state-after-dispose errors
-- `egress?.hls?.playlistUrl` — the HLS URL appears a few seconds after the host calls `goLive()`; the subscription handles the delay automatically
-- HLS latency is 10–30 s by design — do not try to synchronize with WebRTC viewers
+- `egress?.hls?.playlistUrl` - the HLS URL appears a few seconds after the host calls `goLive()`; the subscription handles the delay automatically
+- HLS latency is 10-30 s by design - do not try to synchronize with WebRTC viewers
 - `video_player` must be added to `pubspec.yaml` separately (`video_player: ^2.9.1`)
 
 ---
@@ -824,11 +824,11 @@ class _HLSViewerPageState extends State<HLSViewerPage> {
 
 ```
 LivestreamApp
-  └── LivestreamModeSelectionPage   (enter stream ID, choose mode)
-        ├── CreatorLivestreamPage   (join + backstage + goLive + controls)
-        └── ViewerLivestreamPage    (join as subscriber + watch host)
+  +-- LivestreamModeSelectionPage   (enter stream ID, choose mode)
+        +-- CreatorLivestreamPage   (join + backstage + goLive + controls)
+        +-- ViewerLivestreamPage    (join as subscriber + watch host)
               OR
-        └── HLSViewerPage           (observe HLS URL + video_player playback)
+        +-- HLSViewerPage           (observe HLS URL + video_player playback)
 ```
 
 Each page creates its own `Call` object via `StreamVideo.instance.makeCall(...)`. For the creator and WebRTC viewer, this is the same call ID joining the same stream from different roles.

@@ -12,7 +12,7 @@ Collect the Stream API key, user id, and user token so the app can connect to re
 
 For a brand-new app, scaffolding may happen before this file if the runtime or target directory must be resolved first.
 
-This flow uses the **`stream`** CLI (binary name `stream`). It is the same CLI used by [`../stream-cli`](../stream-cli/SKILL.md). If the CLI is missing, use [`../stream-cli/bootstrap.md`](../stream-cli/bootstrap.md) for the install flow.
+This flow uses the **`stream`** CLI (binary name `stream`). It is the same `stream` CLI used across the pack. If the CLI is missing, ask the user to install it from https://getstream.io and wait - never fetch or run an install script yourself.
 
 ## Single upfront question (ask exactly once, then act immediately)
 
@@ -39,32 +39,21 @@ Detect the binary:
 command -v stream
 ```
 
-If `stream` does not resolve, follow [`../stream-cli/bootstrap.md`](../stream-cli/bootstrap.md). Ask for explicit approval before installing. Do not continue until `command -v stream` resolves, unless the user chooses to paste API key and token manually.
+If `stream` does not resolve, ask the user to install it from https://getstream.io and wait - never fetch or run an install script yourself. Do not continue until `command -v stream` resolves, unless the user chooses to paste API key and token manually.
 
-Verify auth with a cheap read:
-
-```bash
-stream --safe api OrganizationRead
-```
-
-- Exit 0 -> authenticated, proceed.
-- Exit 2 -> run `stream auth login` as its own terminal invocation, per [`../stream/RULES.md`](../stream/RULES.md) > CLI safety.
-- Exit 4 -> run `stream api --refresh`, then retry.
-- Other exit -> report the error and fall back to pasted credentials.
+Authentication and app selection are handled in Step A below: run the command and follow its output.
 
 ### Step A - API key
 
-If the user wants CLI-based credentials, read the configured app:
+If the user wants CLI-based credentials:
 
 ```bash
-stream --safe api GetApp
+stream keys
 ```
 
-Extract the `api_key` field **and the app `name`** and hold both in context. If the wrong app is selected, list apps or set the default using the Stream CLI flow from `stream-cli`; then re-run `GetApp`.
+`stream keys` prints the app's public API key (run `stream keys -h` for output details). Read the key and hold it in context. The API key is public; the API **secret** is never needed here. If `stream keys` reports you are not signed in or that no app is selected, run `stream init` (auth + select or create org + app), then re-run `stream keys`. If the user pastes an API key, hold it in context and skip this step.
 
-If the user pastes an API key, hold it in context and skip this step.
-
-**Echo the selected app to the user before any mutation:** before running Step C, say `Selected Stream app: "<app_name>" (api_key: <last_4_chars>)` so a misconfigured CLI default is caught before it writes to the wrong app. If the user expected a different app, stop and let them switch with `stream apps select` (or whichever app-switching flow `stream-cli` uses) before continuing.
+**Echo the selected app to the user before any mutation:** before running Step C, say `Selected Stream app: "<app_name>" (api_key: <last_4_chars>)` so a misconfigured project is caught before it writes to the wrong app. If the user expected a different app, run `stream init` to switch it before continuing.
 
 ### Step B - Token
 
@@ -98,7 +87,7 @@ These calls are mutating. **All demo ids must be namespaced** so they cannot col
 Before running any `UpdateUsers` / `GetOrCreateChannel` / `SendMessage` / `GetOrCreateFollows` / `AddActivity` / `UpdateFeedGroup` / `AddActivityReaction`:
 
 1. **Generate a per-session demo prefix** and hold it in context. Default form: `demo-<short_random>-` where `<short_random>` is 4-6 lowercase chars (e.g., `demo-k3p9-`). Every demo user id, channel id, activity id, and seeded record custom field uses this prefix. Do not reuse a prefix across sessions - generate a fresh one each time so retries land in a fresh namespace.
-2. **Detect whether the selected app already has real data.** For Chat in scope, run `stream --safe api QueryChannels --body '{"filter_conditions":{"type":"messaging"},"limit":1}'`. For Feeds in scope, run `stream --safe api QueryActivities --body '{"limit":1}'`. Check whether either response includes records that do **not** start with a `demo-` prefix.
+2. **Detect whether the selected app already has real data.** For Chat in scope, run `stream api QueryChannels --body '{"filter_conditions":{"type":"messaging"},"limit":1}'`. For Feeds in scope, run `stream api QueryActivities --body '{"limit":1}'`. Check whether either response includes records that do **not** start with a `demo-` prefix.
 3. **Confirm explicitly when the app is non-empty.** If real channels or activities exist, surface the count and a sample id, and require the user to type a confirmation before continuing:
    > Selected Stream app `"<app_name>"` already has real data (e.g., `<example_cid_or_activity_id>`). I am about to create demo users / channels / follows / activities namespaced under `<demo_prefix>` so they cannot collide. Confirm with `seed demo` to proceed, or say `cancel`.
 4. **Empty / dev app:** announce and proceed without explicit confirmation:
@@ -106,7 +95,7 @@ Before running any `UpdateUsers` / `GetOrCreateChannel` / `SendMessage` / `GetOr
 
 If the user cancels, stop Step C and return to Step D with credentials only.
 
-Route demo data through [`../stream-cli/SKILL.md`](../stream-cli/SKILL.md) and [`../stream-cli/cli-cookbook.md`](../stream-cli/cli-cookbook.md). Keep the CLI safe-mode-first rule for endpoint discovery and only run mutating calls after the explicit demo-data request and the confirmation above.
+Route demo data through the `stream` CLI; confirm endpoint and body shapes with `stream api -h`. Only run mutating calls after the explicit demo-data request and the confirmation above.
 
 #### C1 - Create namespaced user records (shared by Chat and Feeds)
 
@@ -135,13 +124,13 @@ After creating demo channels, summarize without secrets and **without printing u
 
 #### C3 - Send demo messages idempotently (only if the user asked for messages or more demo data) [Chat]
 
-Use `SendMessage` through the Stream CLI cookbook. Each message's `user_id` must belong to an existing user (so use the namespaced demo users from C1, or the token user). Tag every seeded message with a stable `custom.seed_key` so a re-run can detect and skip already-seeded messages.
+Use `SendMessage` (confirm its body shape with `stream api SendMessage -h`). Each message's `user_id` must belong to an existing user (so use the namespaced demo users from C1, or the token user). Tag every seeded message with a stable `custom.seed_key` so a re-run can detect and skip already-seeded messages.
 
 Before sending, check whether the channel already contains a message with the same `seed_key`:
 
 ```bash
 # Skip-if-present check (one query per (channel, seed_key)):
-stream --safe api QueryChannels --body '{"filter_conditions":{"type":"messaging","cid":"messaging:<demo_prefix>general"},"messages_limit":50}'
+stream api QueryChannels --body '{"filter_conditions":{"type":"messaging","cid":"messaging:<demo_prefix>general"},"messages_limit":50}'
 # If the returned messages already include one whose custom.seed_key matches
 # <seed_key>, skip the send for that key.
 ```

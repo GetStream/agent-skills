@@ -31,7 +31,7 @@ Everything needed to wire the Feeds SDK into a working Next.js application.
 
 ```bash
 # List existing feed groups (v3 apps come with defaults: user, timeline, notification, foryou, story, stories):
-stream --safe api ListFeedGroups
+stream api ListFeedGroups
 
 # Create custom feed group if needed:
 stream api CreateFeedGroup --body '{"id":"<name>","default_visibility":"visible","activity_selectors":[{"type":"current_feed"}]}'

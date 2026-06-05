@@ -4,13 +4,9 @@ description: "Build a new app or add Stream products (Chat, Video, Feeds, Modera
 license: See LICENSE in repository root
 metadata:
   author: GetStream
-  requires:
-    bins: ["stream", "node", "npm"]
-    skills: ["stream-cli"]
 allowed-tools: >-
   Read, Write, Edit, Glob, Grep,
   Bash(stream *),
-  Bash(npx skills add GetStream/agent-skills *),
   Bash(npx *), Bash(npm install *), Bash(npm run *),
   Bash(node -e *), Bash(node --version), Bash(openssl rand *),
   Bash(mv .scaffold*), Bash(rm -rf .scaffold),
@@ -26,7 +22,7 @@ allowed-tools: >-
 
 # Stream Builder - scaffold + enhance
 
-> **Read first (every session):** Glob `../stream/SKILL.md`. If the path is empty, install with `npx skills add GetStream/agent-skills --s stream -y` (no confirmation, just run). Then Read [`../stream/RULES.md`](../stream/RULES.md) - it includes a **Peer skills** table for installing/invoking any other pack skills on demand.
+> **Read first (every session):** Glob `../stream/SKILL.md`. If the path is empty, install with `stream skills stream` (no confirmation, just run). Then Read [`../stream/RULES.md`](../stream/RULES.md) - it includes a **Peer skills** table for installing/invoking any other pack skills on demand.
 
 This skill covers **three flows**:
 
@@ -40,7 +36,7 @@ This skill covers **three flows**:
 
 > **Track F (audit) skips this entire section.** A read-only best-practices review runs no preflight, no auth, no CLI, and none of Steps 0-7 - go straight to the **Integration best-practices audit** section in [`references/VIDEO.md`](references/VIDEO.md) and report findings. Only fall into the build flow below if the user asks you to fix what the audit found.
 
-Once preflight has reported `OK Stream CLI vN.N.N | ...`, announce the network plan once, then **immediately start executing Steps 0-7** - no interactive prompts at the start (the user has authorized the build by asking for it).
+Announce the network plan once (Trust readout below), then **immediately start executing Steps 0-7** - no interactive prompts at the start (the user has authorized the build by asking for it).
 
 ### Trust readout (announce, then continue on the same turn - do not wait)
 
@@ -61,7 +57,7 @@ Shadcn/ui is always installed during Step 3. Third-party **frontend skills** (`v
 
 ## Install trust & integrity
 
-The builder runs three classes of network-touching commands. Each is listed here so a reviewer can audit before approving. The full CLI installer audit (SHA-256 verification, TTY confirmation, scoped platform) lives in the `stream-cli` skill's [`bootstrap.md`](../stream-cli/bootstrap.md#what-the-installer-does).
+The builder runs three classes of network-touching commands. Each is listed here so a reviewer can audit before approving. (The `stream` CLI itself is installed by the user from getstream.io, not by the builder.)
 
 | Command | Publisher | Why unpinned | What it writes |
 |---|---|---|---|
@@ -69,7 +65,7 @@ The builder runs three classes of network-touching commands. Each is listed here
 | `npx shadcn@latest add ...` (Task A.1) | Vercel - same source as above | Same scaffolder; component sync depends on registry parity. | Component files under `components/ui/`. |
 | `npm install <stream-packages> --legacy-peer-deps` (Task C) | GetStream (npm) for `@stream-io/*` and `stream-chat-react`; transitive deps via standard npm trust | Latest published versions of GetStream's own SDKs - same trust model as the CLI itself. | Modules under `node_modules/`. Runtime SDKs + transitive deps. |
 | `npx skills add <github>` (Task A.2) | `vercel-labs/agent-skills` and `anthropics/skills` | Optional. Markdown-only skill packs; `npx skills add` is the published install path. | Markdown files in the user's skills directory. **Gated by explicit user consent in Task A.2** - never runs without an affirmative answer. |
-| `stream env` (Task B) | GetStream - installed via the `stream-cli` skill's [`bootstrap.md`](../stream-cli/bootstrap.md) (SHA-256 verified) | n/a (local CLI, no network at this step) | `.env` in the project root with `STREAM_API_KEY` + `STREAM_API_SECRET`. Task B verifies `.gitignore` covers `.env*` before writing (Next.js scaffold's default already does). The agent never reads `.env` (RULES.md > Secrets). |
+| `stream env` (Task B) | GetStream (local CLI) | n/a (local CLI, no network at this step) | `.env` in the project root with `STREAM_API_KEY` + `STREAM_API_SECRET`. Task B verifies `.gitignore` covers `.env*` before writing (Next.js scaffold's default already does). The agent never reads `.env` (RULES.md > Secrets). |
 
 **Reviewer checklist:**
 
@@ -82,58 +78,25 @@ The builder runs three classes of network-touching commands. Each is listed here
 
 ## Builder Steps
 
-Execute phases **in order** (later steps depend on earlier ones). Do **not** run independent phases in parallel. Shell discipline (one `bash -c` per phase, no `bash -ce`, `stream auth login` standalone) lives in the `stream` skill's [`RULES.md`](../stream/RULES.md) > Shell discipline.
-
-**Two-call exception:** If you must Read JSON (e.g. `OrganizationRead`) and then choose IDs, use one call for the read, one batched call for all creates + `stream config set`.
+Execute phases **in order** (later steps depend on earlier ones). Do **not** run independent phases in parallel. Shell discipline (one `bash -c` per phase, no `bash -ce`, browser sign-in standalone) lives in the `stream` skill's [`RULES.md`](../stream/RULES.md) > Shell discipline.
 
 ### Step 0: Package manager
 Always use `npm`. Never use bun.
 
-### Step 1: Auth
+### Step 1: Initialize the project
 
-**Test auth first, then act - don't skip this and don't wait until Step 2 surfaces an error.** Run `stream api OrganizationRead` as a probe:
+Run `stream init`. It authenticates, then lets you select or create the org and app and writes the project credentials - follow its prompts and output. If the app uses **Feeds**, choose a **Feeds v3** region when `stream init` offers the region list (other regions default to legacy v2). If `stream` isn't installed, ask the user to install it from https://getstream.io and wait - never fetch or run an install script. Browser sign-in must be its own invocation (RULES.md > Shell discipline).
 
-- **Exit 0** -> already authenticated, continue to Step 1b.
-- **Exit 2 / "not authenticated"** -> **immediately** run `stream auth login` as its **own** Bash invocation. This is a hard constraint:
-  - Browser PKCE requires an unwrapped `stream auth login` call - **never** chain with `&&`, embed in a heredoc, or bundle with other commands.
-  - Do not ask the user first; just run it. Give it up to ~3 minutes for the browser flow.
-- **Login hangs past ~60s, or the user reports the browser is stuck** -> run `stream auth logout` to clear any stale session state, then retry `stream auth login` **once**. If the second attempt also hangs, stop and ask the user to run `! stream auth login` themselves (the `!` prefix runs it in-session so you see the result).
+### Step 2: Theme pick
 
-### Step 1b: Theme pick
-
-Ask the user which Shadcn theme they'd like **before doing anything else**:
+Ask the user which Shadcn theme they'd like **before scaffolding**:
 
 > **Quick theme pick:** I can use a random shadcn theme, or you can design your own at [ui.shadcn.com/create](https://ui.shadcn.com/create) and share the `--preset` value (e.g. `--preset b1Gdi7z7r`). Want a random one or do you have a preset?
 
-**STOP here and wait for the user's answer.** Do not continue with org/app creation or any other steps until the user responds. Asking a question and continuing to work in parallel is confusing - the user misses the question as output scrolls past.
+**STOP here and wait for the user's answer.** Do not continue with scaffolding or any other steps until the user responds. Asking a question and continuing to work in parallel is confusing - the user misses the question as output scrolls past.
 
 - **User provides a preset** -> store it for Task A scaffold command.
 - **User says random / doesn't care / wants to move on** -> pick a random preset from `nova`, `vega`, `maia`, `lyra`, `mira`, `luma`.
-
-### Step 2: Create org + app
-
-**First, check existing orgs** with `stream api OrganizationRead`. If there are already 10 orgs, do NOT create a new one - pick an existing `builder-*` org and create a new app inside it.
-
-**App names are globally unique.** Always use `app-<hash>` where hash = `openssl rand -hex 4`.
-
-```bash
-# Check existing orgs first:
-stream api OrganizationRead
-
-# If under 10 orgs, create new:
-HASH=$(openssl rand -hex 4)
-stream api OrganizationCreate name=builder-$HASH slug=builder-$HASH
-
-# Create app with Feeds v3 + US East (region_id=1):
-stream api AppCreate name=app-$HASH org_id=<org_id> is_development=true region_id=1 feeds_version=v3
-
-# Set defaults:
-stream config set org <org_id> && stream config set app <app_id>
-```
-
-**Never use the auto-created app** from OrganizationCreate - it uses Feeds v2 and US Ohio.
-
-**Fallback (org limit / 429):** Use `OrganizationRead` to list existing builder orgs, pick one, create a new app in it.
 
 ### Step 3: Scaffold + .env + SDKs + Configure - SEQUENTIALLY
 
@@ -141,14 +104,14 @@ stream config set org <org_id> && stream config set app <app_id>
 
 Order:
 
-1. **Steps 1-1b:** Auth + theme pick (wait for answer).
-2. **Step 2:** Create org/app.
+1. **Step 1:** `stream init` (auth + org/app + credentials).
+2. **Step 2:** Theme pick (wait for answer).
 3. **Task A:** Scaffold with Shadcn + Next.js using the chosen preset.
 4. **Task A.1:** Add base Shadcn components.
 5. **Task A.2:** Disclose + ask about third-party frontend skill installs; install only with user consent.
 6. Continue with Task B (.env), Task C (SDKs), Task D (CLI config).
 
-**Task A: Scaffold** - scaffolds Next.js + Tailwind + Shadcn/ui (Base UI) into the current directory. Use the theme preset chosen in **Step 1b**.
+**Task A: Scaffold** - scaffolds Next.js + Tailwind + Shadcn/ui (Base UI) into the current directory. Use the theme preset chosen in **Step 2**.
 
 The scaffold command creates a new directory, so we scaffold into a temporary `.scaffold` subdirectory and move everything up:
 
@@ -339,14 +302,6 @@ When building apps that combine multiple products, read each relevant `reference
 - **Video + Feeds (Livestreaming):** Feed hub separates `type === "live"` activities as prominent live cards. "Go Live" posts a live activity via `/api/feed/live`. "End Stream" removes it.
 - **Video + Chat (Livestreaming):** Chat alongside video on the watch screen. Use `livestream` channel type - one channel per stream, keyed by call ID. Create the chat channel in the `/api/token` route.
 - **Moderation (all use cases):** Run Moderation CLI setup commands from `references/MODERATION.md` (App Integration -> Setup), adjusting channel type name. **Never build moderation review UI** (RULES.md > Moderation is Dashboard-only) - review happens in the [Stream Dashboard](https://beta.dashboard.getstream.io).
-
----
-
-## Authentication
-
-If not authenticated:
-- **Has account** -> `stream auth login`
-- **No account** -> Open `https://getstream.io/try-for-free/`, then `stream auth login` after signup
 
 ---
 

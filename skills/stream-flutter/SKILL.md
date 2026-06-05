@@ -12,11 +12,7 @@ allowed-tools: >-
   Bash(find . *),
   Bash(cat pubspec.yaml), Bash(cat pubspec.lock),
   Bash(flutter pub *),
-  Bash(stream token *),
-  Bash(stream keys *),
-  Bash(stream api *),
-  Bash(stream auth *),
-  Bash(stream config *)
+  Bash(stream *)
 ---
 
 # Stream Flutter - skill router + execution flow
@@ -95,7 +91,7 @@ Post **one message** asking all relevant things together. Do not split into mult
 
 **For Feeds projects** (no pre-built UI; feed groups required):
 
-Ask **one message** with all setup questions together — do not split into rounds:
+Ask **one message** with all setup questions together - do not split into rounds:
 
 > To wire everything up, I need a few quick answers:
 >
@@ -115,15 +111,15 @@ stream api CreateFeedGroup --body '{"id": "notification", "type": "notification"
 ```
 
 If the CLI commands fail (the Feeds API may use different endpoints than Chat), tell the user once:
-> Please create these in Stream Dashboard → Activity Feeds → Feed Groups: `user` (Flat), `timeline` (Flat), `notification` (Notification).
+> Please create these in Stream Dashboard -> Activity Feeds -> Feed Groups: `user` (Flat), `timeline` (Flat), `notification` (Notification).
 
 For Feeds projects, always generate two separate helpers in `main` after `connect()`:
-1. `_setupFollows(client)` — **always called, unconditionally.** Makes `timeline` follow `user` so the user's own posts appear there. Do not merge this into seed logic — once seed data exists the guard returns early and the follow call never runs.
-2. `_seedPosts(client)` — only if the user said yes to seeding. Adds sample activities and exits early if data already exists.
+1. `_setupFollows(client)` - **always called, unconditionally.** Makes `timeline` follow `user` so the user's own posts appear there. Do not merge this into seed logic - once seed data exists the guard returns early and the follow call never runs.
+2. `_seedPosts(client)` - only if the user said yes to seeding. Adds sample activities and exits early if data already exists.
 
 See [`references/FEEDS-FLUTTER.md`](references/FEEDS-FLUTTER.md) for both implementations.
 
-The package is `stream_feeds: ^0.5.1` — not the deprecated `stream_feed` or `stream_feed_flutter_core`.
+The package is `stream_feeds: ^0.5.1` - not the deprecated `stream_feed` or `stream_feed_flutter_core`.
 
 ### After the user replies - act without further prompting
 
@@ -135,7 +131,7 @@ Once the user answers, execute all CLI steps in sequence **without pausing for c
 stream keys
 ```
 
-This prints the API key and copies the secret to clipboard. Extract the `API Key:` field from the output. Hold it in context. If the command returns a 401 error, the CLI session has expired — run `stream auth logout && stream auth login` to re-authenticate, then retry.
+This prints the app's public API key (run `stream keys -h` for output details). Read the key from the output and hold it in context. If `stream keys` reports you are not signed in, run `stream login` to re-authenticate, then retry.
 
 #### Step B - Token
 
@@ -153,7 +149,7 @@ Hold the token in context. Use it (and the API key) in every code snippet - no p
 
 Create 3-5 channels with random realistic usernames. Use `messaging` as the default channel type.
 
-**Sub-step C1 — upsert all users** (seed users + the token user):
+**Sub-step C1 - upsert all users** (seed users + the token user):
 
 ```bash
 stream api UpdateUsers --body '{
@@ -167,7 +163,7 @@ stream api UpdateUsers --body '{
 }'
 ```
 
-**Sub-step C2 — create each channel** (no members in the body; members are added in C3):
+**Sub-step C2 - create each channel** (no members in the body; members are added in C3):
 
 ```bash
 stream api GetOrCreateChannel type=messaging id=<channel-id> \
@@ -176,7 +172,7 @@ stream api GetOrCreateChannel type=messaging id=<channel-id> \
 
 Repeat for each channel (e.g. `general`, `random`, `team-alpha`).
 
-**Sub-step C3 — add members to each channel** using `add_members`. The token user **must** be in every channel so the `Filter.in_('members', [userId])` query in the app returns results.
+**Sub-step C3 - add members to each channel** using `add_members`. The token user **must** be in every channel so the `Filter.in_('members', [userId])` query in the app returns results.
 
 ```bash
 stream api UpdateChannel type=messaging id=<channel-id> \
@@ -190,7 +186,7 @@ stream api UpdateChannel type=messaging id=<channel-id> \
   }'
 ```
 
-Generate short memorable channel IDs (e.g. `general`, `random`, `team-alpha`) and use a small set of random usernames (e.g. `alice`, `bob`, `carol`, `dave`). The token user must be added to every channel — the channel list filter is `Filter.in_('members', [tokenUserId])` and will return nothing if the user is absent.
+Generate short memorable channel IDs (e.g. `general`, `random`, `team-alpha`) and use a small set of random usernames (e.g. `alice`, `bob`, `carol`, `dave`). The token user must be added to every channel - the channel list filter is `Filter.in_('members', [tokenUserId])` and will return nothing if the user is absent.
 
 After seeding, print a brief summary:
 

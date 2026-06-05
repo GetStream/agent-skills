@@ -20,7 +20,7 @@ Default to `stream_chat_flutter` unless the user explicitly needs custom UI or l
 
 ### Feeds
 
-One package — no pre-built UI:
+One package - no pre-built UI:
 
 | Package | Notes |
 |---|---|

@@ -2,11 +2,11 @@
 
 Load only the section you are implementing. For setup, client initialization, permissions, and gotchas, see [VIDEO-COMPOSE.md](VIDEO-COMPOSE.md).
 
-Per [`RULES.md`](../RULES.md) → *Blueprints are mandatory, on every turn*: any Stream Video screen, Composable, ringing handler, deep-link route, or UI customization must be preceded by reading the matching section below — including on follow-up turns inside an existing session.
+Per [`RULES.md`](../RULES.md) -> *Blueprints are mandatory, on every turn*: any Stream Video screen, Composable, ringing handler, deep-link route, or UI customization must be preceded by reading the matching section below - including on follow-up turns inside an existing session.
 
 ---
 
-## Request → Blueprint section
+## Request -> Blueprint section
 
 Use this table to resolve a user request to the section(s) you must read before writing code. If multiple rows match, read all of them. If none match, say so explicitly instead of improvising.
 
@@ -21,11 +21,11 @@ Use this table to resolve a user request to the section(s) you must read before 
 | "custom controls", mic/camera/leave bar, replace control buttons | [Custom Call Controls Blueprint](#custom-call-controls-blueprint) |
 | "custom participant tile", custom video renderer, participant overlay | [Custom Participant Tile Blueprint](#custom-participant-tile-blueprint) |
 | "participant grid", custom layout, local PiP | [Participant Grid Blueprint](#participant-grid-blueprint) |
-| "theme", colors, dark mode, `VideoTheme` | [VIDEO-COMPOSE.md → Customization → VideoTheme](VIDEO-COMPOSE.md#videotheme) |
-| "Chat + Video", combined app, in-call chat | [VIDEO-COMPOSE.md → Gotchas](VIDEO-COMPOSE.md#gotchas) (the "Chat + Video coexist" bullet) |
-| "deep link", push notification → call, intent extras for `cid` / call id | [Call Deep-link Blueprint](#call-deep-link-blueprint) |
+| "theme", colors, dark mode, `VideoTheme` | [VIDEO-COMPOSE.md -> Customization -> VideoTheme](VIDEO-COMPOSE.md#videotheme) |
+| "Chat + Video", combined app, in-call chat | [VIDEO-COMPOSE.md -> Gotchas](VIDEO-COMPOSE.md#gotchas) (the "Chat + Video coexist" bullet) |
+| "deep link", push notification -> call, intent extras for `cid` / call id | [Call Deep-link Blueprint](#call-deep-link-blueprint) |
 
-If the request is something not covered, do not fabricate APIs — say the blueprint is not bundled and fall back per [`RULES.md`](../RULES.md).
+If the request is something not covered, do not fabricate APIs - say the blueprint is not bundled and fall back per [`RULES.md`](../RULES.md).
 
 ---
 
@@ -78,14 +78,14 @@ Register it in `AndroidManifest.xml`:
 
 **Wiring:**
 - `Application.onCreate()` runs before any Activity, so `StreamVideo.instance()` is safe to call from any Composable lifecycle.
-- `CAMERA`, `RECORD_AUDIO`, `BLUETOOTH_CONNECT`, `MODIFY_AUDIO_SETTINGS`, and `FOREGROUND_SERVICE` are merged in from the SDK manifest — do not redeclare them.
+- `CAMERA`, `RECORD_AUDIO`, `BLUETOOTH_CONNECT`, `MODIFY_AUDIO_SETTINGS`, and `FOREGROUND_SERVICE` are merged in from the SDK manifest - do not redeclare them.
 - For combined Chat + Video apps, build both clients here in the same `onCreate`.
 
 ---
 
 ## Login / Connect User Blueprint
 
-Stream Video's "connect user" is `StreamVideoBuilder(... user = ..., token = ...).build()` — there is no separate `connectUser` call like Chat. To support a login screen, defer the `build()` until after the user picks an identity.
+Stream Video's "connect user" is `StreamVideoBuilder(... user = ..., token = ...).build()` - there is no separate `connectUser` call like Chat. To support a login screen, defer the `build()` until after the user picks an identity.
 
 ```kotlin
 import androidx.activity.ComponentActivity
@@ -192,7 +192,7 @@ fun RootScreen() {
 
 **Wiring:**
 - `StreamVideo.instanceOrNull()` returns `null` until `StreamVideoBuilder(...).build()` has run; check it instead of caching a bool yourself.
-- For multi-Activity apps, route `LoginActivity` → `HomeActivity` → `CallActivity` instead of toggling Composables.
+- For multi-Activity apps, route `LoginActivity` -> `HomeActivity` -> `CallActivity` instead of toggling Composables.
 
 ---
 
@@ -276,16 +276,16 @@ fun HomeScreen(
 ```
 
 **Wiring:**
-- `streamVideo.call("default", id)` returns the same `Call` instance for the same `(type, id)` pair — safe to call repeatedly.
+- `streamVideo.call("default", id)` returns the same `Call` instance for the same `(type, id)` pair - safe to call repeatedly.
 - `call.join(create = true)` joins an existing call or creates one if it does not exist (no ringing).
-- `LaunchCallPermissions(call)` requests `CAMERA` / `RECORD_AUDIO` (and `BLUETOOTH_CONNECT` on Android 12+) — wire it as soon as you have a `Call` so permissions are granted before `join` resolves.
-- `runCatching` is not enough here — `call.join` returns `Result.Failure` on protocol errors; surface its `.value.message` instead of waiting for an exception.
+- `LaunchCallPermissions(call)` requests `CAMERA` / `RECORD_AUDIO` (and `BLUETOOTH_CONNECT` on Android 12+) - wire it as soon as you have a `Call` so permissions are granted before `join` resolves.
+- `runCatching` is not enough here - `call.join` returns `Result.Failure` on protocol errors; surface its `.value.message` instead of waiting for an exception.
 
 ---
 
 ## Active Call Blueprint (CallContent)
 
-`CallContent` is the complete in-call screen with participant grid, app bar, and controls. Use it unless you are building a fully custom layout. Pass the same `Call` instance you obtained for `join(...)` — never construct a second one.
+`CallContent` is the complete in-call screen with participant grid, app bar, and controls. Use it unless you are building a fully custom layout. Pass the same `Call` instance you obtained for `join(...)` - never construct a second one.
 
 ```kotlin
 import androidx.activity.ComponentActivity
@@ -317,7 +317,7 @@ class CallActivity : ComponentActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        // Use leave() — end() terminates the call for everyone.
+        // Use leave() - end() terminates the call for everyone.
         StreamVideo.instanceOrNull()?.call("default", callId)?.leave()
     }
 
@@ -330,9 +330,9 @@ class CallActivity : ComponentActivity() {
 ```
 
 **Wiring:**
-- `LayoutType` lives in `io.getstream.video.android.compose.ui.components.call.renderer` — values: `DYNAMIC`, `SPOTLIGHT`, `GRID`.
+- `LayoutType` lives in `io.getstream.video.android.compose.ui.components.call.renderer` - values: `DYNAMIC`, `SPOTLIGHT`, `GRID`.
 - `CallContent` already wires `appBarContent`, `controlsContent`, a default `videoRenderer`, and a permission handler from `permissions = rememberCallPermissionsState(call)`. Override slots only when you need to.
-- Do **not** wrap `CallContent` in a `Scaffold` — it ships its own Scaffold internally. Use the `appBarContent` / `controlsContent` slots instead.
+- Do **not** wrap `CallContent` in a `Scaffold` - it ships its own Scaffold internally. Use the `appBarContent` / `controlsContent` slots instead.
 - `onCallAction` defaults to `DefaultOnCallActionHandler.onCallAction(call, action)` which already handles mic/camera/speaker toggles and `LeaveCall`. Override only to add side effects (analytics, custom navigation on leave).
 
 ---
@@ -406,7 +406,7 @@ Button(onClick = { scope.launch { call.reject(); call.leave() } }) { Text("Rejec
 **Wiring:**
 - `call.accept()` records acceptance with the backend; you still need to call `join()` to actually enter the media session.
 - `call.reject()` rejects the call for the current user; pair with `leave()` to drop any local references.
-- `RingingCallContent` exposes `onIncomingContent` and `onOutgoingContent` slots if you want to fully replace the default ringing UIs — match the lambda signatures defined in the SDK source.
+- `RingingCallContent` exposes `onIncomingContent` and `onOutgoingContent` slots if you want to fully replace the default ringing UIs - match the lambda signatures defined in the SDK source.
 - `onAcceptedContent` is **required** (no default).
 
 ---
@@ -461,8 +461,8 @@ fun CustomCallControls(call: Call) {
 Wire the custom bar via `CallContent(controlsContent = { CustomCallControls(it) })`.
 
 **Wiring:**
-- `call.camera.setEnabled(...)` / `call.microphone.setEnabled(...)` accept a `Boolean`. The internal `StateFlow<Boolean>` flips automatically — collect it for UI.
-- `call.camera.flip()` is synchronous — call it directly from the click handler. (The internal `flipInternal()` it delegates to is suspend, but the public API is not.)
+- `call.camera.setEnabled(...)` / `call.microphone.setEnabled(...)` accept a `Boolean`. The internal `StateFlow<Boolean>` flips automatically - collect it for UI.
+- `call.camera.flip()` is synchronous - call it directly from the click handler. (The internal `flipInternal()` it delegates to is suspend, but the public API is not.)
 - `call.leave()` is synchronous; the rest of teardown happens internally.
 
 ---
@@ -531,7 +531,7 @@ fun ParticipantTile(
 
 **Wiring:**
 - `ParticipantVideo` handles track attach/detach, mirroring for the local participant, and avatar fallback when the camera is off.
-- `RegularVideoRendererStyle()` is the default style; subclasses (`ScreenSharingVideoRendererStyle`, etc.) live alongside it — verify against `stream-video-android-ui-compose/.../renderer/VideoRendererStyle.kt` before instantiating.
+- `RegularVideoRendererStyle()` is the default style; subclasses (`ScreenSharingVideoRendererStyle`, etc.) live alongside it - verify against `stream-video-android-ui-compose/.../renderer/VideoRendererStyle.kt` before instantiating.
 - Plug the tile into `CallContent` via the `videoRenderer` slot, or call it directly from a custom `ParticipantsLayout`.
 
 ---
@@ -589,15 +589,15 @@ fun ParticipantGrid(call: Call) {
 ```
 
 **Wiring:**
-- `remoteParticipants` excludes the local user — avoids showing your own video twice.
-- Use `sessionId` as the `LazyVerticalGrid` `key` — `userId` can repeat across multi-device joins.
+- `remoteParticipants` excludes the local user - avoids showing your own video twice.
+- Use `sessionId` as the `LazyVerticalGrid` `key` - `userId` can repeat across multi-device joins.
 - For a layout that reacts to pinning and dominant speaker, prefer `ParticipantsLayout(call, layoutType = LayoutType.DYNAMIC)` from the SDK over rolling your own.
 
 ---
 
 ## Call Deep-link Blueprint
 
-Push notifications and external deep links typically deliver `(callType, callId)`. Launch the call destination directly from the intent — skip the home screen.
+Push notifications and external deep links typically deliver `(callType, callId)`. Launch the call destination directly from the intent - skip the home screen.
 
 ```kotlin
 class CallDeepLinkActivity : ComponentActivity() {
@@ -643,5 +643,5 @@ class CallDeepLinkActivity : ComponentActivity() {
 
 **Wiring:**
 - `LaunchCallPermissions(call)` runs once when the Composable enters the composition; the permission dialog appears before `call.join` resolves.
-- `LaunchedEffect(call)` ties the join coroutine to the Composable's lifecycle — leaving the screen cancels in-flight join.
-- For incoming-call deep links delivered via push, prefer the SDK's `RingingCallContent` flow instead of jumping straight into `CallContent` — that keeps accept/reject UX consistent.
+- `LaunchedEffect(call)` ties the join coroutine to the Composable's lifecycle - leaving the screen cancels in-flight join.
+- For incoming-call deep links delivered via push, prefer the SDK's `RingingCallContent` flow instead of jumping straight into `CallContent` - that keeps accept/reject UX consistent.

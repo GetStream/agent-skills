@@ -169,14 +169,14 @@ On sign-out, unmount the `useCreateFeedsClient` host (or change its inputs) and 
 
 When using React Navigation or Expo Router:
 
-- **Chat:** Place `OverlayProvider` above the navigation screens. With React Navigation, prefer `OverlayProvider` above `NavigationContainer`. Keep `Chat` high enough that screen transitions do not reconnect the client. Pass channel CIDs or ids through navigation params, not `Channel` instances. Recreate the `Channel` instance from `useChatContext().client` on the destination screen. Set `keyboardVerticalOffset` to the header height. Do not add `topInset` or `bottomInset` by default; add them only when a specific layout or attachment-picker issue proves they are needed. When a native navigation header is present, pass the same value as `topInset` on `Channel` — without it the attachment picker bottom sheet gets clamped short of its full snap point.
+- **Chat:** Place `OverlayProvider` above the navigation screens. With React Navigation, prefer `OverlayProvider` above `NavigationContainer`. Keep `Chat` high enough that screen transitions do not reconnect the client. Pass channel CIDs or ids through navigation params, not `Channel` instances. Recreate the `Channel` instance from `useChatContext().client` on the destination screen. Set `keyboardVerticalOffset` to the header height. Do not add `topInset` or `bottomInset` by default; add them only when a specific layout or attachment-picker issue proves they are needed. When a native navigation header is present, pass the same value as `topInset` on `Channel` - without it the attachment picker bottom sheet gets clamped short of its full snap point.
 - **Video:** Place `StreamVideo` above `NavigationContainer` (or above the Expo Router root layout) so the client survives screen transitions. Pass the call id (and call type when not the default) through navigation params, not `Call` instances. The destination call screen mounts `<StreamCall>` after calling `client.call(type, id, { reuseInstance: true })` once; descendants read via `useCall()`. Other screens/components must not call `client.call(...)` to obtain the same instance.
 
 For Chat threads, keep thread state explicit. When a thread screen is open, pass the same `thread` value to the main `Channel` and render the thread screen with `threadList`.
 
 ---
 
-## Expo Router SDK 56+ — no React Navigation
+## Expo Router SDK 56+ - no React Navigation
 
 Expo Router on SDK 56+ ships its own navigation runtime and **refuses to bundle alongside `@react-navigation/*`**. Metro halts with:
 
@@ -185,8 +185,8 @@ Expo Router on SDK 56+ ships its own navigation runtime and **refuses to bundle 
 Rules:
 
 - Do not install `@react-navigation/native`, `@react-navigation/native-stack`, `@react-navigation/elements`, or any other `@react-navigation/*` package in an Expo Router SDK 56+ app, even transitively (the bundler fails before runtime). If one is already there (often pulled in to satisfy a `useHeaderHeight` import), `npm uninstall` it.
-- The Chat blueprint pattern that calls `useHeaderHeight()` from `@react-navigation/elements` only applies to **RN CLI** and **Expo Router SDK ≤ 55**. For Expo Router SDK 56+, compute the header offset from `Platform.OS` + the top safe-area inset (see [`references/CHAT-REACT-NATIVE-blueprints.md`](references/CHAT-REACT-NATIVE-blueprints.md) > Channel Screen).
-- For RN CLI apps where React Navigation is the navigation stack, the existing blueprint stands — there is no Expo Router conflict to manage.
+- The Chat blueprint pattern that calls `useHeaderHeight()` from `@react-navigation/elements` only applies to **RN CLI** and **Expo Router SDK <= 55**. For Expo Router SDK 56+, compute the header offset from `Platform.OS` + the top safe-area inset (see [`references/CHAT-REACT-NATIVE-blueprints.md`](references/CHAT-REACT-NATIVE-blueprints.md) > Channel Screen).
+- For RN CLI apps where React Navigation is the navigation stack, the existing blueprint stands - there is no Expo Router conflict to manage.
 - Detect the lane via the `EXPO_SDK` line in the project-signals probe in [`SKILL.md`](SKILL.md). Expo SDK 56+ goes through the SDK-56 recipe; everything else uses the original blueprint.
 
 ---
@@ -261,8 +261,8 @@ Use the **Request -> Blueprint section** table at the top of each blueprints fil
 
 ## CLI and shell discipline
 
-Credentials and requested demo data use the `stream` binary. If the binary is missing, follow [`../stream-cli/bootstrap.md`](../stream-cli/bootstrap.md) instead of introducing a new installer flow.
+Credentials and requested demo data use the `stream` binary. If the binary is missing, ask the user to install it from https://getstream.io and wait - never run an install script or introduce a new installer flow.
 
-For `stream api` calls, follow [`../stream/RULES.md`](../stream/RULES.md) > CLI safety: discover endpoints before running them, use `--safe` first for read operations, and only run mutating demo-data calls after the user explicitly asks for demo data.
+For `stream api` calls, follow [`../stream/RULES.md`](../stream/RULES.md) > CLI safety: confirm endpoints with `stream api -h` before running them, and only run mutating demo-data calls after the user explicitly asks for demo data.
 
 Do not read or print `.env` files. Do not use `bash -ce` in probes.

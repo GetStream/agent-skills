@@ -139,7 +139,7 @@ ChatClient.instance()
 
 ### Disconnecting / switching users
 
-For switching to another user, prefer `ChatClient.switchUser(...)` — it disconnects the current user, deletes the push device, and connects the new user atomically:
+For switching to another user, prefer `ChatClient.switchUser(...)` - it disconnects the current user, deletes the push device, and connects the new user atomically:
 
 ```kotlin
 ChatClient.instance().switchUser(nextUser, nextToken).enqueue { result ->
@@ -150,7 +150,7 @@ ChatClient.instance().switchUser(nextUser, nextToken).enqueue { result ->
 }
 ```
 
-For a full logout (no follow-up `connectUser`), call `disconnect(flushPersistence = true)` to clear the offline cache. If you do roll your own switch via `disconnect(...).enqueue { connectUser(...) }`, always wait for `disconnect()` to complete before connecting — connecting in flight risks state corruption.
+For a full logout (no follow-up `connectUser`), call `disconnect(flushPersistence = true)` to clear the offline cache. If you do roll your own switch via `disconnect(...).enqueue { connectUser(...) }`, always wait for `disconnect()` to complete before connecting - connecting in flight risks state corruption.
 
 ### Creating Channels
 

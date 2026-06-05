@@ -55,7 +55,7 @@ final currentUser = StreamChatCore.of(context).currentUser;
 ```
 
 **v10 behavioural changes in `StreamChatCore`:**
-- Sets `client.recoverStateOnReconnect = false` on mount — apps watching channels outside list controllers must manually subscribe to `connectionRecovered` events to re-query.
+- Sets `client.recoverStateOnReconnect = false` on mount - apps watching channels outside list controllers must manually subscribe to `connectionRecovered` events to re-query.
 - Default `backgroundKeepAlive` reduced from 1 minute to **15 seconds**.
 
 ---
@@ -360,5 +360,5 @@ Use `StreamChannelListController` + `PagedValueListenableBuilder` for new code -
 - **`sendReaction` signature changed in v10.** Pass a `Reaction` object: `channel.sendReaction(id, Reaction(type: 'like'))`. The old `(id, 'like')` string shorthand is removed.
 - **`reactionCounts`/`reactionScores` removed in v10.** Use `message.reactionGroups` (`Map<String, ReactionGroup>`) instead.
 - **`StreamChatCore` sets `recoverStateOnReconnect = false` in v10.** If your app manually watches channels outside a list controller, subscribe to `client.on(EventType.connectionRecovered)` to re-query them on reconnect.
-- **`StreamMessageComposerController` edit mode changed in v10.** Do not pass a non-initial message to the constructor; call `controller.editMessage(msg)` instead. `clear()` no longer exits edit mode — call `cancelEditMessage()`.
+- **`StreamMessageComposerController` edit mode changed in v10.** Do not pass a non-initial message to the constructor; call `controller.editMessage(msg)` instead. `clear()` no longer exits edit mode - call `cancelEditMessage()`.
 - **`ClientState` collection getters are unmodifiable in v10.** Use `addChannels()`, `removeChannel()`, etc. instead of mutating the list directly.
