@@ -150,7 +150,20 @@ Ask, then wire exactly one. Add the key to `.env` (server-side only; never `NEXT
 | OpenAI | `@ai-sdk/openai` + `ai` | `OPENAI_API_KEY` | `gpt-5` class |
 | Google Gemini | `@ai-sdk/google` + `ai` | `GOOGLE_GENERATIVE_AI_API_KEY` | `gemini-3-pro` class |
 
-Recommended path: the **Vercel AI SDK** (`ai` + `@ai-sdk/<provider>`) with `streamText({ model, system, messages, tools, stopWhen: [stepCountIs(8), hasToolCall("escalateToHuman")] })`. It is provider-agnostic and supports the tool loop. For a no-tools, no-RAG build, a single `@anthropic-ai/sdk` `messages.create` call (see nova-laurent) is fine and lighter. Use prompt caching on the static system/KB portion regardless of provider.
+Recommended path: the **Vercel AI SDK** (`ai` + `@ai-sdk/<provider>`) with `streamText({ model, system, messages, tools, stopWhen: [stepCountIs(8), hasToolCall("escalateToHuman")] })`. It is provider-agnostic and supports the tool loop. For a no-tools, no-RAG build, a single `@anthropic-ai/sdk` `messages.create` call is fine and lighter. Use prompt caching on the static system/KB portion regardless of provider.
+
+**A missing key is a visible warning, never a silent failure.** The user may select a provider whose key is not set yet (they pick Claude but `ANTHROPIC_API_KEY` is absent, etc.). Check for the selected provider's key at request time, BEFORE calling the model. If it is missing, do not throw or return a 500 - post a normal channel message as the bot saying it is not configured, naming the exact env var, then return. The chat stays alive and the developer (or end user) sees precisely what to fix instead of a dead, silent conversation.
+
+```ts
+if (!process.env.ANTHROPIC_API_KEY) {
+  await channel.sendMessage({
+    text: "I'm not fully configured yet (missing ANTHROPIC_API_KEY). Add it to .env and restart to enable AI answers.",
+    user_id: BOT_USER_ID,
+    ai_generated: true,
+  });
+  return; // also clear the ai_indicator if one was already sent
+}
+```
 
 ### Knowledge layer
 
@@ -194,6 +207,7 @@ For a stateless build with no database, `escalateToHuman` can simply post a syst
 - **Don't prompt-stuff a large KB** - use retrieval as a tool past a page or two.
 - **Vercel AI SDK v5/v6** uses `inputSchema`, not `parameters`. v4 examples compile but never register the tool.
 - **Next.js 16 middleware file is `proxy.ts`**, not `middleware.ts`.
+- **Missing LLM key: warn in-channel, don't 500.** If the selected provider's key is absent at request time, post a bot message naming the missing env var and return, rather than failing silently. Keeps the chat alive and the cause obvious.
 - **Client-triggered trigger is demo-only** - the bot is silent when no tab is connected. Webhook is the real pattern.
 
 ---
