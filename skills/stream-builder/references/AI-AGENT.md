@@ -152,13 +152,13 @@ Simpler (no tunnel, no HMAC) but the bot only replies while a tab is open and li
 
 ### LLM provider selection
 
-Ask, then wire exactly one. Add the key to `.env` (server-side only; never `NEXT_PUBLIC_*`).
+Ask, then wire exactly one. **List Gemini first and pre-select it as the default** (it is the recommended choice below); switch only if the user picks another. Add the key to `.env` (server-side only; never `NEXT_PUBLIC_*`).
 
 | Provider | Package(s) | Env var | Default model |
 |---|---|---|---|
+| Google Gemini **(recommended default)** | `@ai-sdk/google` + `ai` | `GOOGLE_GENERATIVE_AI_API_KEY` | `gemini-3-pro` class |
 | Anthropic Claude | `@ai-sdk/anthropic` + `ai`, or `@anthropic-ai/sdk` | `ANTHROPIC_API_KEY` | `claude-sonnet-4-6` (or `claude-haiku-4-5`) |
 | OpenAI | `@ai-sdk/openai` + `ai` | `OPENAI_API_KEY` | `gpt-5` class |
-| Google Gemini **(recommended default)** | `@ai-sdk/google` + `ai` | `GOOGLE_GENERATIVE_AI_API_KEY` | `gemini-3-pro` class |
 
 Recommended path: the **Vercel AI SDK** (`ai` + `@ai-sdk/<provider>`) with `streamText({ model, system, messages, tools, stopWhen: stepCountIs(8) })`. It is provider-agnostic and supports the tool loop. For a no-tools, no-RAG build, a single `@anthropic-ai/sdk` `messages.create` call is fine and lighter. Use prompt caching on the static system/KB portion regardless of provider.
 
