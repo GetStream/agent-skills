@@ -212,7 +212,7 @@ Present these as a multi-select checkbox list, **none checked by default**. Skip
 | Human escalation (real) | `escalateToHuman` with an actual destination: flip the ticket to `needs_human` and notify | `resend` (+ `@react-email/components`) + a `needs_human` queue | Persistence |
 | OpenAPI lookup | `listApiOperations` / `getApiOperation` tools for exact API-reference answers (operation, method+path, params, schemas, error codes) | parse an OpenAPI spec into a local index + two internal endpoints | - |
 | Transactional action | `mockApiCall` - a stubbed backend action (refund/cancel) the agent can invoke | none (stub) | - |
-| Real auth | Clerk sign-in + an email allowlist instead of name-based login | `@clerk/nextjs` | - |
+| Real auth | A real sign-in/sign-up system instead of the name-based login: authenticated sessions, and the `/api/token` route gated by the signed-in user so the **Stream user id is the authenticated identity** (not a typed name), plus an optional email allowlist. This is how nova gates both the app and the dashboard. | `@clerk/nextjs` (Clerk is nova's choice; swappable for Auth.js, Supabase Auth, etc.) | - |
 | Voice + screenshare | A voice + screenshare agent that joins a Stream Video call (real-time voice + `describe_screen`) | a separate Python Vision Agents worker - **use the `vision-agents` skill**, do not scaffold it into the Next.js app | separate service |
 
 Rules:
