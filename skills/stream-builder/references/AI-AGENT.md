@@ -15,7 +15,7 @@ Before scaffolding, ask and record the answers. Each maps to a section below.
 1. **LLM provider + model** - Anthropic Claude, OpenAI, or Google Gemini. Pick one explicitly and wire its key. Default: Claude (`claude-sonnet-4-6` for quality, `claude-haiku-4-5` for speed/cost). See *LLM provider selection*.
 2. **Knowledge source** - `none` (facts in the prompt), `local` (embed a folder of docs into a local index), or `external` (TurboPuffer / Pinecone + ingestion script). Steer by size: tiny/static -> none or local; large/changing -> external. See *Knowledge layer*.
 3. **Trigger** - server-side **webhook** (production, recommended) or **client-triggered** (demo-only). Webhook needs a public tunnel in dev. See *Server Routes*.
-4. **Capabilities** - plain Q&A, or a **tool-using agent** (search knowledge, escalate to human, update ticket status). See *Agent capabilities*.
+4. **Capabilities** - plain Q&A, or a **tool-using agent** (e.g. search knowledge, update ticket status). Add human escalation only if there is a real destination for it (a human queue, inbox, or ticket system). See *Agent capabilities*.
 
 The Stream-native wiring (bot user, `ai_indicator` states, `ai_generated`, streaming, HMAC + loop guard) is always built regardless of the answers.
 
@@ -28,7 +28,7 @@ Customer message
   -> Stream delivers it + fires the message.new webhook
   -> /api/stream/webhook: verify HMAC, drop bot echoes, return 200 in <3s, fire-and-forget the turn
   -> turn handler: load channel history (+ optional rules), build the system prompt
-  -> LLM call (optionally with tools: searchKnowledge / escalate / updateTicketState)
+  -> LLM call (optionally with tools: searchKnowledge / updateTicketState)
   -> stream the answer back into the SAME channel as the bot user
        ai_indicator THINKING -> GENERATING -> send message (ai_generated: true) -> ai_indicator clear
 ```
@@ -150,7 +150,7 @@ Ask, then wire exactly one. Add the key to `.env` (server-side only; never `NEXT
 | OpenAI | `@ai-sdk/openai` + `ai` | `OPENAI_API_KEY` | `gpt-5` class |
 | Google Gemini | `@ai-sdk/google` + `ai` | `GOOGLE_GENERATIVE_AI_API_KEY` | `gemini-3-pro` class |
 
-Recommended path: the **Vercel AI SDK** (`ai` + `@ai-sdk/<provider>`) with `streamText({ model, system, messages, tools, stopWhen: [stepCountIs(8), hasToolCall("escalateToHuman")] })`. It is provider-agnostic and supports the tool loop. For a no-tools, no-RAG build, a single `@anthropic-ai/sdk` `messages.create` call is fine and lighter. Use prompt caching on the static system/KB portion regardless of provider.
+Recommended path: the **Vercel AI SDK** (`ai` + `@ai-sdk/<provider>`) with `streamText({ model, system, messages, tools, stopWhen: stepCountIs(8) })`. It is provider-agnostic and supports the tool loop. For a no-tools, no-RAG build, a single `@anthropic-ai/sdk` `messages.create` call is fine and lighter. Use prompt caching on the static system/KB portion regardless of provider.
 
 **A missing key is a visible warning, never a silent failure.** The user may select a provider whose key is not set yet (they pick Claude but `ANTHROPIC_API_KEY` is absent, etc.). Check for the selected provider's key at request time, BEFORE calling the model. If it is missing, do not throw or return a 500 - post a normal channel message as the bot saying it is not configured, naming the exact env var, then return. The chat stays alive and the developer (or end user) sees precisely what to fix instead of a dead, silent conversation.
 
@@ -173,7 +173,7 @@ Choose per the user's answer.
 - **local** - embed a folder of docs into a local index (`pgvector`, LanceDB, or an in-memory cosine index for small sets). No external account. Good for a self-contained demo with real retrieval.
 - **external** - a managed vector store (TurboPuffer, Pinecone) plus an ingestion script. Good for large or frequently-changing knowledge.
 
-For `local`/`external`, expose retrieval as a **tool the model calls** (`searchKnowledge`), not always-on prompt stuffing - that is what makes it an agent. Ground it: instruct the model to call retrieval **before** asserting product facts and to cite `source_url`; if two queries return nothing relevant, say so or escalate.
+For `local`/`external`, expose retrieval as a **tool the model calls** (`searchKnowledge`), not always-on prompt stuffing - that is what makes it an agent. Ground it: instruct the model to call retrieval **before** asserting product facts and to cite `source_url`; if two queries return nothing relevant, say so and ask a clarifying question.
 
 Retrieval shape (nova's TurboPuffer pattern): embed the query, run vector ANN **and** BM25 in parallel, fuse with Reciprocal Rank Fusion. Embedding asymmetry is mandatory: ingest with `RETRIEVAL_DOCUMENT`, query with `RETRIEVAL_QUERY` (mixing them silently halves recall). One namespace per knowledge set. Ingestion (`scripts/ingest.ts`): crawl/read docs, chunk by heading (~800 tokens), embed, upsert `{ id, vector, text, source_url, title }`.
 
@@ -184,17 +184,17 @@ Define tools the model can call (Vercel AI SDK `tool({ description, inputSchema,
 | Tool | Purpose |
 |---|---|
 | `searchKnowledge` | Retrieve grounding passages (see Knowledge layer). The anti-hallucination tool. |
-| `escalateToHuman` | Hand off: mark the channel/ticket, optionally notify (email, dashboard queue). Fire on distress, legal threats, or "I want a human". |
+| `escalateToHuman` *(optional)* | Only add if there is a real place to escalate to (a human queue, inbox, or ticket system). Hands off and notifies. Without that infrastructure, leave it out rather than promising a handoff the build cannot deliver. |
 | `updateTicketState` | Move a ticket to resolved/closed, only after the user confirms. |
 | `mockApiCall` | Stubbed transactional action (refund/cancel) when there is no real backend. |
 
-For a stateless build with no database, `escalateToHuman` can simply post a system message and stop the bot; persistence (tickets, rules, analytics) is the next tier up.
+Escalation needs somewhere to escalate to (a human queue, inbox, or ticket state). A basic stateless build has none of that, so omit `escalateToHuman` and any "talk to a human" affordance until that structure exists. Persistence (tickets, rules, analytics) is the next tier up.
 
 ### Client Patterns
 
 - Reuse the Chat client + components from CHAT.md (`useCreateChatClient`, `<Chat>`, `<Channel>`, `<MessageList>`, `<MessageComposer>`).
 - For AI rendering, `@stream-io/chat-react-ai` provides a streaming message component + an AI state indicator that consumes the `ai_indicator` events automatically. Without it, the default typing indicator still shows while the bot "types"; the `ai_indicator` states drive the thinking/generating UI.
-- Show a clear **bot identity** (name + "AI agent" badge) so the customer knows they are talking to an AI, and surface escalation ("talk to a human").
+- Show a clear **bot identity** as a non-interactive header: the agent name, an "AI agent" **badge** (a label/chip, not a button), and a one-line description of what it does. It is informational, not clickable.
 
 ### Gotchas
 
@@ -214,7 +214,7 @@ For a stateless build with no database, `escalateToHuman` can simply post a syst
 
 ## Recommended default stack (if the user is unsure)
 
-Next.js (Chat scaffold) + `@stream-io/node-sdk` + Vercel AI SDK with Anthropic (`claude-sonnet-4-6`) + a webhook trigger + a `local` knowledge index, exposed to the model as a `searchKnowledge` tool, plus `escalateToHuman`. This is a real agent with grounding and a human handoff, runnable on one machine (the only external dependency beyond Stream + the LLM key is the dev tunnel for the webhook). Scale up to an external vector store and persistence when the knowledge or operator needs grow.
+Next.js (Chat scaffold) + `@stream-io/node-sdk` + Vercel AI SDK with Anthropic (`claude-sonnet-4-6`) + a webhook trigger + a `local` knowledge index, exposed to the model as a `searchKnowledge` tool. This is a real agent with grounding, runnable on one machine (the only external dependency beyond Stream + the LLM key is the dev tunnel for the webhook). Scale up to an external vector store, human escalation, and persistence when the knowledge or operator needs grow.
 
 ## Reference implementation map (nova-support-oneshot)
 
