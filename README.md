@@ -7,10 +7,10 @@ Give your AI coding agent the ability to build, query, and manage [Stream](https
 Install the [Stream CLI](https://getstream.io), then:
 
 ```bash
-stream skills stream
+stream skills
 ```
 
-This installs the `stream` router (which includes the CLI layer) plus the default skills - `stream-builder` and `stream-docs`. Platform packs (`stream-swift`, `stream-android`, `stream-react-native`, `stream-flutter`) install on demand the first time a task needs them. To set up a project at the same time (auth, org/app selection, credentials), run `stream init` instead.
+With no arguments, `stream skills` installs the default set - the `stream` router (which includes the CLI layer), `stream-builder`, and `stream-docs`. Platform packs (`stream-swift`, `stream-android`, `stream-react-native`, `stream-flutter`) install on demand via `stream skills <name>` the first time a task needs them. To set up a project at the same time (auth, org/app selection, credentials), run `stream init` instead.
 
 Use `/stream` for generic routing, or invoke a skill directly with `/stream-builder`, `/stream-docs`, `/stream-swift`, `/stream-android`, `/stream-react-native`, or `/stream-flutter`.
 

@@ -31,7 +31,7 @@ The pack has a generic router, core specialists, and platform peers declared in 
 Install the `stream` CLI from [getstream.io](https://getstream.io), then:
 
 ```bash
-stream skills stream
+stream skills
 ```
 
-`stream init` does the same and also sets up your project (auth, org/app, credentials). Other skills install on demand via `stream skills <name>`.
+With no arguments this installs the default set (`stream`, `stream-builder`, `stream-docs`). `stream init` also sets up your project (auth, org/app, credentials). Other skills install on demand via `stream skills <name>`.
