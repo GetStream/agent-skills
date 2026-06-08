@@ -51,7 +51,7 @@ CLI tasks - querying data, configuring an app, onboarding, installing skills - a
 | `stream api <Endpoint>` | Query data or run a one-off API operation. |
 | `stream pull` / `stream push` | Read or apply app config in `.streamrc.yaml` (`push` is changeset-gated). |
 | `stream rollback` | Undo an applied changeset. |
-| `stream keys` | Print the app's public API key. |
+| `stream env` | Write the app's API key (and secret, for server targets) into the platform's env file. |
 | `stream token <user>` | Mint a token for a user (e.g. demo/dev auth, seeding). |
 | `stream login` | Authenticate (`--guest` for a throwaway account). |
 | `stream skills <name>` | Install a Stream agent skill on demand (e.g. `stream skills stream-swift`). |

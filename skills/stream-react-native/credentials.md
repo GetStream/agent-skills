@@ -48,10 +48,10 @@ Authentication and app selection are handled in Step A below: run the command an
 If the user wants CLI-based credentials:
 
 ```bash
-stream keys
+stream env --target expo
 ```
 
-`stream keys` prints the app's public API key (run `stream keys -h` for output details). Read the key and hold it in context. The API key is public; the API **secret** is never needed here. If `stream keys` reports you are not signed in or that no app is selected, run `stream init` (auth + select or create org + app), then re-run `stream keys`. If the user pastes an API key, hold it in context and skip this step.
+`stream env` writes the app's public API key to `.env` as `EXPO_PUBLIC_STREAM_API_KEY`; read it in code with `process.env.EXPO_PUBLIC_STREAM_API_KEY`. You don't need to hold the key yourself, and the secret is never written. (Bare RN CLI without Expo: `stream env` has no native target yet - inline the public key or wire it through your env library; never the secret.) If `stream env` reports the project isn't initialized or you're not signed in, run `stream init`, then re-run it. If the user pastes an API key, use it directly and skip this step.
 
 **Echo the selected app to the user before any mutation:** before running Step C, say `Selected Stream app: "<app_name>" (api_key: <last_4_chars>)` so a misconfigured project is caught before it writes to the wrong app. If the user expected a different app, run `stream init` to switch it before continuing.
 

@@ -14,9 +14,9 @@ When adding a new peer pack, edit `peers.yaml` only.
 
 ## Secrets
 
-Never Read/Edit **`.env`** in chat - secrets leak into the conversation. Let the CLI own it: `stream env` writes `STREAM_API_KEY` + `STREAM_API_SECRET`, and that's all you need. Don't grep, don't cat, don't `echo >> .env`. Never hardcode secrets in code.
+Never Read/Edit **`.env`** / **`.env.local`** in chat - the secret leaks into the conversation. Let the CLI own it: `stream env` writes the platform's API key var (and the secret, for server targets) into the right file, and that's all you need. Don't grep, don't cat, don't `echo >>` a file holding the secret. Never hardcode the secret in code.
 
-**Env vars are server-side only.** The client never reads `process.env` for Stream credentials - it receives `apiKey`, `userId`, and its token from the `/api/token` response (upserted once per login) and holds them in React state. No `NEXT_PUBLIC_STREAM_*` vars. This keeps secrets out of the client bundle *and* sidesteps the `.env` hook entirely.
+**The secret is server-side only** - never in the client bundle, never `NEXT_PUBLIC`. The **public API key** may be client-exposed: `stream env` writes it with the framework's client prefix (e.g. `NEXT_PUBLIC_STREAM_API_KEY`, `EXPO_PUBLIC_STREAM_API_KEY`). The client may read that var directly or receive `apiKey` from the `/api/token` response; either way the **token** is minted server-side (with the secret) and returned by `/api/token`.
 
 **`.gitignore` before any `.env` write.** Before any tool writes secrets to `.env` (notably `stream env` in builder Task B), confirm a line covering `.env*` exists in `.gitignore` and add one if missing. The Next.js scaffold's default already does - this rule covers the edge case where the project's `.gitignore` was hand-edited or doesn't exist yet.
 

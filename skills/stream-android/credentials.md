@@ -60,12 +60,12 @@ Authentication and app selection happen in Step A below: run the command and fol
 ### Step A - API key
 
 ```bash
-stream keys
+stream env --target android
 ```
 
-`stream keys` prints the app's public API key (run `stream keys -h` for output details). Read the key from the output and hold it in context. The API key is public - safe to put in app code; the API **secret** is never needed here.
+`stream env` writes the app's public API key to `local.properties` (`STREAM_API_KEY`) and prints the wiring steps - expose it via `buildConfigField` in the module `build.gradle` and read `BuildConfig.STREAM_API_KEY`. Follow those steps; you don't need to hold the key yourself, and the secret is never written for Android.
 
-If `stream keys` reports you are not signed in or that no project/app is selected, run `stream init` (it authenticates, opening a browser as its own invocation, and selects or creates the org + app), then re-run `stream keys`.
+If `stream env` reports the project isn't initialized or you're not signed in, run `stream init`, then re-run `stream env --target android`.
 
 ### Step B - Token
 
@@ -79,7 +79,7 @@ stream token <user_id>
 stream token <user_id> --ttl 1h
 ```
 
-Hold the token in context. In generated code, reference credentials via named constants (e.g., in a `Config.kt` or `local.properties` file) - do not embed raw credential values directly in code snippets.
+Hold the token in context. In generated code, read the API key from `BuildConfig.STREAM_API_KEY` (written by `stream env`) and reference the token via a named constant (e.g. in `Config.kt`) - do not hardcode the secret.
 
 ### Step C - Seed channels (Chat projects only; only if the user said yes)
 

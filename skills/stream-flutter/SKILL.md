@@ -128,10 +128,10 @@ Once the user answers, execute all CLI steps in sequence **without pausing for c
 #### Step A - API key
 
 ```bash
-stream keys
+stream env --target flutter
 ```
 
-This prints the app's public API key (run `stream keys -h` for output details). Read the key from the output and hold it in context. If `stream keys` reports you are not signed in, run `stream login` to re-authenticate, then retry.
+`stream env` writes the app's public API key to `dart_defines.json` (`STREAM_API_KEY`) and prints the wiring steps - run with `flutter run --dart-define-from-file=dart_defines.json` and read it via `String.fromEnvironment('STREAM_API_KEY')`. Follow those steps; you don't need to hold the key yourself. If `stream env` reports the project isn't initialized or you're not signed in, run `stream init`, then re-run `stream env --target flutter`.
 
 #### Step B - Token
 
@@ -143,7 +143,7 @@ stream token <user_id>
 stream token <user_id> --ttl <duration>
 ```
 
-Hold the token in context. Use it (and the API key) in every code snippet - no placeholder strings.
+Hold the token in context. Read the API key with `String.fromEnvironment('STREAM_API_KEY')` (provisioned by `stream env`) and use the real token in code - no placeholder strings.
 
 #### Step C - Seed channels (only if the user said yes)
 

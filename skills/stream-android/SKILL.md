@@ -70,7 +70,7 @@ Follow [`credentials.md`](credentials.md) to:
 - generate a user token via the Stream CLI (or accept one from the user)
 - run any product-specific setup (Chat: optionally seed channels; Feeds: confirm feed groups; Video: nothing - calls are ephemeral)
 
-Use the resulting API key and token in every code snippet - never placeholder strings. If a track A/B/D task reaches code work and credentials haven't been collected yet, return to `credentials.md` before continuing.
+Wire the API key from `stream env`'s output (e.g. `BuildConfig.STREAM_API_KEY`) and use the real user token in code snippets - never placeholder strings. If a track A/B/D task reaches code work and credentials haven't been collected yet, return to `credentials.md` before continuing.
 
 ---
 

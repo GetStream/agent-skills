@@ -161,7 +161,7 @@ Then write secrets:
 stream env
 ```
 
-`stream env` writes `STREAM_API_KEY` and `STREAM_API_SECRET` - both server-side. The client never reads env vars directly; it gets `apiKey`, `userId`, and its token from the `/api/token` response and holds them in React state. No `NEXT_PUBLIC_*` duplication, no `.env` gymnastics.
+`stream env` detects the Next.js project and writes `NEXT_PUBLIC_STREAM_API_KEY` + `STREAM_API_SECRET` to `.env.local`. The secret is server-side only - used by `/api/token` to mint tokens, never in the client bundle. The public API key may be read client-side from `NEXT_PUBLIC_STREAM_API_KEY` or returned via `/api/token`. The agent never reads `.env.local` (RULES.md > Secrets).
 
 **Task C: Install Stream SDKs + verify icons** - Only what the use case needs:
 

@@ -100,10 +100,12 @@ Once the user answers, execute all CLI steps in sequence **without pausing for c
 #### Step A - API key
 
 ```bash
-stream keys
+stream env --target ios
 ```
 
-`stream keys` prints the app's public API key (run `stream keys -h` for output details). Hold the key in context. The API key is public - safe to put in app code; the API **secret** is never needed here.
+`stream env` writes the app's public API key to `Secrets.xcconfig` (`STREAM_API_KEY`) and prints the wiring steps - set the xcconfig as the target's configuration file, add `STREAM_API_KEY = $(STREAM_API_KEY)` to `Info.plist`, and read it with `Bundle.main.object(forInfoDictionaryKey:)`. Follow those steps; you don't need to hold the key yourself, and the secret is never written for iOS.
+
+If `stream env` reports the project isn't initialized or you're not signed in, run `stream init`, then re-run `stream env --target ios`.
 
 #### Step B - Token
 
@@ -115,7 +117,7 @@ stream token <user_id>
 stream token <user_id> --ttl <duration>
 ```
 
-Hold the token in context. In generated code, reference credentials via named constants (e.g., `Config.apiKey`, `Config.userToken` defined in a dedicated config file) - do not embed raw credential values directly in code snippets.
+Hold the token in context. In generated code, read the API key from `Info.plist` via `Bundle.main` (provisioned by `stream env`) and reference the token via a named constant (e.g. `Config.userToken`) - do not hardcode the secret.
 
 #### Step C - Seed channels (Chat projects only; only if the user said yes)
 
