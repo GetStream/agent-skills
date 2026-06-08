@@ -15,7 +15,8 @@ Before scaffolding, ask and record the answers. Each maps to a section below.
 1. **LLM provider + model** - Google Gemini, Anthropic Claude, or OpenAI. Pick one explicitly and wire its key. Default: **Gemini** (`gemini-3-pro`) - using Gemini also covers embeddings for the knowledge layer, so a single provider powers both chat and RAG. Claude (`claude-sonnet-4-6`) and OpenAI are equally supported. See *LLM provider selection*.
 2. **Knowledge source** - `none` (facts in the prompt), `local` (embed a folder of docs into a local index), or `external` (TurboPuffer / Pinecone + ingestion script). Steer by size: tiny/static -> none or local; large/changing -> external. See *Knowledge layer*.
 3. **Trigger** - server-side **webhook** (production, recommended) or **client-triggered** (demo-only). Webhook needs a public tunnel in dev. See *Server Routes*.
-4. **Capabilities** - plain Q&A, or a **tool-using agent** (e.g. search knowledge, update ticket status). Add human escalation only if there is a real destination for it (a human queue, inbox, or ticket system). See *Agent capabilities*.
+4. **Capabilities** - plain Q&A, or a **tool-using agent** (e.g. search knowledge, update ticket status). See *Agent capabilities*.
+5. **Optional add-ons** - a **multi-select** of extra capabilities that bring the build closer to a full support product (persistence, operator dashboard + live rules, real human escalation, OpenAPI lookup, a transactional action, real auth, voice). Present them as **checkboxes with none checked by default**: the user can skip them all (the lean, reliable grounded agent) or tick what they want, and each is built with the stack in *Optional add-ons*. Never build an unchecked one. See *Optional add-ons*.
 
 The Stream-native wiring (bot user, `ai_indicator` states, `ai_generated`, streaming, HMAC + loop guard) is always built regardless of the answers.
 
@@ -199,6 +200,25 @@ Define tools the model can call (Vercel AI SDK `tool({ description, inputSchema,
 | `mockApiCall` | Stubbed transactional action (refund/cancel) when there is no real backend. |
 
 Escalation needs somewhere to escalate to (a human queue, inbox, or ticket state). A basic stateless build has none of that, so omit `escalateToHuman` and any "talk to a human" affordance until that structure exists. Persistence (tickets, rules, analytics) is the next tier up.
+
+### Optional add-ons (build only what is checked)
+
+Present these as a multi-select checkbox list, **none checked by default**. Skipping all is the recommended, reliable path (the grounded agent above). Each checked item is a tier up: build it with the stack shown, and build nothing for the unchecked ones. These are how you get *closer to a full support product* without betting the one-shot on generating everything at once.
+
+| Add-on | What it adds | Stack to use | Requires |
+|---|---|---|---|
+| Persistence | Durable tickets, transcript, and a log of every tool call + lifecycle event | Postgres + `drizzle-orm` + `postgres`; tables: `tickets`, `messages`, `actions`, `events` | - |
+| Operator dashboard + live rules | A `/dashboard` to write natural-language rules that inject into the prompt (behaviour changes on the next turn, no redeploy), plus a human queue, transcripts, and analytics | Next.js dashboard routes + a `rules` table | Persistence |
+| Human escalation (real) | `escalateToHuman` with an actual destination: flip the ticket to `needs_human` and notify | `resend` (+ `@react-email/components`) + a `needs_human` queue | Persistence |
+| OpenAPI lookup | `listApiOperations` / `getApiOperation` tools for exact API-reference answers (operation, method+path, params, schemas, error codes) | parse an OpenAPI spec into a local index + two internal endpoints | - |
+| Transactional action | `mockApiCall` - a stubbed backend action (refund/cancel) the agent can invoke | none (stub) | - |
+| Real auth | Clerk sign-in + an email allowlist instead of name-based login | `@clerk/nextjs` | - |
+| Voice + screenshare | A voice + screenshare agent that joins a Stream Video call (real-time voice + `describe_screen`) | a separate Python Vision Agents worker - **use the `vision-agents` skill**, do not scaffold it into the Next.js app | separate service |
+
+Rules:
+- **Default is none.** If the user skips, build the lean grounded agent and stop.
+- **Auto-include Persistence** when Operator dashboard or Human escalation is checked - both depend on it.
+- **Voice is a separate build.** Do not generate it inline; point the user to the `vision-agents` skill. It needs its own service, keys, and deploy, and is not part of the few-minutes web one-shot.
 
 ### Client Patterns
 
