@@ -14,7 +14,7 @@ Before scaffolding, ask and record the answers. Each maps to a section below.
 
 1. **LLM provider + model** - Google Gemini, Anthropic Claude, or OpenAI. Pick one explicitly and wire its key. Default: **Gemini** (`gemini-3-pro`) - using Gemini also covers embeddings for the knowledge layer, so a single provider powers both chat and RAG. Claude (`claude-sonnet-4-6`) and OpenAI are equally supported. See *LLM provider selection*.
 2. **Knowledge source** - `none` (facts in the prompt), `local` (embed a folder of docs into a local index), or `external` (TurboPuffer / Pinecone + ingestion script). Steer by size: tiny/static -> none or local; large/changing -> external. See *Knowledge layer*.
-3. **Trigger** - server-side **webhook** (production, recommended) or **client-triggered** (demo-only). Webhook needs a public tunnel in dev. See *Server Routes*.
+3. **Trigger** - server-side **webhook** (production, recommended) or **client-triggered** (demo-only). The webhook needs a public tunnel registered in dev or the bot never replies - treat connecting it as a required final step, not optional setup. See *Connect the webhook in dev*.
 4. **Capabilities** - plain Q&A, or a **tool-using agent** (e.g. search knowledge, update ticket status). See *Agent capabilities*.
 5. **Optional add-ons** - a **multi-select** of extra capabilities that bring the build closer to a full support product (persistence, operator dashboard + live rules, real human escalation, OpenAPI lookup, a transactional action, real auth, voice). Present them as **checkboxes with none checked by default**: the user can skip them all (the lean, reliable grounded agent) or tick what they want, and each is built with the stack in *Optional add-ons*. Never build an unchecked one. See *Optional add-ons*.
 
@@ -85,6 +85,17 @@ await serverClient.updateAppSettings({
 ```
 
 In dev the URL must be public: `cloudflared tunnel --url http://localhost:<port>` (or ngrok), then register the tunnel URL. The `event_hooks` list is app-wide; re-point it when switching between local and prod (a stale tunnel URL silently breaks the agent).
+
+### Connect the webhook in dev (required, or the bot stays silent)
+
+**If the build uses the webhook trigger, it is not finished until the webhook is connected.** Stream only ever invokes the agent through the `message.new` webhook, and it cannot reach `localhost`, so until a public tunnel is registered the bot receives messages but never replies. This is the single most common reason a freshly built agent "does nothing." Treat it as the final build step and tell the user explicitly.
+
+1. Start the dev server.
+2. Expose it publicly: `cloudflared tunnel --url http://localhost:<port>` (or `ngrok http <port>`).
+3. Register that URL: run the `register-webhook` script against `<tunnel-url>/api/stream/webhook`.
+4. Tell the user plainly: the bot will not reply until this is done; the tunnel and `npm run dev` must both stay running; and the URL must be re-registered whenever the tunnel or dev server restarts (quick tunnels mint a new hostname each time). A stale URL silently breaks replies.
+
+Zero-setup alternative for a quick local check: the **client-triggered** trigger needs no tunnel (it fires from the browser), but it is demo-only and goes silent when no tab is open. Use the webhook for anything real.
 
 ### Conversations and sessions (the ticket model)
 
@@ -238,6 +249,7 @@ Rules:
 - **Vercel AI SDK v5/v6** uses `inputSchema`, not `parameters`. v4 examples compile but never register the tool.
 - **Next.js 16 middleware file is `proxy.ts`**, not `middleware.ts`.
 - **Missing LLM key: warn in-channel, don't 500.** If the selected provider's key is absent at request time, post a bot message naming the missing env var and return, rather than failing silently. Keeps the chat alive and the cause obvious.
+- **Webhook trigger in dev: connect it or the bot is silent.** Start a tunnel, register `<tunnel>/api/stream/webhook`, keep both the tunnel and dev server running, and re-register when either restarts. The most common "built it but nothing replies" cause. See *Connect the webhook in dev*.
 - **Client-triggered trigger is demo-only** - the bot is silent when no tab is connected. Webhook is the real pattern.
 
 ---
