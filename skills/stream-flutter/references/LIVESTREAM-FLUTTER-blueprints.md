@@ -1,6 +1,6 @@
 # Livestream Flutter - Widget Blueprints
 
-Load only the section you are implementing. For SDK setup, call type details, and gotchas, see [LIVESTREAM-FLUTTER.md](LIVESTREAM-FLUTTER.md). For standard call initialization patterns, see [VIDEO-FLUTTER-blueprints.md](VIDEO-FLUTTER-blueprints.md).
+Load only the section you are implementing. For SDK setup, call type details, and gotchas, see [LIVESTREAM-FLUTTER.md](LIVESTREAM-FLUTTER.md). For standard call initialization patterns, see [VIDEO-FLUTTER-blueprints.md](VIDEO-FLUTTER-blueprints.md). For advanced livestream use cases (TikTok-style livestream feed, viewer calling the host mid-broadcast), see [VIDEO-ADVANCED-FLUTTER.md](VIDEO-ADVANCED-FLUTTER.md) + [VIDEO-ADVANCED-FLUTTER-blueprints.md](VIDEO-ADVANCED-FLUTTER-blueprints.md).
 
 ---
 
@@ -22,7 +22,7 @@ void main() async {
       userId: 'your-user-id',
       name: 'Your Name',
     ),
-    userToken: UserToken.jwt('your_user_token'),
+    userToken: 'your_user_token',
   );
 
   runApp(const LivestreamApp());
@@ -47,7 +47,9 @@ class LivestreamApp extends StatelessWidget {
 
 Lets the user enter a stream ID and choose between hosting (creator) or watching (viewer).
 
-> **Do NOT use `StreamCallContainer` for livestreaming.** `StreamCallContainer` is designed for standard calls and will render a participant grid that replaces your custom host/viewer UI. Livestream pages manage their own layout entirely.
+> **Do NOT use `StreamCallContainer` for livestreaming.** `StreamCallContainer` is designed for standard calls and will render a participant grid that replaces your custom host/viewer UI. Use the pre-built `LivestreamPlayer` for viewers; the host page manages its own layout.
+
+> **Docs:** [Call container](https://getstream.io/video/docs/flutter/ui/call-container/) · [Call content](https://getstream.io/video/docs/flutter/ui/call-content/)
 
 ```dart
 // livestream_mode_selection_page.dart
@@ -149,6 +151,8 @@ class _LivestreamModeSelectionPageState
 
 The creator view manages the full host lifecycle: join in backstage, preview camera, go live, monitor viewer count, and end the stream.
 
+> **Docs:** [Hosting a livestream](https://getstream.io/video/docs/flutter/ui-cookbook/livestreaming/hosting-a-livestream/) · [Livestreaming guide](https://getstream.io/video/docs/flutter/guides/livestreaming/)
+
 ```dart
 // creator_livestream_page.dart
 import 'package:flutter/material.dart';
@@ -179,11 +183,16 @@ class _CreatorLivestreamPageState extends State<CreatorLivestreamPage> {
   Future<void> _joinAsHost() async {
     try {
       final call = StreamVideo.instance.makeCall(
-        callType: StreamCallType('livestream'),
+        callType: StreamCallType.liveStream(),
         id: widget.callId,
       );
       await call.getOrCreate();
-      final result = await call.join();
+      final result = await call.join(
+        connectOptions: CallConnectOptions(
+          camera: TrackOption.enabled(),
+          microphone: TrackOption.enabled(),
+        ),
+      );
       result.fold(
         success: (_) {
           if (mounted) setState(() { _call = call; _joined = true; });
@@ -262,13 +271,13 @@ class _CreatorLivestreamPageState extends State<CreatorLivestreamPage> {
     }
 
     return StreamBuilder<CallState>(
-      stream: _call!.state,
+      stream: _call!.state.asStream(), // StateEmitter is not a Stream - convert
       initialData: _call!.state.value,
       builder: (context, snapshot) {
         final state = snapshot.requireData;
-        final isBackstage = state.backstage;
+        final isBackstage = state.isBackstage;
         final isLive = !isBackstage;
-        final viewerCount = state.remoteParticipants.length;
+        final viewerCount = state.otherParticipants.length;
         final local = state.localParticipant;
 
         return Scaffold(
@@ -281,6 +290,7 @@ class _CreatorLivestreamPageState extends State<CreatorLivestreamPage> {
                 StreamVideoRenderer(
                   call: _call!,
                   participant: local,
+                  videoTrackType: SfuTrackType.video, // required
                   videoFit: VideoFit.cover,
                 )
               else
@@ -310,7 +320,7 @@ class _CreatorLivestreamPageState extends State<CreatorLivestreamPage> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.6),
+        color: Colors.black.withValues(alpha: 0.6),
         borderRadius: BorderRadius.circular(20),
       ),
       child: isLive
@@ -329,7 +339,7 @@ class _CreatorLivestreamPageState extends State<CreatorLivestreamPage> {
                 const Text('LIVE',
                     style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
                 const SizedBox(width: 6),
-                const Text('·', style: TextStyle(color: Colors.white54)),
+                const Text('.', style: TextStyle(color: Colors.white54)),
                 const SizedBox(width: 6),
                 const Icon(Icons.person, color: Colors.white70, size: 14),
                 const SizedBox(width: 4),
@@ -354,7 +364,7 @@ class _CreatorLivestreamPageState extends State<CreatorLivestreamPage> {
             icon: micOn ? Icons.mic : Icons.mic_off,
             active: micOn,
             onTap: () async {
-              micOn ? await _call?.microphone.disable() : await _call?.microphone.enable();
+              await _call?.setMicrophoneEnabled(enabled: !micOn);
             },
           ),
           const SizedBox(width: 16),
@@ -362,14 +372,14 @@ class _CreatorLivestreamPageState extends State<CreatorLivestreamPage> {
             icon: cameraOn ? Icons.videocam : Icons.videocam_off,
             active: cameraOn,
             onTap: () async {
-              cameraOn ? await _call?.camera.disable() : await _call?.camera.enable();
+              await _call?.setCameraEnabled(enabled: !cameraOn);
             },
           ),
           const SizedBox(width: 16),
           _iconButton(
             icon: Icons.flip_camera_ios,
             active: true,
-            onTap: () => _call?.camera.flip(),
+            onTap: () => _call?.flipCamera(),
           ),
           const Spacer(),
           isLive ? _endStreamButton() : _goLiveButton(),
@@ -389,7 +399,7 @@ class _CreatorLivestreamPageState extends State<CreatorLivestreamPage> {
         width: 52,
         height: 52,
         decoration: BoxDecoration(
-          color: active ? Colors.white.withOpacity(0.15) : Colors.red.withOpacity(0.8),
+          color: active ? Colors.white.withValues(alpha: 0.15) : Colors.red.withValues(alpha: 0.8),
           shape: BoxShape.circle,
         ),
         child: Icon(icon, color: Colors.white, size: 22),
@@ -432,18 +442,22 @@ class _CreatorLivestreamPageState extends State<CreatorLivestreamPage> {
 ```
 
 **Wiring:**
-- **No `StreamCallContainer`** — `CreatorLivestreamPage` owns the call UI entirely
+
+- **No `StreamCallContainer`** - `CreatorLivestreamPage` owns the call UI entirely
 - `_joinAsHost()` is called from `initState`; the `_joined` flag prevents double-joining on re-render
-- `isLive` is derived from `state.backstage` — no separate `bool` state
-- `viewerCount` comes from `state.remoteParticipants.length` — excludes local participant
+- The host joins with `CallConnectOptions(camera: TrackOption.enabled(), microphone: TrackOption.enabled())` - the defaults are disabled
+- `isLive` is derived from `state.isBackstage` - no separate `bool` state
+- `viewerCount` comes from `state.otherParticipants.length` - excludes local participant
 - `dispose()` calls `leave()` as a safety net for screen pops without the end-stream button
-- `goLive()` / `stopLive()` / `end()` / `leave()` is the correct end-stream sequence
+- `goLive()` / `stopLive()` / `end()` / `leave()` is the correct end-stream sequence; pass `goLive(startHls: true)` if HLS viewers are expected
 
 ---
 
-## Viewer View Blueprint (WebRTC)
+## Viewer View Blueprint (LivestreamPlayer - preferred)
 
-The viewer view joins the call as a subscriber and watches the creator's stream in real time.
+Use the SDK's purpose-built `LivestreamPlayer`. It auto-joins (camera/mic disabled by default), renders the host, and handles backstage, ended, reconnecting, and no-video states - plus participant count, multi-host layouts, recordings-when-ended, and PiP.
+
+> **Docs:** [Watching a livestream](https://getstream.io/video/docs/flutter/ui-cookbook/livestreaming/watching-a-livestream/)
 
 ```dart
 // viewer_livestream_page.dart
@@ -461,6 +475,102 @@ class ViewerLivestreamPage extends StatefulWidget {
 
 class _ViewerLivestreamPageState extends State<ViewerLivestreamPage> {
   Call? _call;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _prepareCall();
+  }
+
+  Future<void> _prepareCall() async {
+    try {
+      final call = StreamVideo.instance.makeCall(
+        callType: StreamCallType.liveStream(),
+        id: widget.callId,
+      );
+      await call.getOrCreate();
+      if (mounted) setState(() => _call = call);
+    } catch (e) {
+      if (mounted) setState(() => _error = e.toString());
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_error != null) {
+      return Scaffold(
+        backgroundColor: Colors.black,
+        body: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(_error!, style: const TextStyle(color: Colors.red)),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Go back', style: TextStyle(color: Colors.white)),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final call = _call;
+    if (call == null) {
+      return const Scaffold(
+        backgroundColor: Colors.black,
+        body: Center(child: CircularProgressIndicator(color: Colors.white)),
+      );
+    }
+
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: LivestreamPlayer(
+        call: call,
+        // joinBehaviour defaults to autoJoinAsap; connectOptions default to
+        // camera/mic disabled - correct for viewers
+        onCallDisconnected: (_) {
+          if (mounted) Navigator.of(context).pop();
+        },
+      ),
+    );
+  }
+}
+```
+
+**Wiring:**
+
+- `getOrCreate()` runs before showing the player; `LivestreamPlayer` joins the call itself (`LivestreamJoinBehaviour.autoJoinAsap`)
+- No manual leave on dispose is needed for the player-managed join; `onCallDisconnected` handles navigation when the stream ends
+- Customize the waiting/ended screens with `livestreamBackstageWidgetBuilder` / `livestreamEndedWidgetBuilder`; multi-host via `showMultipleHosts` + `layoutMode`
+
+---
+
+## Viewer View Blueprint (fully custom - only when LivestreamPlayer does not fit)
+
+Joins as a subscriber and renders the host manually.
+
+> **Docs:** [Watching a livestream](https://getstream.io/video/docs/flutter/ui-cookbook/livestreaming/watching-a-livestream/)
+
+```dart
+// custom_viewer_livestream_page.dart
+import 'package:flutter/material.dart';
+import 'package:stream_video_flutter/stream_video_flutter.dart';
+
+class CustomViewerLivestreamPage extends StatefulWidget {
+  const CustomViewerLivestreamPage({super.key, required this.callId});
+
+  final String callId;
+
+  @override
+  State<CustomViewerLivestreamPage> createState() =>
+      _CustomViewerLivestreamPageState();
+}
+
+class _CustomViewerLivestreamPageState
+    extends State<CustomViewerLivestreamPage> {
+  Call? _call;
   bool _joined = false;
   String? _error;
 
@@ -473,16 +583,14 @@ class _ViewerLivestreamPageState extends State<ViewerLivestreamPage> {
   Future<void> _joinAsViewer() async {
     try {
       final call = StreamVideo.instance.makeCall(
-        callType: StreamCallType('livestream'),
+        callType: StreamCallType.liveStream(),
         id: widget.callId,
       );
       await call.getOrCreate();
-      // Disable camera and mic before joining - viewers do not publish
+      // CallConnectOptions defaults camera/mic to disabled - viewers do not publish
       final result = await call.join();
       result.fold(
-        success: (_) async {
-          await call.camera.disable();
-          await call.microphone.disable();
+        success: (_) {
           if (mounted) setState(() { _call = call; _joined = true; });
         },
         failure: (error) {
@@ -506,16 +614,7 @@ class _ViewerLivestreamPageState extends State<ViewerLivestreamPage> {
       return Scaffold(
         backgroundColor: Colors.black,
         body: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(_error!, style: const TextStyle(color: Colors.red)),
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('Go back', style: TextStyle(color: Colors.white)),
-              ),
-            ],
-          ),
+          child: Text(_error!, style: const TextStyle(color: Colors.red)),
         ),
       );
     }
@@ -523,26 +622,17 @@ class _ViewerLivestreamPageState extends State<ViewerLivestreamPage> {
     if (!_joined || _call == null) {
       return const Scaffold(
         backgroundColor: Colors.black,
-        body: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              CircularProgressIndicator(color: Colors.white),
-              SizedBox(height: 16),
-              Text('Connecting...', style: TextStyle(color: Colors.white)),
-            ],
-          ),
-        ),
+        body: Center(child: CircularProgressIndicator(color: Colors.white)),
       );
     }
 
     return StreamBuilder<CallState>(
-      stream: _call!.state,
+      stream: _call!.state.asStream(), // StateEmitter is not a Stream - convert
       initialData: _call!.state.value,
       builder: (context, snapshot) {
         final state = snapshot.requireData;
-        final isBackstage = state.backstage;
-        final host = state.remoteParticipants.firstOrNull;
+        final isBackstage = state.isBackstage;
+        final host = state.otherParticipants.firstOrNull;
 
         return Scaffold(
           backgroundColor: Colors.black,
@@ -554,17 +644,11 @@ class _ViewerLivestreamPageState extends State<ViewerLivestreamPage> {
                 StreamVideoRenderer(
                   call: _call!,
                   participant: host,
+                  videoTrackType: SfuTrackType.video, // required
                   videoFit: VideoFit.cover,
                 )
               else
                 const _WaitingForHostOverlay(),
-              // LIVE badge
-              if (!isBackstage)
-                Positioned(
-                  top: MediaQuery.of(context).padding.top + 16,
-                  left: 16,
-                  child: _liveBadge(),
-                ),
               // Leave button
               Positioned(
                 top: MediaQuery.of(context).padding.top + 8,
@@ -581,29 +665,6 @@ class _ViewerLivestreamPageState extends State<ViewerLivestreamPage> {
           ),
         );
       },
-    );
-  }
-
-  Widget _liveBadge() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.6),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 8,
-            height: 8,
-            decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
-          ),
-          const SizedBox(width: 6),
-          const Text('LIVE',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
-        ],
-      ),
     );
   }
 }
@@ -634,10 +695,11 @@ class _WaitingForHostOverlay extends StatelessWidget {
 ```
 
 **Wiring:**
-- **No `StreamCallContainer`** — same reason as `CreatorLivestreamPage`
-- Disable camera/mic immediately after a successful join — the `livestream` call type also enforces this server-side, but disabling locally avoids spurious track creation
-- `state.backstage` is the source of truth for whether the stream is live
-- `state.remoteParticipants.firstOrNull` is the host's participant — null if backstage or not yet live
+
+- **No `StreamCallContainer`** - same reason as `CreatorLivestreamPage`
+- A bare `join()` already joins with camera/mic disabled (the `CallConnectOptions` defaults); the `livestream` call type also enforces no-publish server-side
+- `state.isBackstage` is the source of truth for whether the stream is live
+- `state.otherParticipants.firstOrNull` is the host's participant - null if backstage or not yet live
 - `dispose()` calls `leave()` as a safety net for OS back gestures
 
 ---
@@ -645,6 +707,8 @@ class _WaitingForHostOverlay extends StatelessWidget {
 ## HLS Viewer Blueprint
 
 Use the HLS path for large-scale audiences where per-viewer WebRTC connections are impractical. HLS viewers do not call `join()`.
+
+> **Docs:** [Broadcasting (HLS/RTMP)](https://getstream.io/video/docs/flutter/advanced/broadcasting/) · [Watching a livestream](https://getstream.io/video/docs/flutter/ui-cookbook/livestreaming/watching-a-livestream/)
 
 ```dart
 // hls_viewer_page.dart
@@ -680,7 +744,7 @@ class _HLSViewerPageState extends State<HLSViewerPage> {
   Future<void> _watchForHLSUrl() async {
     try {
       final call = StreamVideo.instance.makeCall(
-        callType: StreamCallType('livestream'),
+        callType: StreamCallType.liveStream(),
         id: widget.callId,
       );
       await call.getOrCreate();
@@ -688,14 +752,14 @@ class _HLSViewerPageState extends State<HLSViewerPage> {
 
       // Observe call state - start playback when HLS URL appears
       _stateSub = call.state.listen((state) async {
-        final hlsUrl = state.egress?.hls?.playlistUrl;
+        final hlsUrl = state.egress.hlsPlaylistUrl;
         if (hlsUrl != null && _controller == null) {
           await _startPlayback(hlsUrl);
         }
       });
 
       // Check current state immediately in case stream is already live
-      final hlsUrl = call.state.value.egress?.hls?.playlistUrl;
+      final hlsUrl = call.state.value.egress.hlsPlaylistUrl;
       if (hlsUrl != null) await _startPlayback(hlsUrl);
     } catch (e) {
       if (mounted) setState(() => _error = e.toString());
@@ -789,7 +853,7 @@ class _HLSViewerPageState extends State<HLSViewerPage> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.6),
+        color: Colors.black.withValues(alpha: 0.6),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
@@ -811,12 +875,14 @@ class _HLSViewerPageState extends State<HLSViewerPage> {
 ```
 
 **Wiring:**
-- HLS viewers do **not** call `call.join()` — they observe `call.state` for the HLS URL only
-- `VideoPlayerController` is created in `_startPlayback`, not in `build` — recreating it in `build` resets playback every frame
+
+- HLS viewers do **not** call `call.join()` - they observe `call.state` for the HLS URL only
+- HLS must be started by the host (`goLive(startHls: true)` or `call.startHLS()`) or auto-broadcast enabled on the call type - otherwise the URL never appears
+- `VideoPlayerController` is created in `_startPlayback`, not in `build` - recreating it in `build` resets playback every frame
 - The `StreamSubscription` is cancelled in `dispose()` to prevent state-after-dispose errors
-- `egress?.hls?.playlistUrl` — the HLS URL appears a few seconds after the host calls `goLive()`; the subscription handles the delay automatically
-- HLS latency is 10–30 s by design — do not try to synchronize with WebRTC viewers
-- `video_player` must be added to `pubspec.yaml` separately (`video_player: ^2.9.1`)
+- `egress.hlsPlaylistUrl` (`egress` is non-nullable, the field is flat) - the URL appears a few seconds after the broadcast starts; the subscription handles the delay automatically
+- HLS latency is 10-30 s by design - do not try to synchronize with WebRTC viewers
+- `video_player` must be added to `pubspec.yaml` separately (latest 2.x)
 
 ---
 
@@ -824,11 +890,13 @@ class _HLSViewerPageState extends State<HLSViewerPage> {
 
 ```
 LivestreamApp
-  └── LivestreamModeSelectionPage   (enter stream ID, choose mode)
-        ├── CreatorLivestreamPage   (join + backstage + goLive + controls)
-        └── ViewerLivestreamPage    (join as subscriber + watch host)
+  `-- LivestreamModeSelectionPage   (enter stream ID, choose mode)
+        |-- CreatorLivestreamPage   (join + backstage + goLive + controls)
+        `-- ViewerLivestreamPage    (LivestreamPlayer - preferred viewer)
               OR
-        └── HLSViewerPage           (observe HLS URL + video_player playback)
+        `-- CustomViewerLivestreamPage (manual subscriber rendering)
+              OR
+        `-- HLSViewerPage           (observe HLS URL + video_player playback)
 ```
 
 Each page creates its own `Call` object via `StreamVideo.instance.makeCall(...)`. For the creator and WebRTC viewer, this is the same call ID joining the same stream from different roles.

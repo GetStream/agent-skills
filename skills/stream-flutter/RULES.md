@@ -45,7 +45,10 @@ Preserve the app's existing architecture:
 - Do **not** replace existing state management (Provider, Riverpod, Bloc) unless the user asks.
 - Do **not** flatten existing widget trees just to fit a sample pattern.
 
-If there is **no Flutter project**, do not try to scaffold one. Tell the user to run `flutter create my_app` first, then continue.
+If there is **no Flutter project**:
+
+- When the user **explicitly asks to create/build a new app** (Track A — e.g. "create a Flutter app that…"), scaffold it yourself: `flutter create --org <reverse.domain> --project-name <name> --platforms android,ios <dir>`. Creating the project _is_ the request — don't bounce it back. An empty, pre-named directory (e.g. `ringing/`) is a strong signal of where it should go.
+- Otherwise (the user wants integration/setup but no app exists yet), do **not** scaffold silently. Tell them to run `flutter create my_app` first, then continue.
 
 ---
 
@@ -59,7 +62,7 @@ Initialize Stream SDK clients once, before `runApp`. Never create them:
 
 **Chat:** `StreamChatClient` initialized once before `runApp`. `StreamChat` must appear in the widget tree before any Stream Chat widget renders - typically as a `builder` wrapper around `MaterialApp`. If the user switches accounts, call `await client.disconnectUser()` before connecting the next one.
 
-**Video:** `StreamVideo(...)` initialized once before `runApp`. It registers a singleton - access it anywhere with `StreamVideo.instance`. Accessing `StreamVideo.instance` before construction throws a `StateError`. If the user switches accounts, construct a new `StreamVideo` instance after disposing of the previous one.
+**Video:** `StreamVideo(...)` initialized once before `runApp`. It registers a singleton - access it anywhere with `StreamVideo.instance`. Accessing `StreamVideo.instance` before construction throws a `StateError`. If the user switches accounts, tear the singleton down with `await StreamVideo.reset(disconnect: true)` **before** constructing a new `StreamVideo(...)` - the constructor throws `failIfSingletonExists` otherwise. See [`references/VIDEO-FLUTTER.md`](references/VIDEO-FLUTTER.md) -> Switching users / resetting the client.
 
 **Feeds:** `StreamFeedClient('apiKey')` initialized once before `runApp`. Call `await client.setUser(user, token)` before any feed operation. Wrap the widget tree with `FeedProvider(bloc: FeedBloc(client: client), child: ...)` when using `stream_feed_flutter_core`. Cancel all feed subscriptions in `dispose()`.
 
@@ -91,6 +94,8 @@ Load only the product/package reference files that match the request.
 - `CHAT-CORE.md` + `CHAT-CORE-blueprints.md` for Chat with custom UI (`stream_chat_flutter_core`)
 - `VIDEO-FLUTTER.md` + `VIDEO-FLUTTER-blueprints.md` for Video calling (`stream_video_flutter`)
 - `LIVESTREAM-FLUTTER.md` + `LIVESTREAM-FLUTTER-blueprints.md` for Livestreaming (host/viewer flows, backstage, HLS)
+- `VIDEO-ADVANCED-FLUTTER.md` + `VIDEO-ADVANCED-FLUTTER-blueprints.md` for advanced Video use cases (audio rooms, multicall, chat+video, livestream feed, querying/events/preferences/moderation)
+- `RINGING-FLUTTER.md` + `RINGING-FLUTTER-blueprints.md` for ringing / incoming calls with push (CallKit on iOS, FCM on Android, foreground/background/terminated handling)
 - `FEEDS-FLUTTER.md` + `FEEDS-FLUTTER-blueprints.md` for Activity Feeds (`stream_feed` / `stream_feed_flutter_core`)
 
 Do not invent missing API details. If a requested pattern is not bundled yet, say so plainly and fall back to guidance from [`sdk.md`](sdk.md) or live docs only when the user wants that.

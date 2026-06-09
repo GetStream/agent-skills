@@ -11,9 +11,9 @@ Start by understanding what kind of Flutter project is in front of you:
 - `pubspec.yaml` with `flutter` dependency -> active Flutter project
 - `pubspec.yaml` with `stream_chat_flutter` already present -> Stream already installed, check existing wiring
 - `pubspec.yaml` with no Stream dependency -> add dependency, then wire
-- no `pubspec.yaml` and `EMPTY_CWD` -> tell the user to run `flutter create my_app` first
+- no `pubspec.yaml` and `EMPTY_CWD` -> see scaffolding rule below
 
-Do **not** try to scaffold Flutter projects from scratch.
+**Scaffolding (Track A only):** if the user **explicitly asked to create a new app**, scaffold it yourself with `flutter create --org <reverse.domain> --project-name <name> --platforms android,ios <dir>` (a pre-named empty dir like `ringing/` is where it goes). Otherwise — integration/setup with no project present — do **not** scaffold; tell the user to run `flutter create my_app` first. See [`RULES.md`](RULES.md) > Project ownership.
 
 ---
 
@@ -44,9 +44,9 @@ Add the dependency to `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  stream_chat_flutter: ^10.0.0      # pre-built UI
+  stream_chat_flutter: ^10.0.0 # pre-built UI
   # OR
-  stream_chat_flutter_core: ^10.0.0  # custom UI only
+  stream_chat_flutter_core: ^10.0.0 # custom UI only
   # Optional - localized strings for SDK widgets
   stream_chat_localizations: ^10.0.0
 ```
@@ -59,8 +59,8 @@ Add the dependency to `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  stream_video_flutter: ^1.4.0   # pre-built UI + core
-  # optional — video filters (blur/virtual background); separate package since v1.0.0
+  stream_video_flutter: ^1.4.0 # pre-built UI + core
+  # optional -  video filters (blur/virtual background)
   stream_video_filters: ^1.4.0
   # OR for core only (no pre-built call UI)
   stream_video: ^1.4.0
@@ -74,7 +74,7 @@ Add the dependency to `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  stream_feeds: ^0.5.1   # check pub.dev for latest; requires Dart >=3.6.2
+  stream_feeds: ^0.5.1 # check pub.dev for latest; requires Dart >=3.6.2
 ```
 
 > **Package name is `stream_feeds` (plural).** Do not use `stream_feed` (deprecated, fails to compile on Dart 3) or `stream_feed_flutter_core` (old package, incompatible with `stream_feeds`). `stream_feeds` is the only package needed.
@@ -141,7 +141,7 @@ For localization, add supported languages to `ios/Runner/Info.plist`:
 Edit `web/index.html` and add `oncontextmenu="return false;"` to the `<body>` tag to allow the SDK to override right-click behavior:
 
 ```html
-<body oncontextmenu="return false;">
+<body oncontextmenu="return false;"></body>
 ```
 
 #### macOS
@@ -182,15 +182,20 @@ Add permissions to `android/app/src/main/AndroidManifest.xml`:
 <uses-permission android:name="android.permission.BLUETOOTH_CONNECT"/>
 ```
 
-Set minimum SDK in `android/app/build.gradle`:
+Set the minimum SDK to 24.
 
-```groovy
+```kotlin
+// android/app/build.gradle.kts
 android {
     defaultConfig {
-        minSdkVersion 24
+        minSdk = maxOf(24, flutter.minSdkVersion)
     }
 }
 ```
+
+Older projects with the Groovy `android/app/build.gradle` use `minSdkVersion 24`
+inside `defaultConfig` instead. Check which file your project actually has before
+editing.
 
 On Android 6+ (API 23+), also request runtime permissions before joining a call. Add `permission_handler` to `pubspec.yaml` and call:
 
@@ -209,11 +214,31 @@ Add to `ios/Runner/Info.plist`:
 <string>Video calls require microphone access.</string>
 ```
 
-Set minimum deployment target to iOS 14.0+ in `ios/Podfile`:
+Set the minimum deployment target to iOS 14.0+. **Flutter 3.32+ enables Swift
+Package Manager by default** (`flutter config` shows `enable-swift-package-manager:
+true`), and a fresh `flutter create` then produces **no `ios/Podfile`** - the Stream
+plugins resolve as Swift packages. Don't create a Podfile just to set the target;
+set it in the Xcode project instead, which all three build configs read from:
 
-```ruby
-platform :ios, '14.0'
 ```
+# ios/Runner.xcodeproj/project.pbxproj - set in all 3 configs (Debug/Release/Profile)
+IPHONEOS_DEPLOYMENT_TARGET = 14.0;
+```
+
+Equivalently in Xcode: Runner target -> General -> Minimum Deployments -> iOS 14.0.
+
+> **⚠️ Under SPM you must ALSO add `MinimumOSVersion` to `ios/Flutter/AppFrameworkInfo.plist`**
+> (`<key>MinimumOSVersion</key><string>15.0</string>`). The Xcode target alone does
+> not raise the generated plugin SPM package's platform, so the build fails with
+> *"increase your app's minimum platform version from 13.0 to at least 14.0"*. And add
+> `analyzer: { exclude: [build/**] }` to `analysis_options.yaml` to silence phantom
+> errors from the plugin sources SPM copies into `build/`. Both steps, with
+> verification, are in [`references/VIDEO-FLUTTER.md`](references/VIDEO-FLUTTER.md) ->
+> Platform Setup -> iOS.
+
+Only if your project still uses CocoaPods (an `ios/Podfile` is present - e.g. a
+plugin without SPM support pulled it in) also set `platform :ios, '14.0'` at the top
+of the Podfile.
 
 ---
 
@@ -272,6 +297,10 @@ Available extracted modules:
 - Video widget blueprints: [`references/VIDEO-FLUTTER-blueprints.md`](references/VIDEO-FLUTTER-blueprints.md)
 - Livestream SDK patterns: [`references/LIVESTREAM-FLUTTER.md`](references/LIVESTREAM-FLUTTER.md)
 - Livestream widget blueprints: [`references/LIVESTREAM-FLUTTER-blueprints.md`](references/LIVESTREAM-FLUTTER-blueprints.md)
+- Video advanced use cases (audio rooms, multicall, chat+video, livestream feed): [`references/VIDEO-ADVANCED-FLUTTER.md`](references/VIDEO-ADVANCED-FLUTTER.md)
+- Video advanced use-case blueprints: [`references/VIDEO-ADVANCED-FLUTTER-blueprints.md`](references/VIDEO-ADVANCED-FLUTTER-blueprints.md)
+- Ringing / incoming calls + push (CallKit, FCM): [`references/RINGING-FLUTTER.md`](references/RINGING-FLUTTER.md)
+- Ringing blueprints: [`references/RINGING-FLUTTER-blueprints.md`](references/RINGING-FLUTTER-blueprints.md)
 - Feeds SDK setup, activities, reactions, follow/unfollow, realtime: [`references/FEEDS-FLUTTER.md`](references/FEEDS-FLUTTER.md)
 - Feeds widget blueprints (Twitter-style default; Instagram/Reddit variants): [`references/FEEDS-FLUTTER-blueprints.md`](references/FEEDS-FLUTTER-blueprints.md)
 
@@ -287,6 +316,7 @@ Check the smallest set of outcomes that proves the integration works:
 - the app compiles without errors (`flutter build` or hot reload)
 
 **Chat:**
+
 - `StreamChatClient` is initialized before `runApp`
 - `StreamChat` widget appears in the tree before any Stream Chat widget renders
 - the requested screen (channel list, channel view, thread) appears where expected
@@ -294,6 +324,7 @@ Check the smallest set of outcomes that proves the integration works:
 - switching users or logging out does not leave orphaned WebSocket connections
 
 **Video:**
+
 - `StreamVideo` is initialized before `runApp` and accessed via `StreamVideo.instance`
 - `call.getOrCreate()` is called before `call.join()`
 - the result of `call.join()` is checked - not silently discarded
@@ -302,6 +333,7 @@ Check the smallest set of outcomes that proves the integration works:
 - the `StreamCallContainer` or custom call UI appears after a successful join
 
 **Feeds:**
+
 - `StreamFeedClient` is initialized before `runApp` and `setUser` is awaited
 - `FeedProvider` wraps the widget tree before any `FlatFeedCore` or `FeedBloc` access
 - `client.flatFeed('timeline', userId)` returns activities from followed users
