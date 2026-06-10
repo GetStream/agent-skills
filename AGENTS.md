@@ -20,7 +20,7 @@ The pack has a generic router, core specialists, and platform peers declared in 
 
 ## Codex-specific
 
-- **`stream` CLI first:** For the CLI and builder skills, run [`skills/stream-cli/preflight.md`](skills/stream-cli/preflight.md) before any other Stream skill step - if the CLI is missing, follow [`skills/stream-cli/bootstrap.md`](skills/stream-cli/bootstrap.md) and get user approval to install; do not skip install or continue builder/API work without it. The `stream-docs` skill does not need the CLI.
+- **`stream` CLI first:** For the CLI and builder skills, run [`skills/stream-cli/preflight.md`](skills/stream-cli/preflight.md) before any other Stream skill step - if the CLI is missing, follow [`skills/stream-cli/bootstrap.md`](skills/stream-cli/bootstrap.md) and get user approval to install; do not skip install or continue builder/API work without it. **No CLI needed** for `stream-docs`, nor for read-only/local-only tracks - a platform pack's **audit** (e.g. `stream-react` Track F) and **migrate** (e.g. `stream-react` Track M) inspect/edit local files and the live docs only, so they skip preflight, auth, and provisioning.
 - **Batch shell** commands into single `bash -ce 'set -euo pipefail; ...'` invocations to minimize approval prompts.
 - **`stream auth login`** needs a **separate** terminal invocation so the browser can open (PKCE).
 - **Network:** scaffold (`npx`, `npm`, `stream` install) needs network - approve **once** per session when prompted.

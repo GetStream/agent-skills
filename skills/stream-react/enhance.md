@@ -23,7 +23,7 @@ Before writing any code, understand what's already in place:
 
 ## E2: Install + configure
 
-1. **Install** only the new SDKs: `npm install <new-packages> --legacy-peer-deps` (the `stream` skill's [`RULES.md`](../stream/RULES.md) > Package manager).
+1. **Install** only the new SDKs **with the project's detected package manager** (from E1) - never introduce a second lockfile: npm -> `npm install <new-packages> --legacy-peer-deps`; yarn -> `yarn add <new-packages>`; pnpm -> `pnpm add <new-packages>`. `--legacy-peer-deps` is **npm-only** (yarn/pnpm resolve Stream peers without it). (the `stream` skill's [`RULES.md`](../stream/RULES.md) > Package manager.)
 2. **Configure via CLI:** run setup commands from the relevant `references/<Product>.md` (App Integration -> Setup). Feeds needs feed groups created; Moderation needs blocklist + config.
 3. **Import CSS** if the product needs it (Chat: `stream-chat-react/dist/css/index.css` (v14+; v13 used `dist/css/v2/index.css`), Video: `@stream-io/video-react-sdk/dist/css/styles.css`).
 
@@ -36,12 +36,14 @@ Before writing any code, understand what's already in place:
 
 ## E4: Verify
 
+Run with the project's **detected** package manager (do not introduce a second lockfile):
+
 ```bash
-npx tsc --noEmit
-npm run build   # the project's own build (Next.js: next build; Vite: vite build; etc.)
+npx tsc --noEmit            # or: yarn dlx tsc --noEmit / pnpm exec tsc --noEmit
+npm run build               # or: yarn build / pnpm build  (runs the project's own build script)
 ```
 
-Fix any errors. Use the project's existing `build` script - do not assume `next build` on a non-Next.js project.
+Fix any errors. Use the project's existing package manager and `build` script - do not assume `npm` or `next build` on a yarn/pnpm or non-Next.js project.
 
 ---
 

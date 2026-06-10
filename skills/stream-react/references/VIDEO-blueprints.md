@@ -13,16 +13,31 @@ Setup, routes, and gotchas: [VIDEO.md](VIDEO.md). Rules: [../../stream/RULES.md]
 import '@stream-io/video-react-sdk/dist/css/styles.css';
 ```
 
-**Client (manual - there is NO `useCreateVideoClient` hook; use the strict-mode-safe `useState` + `useEffect` pattern, [`../RULES.md`](../RULES.md) > Strict mode protection):**
+**Client + call (manual - there is NO `useCreateVideoClient` hook; use the strict-mode-safe `useState` + `useEffect` pattern, [`../RULES.md`](../RULES.md) > Strict mode protection). Keep every hook above any early return, define `tokenProvider` inside the effect, and gate rendering until both client and call exist:**
 ```tsx
-import { StreamVideoClient } from '@stream-io/video-react-sdk';
+import { StreamVideoClient, type Call } from '@stream-io/video-react-sdk';
+
 const [client, setClient] = useState<StreamVideoClient>();
+const [call, setCall] = useState<Call>();
+
 useEffect(() => {
+  // Define tokenProvider INSIDE the effect: an inline provider in the dep array
+  // changes identity every render and would disconnect + recreate the client.
+  const tokenProvider = () => fetchToken(userId); // your GET /api/token call
   const c = new StreamVideoClient({ apiKey, user: { id: userId, name }, tokenProvider });
   setClient(c);
   return () => { c.disconnectUser().catch(console.error); setClient(undefined); };
-}, [apiKey, userId, name, tokenProvider]);
-// then: const call = client.call('default', callId); await call.join({ create: true });
+}, [apiKey, userId, name]); // NOT tokenProvider
+
+useEffect(() => {
+  if (!client) return;            // client is undefined on first render - guard before client.call(...)
+  const c = client.call('default', callId);
+  let active = true;
+  c.join({ create: true }).then(() => { if (active) setCall(c); }).catch(console.error);
+  return () => { active = false; c.leave().catch(() => {}); };
+}, [client, callId]);
+
+if (!client || !call) return null; // gate rendering: provider/call props below are non-null
 ```
 
 **Provider hierarchy (the canonical layout):**

@@ -22,6 +22,8 @@ Identify which Stream packages are present and their current versions:
 
 Establish **from version -> to version** for each package the user wants to move. If the user didn't name a target, the target is the latest published major - confirm it with `npm view <pkg> version` before proceeding.
 
+**Also detect the package manager** from the lockfile (`package-lock.json` -> npm, `yarn.lock` -> yarn, `pnpm-lock.yaml` -> pnpm). Use it for every install/build below so you don't strand the active lockfile or create a stray `package-lock.json`.
+
 ## M2: Fetch the matching release / upgrade guide (before any edit)
 
 **Match the upgrade to its guide and `WebFetch` it this turn.** Known entry point:
@@ -38,14 +40,14 @@ Work strictly from the fetched guide:
 
 1. **Bump only the packages being migrated**, each to ITS OWN resolved target from M1. The Stream packages carry **independent version numbers** - never apply one target to several (e.g. `stream-chat-react` and `stream-chat` version separately; a single shared `<target>` can request a release that doesn't exist). Build the install list from the detected from->to pairs, including only the package(s) the user is actually upgrading:
    ```bash
-   # Chat (each at its own target):
+   # npm (examples; --legacy-peer-deps is npm-only). Chat = each package at its own target:
    npm install stream-chat-react@<chatReactTarget> stream-chat@<chatTarget> --legacy-peer-deps
-   # Video:
-   npm install @stream-io/video-react-sdk@<videoTarget> --legacy-peer-deps
-   # Feeds:
-   npm install @stream-io/feeds-react-sdk@<feedsTarget> --legacy-peer-deps
+   npm install @stream-io/video-react-sdk@<videoTarget> --legacy-peer-deps   # Video
+   npm install @stream-io/feeds-react-sdk@<feedsTarget> --legacy-peer-deps   # Feeds
+   # yarn:  yarn add stream-chat-react@<target> stream-chat@<target>
+   # pnpm:  pnpm add stream-chat-react@<target> stream-chat@<target>
    ```
-   Use the project's package manager (`--legacy-peer-deps` for npm + Stream packages). Do not bump packages the migration doesn't touch.
+   Use the **detected package manager** from M1 (yarn/pnpm don't need `--legacy-peer-deps`). Do not introduce a second lockfile or bump packages the migration doesn't touch.
 2. **Apply each breaking change** the guide lists - renamed/removed exports (e.g. Chat v14: `MessageInput` -> `MessageComposer`; CSS path `dist/css/v2/index.css` -> `dist/css/index.css`; overrides moved to `<WithComponents>`), changed prop/hook signatures, run any codemod the guide provides.
 3. **Search the codebase** for each removed/renamed symbol so nothing is missed (`grep -rn "<oldSymbol>" app/ src/ components/`).
 4. Do **not** introduce features the user didn't ask for; this track is an upgrade, not a redesign.
@@ -53,8 +55,8 @@ Work strictly from the fetched guide:
 ## M4: Verify
 
 ```bash
-npx tsc --noEmit
-npm run build   # the project's own build (Next.js: next build; Vite: vite build; etc.) - do not assume next build
+npx tsc --noEmit            # or: yarn dlx tsc --noEmit / pnpm exec tsc --noEmit
+npm run build               # or: yarn build / pnpm build  (the project's own build script - do not assume next build)
 ```
 
 Fix every error the guide's changes surfaced. `tsc --noEmit` reports all type errors at once (renamed exports, changed signatures) - use it first. Re-run until both pass.
