@@ -151,7 +151,7 @@ Severity guide: **Blocker** = call won't reliably connect, leaks/keeps publishin
 | Check | Detect (anchor) | Pass condition | Severity |
 |---|---|---|---|
 | Single client, created in `useEffect`/`useState`, disposed on cleanup | `new StreamVideoClient(`/`getOrCreateInstance(`, `disconnectUser(`, `useMemo` | One client; `disconnectUser()` runs in cleanup; **not** built with `useMemo` | Blocker |
-| Strict-mode safe setup | `useMemo` for the client, `useRef` locks (`initRan`), a `mounted` flag in cleanup | No `useMemo` client, no `useRef` setup locks; uses a `mounted` flag | High |
+| Strict-mode safe setup | `useMemo` for the client, `useRef` locks (`initRan`); `mounted` flag on async setup effects | No `useMemo` client, no `useRef` setup locks. The **synchronous** `StreamVideoClient` effect needs cleanup (`disconnectUser`) only - a missing `mounted` flag there is **not** a finding (the constructor is synchronous). Only **async** setup effects (`call.join`/`getOrCreate`/feed setup) must use a `mounted` flag + cleanup. | High |
 | `tokenProvider` with ~4h tokens; token from a backend route, not committed | `tokenProvider`, `/api/token`, literal `token:` | Short-lived token fetched from `/api/token`; no static prod token in client code | Blocker |
 | One `<StreamVideo>` per session, hoisted to AppShell (not per screen) | `<StreamVideo`, its placement | Single provider at the app root | High |
 | Join with `call.join({ create: true })`, not `getOrCreate()` | `call.join(`, `getOrCreate(` | `join()` is what connects WebRTC; `getOrCreate()` alone never connects media | Blocker |

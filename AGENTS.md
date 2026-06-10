@@ -11,7 +11,8 @@ The pack has a generic router, core specialists, and platform peers declared in 
 |---|---|
 | [`skills/stream-cli/SKILL.md`](skills/stream-cli/SKILL.md) | Query Stream data, run `stream api / config / auth`, install the CLI binary |
 | [`skills/stream-docs/SKILL.md`](skills/stream-docs/SKILL.md) | Search live SDK documentation from getstream.io (no CLI required) |
-| [`skills/stream-builder/SKILL.md`](skills/stream-builder/SKILL.md) | Scaffold a new app, or add Chat/Video/Feeds/Moderation to an existing one |
+| [`skills/stream-react/SKILL.md`](skills/stream-react/SKILL.md) | **Default for web React/Next.js.** Scaffold, enhance, audit, or migrate a React/Next.js app with Chat/Video/Feeds/Moderation |
+| [`skills/stream-builder/SKILL.md`](skills/stream-builder/SKILL.md) | Framework-agnostic builder - only when named explicitly; web React/Next.js defaults to stream-react |
 | [`skills/stream-swift/SKILL.md`](skills/stream-swift/SKILL.md) | Build or integrate Stream Chat/Video/Feeds in Swift/SwiftUI/UIKit/iOS apps |
 | [`skills/stream-flutter/SKILL.md`](skills/stream-flutter/SKILL.md) | Build or integrate Stream Chat in Flutter apps (stream_chat_flutter and stream_chat_flutter_core) |
 
@@ -24,7 +25,7 @@ The pack has a generic router, core specialists, and platform peers declared in 
 - **`stream auth login`** needs a **separate** terminal invocation so the browser can open (PKCE).
 - **Network:** scaffold (`npx`, `npm`, `stream` install) needs network - approve **once** per session when prompted.
 - **If terminal is denied:** print commands for the user to run locally; continue with Read/file work only.
-- **Builder flow:** preflight (CLI probe) then immediately execute Steps 0-7 from [`skills/stream-builder/SKILL.md`](skills/stream-builder/SKILL.md). No prompts needed.
+- **Builder flow (web):** for React/Next.js builds, preflight (CLI probe) then immediately execute Steps 0-7 from [`skills/stream-react/SKILL.md`](skills/stream-react/SKILL.md) (the default web pack). Use [`skills/stream-builder/SKILL.md`](skills/stream-builder/SKILL.md) only when the user names it explicitly. No prompts needed.
 - **ASCII only:** all files in this repo must contain ASCII characters only. No em/en dashes, smart quotes, ellipsis chars, arrows, checkmarks, or other non-ASCII glyphs - use plain ASCII equivalents (`-`, `'`, `"`, `...`, `->`, `OK`, etc.).
 
 ## Install
