@@ -62,7 +62,7 @@ When a request hits one of these: **match -> `WebFetch` the page's `.md` URL fro
 
 > **Track A only.** Tracks E, F, and M branch in **Flow dispatch** above and never enter this section.
 
-Once preflight has reported `OK Stream CLI vN.N.N | ...` (owned by the `stream-cli` skill), announce the network plan once, then **immediately start executing Steps 0-7** - do not ask permission to begin (the user has authorized the build by asking for it). The only pauses for input are the theme pick (Step 1b) and the skill-pack consent (Task A.2).
+Once preflight has reported `OK Stream CLI vN.N.N | ...` (owned by the `stream-cli` skill), announce the network plan once, then **immediately start executing Steps 0-7** - do not ask permission to begin (the user has authorized the build by asking for it). The only pauses for input are the theme + app pick (Step 1b) and the skill-pack consent (Task A.2).
 
 ### Trust readout (announce, then continue on the same turn - do not wait)
 
@@ -73,7 +73,7 @@ Before the first network command, print this verbatim to the user, then proceed 
 > - `npm install <stream-packages> --legacy-peer-deps` - Stream SDKs from npm (`stream-chat-react`, `@stream-io/video-react-sdk`, etc.).
 > - `stream env` - local CLI, no network; writes `.env` (gitignored by the Next.js scaffold's default; Task B verifies).
 >
-> Interrupt me at any point if something looks wrong. I'll pause twice for your input: the theme pick (Step 1b) and the optional third-party skill packs (Task A.2).
+> Interrupt me at any point if something looks wrong. I'll pause twice for your input: the theme + Stream-app pick (Step 1b) and the optional third-party skill packs (Task A.2).
 
 Full per-command audit (publisher, why unpinned, what each writes): section Install trust & integrity below. The user's continued silence after the readout is implicit consent for this scaffold; an objection or stop instruction aborts the run.
 
@@ -114,19 +114,22 @@ Always use `npm`. Never use bun. ([`RULES.md`](RULES.md) > Package manager.)
 ### Step 1: Auth
 Run the **Provisioning > Step 1: Auth** flow in [`builder.md`](builder.md) (auth probe via `stream api OrganizationRead`; `stream auth login` as its own invocation on exit 2; hang recovery). On **exit 0**, continue to Step 1b.
 
-### Step 1b: Theme pick
+### Step 1b: Theme + app pick
 
-Ask the user which Shadcn theme they'd like **before doing anything else**:
+Ask both setup questions in **one message** before doing anything else - a single pause, the same "ask exactly once, then act" pattern the other platform packs use for credentials. Build the app options from what is already in context: the configured org/app from preflight's `stream config list` and the org list from Step 1's `OrganizationRead` output.
 
-> **Quick theme pick:** I can use a random shadcn theme, or you can design your own at [ui.shadcn.com/create](https://ui.shadcn.com/create) and share the `--preset` value (e.g. `--preset b1Gdi7z7r`). Want a random one or do you have a preset?
+> **Quick setup - two questions:**
+> 1. **Theme:** I can use a random shadcn theme, or you can design your own at [ui.shadcn.com/create](https://ui.shadcn.com/create) and share the `--preset` value (e.g. `--preset b1Gdi7z7r`). Random, or do you have a preset?
+> 2. **Stream app:** *(an app is configured)* Use the currently configured app **`<name>`** (default), pick another existing org/app, or create a fresh one? / *(no app configured)* You have these orgs: `<list>`. Pick one to use - I'll list its apps - or create a fresh org + app?
 
-**STOP here and wait for the user's answer.** Do not continue with org/app creation or any other steps until the user responds. Asking a question and continuing to work in parallel is confusing - the user misses the question as output scrolls past.
+**STOP here and wait for the user's answer.** Do not continue with any other step until the user responds. Asking a question and continuing to work in parallel is confusing - the user misses the question as output scrolls past.
 
-- **User provides a preset** -> store it for Task A scaffold command.
-- **User says random / doesn't care / wants to move on** -> pick a random preset from `nova`, `vega`, `maia`, `lyra`, `mira`, `luma`.
+- **Theme - preset provided** -> store it for Task A scaffold command. **Random / doesn't care** -> pick a random preset from `nova`, `vega`, `maia`, `lyra`, `mira`, `luma`.
+- **App - named choice, "default", or "don't care"** -> Step 2 applies it (the configured app wins whenever one exists). **Create new** -> Step 2 runs the create flow.
+- **Account has no orgs at all** -> drop question 2, announce that a fresh org + app will be created, and ask only the theme.
 
-### Step 2: Create org + app
-Run the **Provisioning > Step 2: Create org + app** flow in [`builder.md`](builder.md) (check existing orgs, `app-<hash>` naming, `AppCreate` with `region_id=1 feeds_version=v3`, never the auto-created app, org-limit fallback).
+### Step 2: Pick org + app
+Run the **Provisioning > Step 2: Pick org + app** flow in [`builder.md`](builder.md) - execute the Step 1b choice with no further prompting: configured app by default, `stream config set` for a selected existing app (plus the Feeds v3 check), or the create-new flow (`app-<hash>` naming, `AppCreate` with `region_id=1 feeds_version=v3`, never the auto-created app, org-limit fallback) **only** when the user chose it or no orgs exist.
 
 ### Step 3: Scaffold + .env + SDKs + Configure - SEQUENTIALLY
 
@@ -134,8 +137,8 @@ Run the **Provisioning > Step 2: Create org + app** flow in [`builder.md`](build
 
 Order:
 
-1. **Steps 1-1b:** Auth + theme pick (wait for answer).
-2. **Step 2:** Create org/app.
+1. **Steps 1-1b:** Auth + theme/app pick (wait for answer).
+2. **Step 2:** Apply the org/app choice (select existing or create).
 3. **Task A:** Scaffold with Shadcn + Next.js using the chosen preset.
 4. **Task A.1:** Add base Shadcn components.
 5. **Task A.2:** Disclose + ask about third-party frontend skill installs; install only with user consent.
@@ -246,7 +249,7 @@ npx next dev -p $PORT
 **Important:** The dev server is a long-running process. When run in the background it will eventually emit a "completed" notification - this does **not** mean the server stopped. The server is still running and serving requests. **Do not** respond to the background-task completion notification by telling the user the server has stopped. If you receive that notification after Step 7, ignore it silently - do not output anything.
 
 ### Step 7: Summary
-Show what was created: org, app, resources, files. Include the local URL. Do NOT say "you can now start the dev server" - it's already running.
+Show the org/app used (created or selected), plus resources and files created. Include the local URL. Do NOT say "you can now start the dev server" - it's already running.
 
 End with:
 
