@@ -20,8 +20,6 @@ Never Read/Edit **`.env`** in chat - secrets leak into the conversation. Let the
 
 **`.gitignore` before any `.env` write.** Before any tool writes secrets to `.env` (notably `stream env` in builder Task B), confirm a line covering `.env*` exists in `.gitignore` and add one if missing. The Next.js scaffold's default already does - this rule covers the edge case where the project's `.gitignore` was hand-edited or doesn't exist yet.
 
-- Narrow `searchParams.get()` (returns `string | null`) with guards before passing to SDK methods.
-
 ## No auto-seeding
 
 Never auto-create demo users (alex, maya, jake, sarah) or sample posts/channels/content. The `/api/token` route upserts **only** the requesting user and returns their token(s). Seed functions are **opt-in only** when the user explicitly asks for sample data.
@@ -32,27 +30,15 @@ Every app opens with a **Login Screen** as its root page (`app/page.tsx`). The a
 
 ## Strict mode protection
 
-All SDK connections **must** use `setTimeout(50ms)` + `mounted` guard + cleanup in `useEffect`:
+**React packs only** (`stream-react`, `stream-react-native`, and `stream-builder`'s web flow) - not applicable to the Swift/Android/Flutter packs. Protection is **per-SDK**, not one blanket pattern:
 
-```tsx
-useEffect(() => {
-  if (!apiKey || !userId || !token) return;
-  let mounted = true;
-  const timer = setTimeout(async () => {
-    if (!mounted) return;
-    // ... connect SDK ...
-    if (!mounted) { /* disconnect */ return; }
-    // ... set state ...
-  }, 50);
-  return () => { mounted = false; clearTimeout(timer); /* disconnect */ };
-}, [deps]);
-```
+- **Chat (client-side):** use the official `useCreateChatClient()` hook - it handles strict mode internally. Never `getInstance()` on the client (singletons break strict mode).
+- **Feeds (client-side):** `useCreateFeedsClient()` handles the connection internally. Only `feed.getOrCreate()` needs the manual `setTimeout(50ms)` + `mounted` guard + cleanup in `useEffect`.
+- **Video (client-side):** the `StreamVideoClient` constructor is synchronous - plain `useState` + `useEffect` with `disconnectUser()` cleanup; no timer, no mounted flag, never `useMemo`.
+- **Server-side:** `StreamChat.getInstance(apiKey, apiSecret)` is fine (singleton OK).
+- **Never use `useRef` as a "run once" guard** in setup effects with cleanup - the ref survives strict mode's unmount->remount cycle, so the second mount skips initialization entirely.
 
-**Do NOT use `useRef` as a "run once" guard** with this pattern (e.g. `const initRef = useRef(false); if (initRef.current) return; initRef.current = true;`). `useRef` persists across strict mode's unmount->remount cycle - if you set `ref.current = true` on the first mount, it stays `true` after cleanup, and the second mount skips initialization entirely. The `let mounted` + `setTimeout` + cleanup pattern handles strict mode correctly on its own.
-
-- Client-side Chat: `new StreamChat(apiKey)` - never `getInstance()` (singletons break strict mode).
-- Client-side Feeds: `useCreateFeedsClient()` handles strict mode internally - no manual pattern needed for connection. But `feed.getOrCreate()` must still use the `setTimeout` + `mounted` guard.
-- Server-side: `StreamChat.getInstance(apiKey, apiSecret)` is fine (singleton OK).
+Authoritative detail and canonical snippets live in the React pack's own rules: [`stream-react/RULES.md`](../stream-react/RULES.md) > Strict mode protection (web; includes the carve-outs and the canonical video snippet). `stream-react-native` carries its own RULES.md.
 
 ## Base UI (not Radix)
 
