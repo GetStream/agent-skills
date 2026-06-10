@@ -1,6 +1,6 @@
 # Builder - UI shell and theme (Step 4)
 
-Load when executing **Step 4** (after scaffold). Rules: the `stream` skill's [`RULES.md`](../stream/RULES.md) (login screen first, theme, reference authority).
+Load when executing **Step 4** (after scaffold). Rules: [`RULES.md`](RULES.md) (login screen first, theme, reference authority).
 
 ### Step 4: Generate ALL code files
 Write every file sequentially. Follow the UI Guidelines below for all visual styling. See **RULES.md > Reference authority** - reference files are the only source of truth for SDK wiring. Before writing each component, load the relevant `references/<Product>-blueprints.md` section.
@@ -39,7 +39,7 @@ This ensures the developer always knows which user they are operating as.
 
 ### Stack
 - Next.js 16, Tailwind v4, TypeScript (match scaffold defaults).
-- **Shadcn/ui with Base UI** - scaffolded via `shadcn init -t next -b base -p <preset>` (random preset per project - see builder.md Task A). Use Shadcn components (`Button`, `Input`, `Textarea`, `Card`, etc.) for all standard UI. Add more via `npx shadcn@latest add <component>` as needed.
+- **Shadcn/ui with Base UI** - scaffolded via `shadcn init -t next -b base -p <preset>` (preset chosen in SKILL.md Step 1b - the user's own preset, or a random fallback; applied in Task A). Use Shadcn components (`Button`, `Input`, `Textarea`, `Card`, etc.) for all standard UI. Add more via `npx shadcn@latest add <component>` as needed.
 - **Icons:** Use whichever icon package the scaffold installed (check `package.json`). If none present, `lucide-react` is installed during Step 3 Task C. Standard PascalCase imports:
   `import { Heart, Send, Bookmark, MoreHorizontal } from "lucide-react"`. If the project uses a different icon package (e.g. `@phosphor-icons/react`), use that one instead - do not mix icon packages.
 - Tailwind utility classes for custom styling beyond Shadcn components - never inline styles.

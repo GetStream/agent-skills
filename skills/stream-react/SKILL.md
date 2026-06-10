@@ -26,7 +26,7 @@ allowed-tools: >-
 
 # Stream React (web) - scaffold + enhance + audit + migrate
 
-> **Read first (every session):** Read [`RULES.md`](RULES.md) (React/Next.js non-negotiables) and the cross-cutting [`../stream/RULES.md`](../stream/RULES.md). Glob `../stream/SKILL.md`; if empty, install with `npx skills add GetStream/agent-skills --s stream -y`.
+> **Read first (every session):** Read [`RULES.md`](RULES.md) (React/Next.js non-negotiables) and the cross-cutting [`../stream/RULES.md`](../stream/RULES.md). Where the two files state the same rule differently (e.g. Strict mode protection, Package manager), **this pack's [`RULES.md`](RULES.md) wins for React work**. Glob `../stream/SKILL.md`; if empty, install with `npx skills add GetStream/agent-skills --s stream -y`.
 >
 > **Peer:** this pack hands every CLI action (preflight, credentials, auth, every `stream api` call) to **`stream-cli`**. Glob its path from [`../stream/peers.yaml`](../stream/peers.yaml); install silently if missing (`npx skills add GetStream/agent-skills --s stream-cli -y`). See [`../stream-cli/preflight.md`](../stream-cli/preflight.md).
 
@@ -63,7 +63,7 @@ When a request hits one of these: **match -> `WebFetch` the page's `.md` URL fro
 
 > **Track A only.** Tracks E, F, and M branch in **Flow dispatch** above and never enter this section.
 
-Once preflight has reported `OK Stream CLI vN.N.N | ...` (owned by the `stream-cli` skill), announce the network plan once, then **immediately start executing Steps 0-7** - no interactive prompts at the start (the user has authorized the build by asking for it).
+Once preflight has reported `OK Stream CLI vN.N.N | ...` (owned by the `stream-cli` skill), announce the network plan once, then **immediately start executing Steps 0-7** - do not ask permission to begin (the user has authorized the build by asking for it). The only pauses for input are the theme pick (Step 1b) and the skill-pack consent (Task A.2).
 
 ### Trust readout (announce, then continue on the same turn - do not wait)
 
@@ -74,7 +74,7 @@ Before the first network command, print this verbatim to the user, then proceed 
 > - `npm install <stream-packages> --legacy-peer-deps` - Stream SDKs from npm (`stream-chat-react`, `@stream-io/video-react-sdk`, etc.).
 > - `stream env` - local CLI, no network; writes `.env` (gitignored by the Next.js scaffold's default; Task B verifies).
 >
-> Interrupt me at any point if something looks wrong. The only step that pauses for explicit consent is the optional third-party skill packs in Task A.2.
+> Interrupt me at any point if something looks wrong. I'll pause twice for your input: the theme pick (Step 1b) and the optional third-party skill packs (Task A.2).
 
 Full per-command audit (publisher, why unpinned, what each writes): section Install trust & integrity below. The user's continued silence after the readout is implicit consent for this scaffold; an objection or stop instruction aborts the run.
 
@@ -220,7 +220,7 @@ If `NO_ICONS`, install `lucide-react`: `npm install lucide-react --legacy-peer-d
 
 **Docs-first:** before implementing any component, cookbook, or advanced feature (typing indicator, custom message UI, reactions, AI integrations, read state, notifications, call layouts, ...), follow the **Docs-first triggers** section above - `WebFetch` the matching [`references/DOCS.md`](references/DOCS.md) page first, then build to match.
 
-**Load [`builder-ui.md`](builder-ui.md)** and **only** the relevant [`references/<Product>.md`](references/) header + `references/<Product>-blueprints.md` for the sections you are implementing - not every reference file. Pull **Use Case Matching** and **Page Flow** from [`builder.md`](builder.md) to choose products and navigation structure. **For multi-product apps (Chat + Video, Chat + Feeds, Video + Feeds, etc.), also load [`references/CROSS-PRODUCT.md`](references/CROSS-PRODUCT.md) before writing AppShell** - it has the canonical multi-client provider hierarchy and an error -> cause -> fix table.
+**Load [`builder-ui.md`](builder-ui.md) and [`sdk.md`](sdk.md)** (cross-cutting SDK wiring: token route, instantiation, CSS imports), plus **only** the relevant [`references/<Product>.md`](references/) header + `references/<Product>-blueprints.md` for the sections you are implementing - not every reference file. Pull **Use Case Matching** and **Page Flow** from [`builder.md`](builder.md) to choose products and navigation structure. **For multi-product apps (Chat + Video, Chat + Feeds, Video + Feeds, etc.), also load [`references/CROSS-PRODUCT.md`](references/CROSS-PRODUCT.md) before writing AppShell** - it has the canonical multi-client provider hierarchy and an error -> cause -> fix table.
 
 ### Step 5: Verify
 
@@ -274,4 +274,4 @@ For multi-product provider nesting, load [`references/CROSS-PRODUCT.md`](referen
 
 ## Reference file paths
 
-Blueprint files live under `agent-skills/skills/stream-react/references/` inside the Stream skill pack. Reference them as `agent-skills/skills/stream-react/references/FEEDS.md` from the **root of this repository**. Do not use machine-specific absolute paths.
+Blueprint files live in the `references/` directory **next to this SKILL.md**. Resolve them relative to this skill's own directory, wherever the pack is installed (e.g. `<skill-dir>/references/FEEDS.md`). Do not hardcode machine-specific absolute paths or assume a repo-checkout layout.

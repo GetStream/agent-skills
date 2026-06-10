@@ -28,7 +28,7 @@ Never auto-create demo users (alex, maya, jake, sarah) or sample posts/channels/
 
 ## Login Screen first
 
-Every app opens with a **Login Screen** as its root page (`app/page.tsx`). The app never auto-connects or hardcodes a user. Credentials (token, apiKey, userId) live in **React state** - not localStorage - so each browser tab can operate as an independent user. Layout and behavior details: the `stream-builder` skill's [`builder-ui.md`](../stream-builder/builder-ui.md) > Login Screen.
+Every app opens with a **Login Screen** as its root page (`app/page.tsx`). The app never auto-connects or hardcodes a user. Credentials (token, apiKey, userId) live in **React state** - not localStorage - so each browser tab can operate as an independent user. Layout and behavior details: the active builder pack's `builder-ui.md` > Login Screen ([`stream-react`](../stream-react/builder-ui.md) for web React; [`stream-builder`](../stream-builder/builder-ui.md) when explicitly invoked).
 
 ## Strict mode protection
 

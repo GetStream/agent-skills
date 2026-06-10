@@ -2,8 +2,10 @@
 
 React / Next.js-specific rules for the `stream-react` skill. These **layer on top of** the
 cross-cutting rules in [`../stream/RULES.md`](../stream/RULES.md) - read that file once per
-session too. Each rule below is stated once; other files reference this file - do not
-duplicate these rules inline.
+session too. Where the two files state the same rule differently (e.g. Strict mode
+protection, Package manager), **this file wins for React work** - the cross-cutting file
+also serves the framework-agnostic `stream-builder` pack. Each rule below is stated once;
+other files reference this file - do not duplicate these rules inline.
 
 ---
 

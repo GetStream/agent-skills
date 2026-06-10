@@ -2,7 +2,7 @@
 
 Stream Chat provides pre-built UI components via React, React Native, Flutter, Swift, and Kotlin SDKs. This file covers setup, server routes, client patterns, and gotchas. For full component structure and wiring, see [CHAT-blueprints.md](CHAT-blueprints.md).
 
-Rules: [../../stream/RULES.md](../../stream/RULES.md) (secrets, no auto-seeding, login screen first, strict mode protection).
+Rules: [../RULES.md](../RULES.md) (login screen first, strict mode protection, reference authority) and the cross-cutting [../../stream/RULES.md](../../stream/RULES.md) (secrets, no auto-seeding).
 
 - **Blueprint** - HTML with BEM classes defining structure and conditional rendering
 - **Wiring** - API calls to read/write each element, exact property paths

@@ -2,7 +2,7 @@
 
 Stream Video provides pre-built UI components via React, React Native, Flutter, Swift, and Kotlin SDKs. This file covers setup, server routes, client patterns, and gotchas. For full component structure and wiring, see [VIDEO-blueprints.md](VIDEO-blueprints.md).
 
-Rules: [../../stream/RULES.md](../../stream/RULES.md) (secrets, login screen first, strict mode protection).
+Rules: [../RULES.md](../RULES.md) (login screen first, strict mode protection, reference authority) and the cross-cutting [../../stream/RULES.md](../../stream/RULES.md) (secrets, no auto-seeding).
 
 - **Blueprint** - HTML with BEM classes defining structure and conditional rendering
 - **Wiring** - API calls to read/write each element, exact property paths
@@ -75,7 +75,7 @@ const client = new StreamClient(process.env.STREAM_API_KEY!, process.env.STREAM_
 - **Call:** `client.call('default', callId)` or `client.call('livestream', callId)`
 - **Join:** `call.join({ create: true })` - NOT `getOrCreate()` (doesn't connect WebRTC)
 - **Strict mode:** See RULES.md > Strict mode protection. Do NOT use `useRef` locks like `initRan.current = true` - they short-circuit the second strict-mode mount and strand the UI on a "Setting up your camera..." loading state. Use a `mounted` flag in cleanup instead.
-- **Custom controls only** - never use `<CallControls />`, use `useCallStateHooks()` instead
+- **Controls:** default to the prebuilt `<CallControls />` ([`../RULES.md`](../RULES.md) > Reference authority); build custom controls from `useCallStateHooks()` only when the user asks for bespoke controls
 - **Livestream:** Camera/mic off by default - enable only on explicit "Go Live"
 
 ### Streamer (Go Live)
@@ -125,7 +125,7 @@ Do NOT roll your own host detection via `participants.find(p => p.roles.includes
 
 Use this when the user wants to **review, audit, or check** an existing React (web) Stream Video integration against Stream's best practices - e.g. *"is my video integration production-ready?"*, *"check my app against Stream's best practices"*, *"what am I missing before launch?"*. This is a **read-only review**: produce findings first; only edit code if the user then asks you to fix them. (For *adding* Video to an existing app, use [`../enhance.md`](../enhance.md) instead.)
 
-Source of truth: [`/video/docs/react/advanced/integration-best-practices.md`](https://getstream.io/video/docs/react/advanced/integration-best-practices.md). The checklist below folds that page together with the strict-mode rules in [`../../stream/RULES.md`](../../stream/RULES.md).
+Source of truth: [`/video/docs/react/advanced/integration-best-practices.md`](https://getstream.io/video/docs/react/advanced/integration-best-practices.md). The checklist below folds that page together with the strict-mode rules in [`../RULES.md`](../RULES.md).
 
 ### How to run it
 
@@ -142,7 +142,7 @@ Severity guide: **Blocker** = call won't reliably connect, leaks/keeps publishin
 
 ### Carve-out (do not raise as a finding)
 
-- **`<CallControls />` is not a best-practices violation.** "Custom controls only" is a *builder scaffold convention* for apps this skill generates, not an integration best practice. Stream officially ships `<CallControls />`; do not FAIL an existing app for using it. (You may note it as a Low builder-style preference only if the user asked for builder-convention conformance.)
+- **`<CallControls />` is not a best-practices violation.** Stream officially ships `<CallControls />` and this skill's prebuilt-first default uses it ([`../RULES.md`](../RULES.md) > Reference authority). Do not FAIL an app for using it - and do not flag hand-built controls either, as long as they are wired through `useCallStateHooks()`.
 
 ### Checklist
 
