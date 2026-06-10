@@ -28,16 +28,16 @@ This skill picks the track from the user's input and delegates to a specialized 
 - All peers install silently on demand - install if missing, then route, no prompt
 - **Peer signals take precedence over the `stream-builder` rows below.** A request like "add a video call to my Expo app" or "scaffold a React Native app with Stream Video" matches `stream-react-native`, not `stream-builder` - the platform token wins.
 
-**Build a new app with Stream (web)** -> use the `stream-builder` skill (default when no peer signal is present)
-- Empty/new directory + "build me a Chat/Video/Feeds app", "scaffold", "create a new ..." and **no platform signal** (no `react native`, `expo`, `swift`, `ios`, `android`, etc.)
-- Covers Steps 0-7 (scaffold, theme, auth, env, SDK install, component generation)
+**Build / enhance / audit / migrate a web app with Stream (React / Next.js)** -> use the `stream-react` skill (the default web pack when no other platform signal is present)
+- "build me a Chat/Video/Feeds app", "scaffold", "create a new ...", "add Chat to this app", "integrate Video", "drop Feeds into ...", "upgrade/migrate ... to vN" - and **no platform signal** (no `react native`, `expo`, `swift`, `ios`, `android`, etc.)
+- React / Next.js tokens (`stream-chat-react`, `@stream-io/video-react-sdk`, `useCreateChatClient`, `MessageList`, ...) with a build/integrate verb also route here
+- Covers Track A (scaffold, Steps 0-7), Track E (enhance an existing project), Track F (read-only best-practices audit), Track M (migrate/upgrade an SDK version)
 
-**Add Stream to an existing app (web)** -> use the `stream-builder` skill (default when no peer signal is present)
-- Existing project + "add Chat to this app", "integrate Video", "drop Feeds into ..." and **no platform signal**
-- Same SDK wiring as scaffold; skips Next.js init and theme pick
+**Build with the framework-agnostic builder** -> use the `stream-builder` skill **only when the user names it explicitly** ("use stream-builder", "/stream-builder")
+- `stream-builder` is the generic builder being extended to other app kinds; web React/Next.js defaults to `stream-react` above
 
-**Audit an existing Stream Video integration against best practices** -> the matching platform pack runs its **read-only** Integration best-practices audit (no scaffolding, no CLI, no build steps)
-- Peer signal (`react native` / `expo`) -> `stream-react-native`; web / React / Next.js or no platform signal -> `stream-builder` (Track F)
+**Audit/review an existing Stream integration against best practices** (read-only - no scaffolding, no CLI, no build steps)
+- Peer signal (`react native` / `expo`) -> `stream-react-native`; web / React / Next.js or no platform signal -> `stream-react` (Track F)
 - Triggers: "audit/review my video integration", "check my app against best practices", "is my video app production-ready?", "what am I missing before launch?"
 - Routes here even when the request contains "check" - the audit intent takes precedence over the `stream-cli` "check {anything}" route below
 
@@ -64,21 +64,25 @@ Scan the user's input for the signals below in order. The classifier is determin
 
 | Signal in user input | Sub-skill |
 |---|---|
-| Explicit SDK/framework token: `Chat React`, `Video iOS`, `Feeds Node`, `Moderation`, etc. (with or without version), and **no build/integrate verb** | `stream-docs` |
+| **Upgrade / migrate an installed SDK** (build/integrate intent - matched **before** the docs rows): "upgrade/migrate/bump `stream-chat-react` to vN", "migrate to the new SDK version", "bump my Stream version" - an upgrade verb (`upgrade`/`migrate`/`bump`/`update ... to vN`) + a Stream package token, **no peer signal**. Peer signal (`react native` / `expo`) -> `stream-react-native` instead. | `stream-react` (Track M) |
+| Explicit SDK/framework token: `Chat React`, `Video iOS`, `Feeds Node`, `Moderation`, etc. (with or without version), and **no build/integrate verb** (`upgrade`/`migrate`/`bump` count as build/integrate verbs - those match the migration row above, not this one) | `stream-docs` |
 | Words "docs" or "documentation" (and no build/integrate verb) | `stream-docs` |
 | "How do I {X} in {framework}?", "How does {hook/component/method} work?", "What does {SDK thing} do?" - and **no build/integrate verb**. If the request is "how do I add/build/integrate/scaffold {X} in {framework}" and `{framework}` matches a peer signal, the peer row below wins instead. | `stream-docs` |
-| **Audit/review an existing Stream Video integration** (read-only): "audit/review my video integration", "check my app against Stream's best practices", "is my video app production-ready?", "what am I missing before launch?" - **no build/integrate verb**. Peer signal (`react native` / `expo`) -> `stream-react-native`; web / React / Next.js or no platform signal -> `stream-builder` (Track F). **This row is matched before - and wins over - the `stream-cli` "check {anything}" row below** whenever the request frames a best-practices / production-readiness review rather than a data query. | matching platform pack (read-only audit) |
+| **Audit/review an existing Stream integration** (read-only): "audit/review my video integration", "check my app against Stream's best practices", "is my video app production-ready?", "what am I missing before launch?" - **no build/integrate verb**. Peer signal (`react native` / `expo`) -> `stream-react-native`; web / React / Next.js or no platform signal -> `stream-react` (Track F). **This row is matched before - and wins over - the `stream-cli` "check {anything}" row below** whenever the request frames a best-practices / production-readiness review rather than a data query. | matching platform pack (read-only audit) |
 | Operational verbs + Stream noun: "list calls", "show channels", "any flagged", "find users", "check {anything}" | `stream-cli` |
 | `stream api`, `stream config`, `stream auth` (literal CLI invocation) | `stream-cli` |
 | "Install the CLI", "set up stream" with no project context | `stream-cli` |
-| **Build/integration intent + a token matching a peer's `signals` in [`peers.yaml`](peers.yaml)** (e.g. `swift` / `.xcodeproj` -> `stream-swift`; `react native` / `expo` / `stream video react native` / `stream video rn` -> `stream-react-native`). **This row takes precedence over the web `stream-builder` rows below whenever a peer signal is present, and also wins over the docs how-to rows above whenever the request contains a build/integrate verb (`add`, `build`, `integrate`, `scaffold`, `wire`, `set up`, `create`) alongside the peer signal.** | matching peer (installed silently if missing) |
-| "Build me a ... app", "scaffold", "create a new ..." + Stream product, in an empty/new directory, **and no peer signal present** | `stream-builder` (web/Next.js, the default when no platform signal is given) |
-| "Add Chat/Video/Feeds to this app", "integrate Stream into" - existing project, **and no peer signal present** | `stream-builder` (web/Next.js, the default when no platform signal is given) |
+| **Build/integration intent + a token matching a peer's `signals` in [`peers.yaml`](peers.yaml)** (e.g. `swift` / `.xcodeproj` -> `stream-swift`; `react native` / `expo` / `stream video react native` / `stream video rn` -> `stream-react-native`). **This row takes precedence over the web `stream-react` rows below whenever a peer signal is present, and also wins over the docs how-to rows above whenever the request contains a build/integrate verb (`add`, `build`, `integrate`, `scaffold`, `wire`, `set up`, `create`, `upgrade`, `migrate`, `bump`) alongside the peer signal.** Note: `react native` / `react-native` are `stream-react-native` signals and win over the web `react` default. | matching peer (installed silently if missing) |
+| **Literal mention of `stream-builder` / `/stream-builder`** (the framework-agnostic builder) | `stream-builder` |
+| "Build me a ... app", "scaffold", "create a new ..." + Stream product, OR a React/Next.js token (`stream-chat-react`, `@stream-io/video-react-sdk`, `useCreateChatClient`, ...) + build/integrate verb, **and no peer signal present** | `stream-react` (web/Next.js, the default when no platform signal is given) |
+| "Add Chat/Video/Feeds to this app", "integrate Stream into", "upgrade/migrate ... to vN" - existing project, **and no peer signal present** | `stream-react` (web/Next.js, the default when no platform signal is given) |
 | Operational verb wrapped in how-to phrasing (e.g. "how do I list my calls?" - docs *or* CLI) | **Ask one disambiguator** |
 
 **Track D carve-out.** `stream-docs` answers from documentation only - no preflight, no shell commands, no project inspection. Every other sub-skill runs preflight before doing real work.
 
 **Docs vs platform packs.** A pure how-to or method-lookup question about an iOS/Android/etc. SDK symbol stays in `stream-docs` - don't pull in a platform pack for a documentation answer. Platform packs (e.g. `stream-swift`) are for *building or integrating* - scaffolding projects, wiring packages, generating views.
+
+**React framework scope.** `stream-react` scaffolds (Track A) a **Next.js** app. For enhance / audit / migrate on a **non-Next.js** React project (Vite, CRA, Remix, TanStack Start, etc.) `stream-react` still owns it - the Stream SDK wiring is identical - but the agent must adapt the Next.js-specific bits: the server-side token route lives in the project's own backend (not a Next.js `/api` route), and verification uses the project's build command (`npm run build`), not `next build`. Never assume Next.js APIs on a non-Next project.
 
 **Disambiguator.** If the input fits more than one row (typically operational verb + how-to phrasing), ask one short question and wait. Don't probe before the answer:
 
@@ -97,9 +101,10 @@ For a bare `/stream` (and whenever the user wants to pick a skill directly), out
 > **Stream** - Chat - Video - Feeds - Moderation. Tell me what you want, or pick a skill directly:
 >
 > **Core**
-> - `/stream-builder` - scaffold a web app, or add Stream to an existing one - e.g. *"build me a chat app"*
+> - `/stream-react` - scaffold, enhance, audit, or migrate a React / Next.js web app with Stream (the default for web) - e.g. *"build me a chat app"*
 > - `/stream-cli` - query data, run `stream api / config / auth`, install the CLI - e.g. *"list my channels"*
 > - `/stream-docs` - search live SDK docs, with citations - e.g. *"how does useChannel work?"*
+> - `/stream-builder` - the framework-agnostic builder (web defaults to `/stream-react`; pick this only if you name it explicitly)
 >
 > **Platform SDKs**
 > - `/stream-swift` - Swift - SwiftUI - UIKit - iOS

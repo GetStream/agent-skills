@@ -34,11 +34,17 @@ peers:
     install_policy: silent
     purpose: Search live Stream SDK documentation (Chat/Video/Feeds/Moderation across React, iOS, Android, Node, Flutter, Unity).
 
+  - name: stream-react
+    glob: ~/.claude/skills/stream-react/SKILL.md
+    install: npx skills add GetStream/agent-skills --s stream-react -y
+    install_policy: silent
+    purpose: "Default web pack: scaffold, enhance, audit, or migrate a React / Next.js app with Stream Chat/Video/Feeds/Moderation. Picked for all web React work unless stream-builder is named explicitly. Routed via SKILL.md prose (the no-platform-signal default), not signal matching - so a bare 'react' token never collides with stream-react-native."
+
   - name: stream-builder
     glob: ~/.claude/skills/stream-builder/SKILL.md
     install: npx skills add GetStream/agent-skills --s stream-builder -y
     install_policy: silent
-    purpose: Scaffold a new web (Next.js) app with Stream, or integrate Chat/Video/Feeds/Moderation into an existing one.
+    purpose: "Explicit-invocation only: the framework-agnostic builder (being extended to other app kinds). Web React/Next.js defaults to stream-react; route here only when the user names stream-builder / the generic builder."
 
   - name: stream-swift
     glob: ~/.claude/skills/stream-swift/SKILL.md
