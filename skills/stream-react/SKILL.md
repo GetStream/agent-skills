@@ -11,7 +11,6 @@ allowed-tools: >-
   Read, Write, Edit, Glob, Grep,
   Bash(stream *),
   Bash(npx skills add GetStream/agent-skills *),
-  Bash(bash -c *),
   Bash(npx *), Bash(npm install *), Bash(npm run *),
   Bash(yarn *), Bash(pnpm *),
   Bash(node -e *), Bash(node --version), Bash(openssl rand *),
@@ -180,11 +179,13 @@ Do **not** modify `layout.tsx` or `globals.css` after scaffold - use Shadcn's de
 
 **Task B: .env** - run AFTER scaffold so the `.env` lands inside the project directory.
 
-**First, verify `.env*` is gitignored** ([`../stream/RULES.md`](../stream/RULES.md) > Secrets). The Next.js scaffold's default already includes it; this is a safety net for projects whose `.gitignore` was hand-edited or doesn't yet exist:
+**First, verify `.env*` is gitignored** ([`../stream/RULES.md`](../stream/RULES.md) > Secrets). The Next.js scaffold's default already includes it; this is a safety net for projects whose `.gitignore` was hand-edited or doesn't yet exist. Use the **file tools** (no shell) so no broad `bash -c` permission is needed:
 
-```bash
-bash -c 'test -f .gitignore && grep -qE "^\.env" .gitignore || echo ".env*" >> .gitignore'
-```
+- `Grep` for `^\.env` in `.gitignore` (or `Read` it). If it already ignores `.env*`, do nothing.
+- If `.gitignore` exists but has no `.env` entry, **`Edit`** it to append a line `.env*`.
+- If `.gitignore` does not exist, **`Write`** a new `.gitignore` containing `.env*`.
+
+(Inspecting/editing `.gitignore` is fine; **never** Read or Edit `.env` itself - [`../stream/RULES.md`](../stream/RULES.md) > Secrets.)
 
 Then write secrets:
 
