@@ -58,19 +58,33 @@ const client = new StreamClient(process.env.STREAM_API_KEY!, process.env.STREAM_
 
 - **Login Screen first:** See RULES.md > Login Screen first + [builder-ui.md](../builder-ui.md) > Login Screen.
 - **App Header:** Show the current username + avatar (initial letter) + "Switch User" in a persistent header above the video layout. See [`builder-ui.md`](../builder-ui.md) -> App Header.
-- **Instantiate at AppShell root** using the canonical docs pattern (do NOT `useMemo`):
-  ```ts
-  const [videoClient, setVideoClient] = useState<StreamVideoClient>();
+- **Instantiate at AppShell root** with the snippet below (do NOT `useMemo`). **This is the pack's canonical client + call snippet** - `RULES.md` and `VIDEO-blueprints.md` point here, and `CROSS-PRODUCT.md` carries a synced replica: edit here first, then sync. The client effect lives at AppShell; the call effect lives in the call screen:
+  ```tsx
+  import { StreamVideoClient, type Call } from '@stream-io/video-react-sdk';
+
+  const [client, setClient] = useState<StreamVideoClient>();
+  const [call, setCall] = useState<Call>();
+
   useEffect(() => {
-    const c = new StreamVideoClient({ apiKey, user: { id, name }, token });
-    setVideoClient(c);
-    return () => {
-      c.disconnectUser().catch(console.error);
-      setVideoClient(undefined);
-    };
-  }, [apiKey, userId, token]);
+    // Define tokenProvider INSIDE the effect: an inline provider in the dep array
+    // changes identity every render and would disconnect + recreate the client.
+    const tokenProvider = () => fetchToken(userId); // your GET /api/token call
+    const c = new StreamVideoClient({ apiKey, user: { id: userId, name }, tokenProvider });
+    setClient(c);
+    return () => { c.disconnectUser().catch(console.error); setClient(undefined); };
+  }, [apiKey, userId, name]); // NOT tokenProvider
+
+  useEffect(() => {
+    if (!client) return;            // client is undefined on first render - guard before client.call(...)
+    const c = client.call('default', callId);
+    let active = true;
+    c.join({ create: true }).then(() => { if (active) setCall(c); }).catch(console.error);
+    return () => { active = false; c.leave().catch(() => {}); };
+  }, [client, callId]);
+
+  if (!client || !call) return null; // gate rendering: provider/call props below are non-null
   ```
-  `useMemo` + a separate cleanup-effect disconnects the client during strict-mode unmount, leaving a dead instance for the second mount and producing *"User token is not set. Either client.connectUser wasn't called or client.disconnect was called"*.
+  Use a **`tokenProvider`, not a static `token`**, so expired tokens auto-refresh - the Track F audit checks for exactly this. `useMemo` + a separate cleanup-effect disconnects the client during strict-mode unmount, leaving a dead instance for the second mount and producing *"User token is not set. Either client.connectUser wasn't called or client.disconnect was called"*.
 - **One client per session, not per screen.** Hoist `<StreamVideo client={videoClient}>` to AppShell. See [`CROSS-PRODUCT.md`](CROSS-PRODUCT.md) for the multi-product skeleton.
 - **Call:** `client.call('default', callId)` or `client.call('livestream', callId)`
 - **Join:** `call.join({ create: true })` - NOT `getOrCreate()` (doesn't connect WebRTC)

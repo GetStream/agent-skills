@@ -1,6 +1,6 @@
 # Chat - component blueprints (prebuilt-first)
 
-Setup, routes, and gotchas: [CHAT.md](CHAT.md). Rules: [../../stream/RULES.md](../../stream/RULES.md) and [`../RULES.md`](../RULES.md) > Reference authority.
+Setup, routes, and gotchas: [CHAT.md](CHAT.md). Rules: [`../RULES.md`](../RULES.md) (reference authority, strict mode protection) and the cross-cutting [../../stream/RULES.md](../../stream/RULES.md) (secrets, no auto-seeding).
 
 **Build the common path with `stream-chat-react`'s prebuilt components and customize via the documented hooks/props.** Only drop to the hand-built markup in **Fully custom UI (fallback)** below when the user explicitly wants fully bespoke UI - and even then, fetch the matching docs page first ([`DOCS.md`](DOCS.md)).
 
@@ -69,7 +69,7 @@ import { WithComponents } from 'stream-chat-react';
 
 ## Fully custom UI (fallback)
 
-> **Use these only when the user explicitly wants bespoke, fully hand-built UI** (not the prebuilt components above). Each section gives the raw element structure + a wiring table mapping DOM to SDK calls. Still fetch the matching [`DOCS.md`](DOCS.md) page first.
+> **Use these only when the user explicitly wants bespoke, fully hand-built UI** (not the prebuilt components above). Each section gives the raw element structure + a wiring table mapping DOM to SDK calls. Still fetch the matching [`DOCS.md`](DOCS.md) page first. The BEM class names are a structural spec (elements + conditional states) - implement with Shadcn components and Tailwind utilities; do not ship the BEM classes or hand-written CSS.
 
 ## Channel List
 
@@ -420,13 +420,12 @@ The core content unit in chat. A single message with author info, text, attachme
 | Reaction - remove | - | `channel.deleteReaction(message.id, 'like')` | Removes current user's reaction of that type |
 | `message__thread-count` | In message payload | - | `message.reply_count` |
 | `message__thread-avatars` | In message payload | - | `message.thread_participants[].image` |
-| `message__thread-last` | In message payload | - | `message.latest_reactions` or thread's last reply timestamp |
+| `message__thread-last` | Thread replies | - | Most recent reply's `created_at` (from `channel.getReplies()` or thread state) |
 | `message__status` (read) | `channel.state.read` | - | Map of `userId -> { last_read, user }` - compare with `message.created_at` |
 | Edit | - | `client.updateMessage({ id: message.id, text: newText })` | - |
 | Delete | - | `client.deleteMessage(message.id)` | Sets `message.deleted_at`. Pass `{ hardDelete: true }` for permanent deletion |
 | Pin | - | `client.pinMessage(message, timeoutOrExpiration)` | Takes message object (not ID). Second arg is optional: timeout in seconds, expiration date, or null for no expiry |
 | Unpin | - | `client.unpinMessage(message)` | Takes message object (not ID) |
-| `message__reaction-groups` | In message payload | - | `message.reaction_groups` - keyed by type, each has `count`, `sum_scores`, `first_reaction_at`, `last_reaction_at`. Recommended replacement for `reaction_counts` |
 | `message__mentioned-users` | In message payload | - | `message.mentioned_users` - enriched user objects for @mentions in the message |
 | Flag | - | `client.flagMessage(message.id)` | See MODERATION.md |
 | Mute user | - | `client.muteUser(userId, null, { timeout: 60 })` | Three args: userId, null, options object. `timeout` is in minutes |

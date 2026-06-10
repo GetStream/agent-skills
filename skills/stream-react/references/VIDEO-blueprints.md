@@ -1,6 +1,6 @@
 # Video - component blueprints (prebuilt-first)
 
-Setup, routes, and gotchas: [VIDEO.md](VIDEO.md). Rules: [../../stream/RULES.md](../../stream/RULES.md) and [`../RULES.md`](../RULES.md) > Reference authority.
+Setup, routes, and gotchas: [VIDEO.md](VIDEO.md). Rules: [`../RULES.md`](../RULES.md) (reference authority, strict mode protection) and the cross-cutting [../../stream/RULES.md](../../stream/RULES.md) (secrets, no auto-seeding).
 
 **Build the common path with `@stream-io/video-react-sdk`'s prebuilt components and customize via `useCallStateHooks()` + `ParticipantView`.** Only drop to the hand-built markup in **Fully custom UI (fallback)** below when the user explicitly wants fully bespoke UI - and even then, fetch the matching docs page first ([`DOCS.md`](DOCS.md)).
 
@@ -13,32 +13,7 @@ Setup, routes, and gotchas: [VIDEO.md](VIDEO.md). Rules: [../../stream/RULES.md]
 import '@stream-io/video-react-sdk/dist/css/styles.css';
 ```
 
-**Client + call (manual - there is NO `useCreateVideoClient` hook; use the strict-mode-safe `useState` + `useEffect` pattern, [`../RULES.md`](../RULES.md) > Strict mode protection). Keep every hook above any early return, define `tokenProvider` inside the effect, and gate rendering until both client and call exist:**
-```tsx
-import { StreamVideoClient, type Call } from '@stream-io/video-react-sdk';
-
-const [client, setClient] = useState<StreamVideoClient>();
-const [call, setCall] = useState<Call>();
-
-useEffect(() => {
-  // Define tokenProvider INSIDE the effect: an inline provider in the dep array
-  // changes identity every render and would disconnect + recreate the client.
-  const tokenProvider = () => fetchToken(userId); // your GET /api/token call
-  const c = new StreamVideoClient({ apiKey, user: { id: userId, name }, tokenProvider });
-  setClient(c);
-  return () => { c.disconnectUser().catch(console.error); setClient(undefined); };
-}, [apiKey, userId, name]); // NOT tokenProvider
-
-useEffect(() => {
-  if (!client) return;            // client is undefined on first render - guard before client.call(...)
-  const c = client.call('default', callId);
-  let active = true;
-  c.join({ create: true }).then(() => { if (active) setCall(c); }).catch(console.error);
-  return () => { active = false; c.leave().catch(() => {}); };
-}, [client, callId]);
-
-if (!client || !call) return null; // gate rendering: provider/call props below are non-null
-```
+**Client + call (manual - there is NO `useCreateVideoClient` hook).** Use the **canonical snippet in [VIDEO.md](VIDEO.md) > Client Patterns** (loaded alongside this file in Step 4): strict-mode-safe `useState` + `useEffect` (never `useMemo`), `tokenProvider` defined inside the effect, call joined in its own guarded effect, rendering gated until both client and call exist ([`../RULES.md`](../RULES.md) > Strict mode protection). Keep every hook above any early return.
 
 **Provider hierarchy (the canonical layout):**
 ```tsx
@@ -85,7 +60,7 @@ const [spotlight, ...others] = useParticipants();
 
 ## Fully custom UI (fallback)
 
-> **Use these only when the user explicitly wants bespoke, fully hand-built UI** (not the prebuilt components above). Each section gives the raw element structure + a wiring table mapping DOM to SDK calls. Still fetch the matching [`DOCS.md`](DOCS.md) page first.
+> **Use these only when the user explicitly wants bespoke, fully hand-built UI** (not the prebuilt components above). Each section gives the raw element structure + a wiring table mapping DOM to SDK calls. Still fetch the matching [`DOCS.md`](DOCS.md) page first. The BEM class names are a structural spec (elements + conditional states) - implement with Shadcn components and Tailwind utilities; do not ship the BEM classes or hand-written CSS.
 
 ## Lobby
 
@@ -469,7 +444,7 @@ Ringing UI when another user initiates a call. Shown as overlay or notification.
 | `incoming-call__type` | Call metadata | - | `call.type` - `'default'`, `'audio_room'`, `'livestream'` etc. |
 | `--accept` | - | `call.join()` | Transitions to call layout |
 | `--reject` | - | `call.leave({ reject: true })` | Dismisses the ring |
-| Ring event | Subscribe to `client.state.calls$` and filter by `call.state.callingState === CallingState.RINGING` | - | Fires when another user rings |
+| Ring event | `useCalls()` from the SDK - filter by `call.state.callingState === CallingState.RINGING` | - | The React hook for ringing calls; fetch the Ringing cookbook page ([`DOCS.md`](DOCS.md)) before building |
 | Auto-dismiss | Client-side timeout | - | Dismiss after ~30s if no action |
 
 ### Requirements

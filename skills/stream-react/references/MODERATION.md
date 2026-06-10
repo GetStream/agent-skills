@@ -7,8 +7,8 @@ Rules: [../RULES.md](../RULES.md) (moderation is Dashboard-only).
 ## Quick ref
 
 - **Builder default:** Use **Setup** below for **CLI-only** config during scaffold. Do **not** build any moderation review UI.
-- **End-user actions** (report, block, mute): see [MODERATION-blueprints.md](MODERATION-blueprints.md) - Report Modal + Block/Mute Controls sections only.
-- **Review Queue, Flagged Item, Auto-Mod Status blueprints** exist in the blueprints file as reference material but **must not be used by the builder**. Review happens in the Dashboard.
+- **End-user actions** (report, block, mute): see [MODERATION-blueprints.md](MODERATION-blueprints.md) - Report Modal, Block/Mute Controls, and Blocked Users List.
+- **Review UI blueprints (review queue, flagged items, auto-mod status) are deliberately not bundled** - do not recreate them. Review happens in the Dashboard.
 
 ---
 

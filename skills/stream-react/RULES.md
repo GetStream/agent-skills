@@ -31,20 +31,16 @@ and behavior details: [`builder-ui.md`](builder-ui.md) > Login Screen.
 ```ts
 const [client, setClient] = useState<StreamVideoClient>();
 useEffect(() => {
-  const user = { id: userId, name };
-  const tokenProvider = () => api.fetchToken(userId);
-  const client = new StreamVideoClient({ apiKey, user, tokenProvider });
-  setClient(client);
-  return () => {
-    client.disconnectUser().catch((err) => console.error(err));
-    setClient(undefined);
-  };
-}, [api, apiKey, name, userId]);
+  const tokenProvider = () => fetchToken(userId);   // defined INSIDE the effect
+  const c = new StreamVideoClient({ apiKey, user: { id: userId, name }, tokenProvider });
+  setClient(c);
+  return () => { c.disconnectUser().catch(console.error); setClient(undefined); };
+}, [apiKey, userId, name]);
 ```
 
-The client constructor is synchronous, so this effect needs cleanup but not a timer or mounted flag. Async call/feed setup effects must use a local `mounted` flag and cleanup; use `setTimeout` only where the relevant product reference requires it.
+The client constructor is synchronous, so this effect needs cleanup but not a timer or mounted flag. The canonical full snippet (client + call join + render gate) lives in [`references/VIDEO.md`](references/VIDEO.md) > Client Patterns - replicas elsewhere must match it. Async call/feed setup effects must use a local `mounted` flag and cleanup; use `setTimeout` only where the relevant product reference requires it.
 
-**Do NOT use `useRef` as a "run once" guard** in setup effects (e.g. `const initRef = useRef(false); if (initRef.current) return; initRef.current = true;`). `useRef` persists across strict mode's unmount->remount cycle - if you set `ref.current = true` on the first mount, it stays `true` after cleanup, and the second mount skips initialization entirely.
+**Do NOT use `useRef` as a "run once" guard** in setup effects (e.g. `const initRef = useRef(false); if (initRef.current) return; initRef.current = true;`). `useRef` persists across strict mode's unmount->remount cycle - if you set `ref.current = true` on the first mount, it stays `true` after cleanup, and the second mount skips initialization entirely. This prohibition is about effects **with cleanup/teardown** (client, call, and feed connection setup). **Carve-out:** a one-shot idempotent fetch with **no cleanup** whose result lives in SDK state - e.g. the initial `loadNextPage()` for `useActivityComments` - may use a ref guard: the first fetch's result survives the remount in feed state, so skipping the second invocation is correct (a `mounted` flag would not prevent the double-fetch there).
 
 - Client-side Chat: `useCreateChatClient()` handles strict mode internally - don't use `getInstance()` (singletons break strict mode).
 - Client-side Feeds: `useCreateFeedsClient()` handles strict mode internally - no manual pattern needed for connection. But `feed.getOrCreate()` must still use the `setTimeout` + `mounted` guard.
@@ -135,7 +131,7 @@ The generic preflight + phase-order discipline lives in [`../stream/RULES.md`](.
 **Never build a moderation review queue, review panel, or flagged-item UI in the app.** Moderation review always happens in the [Stream Dashboard](https://beta.dashboard.getstream.io). The app's role is limited to:
 - **CLI setup** during scaffold (blocklists, automod config via [`references/MODERATION.md`](references/MODERATION.md) Setup)
 - **End-user actions** (report, block, mute) if the product needs them
-- Do **not** load Review Queue, Flagged Item, or Auto-Mod Status blueprints from `references/MODERATION-blueprints.md`
+- `references/MODERATION-blueprints.md` bundles **end-user actions only** (Report Modal, Block/Mute Controls, Blocked Users List); review-queue / flagged-item / auto-mod blueprints are deliberately absent - do **not** recreate them
 
 ---
 

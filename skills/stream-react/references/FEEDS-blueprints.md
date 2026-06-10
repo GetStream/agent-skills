@@ -1,8 +1,8 @@
-# Feeds v3 - Full Component Blueprints
+# Feeds v3 - component blueprints (headless)
 
-Setup, routes, and gotchas: [FEEDS.md](FEEDS.md). Rules: [../../stream/RULES.md](../../stream/RULES.md).
+Setup, routes, and gotchas: [FEEDS.md](FEEDS.md). Rules: [`../RULES.md`](../RULES.md) (strict mode protection, reference authority) and the cross-cutting [../../stream/RULES.md](../../stream/RULES.md) (secrets, no auto-seeding).
 
-The Feeds SDK is **headless** - all components below are built entirely with your own UI (Shadcn/Tailwind). The SDK provides hooks and state management only.
+The Feeds SDK is **headless** - all components below are built entirely with your own UI (Shadcn/Tailwind). The SDK provides hooks and state management only. The BEM class names below are a structural spec (elements + conditional states) - implement with Shadcn components and Tailwind utilities; do not ship the BEM classes or hand-written CSS.
 
 ---
 
@@ -76,7 +76,7 @@ Individual activity card showing author, content, reactions, comments, and actio
 
   <!-- CONDITIONAL: has poll -->
   <div class="post-card__poll">
-    <!-- Poll component -->
+    <!-- No bundled Poll blueprint - fetch the Polls page (DOCS.md > Feeds) before building -->
   </div>
 
   <div class="post-card__actions">
@@ -169,7 +169,7 @@ Inline comments for an activity, with a comment input.
 
 | Element | Read | Write | Property Path |
 |---|---|---|---|
-| Comments list | `useActivityComments({ feed, activity })` | - | Returns `{ comments, has_next_page, is_loading_next_page, loadNextPage }`. **`comments` starts as `undefined` - MUST call `loadNextPage()` once on mount (useEffect + ref guard) to trigger initial fetch.** |
+| Comments list | `useActivityComments({ feed, activity })` | - | Returns `{ comments, has_next_page, is_loading_next_page, loadNextPage }`. **`comments` starts as `undefined` - MUST call `loadNextPage()` once on mount (useEffect + ref guard) to trigger initial fetch.** The ref guard is correct here - no cleanup, result lives in feed state ([`../RULES.md`](../RULES.md) > Strict mode protection carve-out) |
 | `--author` | `comment.user` | - | `comment.user.name ?? comment.user.id` |
 | `--time` | `comment.created_at` | - | `Date` - format as relative time |
 | `--text` | `comment.text` | - | `comment.text` (optional) |
@@ -182,7 +182,7 @@ Inline comments for an activity, with a comment input.
 
 | Feature | Requirement | Default |
 |---|---|---|
-| Load comments | Feed + activity passed to `useActivityComments()`. **Must call `loadNextPage()` on mount** - hook does NOT auto-fetch. Use `useEffect` + `useRef` guard to call once. | Required |
+| Load comments | Feed + activity passed to `useActivityComments()`. **Must call `loadNextPage()` on mount** - hook does NOT auto-fetch. Use `useEffect` + `useRef` guard to call once (allowed here - RULES.md > Strict mode protection carve-out). | Required |
 | Add comments | - | Available via `client.addComment()` |
 | Nested replies | Pass `parent_id` to `addComment()` | Available |
 | Real-time updates | Feed must be watched (`getOrCreate({ watch: true })`) | Comments appear in real-time when watched |
