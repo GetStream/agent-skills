@@ -91,18 +91,25 @@ class _HomeScreenState extends State<HomeScreen> {
         callType: StreamCallType.defaultType(),
         id: callId,
       );
-      await call.getOrCreate();
-      final result = await call.join();
-      result.fold(
-        success: (_) {
-          if (mounted) {
-            Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => CallScreen(call: call)),
-            );
-          }
+      final createResult = await call.getOrCreate();
+      createResult.fold(
+        success: (_) async {
+          final result = await call.join();
+          result.fold(
+            success: (_) {
+              if (mounted) {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => CallScreen(call: call)),
+                );
+              }
+            },
+            failure: (failure) {
+              if (mounted) _showError('Failed to join: ${failure.error.message}');
+            },
+          );
         },
-        failure: (error) {
-          if (mounted) _showError('Failed to join: $error');
+        failure: (failure) {
+          if (mounted) _showError('Failed to create call: ${failure.error.message}');
         },
       );
     } finally {
@@ -172,7 +179,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
 - `makeCall` is synchronous - no `await` needed
 - `getOrCreate()` then `join()` is the required two-step sequence; never call `join()` alone
-- The `Result` from `join()` must be checked - it does not throw on failure
+- Both `getOrCreate()` and `join()` return a `Result` that must be checked
 - `_joining` prevents double-taps while the call is connecting
 
 ---
@@ -248,14 +255,15 @@ class CustomCallControls extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<CallState>(
-      stream: call.state.asStream(), // StateEmitter is not a Stream - convert
-      initialData: call.state.value,
-      builder: (context, snapshot) {
-        final state = snapshot.requireData;
-        final local = state.localParticipant;
-        final micOn = local?.isAudioEnabled ?? false;
-        final cameraOn = local?.isVideoEnabled ?? false;
+    return PartialCallStateBuilder<({bool micOn, bool cameraOn})>(
+      call: call,
+      selector: (state) => (
+        micOn: state.localParticipant?.isAudioEnabled ?? false,
+        cameraOn: state.localParticipant?.isVideoEnabled ?? false,
+      ),
+      builder: (context, data) {
+        final micOn = data.micOn;
+        final cameraOn = data.cameraOn;
 
         return SafeArea(
           child: Padding(

@@ -230,7 +230,7 @@ Equivalently in Xcode: Runner target -> General -> Minimum Deployments -> iOS 14
 > **⚠️ Under SPM you must ALSO add `MinimumOSVersion` to `ios/Flutter/AppFrameworkInfo.plist`**
 > (`<key>MinimumOSVersion</key><string>15.0</string>`). The Xcode target alone does
 > not raise the generated plugin SPM package's platform, so the build fails with
-> *"increase your app's minimum platform version from 13.0 to at least 14.0"*. And add
+> _"increase your app's minimum platform version from 13.0 to at least 14.0"_. And add
 > `analyzer: { exclude: [build/**] }` to `analysis_options.yaml` to silence phantom
 > errors from the plugin sources SPM copies into `build/`. Both steps, with
 > verification, are in [`references/VIDEO-FLUTTER.md`](references/VIDEO-FLUTTER.md) ->
@@ -327,7 +327,7 @@ Check the smallest set of outcomes that proves the integration works:
 
 - `StreamVideo` is initialized before `runApp` and accessed via `StreamVideo.instance`
 - `call.getOrCreate()` is called before `call.join()`
-- the result of `call.join()` is checked - not silently discarded
+- the results of **both** `call.getOrCreate()` and `call.join()` are checked with `result.fold(...)`
 - `call.leave()` is called in `dispose()` as a safety net
 - Android runtime camera and microphone permissions are requested before joining
 - the `StreamCallContainer` or custom call UI appears after a successful join

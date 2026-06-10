@@ -192,7 +192,9 @@ final result = await call.getOrCreate(
 );
 result.fold(
   success: (_) { /* navigate to CallScreen */ },
-  failure: (error) { /* show error */ },
+  failure: (failure) {
+    debugPrint('getOrCreate failed: ${failure.error.message}');
+  },
 );
 ```
 
@@ -315,13 +317,19 @@ between incoming, outgoing, and active screens based on `CallStatus`. Pass
 ### Ring settings and auto-end
 
 ```dart
-await call.getOrCreate(
+final result = await call.getOrCreate(
   memberIds: ['alice'],
   ringing: true,
   ring: const StreamRingSettings(
     autoCancelTimeout: Duration(seconds: 30),  // server: auto_cancel_timeout (caller side)
     autoRejectTimeout: Duration(seconds: 30),  // server: incoming_call_timeout (callee side)
   ),
+);
+result.fold(
+  success: (_) { /* proceed */ },
+  failure: (failure) {
+    debugPrint('getOrCreate failed: ${failure.error.message}');
+  },
 );
 ```
 

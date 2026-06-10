@@ -280,11 +280,23 @@ StreamVideo(
 // Connect explicitly so the guest token is fetched and the real id is assigned
 // before you do anything else (or rely on autoConnect and await the same call):
 final result = await StreamVideo.instance.connect();
-
-// IMPORTANT: the server issues a *generated* guest id that differs from the one
-// you passed. Read it back and use THIS everywhere (call members, your own UI):
-final realUserId = StreamVideo.instance.currentUser.id;
+result.fold(
+  success: (success) {
+    // IMPORTANT: the server issues a *generated* guest id that differs from the one
+    // you passed. Read it back and use THIS everywhere (call members, your own UI):
+    final realUserId = StreamVideo.instance.currentUser.id;
+  },
+  failure: (failure) {
+    debugPrint('connect failed: ${failure.error.message}');
+  },
+);
 ```
+
+> **Requirement — grant the guest role permissions.** A guest connects with the `guest`
+> role, which by default has very limited capabilities. On many call types — notably
+> `livestream` — guests cannot even read or join a call until you grant those capabilities
+> to the `guest` role on that call type (Stream Dashboard → Video & Audio → Call Types →
+> `<type>` → Roles & Permissions, or via the API).
 
 ### Anonymous users (watch-only)
 
@@ -319,7 +331,15 @@ final call = StreamVideo.instance.makeCall(
 ### Get or create the call server-side
 
 ```dart
-await call.getOrCreate();
+final result = await call.getOrCreate();
+result.fold(
+  success: (success) {
+    // Proceed to join()
+  },
+  failure: (failure) {
+    debugPrint('getOrCreate failed: ${failure.error.message}');
+  },
+);
 ```
 
 Creates the call on Stream's server if it does not exist, or fetches the existing one. Always call this before `join()`.
@@ -363,9 +383,17 @@ final call = StreamVideo.instance.makeCall(
   callType: StreamCallType.defaultType(),
   id: const Uuid().v4(),
 );
-await call.getOrCreate(
+final result = await call.getOrCreate(
   memberIds: ['alice', 'bob'],
   ringing: true,
+);
+result.fold(
+  success: (success) {
+    // Ringing call created - members are now being notified
+  },
+  failure: (failure) {
+    debugPrint('getOrCreate failed: ${failure.error.message}');
+  },
 );
 ```
 
@@ -604,7 +632,10 @@ StreamLobbyView(
     final result = await call.join(connectOptions: connectOptions);
     result.fold(
       success: (_) { /* navigate to call screen */ },
-      failure: (error) { /* show error */ },
+      failure: (failure) {
+        // join() returns a Result and does not throw — always surface the message.
+        debugPrint('Join failed: ${failure.error.message}'); // show this to the user
+      },
     );
   },
 )

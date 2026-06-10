@@ -56,7 +56,8 @@ class _AudioRoomScreenState extends State<AudioRoomScreen> {
           await widget.call.update(custom: {'live': true});
         }
       },
-      failure: (error) => debugPrint('Join failed: $error'),
+      failure: (failure) =>
+          debugPrint('join failed: ${failure.error.message}'),
     );
   }
 
@@ -268,7 +269,6 @@ class _SpeakRequestCard extends StatelessWidget {
 
 **Wiring:**
 
-- Bare `join()` is correct for audio rooms - camera and mic default to disabled
 - The host pairs `goLive()`/`stopLive()` with `call.update(custom: {'live': ...})` so
   lobby screens can `queryCalls(filterConditions: {'type': 'audio_room', 'live': true})`
 - "Deny" only dismisses the local card; call `revokePermissions` to enforce server-side
@@ -328,7 +328,10 @@ class CallManager extends ChangeNotifier {
     try {
       final getResult = await call.getOrCreate();
       if (_isStale(version, call)) return;
-      if (getResult.isFailure) return _fail(version);
+      if (getResult is Failure) {
+        debugPrint('getOrCreate failed: ${getResult.error.message}');
+        return _fail(version);
+      }
 
       final joinResult = await call.join(
         connectOptions: CallConnectOptions(
@@ -337,7 +340,10 @@ class CallManager extends ChangeNotifier {
         ),
       );
       if (_isStale(version, call)) return;
-      if (joinResult.isFailure) return _fail(version);
+      if (joinResult is Failure) {
+        debugPrint('join failed: ${joinResult.error.message}');
+        return _fail(version);
+      }
     } catch (_) {
       if (_isStale(version, call)) return;
       return _fail(version);
@@ -564,7 +570,10 @@ class HostLivestreamScreenState extends State<HostLivestreamScreen> {
           if (ended) _endSecondaryCall();
         });
       },
-      failure: (_) => _resumeLivestream(),
+      failure: (failure) {
+        debugPrint('join failed: ${failure.error.message}');
+        _resumeLivestream();
+      },
     );
   }
 
@@ -672,12 +681,26 @@ final call = StreamVideo.instance.makeCall(
     audioConfigurationPolicy: AudioConfigurationPolicy.broadcaster(),
   ),
 );
-await call.getOrCreate(memberIds: [hostUserId], ringing: true, video: true);
-await call.join(
-  connectOptions: CallConnectOptions(
-    camera: TrackOption.enabled(),
-    microphone: TrackOption.enabled(),
-  ),
+final createResult =
+    await call.getOrCreate(memberIds: [hostUserId], ringing: true, video: true);
+await createResult.fold(
+  success: (_) async {
+    final joinResult = await call.join(
+      connectOptions: CallConnectOptions(
+        camera: TrackOption.enabled(),
+        microphone: TrackOption.enabled(),
+      ),
+    );
+    joinResult.fold(
+      success: (_) {/* ringing - detect acceptance below */},
+      failure: (failure) {
+        debugPrint('join failed: ${failure.error.message}');
+      },
+    );
+  },
+  failure: (failure) {
+    debugPrint('getOrCreate failed: ${failure.error.message}');
+  },
 );
 // Detect acceptance: watch call state for the host appearing in otherParticipants.
 ```
@@ -734,9 +757,13 @@ Future<void> startCallFromChannel(BuildContext context) async {
     callType: StreamCallType.defaultType(),
     id: '${channel.id}_call${Random().nextInt(10000)}', // unique per call
   );
-  await call.getOrCreate();
+  final createResult = await call.getOrCreate();
   // Ringing variant: collect channel member ids (minus self) and use
   // getOrCreate(memberIds: members, ringing: true, video: true) instead.
+  if (createResult is Failure) {
+    debugPrint('getOrCreate failed: ${createResult.error.message}');
+    return;
+  }
 
   // Announce with a custom attachment the message list can render as a join card
   channel.sendMessage(Message(attachments: [

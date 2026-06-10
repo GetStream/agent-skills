@@ -61,6 +61,19 @@ causes bugs.
 
 > **Docs:** [Permissions & moderation](https://getstream.io/video/docs/flutter/guides/permissions-and-moderation/) · [Livestreaming guide](https://getstream.io/video/docs/flutter/guides/livestreaming/)
 
+### Guest viewers cannot read or join by default
+
+> **GOTCHA - `User.guest` viewers get a 403 on a `livestream` call out of the box.**
+> The built-in `guest` role has minimal capabilities and is **not** granted `read-call`
+> or `join-call` on the `livestream` call type. A viewer connecting as a guest
+> (`User.guest`) will fail `getOrCreate()` / `join()`.
+>
+> To support guest viewers, grant the `guest` role `read-call` and `join-call` (plus
+> `create-call` if a viewer may open the call before the host has created it) on the
+> `livestream` call type - via **Stream Dashboard -> Video & Audio -> Call Types ->
+> livestream -> Roles & Permissions** (or the API). Otherwise, use authenticated
+> `User.regular` viewers, which already have these capabilities on `livestream`.
+
 ### Who can join backstage
 
 While a livestream is in backstage (before `goLive()`), the server only admits users whose
@@ -70,10 +83,16 @@ viewers' `join()` **fails** with a "call is not live" error until the host goes 
 
 ```dart
 // Mark the creator as host so they get join-backstage (set at create time):
-await call.getOrCreate(
+final result = await call.getOrCreate(
   members: [
     MemberRequest(userId: StreamVideo.instance.currentUser.id, role: 'host'),
   ],
+);
+result.fold(
+  success: (_) { /* proceed to join() */ },
+  failure: (failure) {
+    debugPrint('getOrCreate failed: ${failure.error.message}');
+  },
 );
 ```
 
@@ -102,6 +121,7 @@ await call.update(
 > like a private green room, but `joinAheadTimeSeconds` is a hole in that assumption: any
 > viewer who joins inside the join-ahead window hears and sees the host live, before
 > `goLive()` is ever called. Mitigations:
+>
 > - Keep `joinAheadTimeSeconds` at `0` (the default) unless you specifically want a
 >   pre-show lobby. If unset, viewers can only join once the call starts/goes live.
 > - Treat the period between (`startsAt - joinAheadTimeSeconds`) and `goLive()` as
@@ -137,11 +157,20 @@ final call = StreamVideo.instance.makeCall(
   callType: StreamCallType.liveStream(),
   id: 'my-livestream-id',
 );
-await call.getOrCreate();
-final result = await call.join();
-result.fold(
-  success: (_) { /* show backstage preview */ },
-  failure: (error) { /* show error */ },
+final createResult = await call.getOrCreate();
+createResult.fold(
+  success: (_) async {
+    final result = await call.join();
+    result.fold(
+      success: (_) { /* show backstage preview */ },
+      failure: (failure) {
+        debugPrint('join failed: ${failure.error.message}');
+      },
+    );
+  },
+  failure: (failure) {
+    debugPrint('getOrCreate failed: ${failure.error.message}');
+  },
 );
 ```
 
@@ -195,9 +224,15 @@ final call = StreamVideo.instance.makeCall(
   callType: StreamCallType.liveStream(),
   id: 'my-livestream-id',
 );
-await call.getOrCreate();
+final result = await call.getOrCreate();
+result.fold(
+  success: (_) { /* proceed to show the LivestreamPlayer */ },
+  failure: (failure) {
+    debugPrint('getOrCreate failed: ${failure.error.message}');
+  },
+);
 
-// In the widget tree - no manual join() needed:
+// On success, in the widget tree - no manual join() needed:
 LivestreamPlayer(
   call: call,
   // joinBehaviour: LivestreamJoinBehaviour.autoJoinAsap (default)
@@ -218,8 +253,22 @@ final call = StreamVideo.instance.makeCall(
   callType: StreamCallType.liveStream(),
   id: 'my-livestream-id',
 );
-await call.getOrCreate();
-await call.join(); // CallConnectOptions defaults camera/mic to disabled
+final createResult = await call.getOrCreate();
+createResult.fold(
+  success: (_) async {
+    // CallConnectOptions defaults camera/mic to disabled
+    final result = await call.join();
+    result.fold(
+      success: (_) { /* now rendering the host */ },
+      failure: (failure) {
+        debugPrint('join failed: ${failure.error.message}');
+      },
+    );
+  },
+  failure: (failure) {
+    debugPrint('getOrCreate failed: ${failure.error.message}');
+  },
+);
 
 // Watch the host - otherParticipants excludes the local viewer
 final hostParticipant = call.state.value.otherParticipants.firstOrNull;
@@ -231,15 +280,15 @@ await call.leave();
 If the call is still in backstage when the viewer joins, `otherParticipants` will be empty until the host calls `goLive()`. Observe `call.state.value.isBackstage` to show a "waiting for stream" UI.
 
 ```dart
-StreamBuilder<CallState>(
-  stream: call.state.asStream(), // StateEmitter is not a Stream - convert
-  initialData: call.state.value,
-  builder: (context, snapshot) {
-    final state = snapshot.requireData;
-    if (state.isBackstage) {
-      return const WaitingForHostWidget();
-    }
-    final host = state.otherParticipants.firstOrNull;
+PartialCallStateBuilder<({bool isBackstage, String? hostSessionId})>(
+  call: call,
+  selector: (state) => (
+    isBackstage: state.isBackstage,
+    hostSessionId: state.otherParticipants.firstOrNull?.sessionId,
+  ),
+  builder: (context, data) {
+    if (data.isBackstage) return const WaitingForHostWidget();
+    final host = call.state.value.otherParticipants.firstOrNull;
     if (host == null) return const WaitingForHostWidget();
     return StreamVideoRenderer(
       call: call,
@@ -266,13 +315,10 @@ HLS only runs if it is started - via `call.goLive(startHls: true)`, an explicit 
 The URL is at `call.state.value.egress.hlsPlaylistUrl` (`egress` is non-nullable; the field is flat). It populates a few seconds after the broadcast starts.
 
 ```dart
-// Observe state until the HLS URL becomes available
-StreamBuilder<CallState>(
-  stream: call.state.asStream(),
-  initialData: call.state.value,
-  builder: (context, snapshot) {
-    final state = snapshot.requireData;
-    final hlsUrl = state.egress.hlsPlaylistUrl;
+PartialCallStateBuilder<String?>(
+  call: call,
+  selector: (state) => state.egress.hlsPlaylistUrl,
+  builder: (context, hlsUrl) {
     if (hlsUrl == null) {
       return const Center(child: CircularProgressIndicator());
     }

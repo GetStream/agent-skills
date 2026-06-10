@@ -95,6 +95,8 @@ Post **one message** asking all relevant things together. Do not split into mult
 >
 > If you want to handle everything yourself, just paste your API key and token.
 
+> **Guest-viewer requirement — surface this BEFORE building any app that signs viewers in as guests**. A guest connects with the `guest` role, which by default has minimal capabilities. On the `livestream` call type guests **cannot even read or join a call** until the integrator grants those capabilities to the `guest` role. When a guest-based viewer flow is in scope, tell the integrator it is a **prerequisite** to grant the `guest` role `read-call` and `join-call` (plus `create-call` if a viewer may open the call before the host) on the relevant call type via Stream Dashboard → Video & Audio → Call Types → <type> → Roles & Permissions (or the API), or to use authenticated `User.regular` viewers instead. Details: [`references/VIDEO-FLUTTER.md`](references/VIDEO-FLUTTER.md) → Guest users, and [`references/LIVESTREAM-FLUTTER.md`](references/LIVESTREAM-FLUTTER.md) → Roles, permissions, and backstage security.
+
 **For Feeds projects** (no pre-built UI; feed groups required):
 
 Ask **one message** with all setup questions together — do not split into rounds:

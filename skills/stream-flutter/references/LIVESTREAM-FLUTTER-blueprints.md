@@ -186,19 +186,26 @@ class _CreatorLivestreamPageState extends State<CreatorLivestreamPage> {
         callType: StreamCallType.liveStream(),
         id: widget.callId,
       );
-      await call.getOrCreate();
-      final result = await call.join(
-        connectOptions: CallConnectOptions(
-          camera: TrackOption.enabled(),
-          microphone: TrackOption.enabled(),
-        ),
-      );
-      result.fold(
-        success: (_) {
-          if (mounted) setState(() { _call = call; _joined = true; });
+      final createResult = await call.getOrCreate();
+      createResult.fold(
+        success: (_) async {
+          final result = await call.join(
+            connectOptions: CallConnectOptions(
+              camera: TrackOption.enabled(),
+              microphone: TrackOption.enabled(),
+            ),
+          );
+          result.fold(
+            success: (_) {
+              if (mounted) setState(() { _call = call; _joined = true; });
+            },
+            failure: (failure) {
+              if (mounted) setState(() => _error = failure.error.message);
+            },
+          );
         },
-        failure: (error) {
-          if (mounted) setState(() => _error = error.toString());
+        failure: (failure) {
+          if (mounted) setState(() => _error = failure.error.message);
         },
       );
     } catch (e) {
@@ -270,15 +277,21 @@ class _CreatorLivestreamPageState extends State<CreatorLivestreamPage> {
       );
     }
 
-    return StreamBuilder<CallState>(
-      stream: _call!.state.asStream(), // StateEmitter is not a Stream - convert
-      initialData: _call!.state.value,
-      builder: (context, snapshot) {
-        final state = snapshot.requireData;
-        final isBackstage = state.isBackstage;
+    return PartialCallStateBuilder<
+        ({bool isBackstage, int viewerCount, bool micOn, bool cameraOn, String? localSessionId})>(
+      call: _call!,
+      selector: (state) => (
+        isBackstage: state.isBackstage,
+        viewerCount: state.otherParticipants.length,
+        micOn: state.localParticipant?.isAudioEnabled ?? false,
+        cameraOn: state.localParticipant?.isVideoEnabled ?? false,
+        localSessionId: state.localParticipant?.sessionId,
+      ),
+      builder: (context, data) {
+        final isBackstage = data.isBackstage;
         final isLive = !isBackstage;
-        final viewerCount = state.otherParticipants.length;
-        final local = state.localParticipant;
+        final viewerCount = data.viewerCount;
+        final local = _call!.state.value.localParticipant;
 
         return Scaffold(
           backgroundColor: Colors.black,
@@ -307,7 +320,7 @@ class _CreatorLivestreamPageState extends State<CreatorLivestreamPage> {
                 left: 0,
                 right: 0,
                 bottom: MediaQuery.of(context).padding.bottom + 32,
-                child: _controlBar(isLive, state),
+                child: _controlBar(isLive, _call!.state.value),
               ),
             ],
           ),
@@ -339,7 +352,7 @@ class _CreatorLivestreamPageState extends State<CreatorLivestreamPage> {
                 const Text('LIVE',
                     style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
                 const SizedBox(width: 6),
-                const Text('.', style: TextStyle(color: Colors.white54)),
+                const Text('·', style: TextStyle(color: Colors.white54)),
                 const SizedBox(width: 6),
                 const Icon(Icons.person, color: Colors.white70, size: 14),
                 const SizedBox(width: 4),
@@ -489,8 +502,15 @@ class _ViewerLivestreamPageState extends State<ViewerLivestreamPage> {
         callType: StreamCallType.liveStream(),
         id: widget.callId,
       );
-      await call.getOrCreate();
-      if (mounted) setState(() => _call = call);
+      final createResult = await call.getOrCreate();
+      createResult.fold(
+        success: (_) {
+          if (mounted) setState(() => _call = call);
+        },
+        failure: (failure) {
+          if (mounted) setState(() => _error = failure.error.message);
+        },
+      );
     } catch (e) {
       if (mounted) setState(() => _error = e.toString());
     }
@@ -586,15 +606,22 @@ class _CustomViewerLivestreamPageState
         callType: StreamCallType.liveStream(),
         id: widget.callId,
       );
-      await call.getOrCreate();
-      // CallConnectOptions defaults camera/mic to disabled - viewers do not publish
-      final result = await call.join();
-      result.fold(
-        success: (_) {
-          if (mounted) setState(() { _call = call; _joined = true; });
+      final createResult = await call.getOrCreate();
+      createResult.fold(
+        success: (_) async {
+          // CallConnectOptions defaults camera/mic to disabled - viewers do not publish
+          final result = await call.join();
+          result.fold(
+            success: (_) {
+              if (mounted) setState(() { _call = call; _joined = true; });
+            },
+            failure: (failure) {
+              if (mounted) setState(() => _error = failure.error.message);
+            },
+          );
         },
-        failure: (error) {
-          if (mounted) setState(() => _error = error.toString());
+        failure: (failure) {
+          if (mounted) setState(() => _error = failure.error.message);
         },
       );
     } catch (e) {
@@ -626,13 +653,15 @@ class _CustomViewerLivestreamPageState
       );
     }
 
-    return StreamBuilder<CallState>(
-      stream: _call!.state.asStream(), // StateEmitter is not a Stream - convert
-      initialData: _call!.state.value,
-      builder: (context, snapshot) {
-        final state = snapshot.requireData;
-        final isBackstage = state.isBackstage;
-        final host = state.otherParticipants.firstOrNull;
+    return PartialCallStateBuilder<({bool isBackstage, String? hostSessionId})>(
+      call: _call!,
+      selector: (state) => (
+        isBackstage: state.isBackstage,
+        hostSessionId: state.otherParticipants.firstOrNull?.sessionId,
+      ),
+      builder: (context, data) {
+        final isBackstage = data.isBackstage;
+        final host = _call!.state.value.otherParticipants.firstOrNull;
 
         return Scaffold(
           backgroundColor: Colors.black,
@@ -747,20 +776,27 @@ class _HLSViewerPageState extends State<HLSViewerPage> {
         callType: StreamCallType.liveStream(),
         id: widget.callId,
       );
-      await call.getOrCreate();
-      _call = call;
+      final createResult = await call.getOrCreate();
+      createResult.fold(
+        success: (_) async {
+          _call = call;
 
-      // Observe call state - start playback when HLS URL appears
-      _stateSub = call.state.listen((state) async {
-        final hlsUrl = state.egress.hlsPlaylistUrl;
-        if (hlsUrl != null && _controller == null) {
-          await _startPlayback(hlsUrl);
-        }
-      });
+          // Observe call state - start playback when HLS URL appears
+          _stateSub = call.state.listen((state) async {
+            final hlsUrl = state.egress.hlsPlaylistUrl;
+            if (hlsUrl != null && _controller == null) {
+              await _startPlayback(hlsUrl);
+            }
+          });
 
-      // Check current state immediately in case stream is already live
-      final hlsUrl = call.state.value.egress.hlsPlaylistUrl;
-      if (hlsUrl != null) await _startPlayback(hlsUrl);
+          // Check current state immediately in case stream is already live
+          final hlsUrl = call.state.value.egress.hlsPlaylistUrl;
+          if (hlsUrl != null) await _startPlayback(hlsUrl);
+        },
+        failure: (failure) {
+          if (mounted) setState(() => _error = failure.error.message);
+        },
+      );
     } catch (e) {
       if (mounted) setState(() => _error = e.toString());
     }

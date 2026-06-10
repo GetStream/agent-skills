@@ -40,17 +40,42 @@ final call = StreamVideo.instance.makeCall(
   callType: StreamCallType.audioRoom(),
   id: 'audio_room_${DateTime.now().millisecondsSinceEpoch}',
 );
-await call.getOrCreate(custom: {'name': 'My Room'});
-await call.join();   // host joins backstage
-await call.goLive(); // opens the room to listeners
+final createResult = await call.getOrCreate(custom: {'name': 'My Room'});
+await createResult.fold(
+  success: (_) async {
+    final joinResult = await call.join(); // host joins backstage
+    await joinResult.fold(
+      success: (_) => call.goLive(), // opens the room to listeners
+      failure: (failure) {
+        debugPrint('join failed: ${failure.error.message}');
+      },
+    );
+  },
+  failure: (failure) {
+    debugPrint('getOrCreate failed: ${failure.error.message}');
+  },
+);
 
 // Listener: join a live room
 final call = StreamVideo.instance.makeCall(
   callType: StreamCallType.audioRoom(),
   id: roomId,
 );
-await call.getOrCreate();
-await call.join(); // allowed once the host is live
+final createResult = await call.getOrCreate();
+await createResult.fold(
+  success: (_) async {
+    final joinResult = await call.join(); // allowed once the host is live
+    joinResult.fold(
+      success: (_) {/* connected */},
+      failure: (failure) {
+        debugPrint('join failed: ${failure.error.message}');
+      },
+    );
+  },
+  failure: (failure) {
+    debugPrint('getOrCreate failed: ${failure.error.message}');
+  },
+);
 ```
 
 No camera/mic config is needed at join time: `CallConnectOptions` defaults both to
@@ -414,10 +439,23 @@ leave alone unless you know exactly why).
 > **Docs:** [Session Timers](https://getstream.io/video/docs/flutter/advanced/session-timers/)
 
 ```dart
-await call.getOrCreate(
+final createResult = await call.getOrCreate(
   limits: const StreamLimitsSettings(maxDurationSeconds: 3600),
 );
-await call.join();
+await createResult.fold(
+  success: (_) async {
+    final joinResult = await call.join();
+    joinResult.fold(
+      success: (_) {/* connected */},
+      failure: (failure) {
+        debugPrint('join failed: ${failure.error.message}');
+      },
+    );
+  },
+  failure: (failure) {
+    debugPrint('getOrCreate failed: ${failure.error.message}');
+  },
+);
 
 final endsAt = call.state.value.timerEndsAt; // DateTime? - drives a countdown UI
 
