@@ -26,8 +26,8 @@
         },
         "glob": {
           "type": "string",
-          "pattern": "^~/\\.claude/skills/stream-[a-z0-9-]+/SKILL\\.md$",
-          "description": "Absolute Glob path used to test whether the peer is installed. Always points at the peer's SKILL.md under ~/.claude/skills."
+          "pattern": "^\\{\\.agents,\\.claude\\}/skills/stream-[a-z0-9-]+/SKILL\\.md$",
+          "description": "Project-relative Glob path used to test whether the peer is installed. Points at the peer's SKILL.md under either link directory the Stream CLI creates: .agents/skills (Cursor, Codex) or .claude/skills (Claude Code)."
         },
         "install": {
           "type": "string",

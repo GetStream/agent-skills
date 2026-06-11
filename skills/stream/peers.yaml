@@ -2,7 +2,9 @@
 #
 # One entry per sibling skill in the Stream pack. The router (skills/stream/SKILL.md)
 # and RULES.md reference this file as the single source of truth for:
-#   - Glob path used to detect whether a peer is installed.
+#   - Glob path used to detect whether a peer is installed. Project-relative:
+#     `stream skills` links skills into the project's .agents/skills and/or
+#     .claude/skills, so the pattern covers both.
 #   - Install command (`stream skills <name>`) used when a peer is missing.
 #   - Install policy: "silent" peers install on demand with no prompt; "ask" peers
 #     require one confirmation first.
@@ -25,19 +27,19 @@
 
 peers:
   - name: stream-docs
-    glob: ~/.claude/skills/stream-docs/SKILL.md
+    glob: "{.agents,.claude}/skills/stream-docs/SKILL.md"
     install: stream skills stream-docs
     install_policy: silent
     purpose: Search live Stream SDK documentation (Chat/Video/Feeds/Moderation across React, iOS, Android, Node, Flutter, Unity).
 
   - name: stream-builder
-    glob: ~/.claude/skills/stream-builder/SKILL.md
+    glob: "{.agents,.claude}/skills/stream-builder/SKILL.md"
     install: stream skills stream-builder
     install_policy: silent
     purpose: Scaffold a new web (Next.js) app with Stream, or integrate Chat/Video/Feeds/Moderation into an existing one.
 
   - name: stream-swift
-    glob: ~/.claude/skills/stream-swift/SKILL.md
+    glob: "{.agents,.claude}/skills/stream-swift/SKILL.md"
     install: stream skills stream-swift
     install_policy: silent
     purpose: Build or integrate Stream Chat/Video/Feeds in Swift/SwiftUI/UIKit/iOS apps. Includes package setup, auth wiring, and view blueprints.
@@ -51,7 +53,7 @@ peers:
       - Package.swift
 
   - name: stream-android
-    glob: ~/.claude/skills/stream-android/SKILL.md
+    glob: "{.agents,.claude}/skills/stream-android/SKILL.md"
     install: stream skills stream-android
     install_policy: silent
     purpose: Build or integrate Stream Chat/Video/Feeds in Android/Jetpack Compose apps. Includes package setup, auth wiring, and screen blueprints.
@@ -67,7 +69,7 @@ peers:
       - build.gradle
 
   - name: stream-flutter
-    glob: ~/.claude/skills/stream-flutter/SKILL.md
+    glob: "{.agents,.claude}/skills/stream-flutter/SKILL.md"
     install: stream skills stream-flutter
     install_policy: ask
     purpose: Build or integrate Stream Chat in Flutter apps. Includes pubspec setup, auth wiring, and widget blueprints for stream_chat_flutter and stream_chat_flutter_core.
@@ -81,7 +83,7 @@ peers:
     fallback_on_decline: stream-docs
 
   - name: stream-react-native
-    glob: ~/.claude/skills/stream-react-native/SKILL.md
+    glob: "{.agents,.claude}/skills/stream-react-native/SKILL.md"
     install: stream skills stream-react-native
     install_policy: silent
     purpose: Create, build, or integrate Stream Chat and Stream Video React Native in React Native CLI and Expo apps. Includes package setup, auth wiring, calling lifecycle, and Chat/Video UI blueprints.
