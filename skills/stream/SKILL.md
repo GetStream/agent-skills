@@ -27,7 +27,7 @@ Scan the user's input for the signals below, in order. The classifier is determi
 |---|---|
 | Explicit SDK/framework token (`Chat React`, `Video iOS`, `Feeds Node`, `Moderation`, ...), the words "docs"/"documentation", or "how do I {X} in {framework}?" / "how does {hook/component/method} work?" - and **no build/integrate verb** | `stream-docs` |
 | **Audit an existing Stream Video integration** (read-only best-practices review): "audit/review my video integration", "check my app against best practices", "is my video app production-ready?", "what am I missing before launch?" - **no build/integrate verb**. Matched before, and wins over, the CLI "check {anything}" row below. | `stream-react-native` (peer signal) or `stream-builder` (Track F) |
-| Operational verb + Stream noun ("list calls", "show channels", "any flagged", "find users", "check {anything}"), or a literal `stream` command (`stream api`, `stream init`, `stream login`, `stream pull`/`push`) | **Stream CLI** - handle here (below) |
+| Operational verb + Stream noun ("list calls", "show channels", "any flagged", "find users", "check {anything}"), or a literal `stream` command (`stream api`, `stream init`, `stream login`) | **Stream CLI** - handle here (below) |
 | "Install the CLI", "set up stream" with no project context | **Stream CLI** - handle here (below) |
 | **Build/integrate verb + a token matching a peer's `signals` in [`peers.yaml`](peers.yaml)** (e.g. `swift` / `.xcodeproj` -> `stream-swift`; `react native` / `expo` -> `stream-react-native`; `android` / `kotlin` -> `stream-android`; `flutter` -> `stream-flutter`). **A peer signal wins over the `stream-builder` row below, and over the docs row above whenever a build/integrate verb (`add`, `build`, `integrate`, `scaffold`, `wire`, `set up`, `create`) is present.** | matching peer |
 | "Build me a ... app", "scaffold", "create a new ...", "add Chat/Video/Feeds to this app", "integrate Stream into ..." + Stream product, **and no peer signal present** | `stream-builder` (web/Next.js, the default when no platform signal is given) |
@@ -49,8 +49,6 @@ CLI tasks - querying data, configuring an app, onboarding, installing skills - a
 |---|---|
 | `stream init` | Onboard a project - authenticate, pick or create an org + app, write credentials. Start here. |
 | `stream api <Endpoint>` | Query data or run a one-off API operation. |
-| `stream pull` / `stream push` | Read or apply app config in `.streamrc.yaml` (`push` is changeset-gated). |
-| `stream rollback` | Undo an applied changeset. |
 | `stream env` | Write the app's API key (and secret, for server targets) into the platform's env file. |
 | `stream token <user>` | Mint a token for a user (e.g. demo/dev auth, seeding). |
 | `stream login` | Authenticate (`--guest` for a throwaway account). |

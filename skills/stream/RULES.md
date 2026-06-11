@@ -66,7 +66,7 @@ Shadcn components use `@base-ui/react`, NOT `@radix-ui`. Key differences:
 The `stream` CLI owns onboarding, auth, and credentials. Drive it from the **Stream CLI** section of [`SKILL.md`](SKILL.md) and **read the CLI's output to understand what happened** - it explains failures and next steps the same way for an agent as for a person. There are no exit-code conventions to memorize.
 
 - **No guessing.** Endpoint names, parameters, and body shapes come from `stream api -h` (or `stream -h`), never from training-data recall. If you're about to type a `stream api <Endpoint>` you haven't confirmed this turn, stop and look it up first. This applies to **every** sub-skill, including `stream-builder` follow-ups and one-off "let me just check" queries.
-- **Confirm before writing.** Default to read-only. Before any operation that creates, changes, or deletes - or any outward-facing action - describe it and get the user's confirmation. When the CLI refuses an operation pending `--force` or a changeset hash, it is flagging a dangerous action: surface it, confirm, then re-run with the flag the CLI named.
+- **Confirm before writing.** Default to read-only. Before any operation that creates, changes, or deletes - or any outward-facing action - describe it and get the user's confirmation. When the CLI refuses an operation and asks for an explicit flag or confirmation, it is flagging a dangerous action: surface it, confirm, then re-run with the flag the CLI named.
 - **Sign-in opens a browser.** `stream init` / `stream login` launch a browser flow - run them as their own invocation (never chained with `&&` or wrapped in a heredoc). If sign-in hangs, ask the user to run it themselves with `! <command>`.
 
 ## Onboarding & phase order
