@@ -235,7 +235,7 @@ Local demo tokens can come from [`../credentials.md`](../credentials.md).
 Demo/local only. Generate via the Stream CLI:
 
 ```bash
-stream token <user_id>
+getstream token <user_id>
 ```
 
 Pass the literal token to `StreamVideoClient`. Never use a no-expiry token in production builds.

@@ -1,12 +1,12 @@
-# Chat XML — Screen Blueprints
+# Chat XML - Screen Blueprints
 
 Load only the section you are implementing. For setup, client initialization, and gotchas, see [CHAT-XML.md](CHAT-XML.md).
 
-Per [`RULES.md`](../RULES.md) → *Blueprints are mandatory, on every turn*: any Stream Chat XML View, Fragment, Activity, navigation handler, deep-link route, or UI customization must be preceded by reading the matching section below — including on follow-up turns inside an existing session.
+Per [`RULES.md`](../RULES.md) -> *Blueprints are mandatory, on every turn*: any Stream Chat XML View, Fragment, Activity, navigation handler, deep-link route, or UI customization must be preceded by reading the matching section below - including on follow-up turns inside an existing session.
 
 ---
 
-## Request → Blueprint section
+## Request -> Blueprint section
 
 | User request signal | Section(s) to read |
 |---|---|
@@ -16,12 +16,12 @@ Per [`RULES.md`](../RULES.md) → *Blueprints are mandatory, on every turn*: any
 | "channel list", `ChannelListFragment`, `ChannelListView`, channel filters/sort | [Channel List Blueprint](#channel-list-blueprint) |
 | "channel screen", "message list", "open a channel", `ChannelFragment`, `MessageListView` + `MessageComposerView` | [Channel Screen Blueprint](#channel-screen-blueprint) |
 | "navigate to channel", "open channel on tap", "tap a channel", channel click handler | [Channel Tap Handling / Deep-link Blueprint](#channel-tap-handling--deep-link-blueprint) + [Channel Screen Blueprint](#channel-screen-blueprint) |
-| "deep link", push notification → channel, intent extras for `cid` | [Channel Tap Handling / Deep-link Blueprint](#channel-tap-handling--deep-link-blueprint) |
+| "deep link", push notification -> channel, intent extras for `cid` | [Channel Tap Handling / Deep-link Blueprint](#channel-tap-handling--deep-link-blueprint) |
 | "theme", colors, custom row layout, branding via `TransformStyle` | [Custom Theming Blueprint](#custom-theming-blueprint) |
 | "custom channel item", channel row layout, custom view holder | [Custom Channel Item Blueprint](#custom-channel-item-blueprint) |
 | "logout", switch users, tear down session | [Logout Blueprint](#logout-blueprint) |
 
-If the request is something not covered (Video, Feeds, Compose, or an XML surface not listed above), do not fabricate APIs — say the blueprint is not bundled and fall back per [`RULES.md`](../RULES.md).
+If the request is something not covered (Video, Feeds, Compose, or an XML surface not listed above), do not fabricate APIs - say the blueprint is not bundled and fall back per [`RULES.md`](../RULES.md).
 
 ---
 
@@ -70,7 +70,7 @@ Register the `Application` in `AndroidManifest.xml`:
 
 **Wiring:**
 - `Application.onCreate()` runs before any Activity, so `ChatClient.instance()` is safe to call from any Activity / Fragment lifecycle method.
-- The host application theme **must** descend from `Theme.MaterialComponents.*` or `Theme.Material3.*` — Stream Views read Material attributes at inflation time.
+- The host application theme **must** descend from `Theme.MaterialComponents.*` or `Theme.Material3.*` - Stream Views read Material attributes at inflation time.
 - The XML SDK artifact transitively pulls in offline + state plugins; no extra Builder calls are required for default behavior.
 
 ---
@@ -180,8 +180,8 @@ class LoginActivity : AppCompatActivity(R.layout.activity_login) {
 `activity_login.xml` is a vertical `LinearLayout` (or `ConstraintLayout`) with `R.id.userIdField`, `R.id.nameField`, `R.id.errorLabel`, `R.id.progress`, `R.id.connectButton`.
 
 **Wiring:**
-- `connectUser(...).enqueue { ... }` already hops back to the main thread for the callback — Activity state updates are safe to write directly.
-- For an expiring token, swap the `token = "..."` argument for a `TokenProvider` (see [CHAT-XML.md — User Authentication](CHAT-XML.md#user-authentication)).
+- `connectUser(...).enqueue { ... }` already hops back to the main thread for the callback - Activity state updates are safe to write directly.
+- For an expiring token, swap the `token = "..."` argument for a `TokenProvider` (see [CHAT-XML.md - User Authentication](CHAT-XML.md#user-authentication)).
 
 ---
 
@@ -189,7 +189,7 @@ class LoginActivity : AppCompatActivity(R.layout.activity_login) {
 
 ### Drop-in `ChannelListFragment`
 
-The Fragment supplies the header, search, and list. The host Activity implements the listener interfaces and the SDK auto-discovers them via `findListener()`. **Do not** call `.setOnXxxClickListener(...)` on the inner Views from the host — they are reset whenever the Fragment re-binds.
+The Fragment supplies the header, search, and list. The host Activity implements the listener interfaces and the SDK auto-discovers them via `findListener()`. **Do not** call `.setOnXxxClickListener(...)` on the inner Views from the host - they are reset whenever the Fragment re-binds.
 
 ```kotlin
 import android.os.Bundle
@@ -282,9 +282,9 @@ class CustomChannelsShellActivity : AppCompatActivity(R.layout.activity_custom_c
 ```
 
 **Wiring:**
-- `ChannelListFragment.newInstance { ... }` exposes only `customTheme(themeResId)`, `showHeader(...)`, `showSearch(...)`, `headerTitle(...)`. Filter / sort customization is done by overriding `getFilter()` / `getSort()` in a `ChannelListFragment` subclass — `newInstance` does not accept those.
-- Bound `ChannelListView` listeners (`setChannelItemClickListener`, `setChannelLongClickListener`, `setChannelDeleteClickListener`, `setChannelLeaveClickListener`) **are** wired directly on the View — they are overwritten by `bindView` only for state, not for clicks.
-- Always call `bindView` from the host's `onCreate` (or `onViewCreated`), not from a callback — the binding subscribes to the lifecycle owner you pass in.
+- `ChannelListFragment.newInstance { ... }` exposes only `customTheme(themeResId)`, `showHeader(...)`, `showSearch(...)`, `headerTitle(...)`. Filter / sort customization is done by overriding `getFilter()` / `getSort()` in a `ChannelListFragment` subclass - `newInstance` does not accept those.
+- Bound `ChannelListView` listeners (`setChannelItemClickListener`, `setChannelLongClickListener`, `setChannelDeleteClickListener`, `setChannelLeaveClickListener`) **are** wired directly on the View - they are overwritten by `bindView` only for state, not for clicks.
+- Always call `bindView` from the host's `onCreate` (or `onViewCreated`), not from a callback - the binding subscribes to the lifecycle owner you pass in.
 
 ---
 
@@ -422,9 +422,9 @@ class CustomChannelActivity : AppCompatActivity(R.layout.activity_custom_channel
 
 **Wiring:**
 - `ChannelFragment.newInstance(cid) { ... }` exposes `customTheme(themeResId)`, `showHeader(...)`, `messageId(...)`, `threadLoadOlderToNewer(...)`. Anything beyond that requires either subclassing `ChannelFragment` or building the trio yourself.
-- `ChannelViewModelFactory(applicationContext, cid)` resolves all three ViewModels (`ChannelHeaderViewModel`, `MessageListViewModel`, `MessageComposerViewModel`) from a single factory instance — that's what makes `viewModels { factory }` reuse the same factory cleanly.
+- `ChannelViewModelFactory(applicationContext, cid)` resolves all three ViewModels (`ChannelHeaderViewModel`, `MessageListViewModel`, `MessageComposerViewModel`) from a single factory instance - that's what makes `viewModels { factory }` reuse the same factory cleanly.
 - The `bindView` extensions wire cross-View defaults (composer edit/reply state, jump-to-quoted-message). Don't re-implement those handlers unless you're replacing them.
-- `MessageListView`, `MessageComposerView`, and `ChannelHeaderView` each expose their own listener setters (`setBackButtonClickListener`, `setMessageEditHandler`, etc.) — use them for navigation hooks; do not try to drive them through ViewModels.
+- `MessageListView`, `MessageComposerView`, and `ChannelHeaderView` each expose their own listener setters (`setBackButtonClickListener`, `setMessageEditHandler`, etc.) - use them for navigation hooks; do not try to drive them through ViewModels.
 
 ---
 
@@ -438,7 +438,7 @@ override fun onChannelClick(channel: Channel) {
 }
 ```
 
-`onChannelClick` is the listener method on `ChannelListFragment.ChannelListItemClickListener` — implement it on the host Activity (or parent Fragment) and the SDK auto-discovers it. For the bound `ChannelListView`, use `setChannelItemClickListener { channel -> ... }`.
+`onChannelClick` is the listener method on `ChannelListFragment.ChannelListItemClickListener` - implement it on the host Activity (or parent Fragment) and the SDK auto-discovers it. For the bound `ChannelListView`, use `setChannelItemClickListener { channel -> ... }`.
 
 ### Intercept a tap without navigating
 
@@ -486,9 +486,9 @@ ChannelFragment.newInstance(cid) {
 ```
 
 **Wiring:**
-- `Channel.cid` is the canonical `"<type>:<id>"` string — pass it as a single intent extra instead of two separate fields.
+- `Channel.cid` is the canonical `"<type>:<id>"` string - pass it as a single intent extra instead of two separate fields.
 - `messageId(...)` jumps the message list to that message on first display (used by push deep-links).
-- The pre-built `ChannelListFragment` does not select a channel by id on its own — for a master-detail layout that highlights the current channel, drop down to bound `ChannelListView` + your own selection state.
+- The pre-built `ChannelListFragment` does not select a channel by id on its own - for a master-detail layout that highlights the current channel, drop down to bound `ChannelListView` + your own selection state.
 
 ---
 
@@ -498,7 +498,7 @@ The XML SDK has two paths. Use whichever is shorter for the change you need; rea
 
 ### `TransformStyle` (runtime, code-only)
 
-Set transformers in `Application.onCreate()` before any Stream View inflates. Each `*Style` is a `data class` — use `.copy(...)` with named parameters. Open the matching style class in the SDK source before referencing a field; do not enumerate fields from memory.
+Set transformers in `Application.onCreate()` before any Stream View inflates. Each `*Style` is a `data class` - use `.copy(...)` with named parameters. Open the matching style class in the SDK source before referencing a field; do not enumerate fields from memory.
 
 ```kotlin
 import io.getstream.chat.android.ui.helper.StyleTransformer
@@ -518,7 +518,7 @@ class App : Application() {
         // Same pattern for messageListStyleTransformer, messageListItemStyleTransformer,
         // messageComposerStyleTransformer, channelHeaderStyleTransformer, and the
         // many specialized transformers (avatars, reactions, attachments, search,
-        // audio recorder, thread list, …) declared in TransformStyle.kt.
+        // audio recorder, thread list, ...) declared in TransformStyle.kt.
     }
 }
 ```
@@ -547,15 +547,15 @@ Brand the entire SDK at the theme level by inheriting from a Material theme and 
 ```
 
 **Wiring:**
-- `TransformStyle.*` is set-and-leave: once configured, every subsequent inflation of the matching View applies the override. Setting it after a View is already on screen does not refresh the live View — recreate the Activity / Fragment to pick up changes.
+- `TransformStyle.*` is set-and-leave: once configured, every subsequent inflation of the matching View applies the override. Setting it after a View is already on screen does not refresh the live View - recreate the Activity / Fragment to pick up changes.
 - Prefer `TransformStyle` for code-driven branding; reach for XML attributes when you need theme variants (light/dark/branded) coordinated with the rest of your app's theming.
-- The host Activity's theme **must** descend from a `Theme.MaterialComponents.*` or `Theme.Material3.*` family — Stream Views read Material attributes during inflation.
+- The host Activity's theme **must** descend from a `Theme.MaterialComponents.*` or `Theme.Material3.*` family - Stream Views read Material attributes during inflation.
 
 ---
 
 ## Custom Channel Item Blueprint
 
-For style-only changes (text size, avatar size, bubble drawables), use `TransformStyle.channelListStyleTransformer` instead — see [Custom Theming Blueprint](#custom-theming-blueprint). Drop down to a `ChannelListItemViewHolderFactory` only when you need a fundamentally different row layout.
+For style-only changes (text size, avatar size, bubble drawables), use `TransformStyle.channelListStyleTransformer` instead - see [Custom Theming Blueprint](#custom-theming-blueprint). Drop down to a `ChannelListItemViewHolderFactory` only when you need a fundamentally different row layout.
 
 ```kotlin
 import android.view.LayoutInflater
@@ -594,7 +594,7 @@ class CustomChannelListItemViewHolderFactory : ChannelListItemViewHolderFactory(
 }
 ```
 
-The base factory exposes `listenerContainer: ChannelListListenerContainer` (with `channelClickListener`, `channelLongClickListener`, `deleteClickListener`, `moreOptionsClickListener`, `userClickListener`, `swipeListener`), `visibilityContainer`, `iconProviderContainer`, and `style` — pass through whichever your custom view holder needs.
+The base factory exposes `listenerContainer: ChannelListListenerContainer` (with `channelClickListener`, `channelLongClickListener`, `deleteClickListener`, `moreOptionsClickListener`, `userClickListener`, `swipeListener`), `visibilityContainer`, `iconProviderContainer`, and `style` - pass through whichever your custom view holder needs.
 
 ```kotlin
 // Wire on the View (bound shell):
@@ -602,7 +602,7 @@ channelListView.setViewHolderFactory(CustomChannelListItemViewHolderFactory())
 ```
 
 **Wiring:**
-- `ChannelListItem.ChannelItem` exposes `channel: Channel` — read name, last message, etc. off `channel`. For unread count, use the extension `channel.currentUserUnreadCount()` from `io.getstream.chat.android.client.extensions`.
+- `ChannelListItem.ChannelItem` exposes `channel: Channel` - read name, last message, etc. off `channel`. For unread count, use the extension `channel.currentUserUnreadCount()` from `io.getstream.chat.android.client.extensions`.
 - Subclass `BaseChannelListItemViewHolder` for your custom view holder; override `bind(channelItem, diff)` to update on data changes.
 - Always delegate to `super.createViewHolder(...)` / `super.getItemViewType(...)` for items you don't customize, so built-in row types still render.
 - For `ChannelListFragment`, override `setupChannelList(channelListView)` in a Fragment subclass and call `setViewHolderFactory(...)` there.
@@ -611,7 +611,7 @@ channelListView.setViewHolderFactory(CustomChannelListItemViewHolderFactory())
 
 ## Logout Blueprint
 
-For full logout (no follow-up `connectUser`), `disconnect(flushPersistence = true)` to clear the Room cache. For switching to another user in one call, prefer `ChatClient.switchUser(...)` — it disconnects, deletes the push device, and connects the new user atomically.
+For full logout (no follow-up `connectUser`), `disconnect(flushPersistence = true)` to clear the Room cache. For switching to another user in one call, prefer `ChatClient.switchUser(...)` - it disconnects, deletes the push device, and connects the new user atomically.
 
 ```kotlin
 import android.content.Intent
@@ -627,7 +627,7 @@ fun logout(onComplete: () -> Unit) {
     }
 }
 
-// Usage — switch to login after logout:
+// Usage - switch to login after logout:
 logout {
     startActivity(
         Intent(this, LoginActivity::class.java)
@@ -649,6 +649,6 @@ ChatClient.instance().switchUser(nextUser, nextToken).enqueue { result ->
 
 **Wiring:**
 - `disconnect(flushPersistence = true)` clears the Room cache; pass `false` when you want to keep cached channels for the same user across temporary disconnects.
-- `disconnect(...).enqueue { ... }` already hops back to the main thread for the callback — Activity / navigation calls are safe to make directly.
+- `disconnect(...).enqueue { ... }` already hops back to the main thread for the callback - Activity / navigation calls are safe to make directly.
 - `switchUser(user, token)` and `switchUser(user, tokenProvider)` are both `@JvmOverloads`; use the `TokenProvider` form for expiring tokens.
 - If you roll your own switch via `disconnect(...).enqueue { connectUser(...) }`, do not call `connectUser(...)` inside the disconnect callback's `Result.Failure` branch unless you've handled the underlying error first; retrying immediately can loop on the same failing token.

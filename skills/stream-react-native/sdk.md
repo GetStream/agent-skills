@@ -173,7 +173,7 @@ A `Call` initializes after any of `call.get()`, `call.create()`, `call.getOrCrea
 Use the simplest token shape that matches the user's environment:
 
 - **Backend exists (production path):** the backend authenticates the request, derives the Stream `user_id` **from its own session** (cookie / JWT / OAuth subject), and mints a Stream token for that id. The client wires a `tokenProvider` callback that re-hits the same authenticated endpoint when the token nears expiry. The SDK calls it again automatically on reconnect. The client must **never** send a `user_id` query/body parameter to the token endpoint - that lets any signed-in user impersonate any other Stream user. See [`references/VIDEO-REACT-NATIVE-blueprints.md` > Production auth gate](references/VIDEO-REACT-NATIVE-blueprints.md#production-auth-gate-replace-the-demo-loginscreen-for-real-apps) for the canonical wiring.
-- **No backend / demo flow:** generate a token with the Stream CLI (`stream token <user_id>`; expiring: `stream token <user_id> --ttl 1h`) and paste it into a dev-only login form. See [`credentials.md`](credentials.md). Gate any such form behind `__DEV__` or a feature flag so it never ships in a production build.
+- **No backend / demo flow:** generate a token with the Stream CLI (`getstream token <user_id>`; expiring: `getstream token <user_id> --ttl 1h`) and paste it into a dev-only login form. See [`credentials.md`](credentials.md). Gate any such form behind `__DEV__` or a feature flag so it never ships in a production build.
 - **User pastes their own:** accept it and pass to the client. Same dev-only caveat applies.
 
 Keep the split clear:

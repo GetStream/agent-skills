@@ -54,7 +54,7 @@ dependencies {
 
 If you don't know the latest version, look it up via the sources listed in [`RULES.md` -> Version lookup](../RULES.md#version-lookup) (Maven Central / GitHub releases). Never use `search.maven.org`.
 
-Mandatory permissions are declared in the SDK's library manifest and merged automatically — you do **not** need to add them to your app manifest. You **do** need to request `CAMERA` / `RECORD_AUDIO` at runtime before joining a call (see [Permissions](#permissions)).
+Mandatory permissions are declared in the SDK's library manifest and merged automatically - you do **not** need to add them to your app manifest. You **do** need to request `CAMERA` / `RECORD_AUDIO` at runtime before joining a call (see [Permissions](#permissions)).
 
 ### Client Initialization
 
@@ -97,7 +97,7 @@ Register the `Application` subclass in `AndroidManifest.xml`:
     ...>
 ```
 
-After build time, retrieve the client anywhere via `StreamVideo.instance()` (throws if the builder has not run) or `StreamVideo.instanceOrNull()` (returns `null`). The builder registers the singleton automatically — do **not** store your own copy as a top-level `lateinit var`.
+After build time, retrieve the client anywhere via `StreamVideo.instance()` (throws if the builder has not run) or `StreamVideo.instanceOrNull()` (returns `null`). The builder registers the singleton automatically - do **not** store your own copy as a top-level `lateinit var`.
 
 > If the user already initializes Stream Chat in the same `Application.onCreate()`, build both clients in the same method. They are independent singletons.
 
@@ -105,7 +105,7 @@ After build time, retrieve the client anywhere via `StreamVideo.instance()` (thr
 
 ## User Authentication
 
-The API key and secret are shared between Stream Chat and Video — one project, one key.
+The API key and secret are shared between Stream Chat and Video - one project, one key.
 
 ### Static token (no expiry)
 
@@ -126,7 +126,7 @@ StreamVideoBuilder(
 ).build()
 ```
 
-Token generation: `stream token <user_id>` (same CLI as Chat — see [`credentials.md`](../credentials.md)).
+Token generation: `getstream token <user_id>` (same CLI as Chat - see [`credentials.md`](../credentials.md)).
 
 ### Token provider (expiring tokens)
 
@@ -149,7 +149,7 @@ StreamVideoBuilder(
 ).build()
 ```
 
-`loadToken()` is a `suspend` function — call your backend with coroutines or `withContext(Dispatchers.IO)` inside it.
+`loadToken()` is a `suspend` function - call your backend with coroutines or `withContext(Dispatchers.IO)` inside it.
 
 ### Disconnecting / switching users
 
@@ -177,7 +177,7 @@ val call = StreamVideo.instance().call(type = "default", id = "my-call-id")
 
 ### Lifecycle methods
 
-All of these are **`suspend`** and return `Result<T>` from `io.getstream.result.Result` — handle both `Result.Success` and `Result.Failure`. The exception is `leave()`, which is synchronous.
+All of these are **`suspend`** and return `Result<T>` from `io.getstream.result.Result` - handle both `Result.Success` and `Result.Failure`. The exception is `leave()`, which is synchronous.
 
 | Method | Shape | Purpose |
 |---|---|---|
@@ -187,9 +187,9 @@ All of these are **`suspend`** and return `Result<T>` from `io.getstream.result.
 | `call.accept()` | `suspend Result<AcceptCallResponse>` | Accept an incoming ringing call |
 | `call.reject()` | `suspend Result<RejectCallResponse>` | Reject an incoming ringing call |
 | `call.end()` | `suspend Result<Unit>` | End the call for all participants (host/owner permission required) |
-| `call.leave()` | synchronous | Leave the local session — internal cleanup happens asynchronously |
+| `call.leave()` | synchronous | Leave the local session - internal cleanup happens asynchronously |
 
-Call them from a coroutine scope you own (Activity / ViewModel / `LifecycleScope`) — never from a `@Composable` body. Wrap the suspend call in `LaunchedEffect(call)` or kick off via `rememberCoroutineScope().launch { ... }`.
+Call them from a coroutine scope you own (Activity / ViewModel / `LifecycleScope`) - never from a `@Composable` body. Wrap the suspend call in `LaunchedEffect(call)` or kick off via `rememberCoroutineScope().launch { ... }`.
 
 ```kotlin
 val scope = rememberCoroutineScope()
@@ -245,7 +245,7 @@ Use the `RingingCallContent` Composable (see [Compose Components](#compose-compo
 
 ### `connection` tracks the realtime socket
 
-`RealtimeConnection` is a sealed interface — match on it to drive reconnect banners or loading spinners:
+`RealtimeConnection` is a sealed interface - match on it to drive reconnect banners or loading spinners:
 
 | State | When |
 |---|---|
@@ -259,7 +259,7 @@ Use the `RingingCallContent` Composable (see [Compose Components](#compose-compo
 
 ### `ParticipantState` key fields
 
-Each participant is a `ParticipantState`. The renderable bits are also `StateFlow`s — read them with `collectAsStateWithLifecycle()`:
+Each participant is a `ParticipantState`. The renderable bits are also `StateFlow`s - read them with `collectAsStateWithLifecycle()`:
 
 | Property | Type | Description |
 |---|---|---|
@@ -274,7 +274,7 @@ Each participant is a `ParticipantState`. The renderable bits are also `StateFlo
 | `videoEnabled` | `StateFlow<Boolean>` | Camera on |
 | `audioEnabled` | `StateFlow<Boolean>` | Microphone on |
 
-Use `sessionId` as the stable key in `LazyColumn` / `LazyVerticalGrid` `items(...)` calls — `userId` can repeat if the same user joins twice.
+Use `sessionId` as the stable key in `LazyColumn` / `LazyVerticalGrid` `items(...)` calls - `userId` can repeat if the same user joins twice.
 
 ### Client-level call routing
 
@@ -289,7 +289,7 @@ val activeCall by StreamVideo.instance().state.activeCall.collectAsStateWithLife
 
 ## Compose Components
 
-All Stream Video Composables must be hosted inside `VideoTheme { ... }` — calling them outside throws at runtime ("No colors provided!").
+All Stream Video Composables must be hosted inside `VideoTheme { ... }` - calling them outside throws at runtime ("No colors provided!").
 
 | Composable | Purpose |
 |---|---|
@@ -305,9 +305,9 @@ All Stream Video Composables must be hosted inside `VideoTheme { ... }` — call
 
 ### `CallContent` slots
 
-`CallContent(call, ...)` exposes slot lambdas for the app bar, control bar, video grid, individual participant renderer, floating local-participant tile, and PiP content. The defaults already wire `ParticipantsLayout`, `ControlActions`, `CallAppBar`, and a permission handler — override only the slots you need.
+`CallContent(call, ...)` exposes slot lambdas for the app bar, control bar, video grid, individual participant renderer, floating local-participant tile, and PiP content. The defaults already wire `ParticipantsLayout`, `ControlActions`, `CallAppBar`, and a permission handler - override only the slots you need.
 
-> **Never guess slot names or default-content shapes.** Check the source (`stream-video-android-ui-compose/.../activecall/CallContent.kt`) before writing an override — slot lambdas evolve between versions.
+> **Never guess slot names or default-content shapes.** Check the source (`stream-video-android-ui-compose/.../activecall/CallContent.kt`) before writing an override - slot lambdas evolve between versions.
 
 ### `CallAction` sealed interface
 
@@ -364,7 +364,7 @@ fun JoinScreen(call: Call) {
 }
 ```
 
-`CallContent` already invokes a `DefaultPermissionHandler` internally using the `permissions` parameter — pass a custom `VideoPermissionsState` only if you want a different request shape.
+`CallContent` already invokes a `DefaultPermissionHandler` internally using the `permissions` parameter - pass a custom `VideoPermissionsState` only if you want a different request shape.
 
 ---
 
@@ -372,7 +372,7 @@ fun JoinScreen(call: Call) {
 
 ### `VideoTheme`
 
-`VideoTheme` is the entry point for colors, dimensions, typography, shapes, ripple, and reaction mapping. Build it once at the top of every Stream surface — `CallContent`, `RingingCallContent`, and friends require a hosting `VideoTheme`.
+`VideoTheme` is the entry point for colors, dimensions, typography, shapes, ripple, and reaction mapping. Build it once at the top of every Stream surface - `CallContent`, `RingingCallContent`, and friends require a hosting `VideoTheme`.
 
 ```kotlin
 import io.getstream.video.android.compose.theme.VideoTheme
@@ -396,7 +396,7 @@ Read tokens at the call site via `VideoTheme.colors.<token>`, `VideoTheme.dimens
 
 ### Custom participant rendering
 
-`CallContent` accepts a `videoRenderer` lambda — replace the default `ParticipantVideo` to draw your own tile:
+`CallContent` accepts a `videoRenderer` lambda - replace the default `ParticipantVideo` to draw your own tile:
 
 ```kotlin
 CallContent(
@@ -426,7 +426,7 @@ CallContent(
 )
 ```
 
-Inside the custom controls, drive call state with `call.camera`, `call.microphone`, `call.speaker`, and `call.leave()` — see [Call Controls](#call-controls).
+Inside the custom controls, drive call state with `call.camera`, `call.microphone`, `call.speaker`, and `call.leave()` - see [Call Controls](#call-controls).
 
 ---
 
@@ -450,7 +450,7 @@ call.camera.flip()
 call.leave()
 ```
 
-`call.camera`, `call.microphone`, and `call.speaker` are stable for the lifetime of the `Call` — keep references in your ViewModel, not in `remember { ... }`.
+`call.camera`, `call.microphone`, and `call.speaker` are stable for the lifetime of the `Call` - keep references in your ViewModel, not in `remember { ... }`.
 
 ---
 
@@ -462,17 +462,17 @@ Source: [getstream.io/video/docs/android/advanced/troubleshooting/](https://gets
 
 A failed WebSocket connection prevents calls from being established.
 
-- **Expired token** — verify at [jwt.io](https://jwt.io). When using expiring tokens always supply a `tokenProvider` so the SDK can refresh automatically.
-- **Wrong secret** — tokens must be signed with this app's secret. Tokens copied from docs use a demo secret and will be rejected.
-- **User-token mismatch** — the token must be signed for the same user id passed to `StreamVideoBuilder(user = ...)`.
+- **Expired token** - verify at [jwt.io](https://jwt.io). When using expiring tokens always supply a `tokenProvider` so the SDK can refresh automatically.
+- **Wrong secret** - tokens must be signed with this app's secret. Tokens copied from docs use a demo secret and will be rejected.
+- **User-token mismatch** - the token must be signed for the same user id passed to `StreamVideoBuilder(user = ...)`.
 
 ### Ringing call issues
 
 - **App in foreground:** ringing UI shows via the active socket. Fix connection issues first.
-- **App in background or killed:** requires push notification + a foreground service. The SDK ships a default service config in `NotificationConfig` — don't strip it from the merged manifest.
-- **Calling yourself** — caller and callee must be different users; a user cannot ring themselves.
-- **Unknown member** — the callee must have connected to Stream at least once so the platform knows their device token.
-- **Reused call ID** — ringing fires only once per call ID. Use a fresh `UUID().toString()` (or a server-issued id) for every ringing call.
+- **App in background or killed:** requires push notification + a foreground service. The SDK ships a default service config in `NotificationConfig` - don't strip it from the merged manifest.
+- **Calling yourself** - caller and callee must be different users; a user cannot ring themselves.
+- **Unknown member** - the callee must have connected to Stream at least once so the platform knows their device token.
+- **Reused call ID** - ringing fires only once per call ID. Use a fresh `UUID().toString()` (or a server-issued id) for every ringing call.
 
 ### Logs
 
@@ -488,10 +488,10 @@ Levels: `Priority.VERBOSE`, `DEBUG`, `INFO`, `WARN`, `ERROR`, `ASSERT`, `NONE`. 
 
 ## Gotchas
 
-- **Build `StreamVideo` once in `Application.onCreate()`, before any Stream Composable renders.** `StreamVideoBuilder(...).build()` registers a singleton (a second build without `StreamVideo.removeClient()` leaks the previous instance); `StreamVideo.instance()` throws until that first build completes — use `instanceOrNull()` for code paths that may run pre-init.
+- **Build `StreamVideo` once in `Application.onCreate()`, before any Stream Composable renders.** `StreamVideoBuilder(...).build()` registers a singleton (a second build without `StreamVideo.removeClient()` leaks the previous instance); `StreamVideo.instance()` throws until that first build completes - use `instanceOrNull()` for code paths that may run pre-init.
 - **Never instantiate the client in a `@Composable` body or `remember { ... }`.** It survives recompositions; recreating it tears down the WebSocket and orphans the active call.
 - **Every Stream Composable needs a hosting `VideoTheme { ... }`.** Calling `CallContent`, `RingingCallContent`, etc. outside a `VideoTheme` throws "No colors provided!" at runtime.
-- **All call lifecycle methods (`create`, `join`, `accept`, `reject`, `end`, `ring`) are `suspend` and return `Result<T>`.** Call them from a coroutine scope you own; never from a `@Composable` body. Handle `Result.Failure` — silently swallowing it leaves the UI stuck mid-state.
-- **`call.leave()` is synchronous; the rest are not.** `leave()` is the right way to exit the local session — kicking off `end()` on the host side ends the call for everyone.
+- **All call lifecycle methods (`create`, `join`, `accept`, `reject`, `end`, `ring`) are `suspend` and return `Result<T>`.** Call them from a coroutine scope you own; never from a `@Composable` body. Handle `Result.Failure` - silently swallowing it leaves the UI stuck mid-state.
+- **`call.leave()` is synchronous; the rest are not.** `leave()` is the right way to exit the local session - kicking off `end()` on the host side ends the call for everyone.
 - **Use `sessionId` as the list key for participants, not `userId`.** The same user may join twice (multi-device); `sessionId` is unique per session.
-- **Do not request `CAMERA` / `RECORD_AUDIO` lazily inside the call screen.** Use `LaunchCallPermissions(call)` (or `rememberCallPermissionsState`) before `call.join(...)` runs — joining without granted permissions starts the call but with disabled tracks.
+- **Do not request `CAMERA` / `RECORD_AUDIO` lazily inside the call screen.** Use `LaunchCallPermissions(call)` (or `rememberCallPermissionsState`) before `call.join(...)` runs - joining without granted permissions starts the call but with disabled tracks.

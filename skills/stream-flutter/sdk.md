@@ -20,7 +20,7 @@ Default to `stream_chat_flutter` unless the user explicitly needs custom UI or l
 
 ### Feeds
 
-One package — no pre-built UI:
+One package - no pre-built UI:
 
 | Package | Notes |
 |---|---|
@@ -115,7 +115,7 @@ Use Option A when you also need to pass `streamChatThemeData` or `localizationsD
 Use the simplest token shape that matches the user's environment:
 
 - **Backend exists:** prefer a backend-issued Stream token fetched at login time.
-- **No backend / demo flow:** generate a token with the Stream CLI (see Step 0.5 in `SKILL.md`). Never-expiring: `stream token <user_id>`. Expiring: `stream token <user_id> --ttl <duration>`.
+- **No backend / demo flow:** generate a token with the Stream CLI (see Step 0.5 in `SKILL.md`). Never-expiring: `getstream token <user_id>`. Expiring: `getstream token <user_id> --ttl <duration>`.
 - **User pastes their own:** accept it and move on.
 
 Keep the split clear:

@@ -405,8 +405,8 @@ struct ParticipantTileView: View {
 ```
 
 **Wiring:**
-- `VideoCallParticipantView` requires `contentMode`, `customData`, and `call` — all three must be provided
-- `call` is `Call?` — pass `callViewModel.call` from the owning view
+- `VideoCallParticipantView` requires `contentMode`, `customData`, and `call` - all three must be provided
+- `call` is `Call?` - pass `callViewModel.call` from the owning view
 - `contentMode: .scaleAspectFill` fills the tile; use `.scaleAspectFit` to avoid cropping
 - `availableFrame` sets the rendering resolution; read it from a `GeometryReader` on the tile's container
 

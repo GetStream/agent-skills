@@ -220,7 +220,7 @@ class ThreadPage extends StatelessWidget {
 **Wiring:**
 - `StreamThreadHeader` shows the parent message context in the app bar
 - `parentMessage: parent` tells `StreamMessageListView` to show thread replies only
-- `StreamMessageComposerController(message: Message(parentId: parent.id))` pre-configures the composer to send replies into the thread (v10: `StreamMessageInputController` → `StreamMessageComposerController`, `messageInputController:` → `messageComposerController:`)
+- `StreamMessageComposerController(message: Message(parentId: parent.id))` pre-configures the composer to send replies into the thread (v10: `StreamMessageInputController` -> `StreamMessageComposerController`, `messageInputController:` -> `messageComposerController:`)
 
 ---
 

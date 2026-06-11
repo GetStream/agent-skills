@@ -69,7 +69,7 @@ android {
 }
 ```
 
-Also update the project-level `android/build.gradle` to use AGP ≥8.12.1 and Gradle ≥8.13, and Kotlin 2.2.0+ (required since v0.11.0):
+Also update the project-level `android/build.gradle` to use AGP >=8.12.1 and Gradle >=8.13, and Kotlin 2.2.0+ (required since v0.11.0):
 
 ```groovy
 // android/settings.gradle (or build.gradle depending on project structure)
@@ -164,7 +164,7 @@ final client = StreamVideo(
 );
 ```
 
-Token generation: `stream token <user_id>` (same CLI as Chat).
+Token generation: `getstream token <user_id>` (same CLI as Chat).
 
 ### Token provider (expiring tokens)
 
@@ -259,7 +259,7 @@ To ring members of an **existing** call (v1.0.0+):
 await call.ring(memberIds: ['alice', 'bob']);
 ```
 
-### Ringing events (v1.0.0 — renamed from CallKit API)
+### Ringing events (v1.0.0 - renamed from CallKit API)
 
 `flutter_callkit_incoming` was removed in v1.0.0. The ringing event API was renamed:
 
@@ -364,7 +364,7 @@ StreamBuilder<CallState>(
 final activeSpeakers = call.state.value.activeSpeakers; // List<CallParticipantState>
 ```
 
-**Partial state** — subscribe only to participant-level changes (more efficient than full `CallState` rebuilds):
+**Partial state** - subscribe only to participant-level changes (more efficient than full `CallState` rebuilds):
 
 ```dart
 call.partialState  // Stream<CallStatePartial> (v0.10.0+)
@@ -456,14 +456,14 @@ Predefined policies:
 
 | Policy | Use case |
 |---|---|
-| `AudioConfigurationPolicy.broadcaster()` | Host/sender — optimized for publishing |
-| `AudioConfigurationPolicy.viewer()` | Viewer/listener — optimized for receiving |
+| `AudioConfigurationPolicy.broadcaster()` | Host/sender - optimized for publishing |
+| `AudioConfigurationPolicy.viewer()` | Viewer/listener - optimized for receiving |
 | `AudioConfigurationPolicy.hiFi()` | Music or high-fidelity audio calls |
 | `AudioConfigurationPolicy.custom(...)` | Full manual control |
 
 For per-call audio config overrides, set on `DefaultCallPreferences` (v1.4.0+).
 
-> **`androidAudioConfiguration` is deprecated** — use `audioConfigurationPolicy` instead.
+> **`androidAudioConfiguration` is deprecated** - use `audioConfigurationPolicy` instead.
 
 ---
 
@@ -481,7 +481,7 @@ Since v1.0.0, video filters (blur background, virtual background) are in a **sep
 stream_video_filters: ^1.4.0
 ```
 
-Do not import from `stream_video_flutter` for filters — import from `stream_video_filters`.
+Do not import from `stream_video_flutter` for filters - import from `stream_video_filters`.
 
 ---
 
@@ -539,26 +539,26 @@ Source: `https://getstream.io/video/docs/flutter/`
 | Dart SDK | `^3.6.x` | `^3.8.0` |
 | Flutter min | `3.27.4` | `>=3.32.0` |
 | Android compileSDK | 34 | **36** |
-| Android AGP | any | **≥8.12.1** |
+| Android AGP | any | **>=8.12.1** |
 | Android Kotlin | any | **2.2.0+** |
 | Android `MainActivity` | extends `FlutterActivity` | extends `StreamFlutterActivity` (PiP) |
 | Ringing events | `onCallKitEvent` / `CallKitEvent` | `onRingingEvent` / `RingingEvent` |
 | Push config | `pushParams` | `pushConfiguration` (`StreamVideoPushConfiguration`) |
 | Caller name param | `nameCaller` | `callerName` |
 | Video filters | bundled | separate `stream_video_filters` package |
-| `CallPreferences` | on `CallStateNotifier` | on `CallState` → `DefaultCallPreferences` |
+| `CallPreferences` | on `CallStateNotifier` | on `CallState` -> `DefaultCallPreferences` |
 | Participant pin | `isPinned: bool` / `setParticipantPinned()` | `pin: ParticipantPin?` / `setParticipantPinnedLocally()` |
 | Audio config | `androidAudioConfiguration` | `audioConfigurationPolicy` (deprecated) |
 
 **New APIs since v0.8.0:**
-- `call.ring(memberIds:)` — ring members of an existing call
-- `call.kickUser(userId:)` — remove a participant
-- `call.callDurationStream` — live call timer
-- `call.partialState` — efficient participant-level state updates
-- `call.camera.setZoom()` / `call.camera.focus()` — camera control
-- `call.statsReporter` — aggregated call metrics, battery/thermal tracking
-- `AudioConfigurationPolicy` — broadcaster / viewer / hiFi / custom presets
-- `Call.ensureNativeFactory()` — per-call native factory for multi-call scenarios
+- `call.ring(memberIds:)` - ring members of an existing call
+- `call.kickUser(userId:)` - remove a participant
+- `call.callDurationStream` - live call timer
+- `call.partialState` - efficient participant-level state updates
+- `call.camera.setZoom()` / `call.camera.focus()` - camera control
+- `call.statsReporter` - aggregated call metrics, battery/thermal tracking
+- `AudioConfigurationPolicy` - broadcaster / viewer / hiFi / custom presets
+- `Call.ensureNativeFactory()` - per-call native factory for multi-call scenarios
 
 ---
 
@@ -575,6 +575,6 @@ Source: `https://getstream.io/video/docs/flutter/`
 - **`flutter_callkit_incoming` removed in v1.0.0.** If upgrading from v0.x, replace `onCallKitEvent`/`CallKitEvent` with `onRingingEvent`/`RingingEvent` and update push configuration from `pushParams` to `pushConfiguration`.
 - **Video filters moved to `stream_video_filters` in v1.0.0.** Add the separate package if you use blur/virtual background.
 - **Android PiP requires `StreamFlutterActivity` since v0.10.0.** Extend `StreamFlutterActivity` in `MainActivity.kt` instead of `FlutterActivity`.
-- **Android build tooling updated in v0.11.0.** Requires compileSDK 36, AGP ≥8.12.1, Gradle ≥8.13, Kotlin 2.2.0.
+- **Android build tooling updated in v0.11.0.** Requires compileSDK 36, AGP >=8.12.1, Gradle >=8.13, Kotlin 2.2.0.
 - **`isPinned` replaced by `pin` object in v0.8.4.** Use `participant.pin != null` instead of `participant.isPinned`.
 - **`androidAudioConfiguration` deprecated in v1.3.0.** Use `audioConfigurationPolicy` instead.

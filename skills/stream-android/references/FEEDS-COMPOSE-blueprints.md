@@ -2,20 +2,20 @@
 
 Load only the section you are implementing. For setup, client initialization, auth, and gotchas, see [FEEDS-COMPOSE.md](FEEDS-COMPOSE.md).
 
-Per [`RULES.md`](../RULES.md) → *Blueprints are mandatory, on every turn*: any Stream Feeds screen, Composable, navigation handler, deep-link route, or UI customization must be preceded by reading the matching section below — including on follow-up turns inside an existing session.
+Per [`RULES.md`](../RULES.md) -> *Blueprints are mandatory, on every turn*: any Stream Feeds screen, Composable, navigation handler, deep-link route, or UI customization must be preceded by reading the matching section below - including on follow-up turns inside an existing session.
 
-> **Stream Feeds has no pre-built UI components.** Every screen here is custom Compose driven by `FeedState` / `ActivityState` `StateFlow`s. There is no drop-in `FeedScreen` and no Stream-supplied theme — render against your project's existing Compose theme (typically `MaterialTheme`).
+> **Stream Feeds has no pre-built UI components.** Every screen here is custom Compose driven by `FeedState` / `ActivityState` `StateFlow`s. There is no drop-in `FeedScreen` and no Stream-supplied theme - render against your project's existing Compose theme (typically `MaterialTheme`).
 
-> **DI shape.** `FeedsClient` is not in the DI graph — it only exists after `connect()` succeeds, so `@Inject FeedsClient` has nothing to bind to. Inject `FeedsSessionManager` as a singleton (Hilt `@Singleton`, Koin `single`); for child VMs that need the `FeedsClient`, pass it from the `is FeedsSession.Connected` branch via this file's `companion object factory(client)` pattern, Hilt `@AssistedInject` keyed on `client`, or Koin `parametersOf(client)`. See the [Root Navigation Blueprint](#root-navigation-blueprint) for the call-site code.
+> **DI shape.** `FeedsClient` is not in the DI graph - it only exists after `connect()` succeeds, so `@Inject FeedsClient` has nothing to bind to. Inject `FeedsSessionManager` as a singleton (Hilt `@Singleton`, Koin `single`); for child VMs that need the `FeedsClient`, pass it from the `is FeedsSession.Connected` branch via this file's `companion object factory(client)` pattern, Hilt `@AssistedInject` keyed on `client`, or Koin `parametersOf(client)`. See the [Root Navigation Blueprint](#root-navigation-blueprint) for the call-site code.
 
 ---
 
-## Request → Blueprint section
+## Request -> Blueprint section
 
 | User request signal | Section(s) to read |
 |---|---|
-| "set up Stream Feeds", "initialize FeedsClient", session lifecycle, `Application` class, manifest wiring | [Session Manager Blueprint](#session-manager-blueprint) — foundational, read first for any path that touches `FeedsClient` |
-| "single demo user", "no login screen", "auto-connect on launch" | [Auto-Connect (Single Demo User) Blueprint](#auto-connect-single-demo-user-blueprint) — uses the Session Manager Blueprint |
+| "set up Stream Feeds", "initialize FeedsClient", session lifecycle, `Application` class, manifest wiring | [Session Manager Blueprint](#session-manager-blueprint) - foundational, read first for any path that touches `FeedsClient` |
+| "single demo user", "no login screen", "auto-connect on launch" | [Auto-Connect (Single Demo User) Blueprint](#auto-connect-single-demo-user-blueprint) - uses the Session Manager Blueprint |
 | "login screen", "connect user", token wiring | [Login / Connect User Blueprint](#login--connect-user-blueprint) |
 | "navigate between screens", "skip login if connected", root host | [Root Navigation Blueprint](#root-navigation-blueprint) |
 | "timeline", "feed screen", main activity list, "for-you" / following feed | [Timeline (Activity List) Blueprint](#timeline-activity-list-blueprint) |
@@ -26,17 +26,17 @@ Per [`RULES.md`](../RULES.md) → *Blueprints are mandatory, on every turn*: any
 | "notifications", notification feed, badge, mark-as-read | [Notifications Blueprint](#notifications-blueprint) |
 | "stories strip", create story, story viewer | [Stories Strip Blueprint](#stories-strip-blueprint) |
 
-If the request is something not covered, do not fabricate APIs — say the blueprint is not bundled and fall back per [`RULES.md`](../RULES.md).
+If the request is something not covered, do not fabricate APIs - say the blueprint is not bundled and fall back per [`RULES.md`](../RULES.md).
 
 ---
 
 ## Session Manager Blueprint
 
-This is the foundational blueprint — every path that touches `FeedsClient` (login, root nav, every screen ViewModel) reads from `manager.session`. Read this first.
+This is the foundational blueprint - every path that touches `FeedsClient` (login, root nav, every screen ViewModel) reads from `manager.session`. Read this first.
 
-`FeedsClient` is bound to one user for its lifetime — the `User` and `tokenProvider` are fixed at construction and cannot be swapped afterwards. So construction happens at login, not in `Application.onCreate()`. To switch users you `disconnect()` and replace the client.
+`FeedsClient` is bound to one user for its lifetime - the `User` and `tokenProvider` are fixed at construction and cannot be swapped afterwards. So construction happens at login, not in `Application.onCreate()`. To switch users you `disconnect()` and replace the client.
 
-Model the lifecycle as a sealed `FeedsSession` so the `Connected` variant carries the client — `when (session)` becomes exhaustive and the type system rules out "connected but null client". A singleton **`FeedsSessionManager`** owns the session state, the long-lived coroutine scope, and the connect/disconnect logic. ViewModels become thin: they translate view events into manager calls and observe `manager.session`. The manager owns its own scope (justified — that's the entity whose responsibility *is* long-lived async work). Provide it via `@Singleton` (Hilt) / `single { ... }` (Koin), or own it from `Application` for non-DI samples.
+Model the lifecycle as a sealed `FeedsSession` so the `Connected` variant carries the client - `when (session)` becomes exhaustive and the type system rules out "connected but null client". A singleton **`FeedsSessionManager`** owns the session state, the long-lived coroutine scope, and the connect/disconnect logic. ViewModels become thin: they translate view events into manager calls and observe `manager.session`. The manager owns its own scope (justified - that's the entity whose responsibility *is* long-lived async work). Provide it via `@Singleton` (Hilt) / `single { ... }` (Koin), or own it from `Application` for non-DI samples.
 
 ```kotlin
 package com.example.streamfeeds
@@ -143,19 +143,19 @@ Register the application class in `AndroidManifest.xml`:
 </application>
 ```
 
-For an expiring (backend-issued) token, replace the static `StreamToken.fromString(token)` inside `buildClient(...)` with a `StreamTokenProvider` that calls your auth service in `loadToken(userId)`. The SDK re-invokes `loadToken` on expiry — see [FEEDS-COMPOSE.md → User Authentication](FEEDS-COMPOSE.md#user-authentication).
+For an expiring (backend-issued) token, replace the static `StreamToken.fromString(token)` inside `buildClient(...)` with a `StreamTokenProvider` that calls your auth service in `loadToken(userId)`. The SDK re-invokes `loadToken` on expiry - see [FEEDS-COMPOSE.md -> User Authentication](FEEDS-COMPOSE.md#user-authentication).
 
 **Wiring:**
-- The manager is the *only* writer of `_session`. ViewModels never set state directly — they call `manager.connect(...)` / `manager.disconnect()` and observe `manager.session`.
+- The manager is the *only* writer of `_session`. ViewModels never set state directly - they call `manager.connect(...)` / `manager.disconnect()` and observe `manager.session`.
 - `manager.session` starts `Disconnected`. Composables observe via `collectAsStateWithLifecycle()` and `when`-switch on the variant; the `Connected` branch destructures `client` from the state, so there is no nullable-client path to handle.
-- Login transitions: `Disconnected` → `Connecting` → `Connected(client)` on success or `Failed(message)` on error.
+- Login transitions: `Disconnected` -> `Connecting` -> `Connected(client)` on success or `Failed(message)` on error.
 - Logout: the manager `disconnect()`s the current client and flips state to `Disconnected` in a single launch on its own scope, so the operation completes even if the calling screen is gone.
 
 ---
 
 ## Auto-Connect (Single Demo User) Blueprint
 
-Uses the [Session Manager Blueprint](#session-manager-blueprint). Skip `LoginScreen` and auto-connect a hardcoded user from `Application.onCreate()`. Compose then collects `manager.session` and renders `Connecting` / `Connected` / `Failed` directly — there's no `Login` route in the nav graph.
+Uses the [Session Manager Blueprint](#session-manager-blueprint). Skip `LoginScreen` and auto-connect a hardcoded user from `Application.onCreate()`. Compose then collects `manager.session` and renders `Connecting` / `Connected` / `Failed` directly - there's no `Login` route in the nav graph.
 
 ```kotlin
 class App : Application() {
@@ -173,13 +173,13 @@ class App : Application() {
 }
 ```
 
-For real apps, issue tokens from your backend instead of hardcoding — see [FEEDS-COMPOSE.md → User Authentication](FEEDS-COMPOSE.md#user-authentication).
+For real apps, issue tokens from your backend instead of hardcoding - see [FEEDS-COMPOSE.md -> User Authentication](FEEDS-COMPOSE.md#user-authentication).
 
 ---
 
 ## Login / Connect User Blueprint
 
-`LoginScreen` is a stateless Composable. It takes `isConnecting`, `error`, and `onConnect` from above and renders the form — all the connect/disconnect logic lives in `RootViewModel` (see the [Root Navigation Blueprint](#root-navigation-blueprint)).
+`LoginScreen` is a stateless Composable. It takes `isConnecting`, `error`, and `onConnect` from above and renders the form - all the connect/disconnect logic lives in `RootViewModel` (see the [Root Navigation Blueprint](#root-navigation-blueprint)).
 
 ```kotlin
 @Composable
@@ -225,7 +225,7 @@ fun LoginScreen(
 ```
 
 **Wiring:**
-- The Composable is dumb — no `lifecycleScope`, no client construction, no `sessionManager` reference. `RootScreen` passes `viewModel::onLoginClicked` as `onConnect` and drives `isConnecting` from the `Connecting` variant (see the Root Navigation Blueprint).
+- The Composable is dumb - no `lifecycleScope`, no client construction, no `sessionManager` reference. `RootScreen` passes `viewModel::onLoginClicked` as `onConnect` and drives `isConnecting` from the `Connecting` variant (see the Root Navigation Blueprint).
 - For a real app, source the user id from your auth store / DataStore in the ViewModel; treat the on-screen text fields as a dev-time stand-in.
 - For an expiring token, swap the static `StreamToken.fromString(...)` inside `FeedsSessionManager.buildClient(...)` for a `StreamTokenProvider` that fetches from your backend.
 
@@ -233,7 +233,7 @@ fun LoginScreen(
 
 ## Root Navigation Blueprint
 
-Gate the app on `FeedsSession`. `RootViewModel` is a thin translator from view events to `FeedsSessionManager` calls — it does not own the scope, the state, or the lifecycle policy. `RootScreen` `when`-switches on the sealed state, so each branch knows statically whether a client is available.
+Gate the app on `FeedsSession`. `RootViewModel` is a thin translator from view events to `FeedsSessionManager` calls - it does not own the scope, the state, or the lifecycle policy. `RootScreen` `when`-switches on the sealed state, so each branch knows statically whether a client is available.
 
 ```kotlin
 import io.getstream.feeds.android.client.api.model.User
@@ -276,11 +276,11 @@ fun RootScreen(viewModel: RootViewModel) {
 ```
 
 **Wiring:**
-- The `when` is exhaustive on a sealed interface — adding a new variant (e.g. `Reconnecting`) becomes a compile error until every screen handles it. No nullable client to defend against.
-- `RootViewModel` exposes `sessionManager.session` as-is — no private flow, no shadowing. A logout from anywhere (e.g. a deep settings screen) calls `sessionManager.disconnect()` and every observer re-renders.
-- Child ViewModels that need the client receive it through their own constructor — created from the `is FeedsSession.Connected` branch with `s.client` in scope, so the ViewModel never sees a nullable client.
+- The `when` is exhaustive on a sealed interface - adding a new variant (e.g. `Reconnecting`) becomes a compile error until every screen handles it. No nullable client to defend against.
+- `RootViewModel` exposes `sessionManager.session` as-is - no private flow, no shadowing. A logout from anywhere (e.g. a deep settings screen) calls `sessionManager.disconnect()` and every observer re-renders.
+- Child ViewModels that need the client receive it through their own constructor - created from the `is FeedsSession.Connected` branch with `s.client` in scope, so the ViewModel never sees a nullable client.
 - For a single-Activity Compose project, host this inside a `NavHost` and route to feeds destinations from the `Connected` branch.
-- Obtain `RootViewModel` from a Compose host with `val app = LocalContext.current.applicationContext as App; viewModel(factory = RootViewModel.factory(app.sessionManager))`. Under Hilt, drop the factory and `@Inject` the `FeedsSessionManager` directly (`@HiltViewModel class RootViewModel @Inject constructor(sessionManager: FeedsSessionManager)`). Child ViewModels (`TimelineViewModel`, `NotificationsViewModel`, etc.) only need the `FeedsClient` — expose `companion object factory(client: FeedsClient)` and obtain them with `viewModel(factory = ...)` from the `is FeedsSession.Connected` branch where `client` is in scope.
+- Obtain `RootViewModel` from a Compose host with `val app = LocalContext.current.applicationContext as App; viewModel(factory = RootViewModel.factory(app.sessionManager))`. Under Hilt, drop the factory and `@Inject` the `FeedsSessionManager` directly (`@HiltViewModel class RootViewModel @Inject constructor(sessionManager: FeedsSessionManager)`). Child ViewModels (`TimelineViewModel`, `NotificationsViewModel`, etc.) only need the `FeedsClient` - expose `companion object factory(client: FeedsClient)` and obtain them with `viewModel(factory = ...)` from the `is FeedsSession.Connected` branch where `client` is in scope.
 
 ---
 
@@ -415,11 +415,11 @@ fun TimelineScreen(
 **Wiring:**
 - Build the `Feed` object **once** in `init` of the ViewModel. Don't recreate it per recomposition.
 - `feed.state.activities` is a `StateFlow<List<ActivityData>>`. Use `collectAsStateWithLifecycle()`.
-- `getOrCreate()` is idempotent — call it again from a swipe-to-refresh.
-- Obtain from a Compose host inside the `is FeedsSession.Connected` branch: `val viewModel: TimelineViewModel = viewModel(factory = TimelineViewModel.factory(s.client))`. The other client-bound ViewModels in this file (`NotificationsViewModel`, `ProfileViewModel`, `CommentsViewModel`) follow the same shape — add a `companion object factory(client: FeedsClient, ...) { viewModelFactory { initializer { ... } } }` and obtain them the same way. Under Hilt, drop the factory and use `hiltViewModel()`.
+- `getOrCreate()` is idempotent - call it again from a swipe-to-refresh.
+- Obtain from a Compose host inside the `is FeedsSession.Connected` branch: `val viewModel: TimelineViewModel = viewModel(factory = TimelineViewModel.factory(s.client))`. The other client-bound ViewModels in this file (`NotificationsViewModel`, `ProfileViewModel`, `CommentsViewModel`) follow the same shape - add a `companion object factory(client: FeedsClient, ...) { viewModelFactory { initializer { ... } } }` and obtain them the same way. Under Hilt, drop the factory and use `hiltViewModel()`.
 - The `timeline:<userId>` feed does **not** automatically follow `user:<userId>`. Add the self-follow once after `getOrCreate()` if the user should see their own posts.
 - This blueprint puts posts and stories in **separate feed groups** (`timeline:<userId>` for posts, `story:<userId>` for stories), so no `expiresAt` filter is needed. If your project mixes both into one group, add `activityFilter = ActivitiesFilterField.expiresAt.doesNotExist()` to the `FeedQuery` here so stories don't leak into the timeline.
-- **Surface failures, don't swallow them.** SDK suspend operations return `Result<…>` — chain `.onFailure { }` to expose errors as a `StateFlow<String?>` the screen can render (snackbar / banner). A bare `viewModelScope.launch { feed.getOrCreate() }` hides network failures and leaves the UI stuck on an empty list. Apply the same pattern in `NotificationsViewModel`, `ProfileViewModel`, `CommentsViewModel`.
+- **Surface failures, don't swallow them.** SDK suspend operations return `Result<...>` - chain `.onFailure { }` to expose errors as a `StateFlow<String?>` the screen can render (snackbar / banner). A bare `viewModelScope.launch { feed.getOrCreate() }` hides network failures and leaves the UI stuck on an empty list. Apply the same pattern in `NotificationsViewModel`, `ProfileViewModel`, `CommentsViewModel`.
 
 ---
 
@@ -437,7 +437,7 @@ fun ActivityRow(
     onCommentClick: () -> Unit,
 ) {
     // `base` is the original activity for reposts (used for display). Reactions and
-    // bookmarks always attach to the wrapper (`activity`) — that's the thing the
+    // bookmarks always attach to the wrapper (`activity`) - that's the thing the
     // current user actually interacted with.
     val base = activity.parent ?: activity
     val hasLiked = activity.ownReactions.any { it.type == "heart" }
@@ -495,13 +495,13 @@ fun ActivityRow(
 **Wiring:**
 - Reactions live on `activity.ownReactions` (current user's) and `activity.reactionGroups[type]?.count` (totals). Compute booleans inline; don't cache them across recompositions.
 - Reposts surface as activities with `parent != null`. Render the parent's text/attachments and a small "reposted" header.
-- The row is callback-only — no `Feed` reference, no `rememberCoroutineScope()`. Mutations run in `viewModelScope` so they survive the row scrolling out of composition (a `rememberCoroutineScope()` inside the row would cancel a half-finished like/repost the moment the user scrolled).
+- The row is callback-only - no `Feed` reference, no `rememberCoroutineScope()`. Mutations run in `viewModelScope` so they survive the row scrolling out of composition (a `rememberCoroutineScope()` inside the row would cancel a half-finished like/repost the moment the user scrolled).
 
 ---
 
 ## Activity Composer Blueprint
 
-The actual `addActivity` call runs in `viewModelScope`, never `rememberCoroutineScope()` — dismissing the sheet (or the user backgrounding the app) must not abort the post, especially with attachment uploads in flight. The Composable is dumb: it owns the text field state and forwards user intent.
+The actual `addActivity` call runs in `viewModelScope`, never `rememberCoroutineScope()` - dismissing the sheet (or the user backgrounding the app) must not abort the post, especially with attachment uploads in flight. The Composable is dumb: it owns the text field state and forwards user intent.
 
 ```kotlin
 import io.getstream.feeds.android.client.api.FeedsClient
@@ -550,7 +550,7 @@ class ComposerViewModel(
     }
 
     fun onDismissed() {
-        // Sheet went away — clear surfaced result/error state so the next open is fresh.
+        // Sheet went away - clear surfaced result/error state so the next open is fresh.
         // An in-flight Posting keeps running in viewModelScope (intended).
         if (_state.value !is UiState.Posting) _state.value = UiState.Idle
     }
@@ -600,7 +600,7 @@ fun ActivityComposerSheet(
             Button(
                 enabled = text.isNotBlank() && !posting,
                 onClick = { viewModel.onPostClicked(text, postAsStory) },
-            ) { Text(if (posting) "Posting…" else "Post") }
+            ) { Text(if (posting) "Posting..." else "Post") }
 
             (state as? ComposerViewModel.UiState.Error)?.let {
                 Text(it.message, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
@@ -611,11 +611,11 @@ fun ActivityComposerSheet(
 ```
 
 **Wiring:**
-- All SDK calls run in `viewModelScope` — the post (and any attachment uploads) survives sheet dismissal, config changes, and recomposition. **Don't** use `rememberCoroutineScope()` for SDK operations: it's tied to the Composable's lifetime, and a dismiss mid-upload silently aborts the post.
-- The VM exposes view-events (`onPostClicked`, `onDismissed`) — "*this happened in the view*" — and decides internally what state to transition to. The Composable never reaches in to clear specific state (e.g. no `consumeDone()`); it just tells the VM what the user did. Apply this convention across every VM in this file: `onLikeClicked`, `onScrolledToEnd`, `onPullToRefresh`, `onSendClicked`, `onFollowClicked`, `onMarkAllReadClicked`, etc. — never imperative names like `toggleLike`, `loadMore`, `submit`, `markAllRead`.
+- All SDK calls run in `viewModelScope` - the post (and any attachment uploads) survives sheet dismissal, config changes, and recomposition. **Don't** use `rememberCoroutineScope()` for SDK operations: it's tied to the Composable's lifetime, and a dismiss mid-upload silently aborts the post.
+- The VM exposes view-events (`onPostClicked`, `onDismissed`) - "*this happened in the view*" - and decides internally what state to transition to. The Composable never reaches in to clear specific state (e.g. no `consumeDone()`); it just tells the VM what the user did. Apply this convention across every VM in this file: `onLikeClicked`, `onScrolledToEnd`, `onPullToRefresh`, `onSendClicked`, `onFollowClicked`, `onMarkAllReadClicked`, etc. - never imperative names like `toggleLike`, `loadMore`, `submit`, `markAllRead`.
 - The composer takes both feed ids; the story toggle picks which feed receives the activity *and* whether `expiresAt` is set. Keeping stories in a separate group means no `expiresAt` filter is needed in the timeline.
 - The Composable owns only transient UI state (`text`, `postAsStory`) via `rememberSaveable` so rotation preserves typed input. All operation state (`Posting`/`Done`/`Error`) lives on the ViewModel.
-- For attachments, see [FEEDS-COMPOSE.md → Create with attachments](FEEDS-COMPOSE.md#create-with-attachments). The picker + URI-copy work belongs in `ComposerViewModel.onPostClicked(...)` too — the cacheDir cleanup `try { … } finally { files.forEach { it.delete() } }` shown there must run in `viewModelScope` for the same reason.
+- For attachments, see [FEEDS-COMPOSE.md -> Create with attachments](FEEDS-COMPOSE.md#create-with-attachments). The picker + URI-copy work belongs in `ComposerViewModel.onPostClicked(...)` too - the cacheDir cleanup `try { ... } finally { files.forEach { it.delete() } }` shown there must run in `viewModelScope` for the same reason.
 
 ---
 
@@ -709,7 +709,7 @@ fun CommentsSheet(viewModel: CommentsViewModel, onDismiss: () -> Unit) {
                 OutlinedTextField(
                     value = text,
                     onValueChange = { text = it },
-                    placeholder = { Text(if (replyParent != null) "Reply…" else "Add a comment…") },
+                    placeholder = { Text(if (replyParent != null) "Reply..." else "Add a comment...") },
                     modifier = Modifier.weight(1f),
                 )
                 IconButton(
@@ -764,7 +764,7 @@ private fun CommentRow(
 **Wiring:**
 - `activity.get()` populates `activityState.comments`.
 - `parentId` on `addComment` drives reply threading: `null` for top-level, set to the parent comment id for a reply. Replies arrive under `comment.replies`.
-- `client.activity(...)` returns the `Activity` handle — distinct from `ActivityData`. Build it once in the ViewModel `init`.
+- `client.activity(...)` returns the `Activity` handle - distinct from `ActivityData`. Build it once in the ViewModel `init`.
 - The threaded tree is flattened to a list before rendering so every comment lives directly inside `LazyColumn`'s `items {}` block. Rendering replies via a nested `forEach` would put them outside the item scope, so `LazyColumn` couldn't key/reuse/animate them.
 
 ---
@@ -854,7 +854,7 @@ private fun SectionHeader(text: String) {
 
 **Wiring:**
 - All follow operations live on the `Feed` for the **current user** (`user:<currentUserId>`), not the target user's feed.
-- `state.following` / `state.followers` / `state.followRequests` are kept in sync by WebSocket events — no need to refetch after a `follow` / `unfollow` call.
+- `state.following` / `state.followers` / `state.followRequests` are kept in sync by WebSocket events - no need to refetch after a `follow` / `unfollow` call.
 - `queryFollowSuggestions(limit)` returns `FeedSuggestionData` (feed + recommendation score + reason). Trigger it once after the feed is loaded.
 
 ---
@@ -1009,6 +1009,6 @@ private fun StoryAvatar(
 ```
 
 **Wiring:**
-- The own-stories feed is filtered to `expiresAt.exists()` — build it via `FeedQuery(activityFilter = ActivitiesFilterField.expiresAt.exists())`.
+- The own-stories feed is filtered to `expiresAt.exists()` - build it via `FeedQuery(activityFilter = ActivitiesFilterField.expiresAt.exists())`.
 - The aggregated stories feed surfaces `aggregatedActivities` (one group per user). Use `group.activities` for the actual stories to display in the viewer.
 - Mark a story as watched after the user views it: `storiesFeed.markActivity(MarkActivityRequest(markWatched = listOf(storyId)))`.

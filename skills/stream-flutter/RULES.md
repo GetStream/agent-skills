@@ -11,7 +11,7 @@ Never hardcode a Stream API secret in app code, `pubspec.yaml`, or chat. The cli
 Default token model:
 
 - Use a backend-issued token when the user already has a backend.
-- Use a CLI-generated token (`stream token <user_id>` or `stream token <user_id> --ttl <duration>`) for local dev and demo flows - this is the preferred path when no backend exists.
+- Use a CLI-generated token (`getstream token <user_id>` or `getstream token <user_id> --ttl <duration>`) for local dev and demo flows - this is the preferred path when no backend exists.
 - Use a static token only when the user explicitly wants to paste one themselves.
 - Never invent or generate fake production credentials.
 - The API secret never leaves the CLI/server side; only the API key and the generated token go into app code.
@@ -73,13 +73,13 @@ Prefer `StreamBuilder` and `ValueListenableBuilder` for reactive UI over manual 
 
 ---
 
-## Feeds UI — no pre-built components
+## Feeds UI - no pre-built components
 
 The Stream Feeds SDK (`stream_feed`, `stream_feed_flutter_core`) ships **no UI widgets**. Every feed screen, activity card, like button, and follow button must be built with standard Flutter widgets.
 
-- Default to Twitter-style UI. Build it immediately without asking — do not pause to confirm the style.
+- Default to Twitter-style UI. Build it immediately without asking - do not pause to confirm the style.
 - Only deviate from Twitter-style when the user explicitly states a different preference (e.g., "Instagram grid", "Reddit-style votes", "photo-first").
-- The UI style only affects widget composition — the SDK calls (activities, reactions, follow/unfollow) are the same regardless of style.
+- The UI style only affects widget composition - the SDK calls (activities, reactions, follow/unfollow) are the same regardless of style.
 
 ---
 

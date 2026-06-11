@@ -222,8 +222,8 @@ Scaffold(
 
 In v10, many `StreamMessageListView` parameters were moved into two dedicated objects:
 
-- **`StreamMessageListViewConfiguration`** (passed as `config:`) — boolean flags like `swipeToReply`, `markReadWhenAtTheBottom`, `enableDraftMessages`, etc.
-- **`StreamMessageListViewBuilders`** (passed as `builders:`) — builder callbacks like `messageBuilder`, `threadBuilder`, `loadingBuilder`, `emptyBuilder`, etc.
+- **`StreamMessageListViewConfiguration`** (passed as `config:`) - boolean flags like `swipeToReply`, `markReadWhenAtTheBottom`, `enableDraftMessages`, etc.
+- **`StreamMessageListViewBuilders`** (passed as `builders:`) - builder callbacks like `messageBuilder`, `threadBuilder`, `loadingBuilder`, `emptyBuilder`, etc.
 
 ```dart
 StreamMessageListView(
@@ -237,13 +237,13 @@ StreamMessageListView(
 )
 ```
 
-> Simple flags like `onReplyTap` may still be top-level parameters — check the widget signature for the version you're on. When in doubt, use the `config:` / `builders:` path for any flag that is no longer accepted at the top level.
+> Simple flags like `onReplyTap` may still be top-level parameters - check the widget signature for the version you're on. When in doubt, use the `config:` / `builders:` path for any flag that is no longer accepted at the top level.
 
 ### StreamMessageInput
 
 The composer widget for sending messages, attachments, and voice recordings. Must be a descendant of `StreamChannel`.
 
-Voice recording is **enabled by default** in v10 — no need to pass `enableVoiceRecording: true`.
+Voice recording is **enabled by default** in v10 - no need to pass `enableVoiceRecording: true`.
 
 ```dart
 StreamMessageInput()
@@ -368,7 +368,7 @@ StreamChat(
 | `StreamChannelHeaderThemeData` | Channel screen header colors and typography |
 | `StreamMessageListViewThemeData` | Message list background and spacing |
 
-> **v10 breaking change:** `StreamMessageThemeData`, `StreamMessageInputThemeData`, and `StreamChannelPreviewThemeData` were **removed** in v10. Do not use them — check the [theming docs](https://getstream.io/chat/docs/sdk/flutter/stream_chat_flutter/stream_chat_and_theming/) for the replacement tokens.
+> **v10 breaking change:** `StreamMessageThemeData`, `StreamMessageInputThemeData`, and `StreamChannelPreviewThemeData` were **removed** in v10. Do not use them - check the [theming docs](https://getstream.io/chat/docs/sdk/flutter/stream_chat_flutter/stream_chat_and_theming/) for the replacement tokens.
 
 > **Never guess `StreamChatThemeData` property names.** Use only tokens listed above or fetched from the [theming docs](https://getstream.io/chat/docs/sdk/flutter/stream_chat_flutter/stream_chat_and_theming/). Names look guessable but are often wrong.
 
@@ -494,7 +494,7 @@ final client = StreamChatClient(
 **New in v10:**
 - `messageLeading`, `messageHeader`, `messageFooter` factory slots on `StreamMessageListView` builders for granular widget overrides
 - `BlockUser`/`UnblockUser` default message actions
-- `StreamMediaGalleryPreview` — cross-platform media gallery with thumbnail grid and video player
+- `StreamMediaGalleryPreview` - cross-platform media gallery with thumbnail grid and video player
 - Slow-mode UI: input disabled with countdown during slow mode periods
 
 ---

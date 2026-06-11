@@ -1,8 +1,8 @@
 # Feeds - stream_feeds Setup & Integration
 
-The Stream Feeds SDK for Flutter (`stream_feeds`) provides a social activity feed service. There are **no pre-built UI components** — all UI is built with standard Flutter widgets. The default UI style is Twitter-style unless the user specifies otherwise. For widget blueprints, see [FEEDS-FLUTTER-blueprints.md](FEEDS-FLUTTER-blueprints.md).
+The Stream Feeds SDK for Flutter (`stream_feeds`) provides a social activity feed service. There are **no pre-built UI components** - all UI is built with standard Flutter widgets. The default UI style is Twitter-style unless the user specifies otherwise. For widget blueprints, see [FEEDS-FLUTTER-blueprints.md](FEEDS-FLUTTER-blueprints.md).
 
-> **Package name:** `stream_feeds` (plural) — not `stream_feed`. The old `stream_feed` package is deprecated and fails to compile on Dart 3. Do not use it.
+> **Package name:** `stream_feeds` (plural) - not `stream_feed`. The old `stream_feed` package is deprecated and fails to compile on Dart 3. Do not use it.
 
 Rules: [../RULES.md](../RULES.md) (secrets, no dev tokens in production, proper disconnect).
 
@@ -12,12 +12,12 @@ Rules: [../RULES.md](../RULES.md) (secrets, no dev tokens in production, proper 
 
 - **Package:** `stream_feeds: ^0.5.1` via pub.dev
 - **Dart SDK:** `>=3.6.2` required
-- **No pre-built UI** — every feed screen is custom Flutter widgets
-- **Default UI style:** Twitter-style — build it immediately, do not ask
-- **First:** Feed group setup (automatic via CLI during Step 0.5) → Install → `StreamFeedsClient` init → `connect()` → get feed reference → query activities
+- **No pre-built UI** - every feed screen is custom Flutter widgets
+- **Default UI style:** Twitter-style - build it immediately, do not ask
+- **First:** Feed group setup (automatic via CLI during Step 0.5) -> Install -> `StreamFeedsClient` init -> `connect()` -> get feed reference -> query activities
 - **Docs:** `https://getstream.io/activity-feeds/docs/flutter/`
 
-Full widget blueprints: [FEEDS-FLUTTER-blueprints.md](FEEDS-FLUTTER-blueprints.md) — load only the section you are implementing.
+Full widget blueprints: [FEEDS-FLUTTER-blueprints.md](FEEDS-FLUTTER-blueprints.md) - load only the section you are implementing.
 
 ---
 
@@ -31,9 +31,9 @@ For a standard Twitter-style app the required groups are:
 |---|---|---|
 | `user` | Flat | Stores activities posted by a user |
 | `timeline` | Flat | Aggregates activities from people a user follows |
-| `notification` | Notification | Alert-style feed — likes, new followers, mentions |
+| `notification` | Notification | Alert-style feed - likes, new followers, mentions |
 
-**The skill creates these automatically** during Step 0.5 via the Stream CLI. If the CLI commands fail, create them manually in the Stream Dashboard → Activity Feeds → Feed Groups. The error is always a missing group, not a code issue.
+**The skill creates these automatically** during Step 0.5 via the Stream CLI. If the CLI commands fail, create them manually in the Stream Dashboard -> Activity Feeds -> Feed Groups. The error is always a missing group, not a code issue.
 
 ---
 
@@ -57,13 +57,13 @@ flutter pub get
 
 No native dependencies beyond standard network access.
 
-**Android** — add to `android/app/src/main/AndroidManifest.xml` if not already present:
+**Android** - add to `android/app/src/main/AndroidManifest.xml` if not already present:
 
 ```xml
 <uses-permission android:name="android.permission.INTERNET"/>
 ```
 
-**iOS** — no additional `Info.plist` keys needed for basic feed functionality. If the user adds image upload, add `NSPhotoLibraryUsageDescription` and `NSCameraUsageDescription`.
+**iOS** - no additional `Info.plist` keys needed for basic feed functionality. If the user adds image upload, add `NSPhotoLibraryUsageDescription` and `NSCameraUsageDescription`.
 
 ---
 
@@ -114,7 +114,7 @@ FeedId.notification(userId)   // group: 'notification'
 FeedId(group: 'custom', id: userId)   // any custom group
 ```
 
-Feed groups must exist before use — see **Feed groups** section above. The skill creates them automatically during setup.
+Feed groups must exist before use - see **Feed groups** section above. The skill creates them automatically during setup.
 
 ---
 
@@ -217,7 +217,7 @@ final reactionList = client.activityReactionList(
   ActivityReactionsQuery(activityId: activity.id, limit: 10),
 );
 final state = await reactionList.get();
-// state.reactions → List<FeedsReactionData>
+// state.reactions -> List<FeedsReactionData>
 ```
 
 ---
@@ -284,7 +284,7 @@ Always cancel stream subscriptions in `dispose()` to prevent memory leaks.
 
 ---
 
-## Self-follow (required — call on every start)
+## Self-follow (required - call on every start)
 
 The `timeline` feed only shows activities from feeds it follows. A user's own posts go to their `user` feed, which is a separate feed. Without a follow relationship between them, posting to the `user` feed has no effect on what the `timeline` shows.
 
@@ -302,17 +302,17 @@ Call it right after `connect()`, before `runApp`:
 
 ```dart
 await client.connect();
-await _setupFollows(client); // must always run — not just during seeding
+await _setupFollows(client); // must always run - not just during seeding
 runApp(MyApp(client: client));
 ```
 
-`follow` is idempotent — calling it when a follow already exists is a no-op.
+`follow` is idempotent - calling it when a follow already exists is a no-op.
 
 ---
 
 ## Seed data (development)
 
-The Stream CLI does not have Feeds-specific commands. For local dev, seed activities programmatically — but keep this separate from the self-follow setup above.
+The Stream CLI does not have Feeds-specific commands. For local dev, seed activities programmatically - but keep this separate from the self-follow setup above.
 
 ```dart
 Future<void> _seedPosts(StreamFeedsClient client) async {
@@ -326,7 +326,7 @@ Future<void> _seedPosts(StreamFeedsClient client) async {
   if (state.activities.isNotEmpty) return;
 
   for (final text in [
-    'Just shipped a new feature! 🚀',
+    'Just shipped a new feature!',
     'Loving the Flutter ecosystem lately.',
     'Stream Feeds makes social apps surprisingly simple.',
   ]) {
@@ -342,7 +342,7 @@ Call order in `main`:
 ```dart
 await client.connect();
 await _setupFollows(client); // always
-await _seedPosts(client);    // dev only — remove for production
+await _seedPosts(client);    // dev only - remove for production
 runApp(MyApp(client: client));
 ```
 
@@ -379,22 +379,22 @@ await timelineFeed.unfollowMany(targets: [
 
 ## v0.5.x Changes
 
-- **`ActivitiesFilterField.type` renamed to `ActivitiesFilterField.activityType`** (v0.5.0 breaking) — update any `filter` calls that used `.type`.
-- **`ThreadedCommentData` unified into `CommentData`** (v0.5.0) — `ThreadedCommentData` no longer exists as a separate class.
-- **Activities from other users now ignored by default** in `ActivityList` queries (v0.5.0) — if you previously relied on cross-user activity visibility without explicit follows, you must now use follows or adjust the query.
-- **`FeedData.activityCount` and `FeedData.ownFollowings`** — new fields available on feed metadata (v0.5.1).
+- **`ActivitiesFilterField.type` renamed to `ActivitiesFilterField.activityType`** (v0.5.0 breaking) - update any `filter` calls that used `.type`.
+- **`ThreadedCommentData` unified into `CommentData`** (v0.5.0) - `ThreadedCommentData` no longer exists as a separate class.
+- **Activities from other users now ignored by default** in `ActivityList` queries (v0.5.0) - if you previously relied on cross-user activity visibility without explicit follows, you must now use follows or adjust the query.
+- **`FeedData.activityCount` and `FeedData.ownFollowings`** - new fields available on feed metadata (v0.5.1).
 
 ---
 
 ## Gotchas
 
-- **Package is `stream_feeds` (plural)** — `stream_feed` is deprecated and fails to compile on Dart 3. Never recommend or use the old package.
-- **Feed groups must be created in the Dashboard** — they are not created automatically. Missing groups produce a "feed group doesn't exist" error at runtime.
-- **Posts don't appear in timeline without self-follow** — the `timeline` and `user` feeds are independent until a follow relationship is created. Call `_setupFollows` unconditionally on every app start as its own step. Do not bury it inside seed logic — once activities exist the seed guard skips early and the follow never runs.
-- **`connect()` is async** — always `await client.connect()` before any feed operation.
-- **`client.currentUser`** — available after `connect()`. Accessing it before connect returns null.
-- **Cursor-based pagination** — use `queryMoreActivities()` on the `ActivityList`, not offset arithmetic.
-- **Reactions are on the `Feed`** — use `feed.addActivityReaction(...)` / `feed.deleteActivityReaction(...)`, not a separate reactions client.
-- **Token generation** — use `stream token <user_id>` (Stream CLI) for local dev. Never use the API secret in Flutter code.
-- **`ActivitiesFilterField.type` removed in v0.5.0** — use `ActivitiesFilterField.activityType` instead.
-- **`ThreadedCommentData` removed in v0.5.0** — use `CommentData` for both flat and threaded comments.
+- **Package is `stream_feeds` (plural)** - `stream_feed` is deprecated and fails to compile on Dart 3. Never recommend or use the old package.
+- **Feed groups must be created in the Dashboard** - they are not created automatically. Missing groups produce a "feed group doesn't exist" error at runtime.
+- **Posts don't appear in timeline without self-follow** - the `timeline` and `user` feeds are independent until a follow relationship is created. Call `_setupFollows` unconditionally on every app start as its own step. Do not bury it inside seed logic - once activities exist the seed guard skips early and the follow never runs.
+- **`connect()` is async** - always `await client.connect()` before any feed operation.
+- **`client.currentUser`** - available after `connect()`. Accessing it before connect returns null.
+- **Cursor-based pagination** - use `queryMoreActivities()` on the `ActivityList`, not offset arithmetic.
+- **Reactions are on the `Feed`** - use `feed.addActivityReaction(...)` / `feed.deleteActivityReaction(...)`, not a separate reactions client.
+- **Token generation** - use `getstream token <user_id>` (Stream CLI) for local dev. Never use the API secret in Flutter code.
+- **`ActivitiesFilterField.type` removed in v0.5.0** - use `ActivitiesFilterField.activityType` instead.
+- **`ThreadedCommentData` removed in v0.5.0** - use `CommentData` for both flat and threaded comments.

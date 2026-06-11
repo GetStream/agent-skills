@@ -1,21 +1,21 @@
 # Feeds - Android Kotlin SDK Setup & Integration
 
-Stream Feeds Android is a **headless data SDK** — there are no pre-built UI components. You build all Composables yourself; the SDK exposes observable `StateFlow`s on `FeedState` and `ActivityState` that drive your UI. This file covers Gradle setup, client setup, authentication, and the major data operations. For Compose blueprints, see [FEEDS-COMPOSE-blueprints.md](FEEDS-COMPOSE-blueprints.md).
+Stream Feeds Android is a **headless data SDK** - there are no pre-built UI components. You build all Composables yourself; the SDK exposes observable `StateFlow`s on `FeedState` and `ActivityState` that drive your UI. This file covers Gradle setup, client setup, authentication, and the major data operations. For Compose blueprints, see [FEEDS-COMPOSE-blueprints.md](FEEDS-COMPOSE-blueprints.md).
 
 Rules: [../RULES.md](../RULES.md) (secrets, no fake credentials, client lifetime, version lookup).
 
-- **Blueprint** — Compose screen structure for common Feeds surfaces
-- **Wiring** — SDK calls per feature with exact property paths
-- **No pre-built UI** — every screen is custom; the SDK owns the data layer only
+- **Blueprint** - Compose screen structure for common Feeds surfaces
+- **Wiring** - SDK calls per feature with exact property paths
+- **No pre-built UI** - every screen is custom; the SDK owns the data layer only
 
 ## Quick ref
 
 - **Artifact:** `io.getstream:stream-feeds-android-client` via Maven Central
-- **First:** Installation → Manifest → `FeedsClient(...)` build → `client.connect()` → create `Feed` objects → observe `FeedState` → build Composables
+- **First:** Installation -> Manifest -> `FeedsClient(...)` build -> `client.connect()` -> create `Feed` objects -> observe `FeedState` -> build Composables
 - **Per feature:** Jump to the relevant section or blueprint when implementing a screen
 - **Docs:** `https://getstream.io/activity-feeds/docs/android/` and the source at `https://github.com/GetStream/stream-feeds-android`
 
-Full Compose blueprints: [FEEDS-COMPOSE-blueprints.md](FEEDS-COMPOSE-blueprints.md) — load only the section you are implementing.
+Full Compose blueprints: [FEEDS-COMPOSE-blueprints.md](FEEDS-COMPOSE-blueprints.md) - load only the section you are implementing.
 
 ---
 
@@ -51,7 +51,7 @@ dependencies {
 }
 ```
 
-For the current version, follow [`RULES.md` → Version lookup](../RULES.md#version-lookup) (Maven Central / GitHub releases — never `search.maven.org`).
+For the current version, follow [`RULES.md` -> Version lookup](../RULES.md#version-lookup) (Maven Central / GitHub releases - never `search.maven.org`).
 
 **Compose deps the blueprints rely on.** The default Android Studio "Empty Compose Activity" template ships Material3, the Compose BOM, and `lifecycle-runtime-ktx`, but **not** the three below. The blueprints in [`FEEDS-COMPOSE-blueprints.md`](FEEDS-COMPOSE-blueprints.md) won't compile without them:
 
@@ -59,13 +59,13 @@ For the current version, follow [`RULES.md` → Version lookup](../RULES.md#vers
 - `androidx.lifecycle:lifecycle-viewmodel-compose`
 - `androidx.compose.material:material-icons-extended`
 
-Add them to the app module — via the version catalog if one is in use, otherwise inline in `app/build.gradle.kts`.
+Add them to the app module - via the version catalog if one is in use, otherwise inline in `app/build.gradle.kts`.
 
 ### Client Initialization
 
 > **`FeedsClient` is bound to one user for its lifetime.** `FeedsClient(...)` is a top-level factory function that returns a `FeedsClient` interface implementation; the `User` and `tokenProvider` you pass in are fixed and cannot be swapped afterwards. To operate as a different user, `disconnect()` the current client and call `FeedsClient(...)` again with the new `User`. *You* own the reference; the SDK does not register a global accessor.
 
-Because of this, construction happens at login. Model the lifecycle as a sealed `FeedsSession` so the `Connected` variant carries the client. A singleton **`FeedsSessionManager`** owns the state, the long-lived coroutine scope, *and* the connect/disconnect logic — ViewModels are thin translators that call `manager.connect(...)` / `manager.disconnect()` and observe `manager.session`. Provide the manager via `@Singleton` (Hilt) / `single { ... }` (Koin), or own it from `Application` for non-DI samples.
+Because of this, construction happens at login. Model the lifecycle as a sealed `FeedsSession` so the `Connected` variant carries the client. A singleton **`FeedsSessionManager`** owns the state, the long-lived coroutine scope, *and* the connect/disconnect logic - ViewModels are thin translators that call `manager.connect(...)` / `manager.disconnect()` and observe `manager.session`. Provide the manager via `@Singleton` (Hilt) / `single { ... }` (Koin), or own it from `Application` for non-DI samples.
 
 ```kotlin
 import android.content.Context
@@ -100,11 +100,11 @@ class FeedsSessionManager(
     private val context: Context,
     private val apiKey: String,
 ) {
-    // The manager's job is connect/disconnect — long-lived async work that must
+    // The manager's job is connect/disconnect - long-lived async work that must
     // outlive any one screen. Owning the scope here keeps lifetime explicit.
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     // Serializes ops so a switch-user flow (disconnect() then connect(next))
-    // can't interleave — the second op waits for the first to finish.
+    // can't interleave - the second op waits for the first to finish.
     private val mutex = Mutex()
 
     private val _session = MutableStateFlow<FeedsSession>(FeedsSession.Disconnected)
@@ -169,13 +169,13 @@ Register the application class in `AndroidManifest.xml`:
     ...>
 ```
 
-`FeedsClient` does **not** auto-connect. The manager handles it — `client.connect()` is a suspend fun that returns `Result<StreamConnectedUser>`, and the manager flips `_session` to `Connected` / `Failed` based on the result.
+`FeedsClient` does **not** auto-connect. The manager handles it - `client.connect()` is a suspend fun that returns `Result<StreamConnectedUser>`, and the manager flips `_session` to `Connected` / `Failed` based on the result.
 
-For the full login + logout + user-switch flow, see [`FEEDS-COMPOSE-blueprints.md` → Login / Connect User Blueprint](FEEDS-COMPOSE-blueprints.md#login--connect-user-blueprint).
+For the full login + logout + user-switch flow, see [`FEEDS-COMPOSE-blueprints.md` -> Login / Connect User Blueprint](FEEDS-COMPOSE-blueprints.md#login--connect-user-blueprint).
 
 ### User Authentication
 
-The SDK takes a `StreamTokenProvider` for both static and expiring tokens. The provider's `loadToken(userId)` is `suspend` — return the token from your backend, or return a stored static token.
+The SDK takes a `StreamTokenProvider` for both static and expiring tokens. The provider's `loadToken(userId)` is `suspend` - return the token from your backend, or return a stored static token.
 
 **Static token (no expiry):**
 
@@ -197,11 +197,11 @@ val tokenProvider = object : StreamTokenProvider {
 }
 ```
 
-The SDK calls `loadToken` again automatically when the token expires — no extra wiring.
+The SDK calls `loadToken` again automatically when the token expires - no extra wiring.
 
 ### Disconnecting / switching users
 
-The signed-in user is fixed at construction time. To switch identity, drive both calls through the manager — `disconnect()` then `connect(nextUser, nextToken)`:
+The signed-in user is fixed at construction time. To switch identity, drive both calls through the manager - `disconnect()` then `connect(nextUser, nextToken)`:
 
 ```kotlin
 sessionManager.disconnect()                  // tears down current client, flips state to Disconnected
@@ -216,7 +216,7 @@ If you need to chain the two synchronously (e.g. wait for disconnect to complete
 
 ## Feeds and FeedId
 
-A feed is identified by a `FeedId(group, id)` — a group name (e.g. `"user"`, `"timeline"`, `"notification"`) plus a user/entity id.
+A feed is identified by a `FeedId(group, id)` - a group name (e.g. `"user"`, `"timeline"`, `"notification"`) plus a user/entity id.
 
 ```kotlin
 import io.getstream.feeds.android.client.api.model.FeedId
@@ -226,7 +226,7 @@ val timelineFeedId     = FeedId("timeline", client.user.id)
 val notificationFeedId = FeedId("notification", client.user.id)
 ```
 
-**Get a `Feed` handle from the client — three forms:**
+**Get a `Feed` handle from the client - three forms:**
 
 ```kotlin
 import io.getstream.android.core.api.filter.doesNotExist
@@ -257,7 +257,7 @@ val feed = client.feed(query)
 
 ## FeedState
 
-`FeedState` exposes `StateFlow`s — collect them with `collectAsStateWithLifecycle()` in Compose.
+`FeedState` exposes `StateFlow`s - collect them with `collectAsStateWithLifecycle()` in Compose.
 
 ```kotlin
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -290,10 +290,10 @@ val activities by feed.state.activities.collectAsStateWithLifecycle()
 // Initial load (or create if it doesn't exist)
 feed.getOrCreate()  // suspend, Result<FeedData>
 
-// Refresh (idempotent — same call)
+// Refresh (idempotent - same call)
 feed.getOrCreate()
 
-// Pagination — `limit: Int? = null` lets the server pick the page size; pass an Int to override.
+// Pagination - `limit: Int? = null` lets the server pick the page size; pass an Int to override.
 if (feed.state.canLoadMoreActivities) {
     feed.queryMoreActivities()
 }
@@ -338,9 +338,9 @@ feed.addActivity(
 )
 ```
 
-`FileType` values: `Image` for images, `Other` for everything else (video, audio, generic files — there is no dedicated `Video` / `File` value). The SDK uploads each `FeedUploadPayload`, attaches the resulting URL to the activity, and fires the optional `attachmentUploadProgress` callback per file.
+`FileType` values: `Image` for images, `Other` for everything else (video, audio, generic files - there is no dedicated `Video` / `File` value). The SDK uploads each `FeedUploadPayload`, attaches the resulting URL to the activity, and fires the optional `attachmentUploadProgress` callback per file.
 
-Picker results on Android come back as `content://` URIs, which aren't readable as plain `File`s. Copy each URI into `cacheDir` on `Dispatchers.IO`, then wrap `addActivity` in a `try { … } finally { files.forEach { it.delete() } }` so cancellation or failure mid-upload doesn't leak temp files.
+Picker results on Android come back as `content://` URIs, which aren't readable as plain `File`s. Copy each URI into `cacheDir` on `Dispatchers.IO`, then wrap `addActivity` in a `try { ... } finally { files.forEach { it.delete() } }` so cancellation or failure mid-upload doesn't leak temp files.
 
 ```kotlin
 val files = withContext(Dispatchers.IO) {
@@ -456,17 +456,17 @@ feed.addActivityReaction(
 feed.deleteActivityReaction(activityId = activity.id, type = "heart")
 ```
 
-You define the reaction types — common ones are `"heart"`, `"like"`, `"wow"`, `"sad"`. The SDK is type-agnostic.
+You define the reaction types - common ones are `"heart"`, `"like"`, `"wow"`, `"sad"`. The SDK is type-agnostic.
 
 ---
 
 ## Bookmarks
 
 ```kotlin
-// Add — returns Result<BookmarkData> for the new bookmark
+// Add - returns Result<BookmarkData> for the new bookmark
 feed.addBookmark(activityId = activity.id)
 
-// Remove — also returns Result<BookmarkData> (the bookmark that was deleted), not Result<Unit>
+// Remove - also returns Result<BookmarkData> (the bookmark that was deleted), not Result<Unit>
 feed.deleteBookmark(activityId = activity.id)
 
 // Has the current user bookmarked it?
@@ -560,7 +560,7 @@ val followers by feed.state.followers.collectAsStateWithLifecycle()
 val requests by feed.state.followRequests.collectAsStateWithLifecycle()
 ```
 
-`FollowData` exposes `sourceFeed: FeedData`, `targetFeed: FeedData`, `status: FollowStatus` (`Accepted` / `Pending` / `Rejected` / `Unknown`). There is no `isFollowing` / `isFollower` boolean — distinguish via `state.following` vs `state.followers`.
+`FollowData` exposes `sourceFeed: FeedData`, `targetFeed: FeedData`, `status: FollowStatus` (`Accepted` / `Pending` / `Rejected` / `Unknown`). There is no `isFollowing` / `isFollower` boolean - distinguish via `state.following` vs `state.followers`.
 
 **Follow suggestions:**
 
@@ -569,7 +569,7 @@ val suggestions: List<FeedSuggestionData> =
     feed.queryFollowSuggestions(limit = 10).getOrDefault(emptyList())
 ```
 
-`FeedSuggestionData` exposes `feed: FeedData` plus three nullable hints — `recommendationScore: Float?`, `reason: String?`, and `algorithmScores: Map<String, Float>?`. Treat all three as nullable in the UI.
+`FeedSuggestionData` exposes `feed: FeedData` plus three nullable hints - `recommendationScore: Float?`, `reason: String?`, and `algorithmScores: Map<String, Float>?`. Treat all three as nullable in the UI.
 
 > The `timeline:<userId>` feed does **not** automatically follow the user's own `user:<userId>` feed. If you want the user to see their own posts in the timeline, follow `user:<userId>` from `timeline:<userId>` once after `getOrCreate()`. The sample app does this in `FeedViewModel.followSelfIfNeeded(...)`.
 
@@ -609,7 +609,7 @@ notifications.markActivity(MarkActivityRequest(markAllSeen = true))
 storiesFeed.markActivity(MarkActivityRequest(markWatched = listOf(storyId)))
 ```
 
-`AggregatedActivityData` key fields: `activities: List<ActivityData>`, `activityCount`, `userCount`, `group`, `isRead`, `isSeen`, `isWatched`. `group` is unique within the list — use it as the `LazyColumn`/`LazyRow` key.
+`AggregatedActivityData` key fields: `activities: List<ActivityData>`, `activityCount`, `userCount`, `group`, `isRead`, `isSeen`, `isWatched`. `group` is unique within the list - use it as the `LazyColumn`/`LazyRow` key.
 
 ---
 
@@ -667,7 +667,7 @@ client.state.collect { state -> /* StreamConnectionState */ }
 client.events.collect { event -> /* WSEvent */ }
 ```
 
-Most UI doesn't need the raw stream — `FeedState` already updates on the right events automatically.
+Most UI doesn't need the raw stream - `FeedState` already updates on the right events automatically.
 
 ---
 
@@ -695,10 +695,10 @@ Custom values round-trip through JSON, so cast defensively (`String`, `Number`, 
 
 ## Gotchas
 
-- **`FeedsClient` is bound to one user for its lifetime.** `FeedsClient(...)` is a top-level factory function; the `User` and `tokenProvider` you pass in are fixed and there is no method to change the signed-in user afterwards. The SDK does not register a global accessor either — *you* hold the reference, ideally inside a `FeedsSessionManager` (Hilt `@Singleton` / Koin `single` / Application field). To operate as a different user, drive `manager.disconnect()` then `manager.connect(nextUser, nextToken)` — the manager serializes the two so the new client doesn't overlap the old one.
+- **`FeedsClient` is bound to one user for its lifetime.** `FeedsClient(...)` is a top-level factory function; the `User` and `tokenProvider` you pass in are fixed and there is no method to change the signed-in user afterwards. The SDK does not register a global accessor either - *you* hold the reference, ideally inside a `FeedsSessionManager` (Hilt `@Singleton` / Koin `single` / Application field). To operate as a different user, drive `manager.disconnect()` then `manager.connect(nextUser, nextToken)` - the manager serializes the two so the new client doesn't overlap the old one.
 - **Always `client.connect()` before any feed call.**  Connect once per user session, after the user logs in.
 - **Don't overlap `FeedsClient` instances for the same user.** They will potentially desync state and waste a WebSocket connection.
-- **`feed.state` is the same instance across calls.** Don't replace it — keep one `Feed` reference per surface and observe its `state` flows directly.
-- **Use `viewModels { factory }` / `hiltViewModel()` for state holders.** Don't `remember { FeedsClient(...) }` or build `Feed` objects inside a Composable body — hoist them into a ViewModel that takes the client as a constructor arg.
+- **`feed.state` is the same instance across calls.** Don't replace it - keep one `Feed` reference per surface and observe its `state` flows directly.
+- **Use `viewModels { factory }` / `hiltViewModel()` for state holders.** Don't `remember { FeedsClient(...) }` or build `Feed` objects inside a Composable body - hoist them into a ViewModel that takes the client as a constructor arg.
 - **`FeedId` group names are case-sensitive** and must match the feed groups configured on your Stream dashboard. `"User"` and `"user"` are different groups; the wrong case silently creates a new (empty) feed group.
 - **`timeline:<userId>` does not automatically follow `user:<userId>`.** If you want the user to see their own posts in the timeline, call `timelineFeed.follow(FeedId("user", userId))` once after `getOrCreate()` (typically `createNotificationActivity = false` to avoid notifying yourself).

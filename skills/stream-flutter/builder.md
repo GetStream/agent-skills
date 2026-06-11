@@ -28,9 +28,9 @@ Resolve three things before editing:
    - Video calling or livestreaming: `stream_video_flutter`
    - Activity Feeds: `stream_feeds` (the only correct package; `stream_feed` and `stream_feed_flutter_core` are deprecated)
 3. **Scope:** full app bootstrap, auth, a specific screen, or a targeted feature
-4. **Feeds only — UI style:** Default to Twitter-style. Only use a different style if the user explicitly says so.
+4. **Feeds only - UI style:** Default to Twitter-style. Only use a different style if the user explicitly says so.
 
-If the user has not stated a Chat preference, default to `stream_chat_flutter`. For Video, `stream_video_flutter` covers both standard calls and livestreaming. For Feeds, use `stream_feeds` — it is the only current package. Do not use `stream_feed` or `stream_feed_flutter_core`.
+If the user has not stated a Chat preference, default to `stream_chat_flutter`. For Video, `stream_video_flutter` covers both standard calls and livestreaming. For Feeds, use `stream_feeds` - it is the only current package. Do not use `stream_feed` or `stream_feed_flutter_core`.
 
 If the user only asked for setup, stop after the shared wiring in [`sdk.md`](sdk.md) (for Chat), after client initialization in [`references/VIDEO-FLUTTER.md`](references/VIDEO-FLUTTER.md) (for Video), or after `setUser` + `FeedProvider` wiring (for Feeds).
 
@@ -60,7 +60,7 @@ Add the dependency to `pubspec.yaml`:
 ```yaml
 dependencies:
   stream_video_flutter: ^1.4.0   # pre-built UI + core
-  # optional — video filters (blur/virtual background); separate package since v1.0.0
+  # optional - video filters (blur/virtual background); separate package since v1.0.0
   stream_video_filters: ^1.4.0
   # OR for core only (no pre-built call UI)
   stream_video: ^1.4.0
@@ -159,13 +159,13 @@ Add entitlements to `macos/Runner/Release.entitlements` and `macos/Runner/DebugP
 
 No native dependencies beyond standard network access.
 
-**Android** — add to `android/app/src/main/AndroidManifest.xml` if not already present:
+**Android** - add to `android/app/src/main/AndroidManifest.xml` if not already present:
 
 ```xml
 <uses-permission android:name="android.permission.INTERNET"/>
 ```
 
-**iOS** — no additional `Info.plist` keys are needed for basic feed functionality. If the user adds image upload, add `NSPhotoLibraryUsageDescription` and `NSCameraUsageDescription` following the same pattern as Chat.
+**iOS** - no additional `Info.plist` keys are needed for basic feed functionality. If the user adds image upload, add `NSPhotoLibraryUsageDescription` and `NSCameraUsageDescription` following the same pattern as Chat.
 
 ### Video platform setup
 
@@ -249,7 +249,7 @@ Keep the existing app shell intact. Add only the minimum composition points need
 Follow [`references/FEEDS-FLUTTER.md`](references/FEEDS-FLUTTER.md) for:
 
 - `StreamFeedClient('apiKey')` initialization before `runApp`
-- `client.setUser(user, token)` — always `await` before `runApp`; use real credentials from Step 0.5
+- `client.setUser(user, token)` - always `await` before `runApp`; use real credentials from Step 0.5
 - `FeedProvider(bloc: FeedBloc(client: client), child: MaterialApp(...))` wrapping the app
 - feed group references: `client.flatFeed('user', userId)`, `client.flatFeed('timeline', userId)`
 - activity queries with `getEnrichedActivities` and reactions via `client.reactions`

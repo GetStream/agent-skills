@@ -2,7 +2,7 @@
 
 This file holds the shared Android patterns that cut across Chat, Video, and Feeds. Load it before product-specific references when you need lifecycle, auth, or architecture guidance.
 
-> **Client model: one-per-process vs one-per-user.** Chat and Video run **one client per process**: `ChatClient.Builder(...).build()` and `StreamVideoBuilder(...).build()` register process-wide singletons (`ChatClient.instance()` / `StreamVideo.instance()`), and you swap the **identity** on that single client via `connectUser` / `disconnect` (Chat) or `logOut` + `StreamVideo.removeClient` + a fresh builder (Video). Feeds is different: `FeedsClient` is constructed with the `User` and `tokenProvider` baked in, there is no `instance()` accessor, and there is no `connectUser` call to change identity afterwards. **The Feeds client is bound to one user for its lifetime** — to operate as a different user you must `disconnect()` the current `FeedsClient` and build a new one with the new `User` + `tokenProvider`. Hold the reference yourself (lateinit on `Application`, Hilt `@Singleton`, Koin `single`); the SDK won't keep it alive for you.
+> **Client model: one-per-process vs one-per-user.** Chat and Video run **one client per process**: `ChatClient.Builder(...).build()` and `StreamVideoBuilder(...).build()` register process-wide singletons (`ChatClient.instance()` / `StreamVideo.instance()`), and you swap the **identity** on that single client via `connectUser` / `disconnect` (Chat) or `logOut` + `StreamVideo.removeClient` + a fresh builder (Video). Feeds is different: `FeedsClient` is constructed with the `User` and `tokenProvider` baked in, there is no `instance()` accessor, and there is no `connectUser` call to change identity afterwards. **The Feeds client is bound to one user for its lifetime** - to operate as a different user you must `disconnect()` the current `FeedsClient` and build a new one with the new `User` + `tokenProvider`. Hold the reference yourself (lateinit on `Application`, Hilt `@Singleton`, Koin `single`); the SDK won't keep it alive for you.
 
 ---
 
@@ -42,8 +42,8 @@ Exact builder shapes and singleton accessors live in the matching reference file
 
 Use the simplest token shape that matches the user's environment:
 
-- **Backend exists:** prefer a backend-issued Stream token via a `TokenProvider` — the SDK will call it again automatically when the token expires.
-- **No backend / demo flow:** generate a token with the Stream CLI (binary is `stream` — see [`credentials.md`](credentials.md)). Never-expiring: `stream token <user_id>`. Expiring: `stream token <user_id> --ttl 1h` (units: `s`/`m`/`h`/`d`).
+- **Backend exists:** prefer a backend-issued Stream token via a `TokenProvider` - the SDK will call it again automatically when the token expires.
+- **No backend / demo flow:** generate a token with the Stream CLI (binary is `stream` - see [`credentials.md`](credentials.md)). Never-expiring: `getstream token <user_id>`. Expiring: `getstream token <user_id> --ttl 1h` (units: `s`/`m`/`h`/`d`).
 - **User pastes their own:** accept it and pass it to the client.
 
 Keep the split clear:
@@ -62,7 +62,7 @@ Stateful SDK helpers should have explicit ownership:
 - **Compose:** obtain ViewModels via `viewModels { factory }` (Activity / Fragment) or `hiltViewModel()` (Hilt). Pass them into Composables; never `remember { SomeViewModel(...) }`.
 - **Views:** retain ViewModels via `ViewModelProvider` or DI; collect SDK `Flow`s in `repeatOnLifecycle(Lifecycle.State.STARTED)`.
 
-Avoid creating query objects, channel controllers, message lists, or call objects inside Composables — hoist them into a ViewModel.
+Avoid creating query objects, channel controllers, message lists, or call objects inside Composables - hoist them into a ViewModel.
 
 ---
 
