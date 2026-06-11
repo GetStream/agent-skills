@@ -92,12 +92,3 @@ Set defaults: `stream config set org <id>` and `stream config set app <id>`.
 ### Auth (assistants)
 
 - Use **`stream auth login`** with no extra flags, in a terminal where a **browser window can open**. The CLI uses PKCE with the dashboard - that is the supported sign-in path.
-
-## CLI Rules (summary)
-
-1. **Endpoint discovery:** **`~/.stream/cache/API.md`** first - never `--list` for discovery. Refresh if missing.
-2. **Help:** **`stream --safe api <endpoint> --help`** for parameters after you know the endpoint name.
-3. **Lazy auth** - if exit code **2**, **`stream auth login`** then retry.
-4. **Missing params** - ask; never invent IDs.
-5. **First attempt always `--safe`** - exit **5** -> explain mutating op -> retry without **`--safe`**.
-6. **Summarize** API responses concisely for the user.
