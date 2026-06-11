@@ -31,7 +31,7 @@
         },
         "install": {
           "type": "string",
-          "pattern": "^stream skills stream-[a-z0-9-]+$",
+          "pattern": "^getstream skills stream-[a-z0-9-]+$",
           "description": "Exact shell command the router runs to install the peer via the Stream CLI; the router enforces install_policy on top."
         },
         "install_policy": {
