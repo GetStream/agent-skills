@@ -33,21 +33,23 @@ Before any tool call, decide the **track** from the user's input alone - no prob
 
 ### Signals -> track
 
-| Signal in user input | Track |
-|---|---|
-| Explicit package/widget token: `stream_chat_flutter`, `StreamChannelListView`, `StreamMessageListView`, `StreamChatClient`, etc. | **C - Reference lookup** |
-| Explicit video token: `stream_video_flutter`, `StreamCallContainer`, `StreamVideo`, `StreamVideoRenderer`, `goLive`, `stopLive`, `livestream` call type | **C - Reference lookup** |
-| Explicit feeds token: `stream_feed`, `stream_feed_flutter_core`, `StreamFeedClient`, `FlatFeedCore`, `FlatFeed`, `FeedBloc`, `activity feed`, `feeds flutter` | **C - Reference lookup** |
-| Words "docs" or "documentation" around Stream Flutter work | **C - Reference lookup** |
-| "How do I {X} in Flutter?", "What does {widget/method} do?" | **C - Reference lookup** |
-| "Build me a new Flutter app", "create a Flutter chat app" + Stream | **A - New app** |
-| "Build a Flutter video call app", "create a livestream app in Flutter" | **A - New app** (load `VIDEO-FLUTTER.md` + `VIDEO-FLUTTER-blueprints.md` or `LIVESTREAM-FLUTTER.md` + `LIVESTREAM-FLUTTER-blueprints.md`) |
-| "Build a Flutter feeds app", "create an activity feed app", "build a social feed in Flutter", "create a Twitter/Instagram clone" | **A - New app** (load `FEEDS-FLUTTER.md` + `FEEDS-FLUTTER-blueprints.md`; use Twitter-style UI unless the user explicitly specifies otherwise) |
-| "Add/integrate Stream into this app", "wire Chat into my Flutter project" | **B - Existing app** |
-| "Add video calling to my Flutter app", "integrate Stream Video into my existing app" | **B - Existing app** (load `VIDEO-FLUTTER.md` + `VIDEO-FLUTTER-blueprints.md`) |
-| "Add a feed to my Flutter app", "integrate Stream Feeds into my existing app", "add activity feed" | **B - Existing app** (load `FEEDS-FLUTTER.md` + `FEEDS-FLUTTER-blueprints.md`; use Twitter-style UI unless the user explicitly specifies otherwise) |
-| "Install Stream packages", "set up Stream in Flutter", "wire auth/token" with no broader feature request | **D - Bootstrap / setup** |
-| Bare `/stream-flutter` with no args | List the tracks briefly and wait |
+| Signal in user input                                                                                                                                          | Track                                                                                                                                               |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Explicit package/widget token: `stream_chat_flutter`, `StreamChannelListView`, `StreamMessageListView`, `StreamChatClient`, etc.                              | **C - Reference lookup**                                                                                                                            |
+| Explicit video token: `stream_video_flutter`, `StreamCallContainer`, `StreamVideo`, `StreamVideoRenderer`, `goLive`, `stopLive`, `livestream` call type       | **C - Reference lookup**                                                                                                                            |
+| Explicit feeds token: `stream_feed`, `stream_feed_flutter_core`, `StreamFeedClient`, `FlatFeedCore`, `FlatFeed`, `FeedBloc`, `activity feed`, `feeds flutter` | **C - Reference lookup**                                                                                                                            |
+| Words "docs" or "documentation" around Stream Flutter work                                                                                                    | **C - Reference lookup**                                                                                                                            |
+| "How do I {X} in Flutter?", "What does {widget/method} do?"                                                                                                   | **C - Reference lookup**                                                                                                                            |
+| "Build me a new Flutter app", "create a Flutter chat app" + Stream                                                                                            | **A - New app**                                                                                                                                     |
+| "Build a Flutter video call app", "create a livestream app in Flutter"                                                                                        | **A - New app** (load `VIDEO-FLUTTER.md` + `VIDEO-FLUTTER-blueprints.md` or `LIVESTREAM-FLUTTER.md` + `LIVESTREAM-FLUTTER-blueprints.md`)           |
+| "Build an audio room / Twitter Spaces clone", "TikTok-style live feed", "call while livestreaming", "chat with video calls", "two calls at once"              | **A or B** (load `VIDEO-ADVANCED-FLUTTER.md` + `VIDEO-ADVANCED-FLUTTER-blueprints.md` on top of the Video/Livestream pair)                          |
+| "Add ringing / incoming calls", "video call with push notifications", "CallKit", "VoIP push", "FCM ringing", "missed call notification"                       | **A or B** (load `RINGING-FLUTTER.md` + `RINGING-FLUTTER-blueprints.md` on top of the Video pair)                                                   |
+| "Build a Flutter feeds app", "create an activity feed app", "build a social feed in Flutter", "create a Twitter/Instagram clone"                              | **A - New app** (load `FEEDS-FLUTTER.md` + `FEEDS-FLUTTER-blueprints.md`; use Twitter-style UI unless the user explicitly specifies otherwise)      |
+| "Add/integrate Stream into this app", "wire Chat into my Flutter project"                                                                                     | **B - Existing app**                                                                                                                                |
+| "Add video calling to my Flutter app", "integrate Stream Video into my existing app"                                                                          | **B - Existing app** (load `VIDEO-FLUTTER.md` + `VIDEO-FLUTTER-blueprints.md`)                                                                      |
+| "Add a feed to my Flutter app", "integrate Stream Feeds into my existing app", "add activity feed"                                                            | **B - Existing app** (load `FEEDS-FLUTTER.md` + `FEEDS-FLUTTER-blueprints.md`; use Twitter-style UI unless the user explicitly specifies otherwise) |
+| "Install Stream packages", "set up Stream in Flutter", "wire auth/token" with no broader feature request                                                      | **D - Bootstrap / setup**                                                                                                                           |
+| Bare `/stream-flutter` with no args                                                                                                                           | List the tracks briefly and wait                                                                                                                    |
 
 ### Disambiguation flow
 
@@ -93,6 +95,8 @@ Post **one message** asking all relevant things together. Do not split into mult
 >
 > If you want to handle everything yourself, just paste your API key and token.
 
+> **Guest-viewer requirement — surface this BEFORE building any app that signs viewers in as guests**. A guest connects with the `guest` role, which by default has minimal capabilities. On the `livestream` call type guests **cannot even read or join a call** until the integrator grants those capabilities to the `guest` role. When a guest-based viewer flow is in scope, tell the integrator it is a **prerequisite** to grant the `guest` role `read-call` and `join-call` (plus `create-call` if a viewer may open the call before the host) on the relevant call type via Stream Dashboard → Video & Audio → Call Types → <type> → Roles & Permissions (or the API), or to use authenticated `User.regular` viewers instead. Details: [`references/VIDEO-FLUTTER.md`](references/VIDEO-FLUTTER.md) → Guest users, and [`references/LIVESTREAM-FLUTTER.md`](references/LIVESTREAM-FLUTTER.md) → Roles, permissions, and backstage security.
+
 **For Feeds projects** (no pre-built UI; feed groups required):
 
 Ask **one message** with all setup questions together — do not split into rounds:
@@ -115,9 +119,11 @@ stream api CreateFeedGroup --body '{"id": "notification", "type": "notification"
 ```
 
 If the CLI commands fail (the Feeds API may use different endpoints than Chat), tell the user once:
+
 > Please create these in Stream Dashboard → Activity Feeds → Feed Groups: `user` (Flat), `timeline` (Flat), `notification` (Notification).
 
 For Feeds projects, always generate two separate helpers in `main` after `connect()`:
+
 1. `_setupFollows(client)` — **always called, unconditionally.** Makes `timeline` follow `user` so the user's own posts appear there. Do not merge this into seed logic — once seed data exists the guard returns early and the follow call never runs.
 2. `_seedPosts(client)` — only if the user said yes to seeding. Adds sample activities and exits early if data already exists.
 
@@ -136,6 +142,8 @@ stream keys
 ```
 
 This prints the API key and copies the secret to clipboard. Extract the `API Key:` field from the output. Hold it in context. If the command returns a 401 error, the CLI session has expired — run `stream auth logout && stream auth login` to re-authenticate, then retry.
+
+**If `stream` is not installed** (`command not found`): install it with `brew install GetStream/stream-cli/stream-cli` (macOS) or `npm install -g getstream-cli`, then `stream auth login` — or, if the user prefers, skip the CLI entirely and have them paste the API key + a token per user (Dashboard → Explorer has a token generator). Decide based on the user's answer to the upfront credentials question; don't stall.
 
 #### Step B - Token
 
@@ -230,12 +238,12 @@ Use the result to produce a **one-line status**, for example:
 
 ## Module map
 
-| Track | Module(s) |
-|---|---|
-| A - New app | [`builder.md`](builder.md) + [`sdk.md`](sdk.md) + relevant reference files |
-| B - Existing app | [`builder.md`](builder.md) + [`sdk.md`](sdk.md) + relevant reference files |
-| C - Reference lookup | [`sdk.md`](sdk.md) + relevant reference files |
-| D - Bootstrap / setup | [`builder.md`](builder.md) + [`sdk.md`](sdk.md) |
+| Track                 | Module(s)                                                                  |
+| --------------------- | -------------------------------------------------------------------------- |
+| A - New app           | [`builder.md`](builder.md) + [`sdk.md`](sdk.md) + relevant reference files |
+| B - Existing app      | [`builder.md`](builder.md) + [`sdk.md`](sdk.md) + relevant reference files |
+| C - Reference lookup  | [`sdk.md`](sdk.md) + relevant reference files                              |
+| D - Bootstrap / setup | [`builder.md`](builder.md) + [`sdk.md`](sdk.md)                            |
 
 > **Feeds note (Track A/B):** Use Twitter-style UI by default. Only deviate if the user explicitly requests a different style (e.g., "Instagram grid", "Reddit-style votes").
 
@@ -256,6 +264,8 @@ Current extracted modules:
 - **Chat + custom UI (`stream_chat_flutter_core`):** [`references/CHAT-CORE.md`](references/CHAT-CORE.md) + [`references/CHAT-CORE-blueprints.md`](references/CHAT-CORE-blueprints.md)
 - **Video (`stream_video_flutter`):** [`references/VIDEO-FLUTTER.md`](references/VIDEO-FLUTTER.md) + [`references/VIDEO-FLUTTER-blueprints.md`](references/VIDEO-FLUTTER-blueprints.md)
 - **Livestream (`stream_video_flutter`):** [`references/LIVESTREAM-FLUTTER.md`](references/LIVESTREAM-FLUTTER.md) + [`references/LIVESTREAM-FLUTTER-blueprints.md`](references/LIVESTREAM-FLUTTER-blueprints.md)
+- **Video advanced use cases (`stream_video_flutter`):** [`references/VIDEO-ADVANCED-FLUTTER.md`](references/VIDEO-ADVANCED-FLUTTER.md) + [`references/VIDEO-ADVANCED-FLUTTER-blueprints.md`](references/VIDEO-ADVANCED-FLUTTER-blueprints.md) - audio rooms, multicall, chat+video, livestream feed, querying/events/preferences/moderation
+- **Ringing / incoming calls + push (`stream_video_flutter` + `stream_video_push_notification`):** [`references/RINGING-FLUTTER.md`](references/RINGING-FLUTTER.md) + [`references/RINGING-FLUTTER-blueprints.md`](references/RINGING-FLUTTER-blueprints.md) - outgoing ring, foreground/background/terminated incoming, CallKit (iOS) + FCM (Android)
 - **Feeds (`stream_feed` / `stream_feed_flutter_core`):** [`references/FEEDS-FLUTTER.md`](references/FEEDS-FLUTTER.md) + [`references/FEEDS-FLUTTER-blueprints.md`](references/FEEDS-FLUTTER-blueprints.md)
 
 Additional Stream product coverage should stay in this naming family instead of creating more top-level skills.
@@ -266,12 +276,12 @@ Additional Stream product coverage should stay in this naming family instead of 
 
 **Full detail:** [`builder.md`](builder.md) - use the **new-project path**.
 
-| Phase | Name | What you do |
-|---|---|---|
-| **A1** | Detect | Run **Project signals**. If there is no Flutter app yet, tell the user to run `flutter create my_app` first. |
-| **A2** | Choose lane | Confirm package choice: `stream_chat_flutter` (pre-built UI, fastest), `stream_chat_flutter_core` (custom UI), `stream_video_flutter` (video/livestream), or `stream_feed` / `stream_feed_flutter_core` (activity feeds, no pre-built UI). For Feeds, default to Twitter-style UI. |
-| **A3** | Install + wire | Follow [`builder.md`](builder.md) + [`sdk.md`](sdk.md), then load only the needed reference files. |
-| **A4** | Verify | Confirm `flutter pub get` succeeds, client connects, and first screen renders. |
+| Phase  | Name           | What you do                                                                                                                                                                                                                                                                        |
+| ------ | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **A1** | Detect         | Run **Project signals**. If there is no Flutter app yet, tell the user to run `flutter create my_app` first.                                                                                                                                                                       |
+| **A2** | Choose lane    | Confirm package choice: `stream_chat_flutter` (pre-built UI, fastest), `stream_chat_flutter_core` (custom UI), `stream_video_flutter` (video/livestream), or `stream_feed` / `stream_feed_flutter_core` (activity feeds, no pre-built UI). For Feeds, default to Twitter-style UI. |
+| **A3** | Install + wire | Follow [`builder.md`](builder.md) + [`sdk.md`](sdk.md), then load only the needed reference files.                                                                                                                                                                                 |
+| **A4** | Verify         | Confirm `flutter pub get` succeeds, client connects, and first screen renders.                                                                                                                                                                                                     |
 
 ---
 
@@ -279,12 +289,12 @@ Additional Stream product coverage should stay in this naming family instead of 
 
 **Full detail:** [`builder.md`](builder.md) - use the **existing-project path**.
 
-| Phase | Name | What you do |
-|---|---|---|
-| **B1** | Detect | Run **Project signals** and inspect the existing app structure before editing. |
-| **B2** | Preserve | Keep the current navigation, state management, and widget architecture unless the user asks for a change. |
-| **B3** | Integrate | Use [`sdk.md`](sdk.md) for shared wiring, then load only the needed reference files. |
-| **B4** | Verify | Confirm the requested Stream flow builds and renders inside the existing app. |
+| Phase  | Name      | What you do                                                                                               |
+| ------ | --------- | --------------------------------------------------------------------------------------------------------- |
+| **B1** | Detect    | Run **Project signals** and inspect the existing app structure before editing.                            |
+| **B2** | Preserve  | Keep the current navigation, state management, and widget architecture unless the user asks for a change. |
+| **B3** | Integrate | Use [`sdk.md`](sdk.md) for shared wiring, then load only the needed reference files.                      |
+| **B4** | Verify    | Confirm the requested Stream flow builds and renders inside the existing app.                             |
 
 ---
 
@@ -301,6 +311,10 @@ Load only the relevant files for the requested package.
 - Video widget blueprints (entry point, join, call container, controls, participant tile) -> [`references/VIDEO-FLUTTER-blueprints.md`](references/VIDEO-FLUTTER-blueprints.md)
 - Livestream SDK patterns (call type, backstage, goLive/stopLive, HLS) -> [`references/LIVESTREAM-FLUTTER.md`](references/LIVESTREAM-FLUTTER.md)
 - Livestream widget blueprints (mode selection, creator, WebRTC viewer, HLS viewer) -> [`references/LIVESTREAM-FLUTTER-blueprints.md`](references/LIVESTREAM-FLUTTER-blueprints.md)
+- Video advanced patterns (audio rooms, multicall, chat+video wiring, queryCalls, call events, preferences, moderation, session timers, network handling) -> [`references/VIDEO-ADVANCED-FLUTTER.md`](references/VIDEO-ADVANCED-FLUTTER.md)
+- Video advanced use-case blueprints (audio room screen, TikTok-style livestream feed, floating call panel, chat-with-video) -> [`references/VIDEO-ADVANCED-FLUTTER-blueprints.md`](references/VIDEO-ADVANCED-FLUTTER-blueprints.md)
+- Ringing SDK patterns (push-enabled init, outgoing ring, incoming foreground/background/terminated, CallKit/FCM setup, accept/reject/end, customization, missed calls) -> [`references/RINGING-FLUTTER.md`](references/RINGING-FLUTTER.md)
+- Ringing blueprints (push init, background FCM handler, home-screen observers, outgoing ring, call screen, iOS AppDelegate, Android manifest/Gradle) -> [`references/RINGING-FLUTTER-blueprints.md`](references/RINGING-FLUTTER-blueprints.md)
 - Feeds SDK setup, StreamFeedClient, feed types, activities, reactions, follow/unfollow, realtime -> [`references/FEEDS-FLUTTER.md`](references/FEEDS-FLUTTER.md)
 - Feeds widget blueprints (Twitter-style by default: home feed, activity card, compose, profile, notifications; also Instagram/Reddit variants) -> [`references/FEEDS-FLUTTER-blueprints.md`](references/FEEDS-FLUTTER-blueprints.md)
 

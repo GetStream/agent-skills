@@ -6,6 +6,8 @@ Load only the section you are implementing. For setup, client initialization, an
 
 ## App Entry Point Blueprint
 
+> **Docs:** [Quickstart](https://getstream.io/video/docs/flutter/quickstart.md) · [Authentication](https://getstream.io/video/docs/flutter/guides/client-and-authentication.md)
+
 Initialize `StreamVideo` before `runApp`. No wrapper widget is needed - the SDK uses a singleton pattern.
 
 ```dart
@@ -23,7 +25,7 @@ void main() async {
       name: 'Your Name',
       image: 'https://example.com/avatar.jpg',
     ),
-    userToken: UserToken.jwt('your_user_token'),
+    userToken: 'your_user_token',
   );
 
   runApp(const MyApp());
@@ -43,6 +45,7 @@ class MyApp extends StatelessWidget {
 ```
 
 **Wiring:**
+
 - `WidgetsFlutterBinding.ensureInitialized()` is required before any async or SDK work in `main`
 - The `StreamVideo(...)` constructor registers the singleton - no return value is needed in `main`
 - Access the client anywhere with `StreamVideo.instance`
@@ -51,6 +54,8 @@ class MyApp extends StatelessWidget {
 ---
 
 ## Home / Join-or-Start Call Blueprint
+
+> **Docs:** [Joining & Creating Calls](https://getstream.io/video/docs/flutter/guides/joining-and-creating-calls.md)
 
 Lets the user enter a call ID to join an existing call, or generate a new one.
 
@@ -83,21 +88,28 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() => _joining = true);
     try {
       final call = StreamVideo.instance.makeCall(
-        callType: StreamCallType.defaultType,
+        callType: StreamCallType.defaultType(),
         id: callId,
       );
-      await call.getOrCreate();
-      final result = await call.join();
-      result.fold(
-        success: (_) {
-          if (mounted) {
-            Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => CallScreen(call: call)),
-            );
-          }
+      final createResult = await call.getOrCreate();
+      createResult.fold(
+        success: (_) async {
+          final result = await call.join();
+          result.fold(
+            success: (_) {
+              if (mounted) {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => CallScreen(call: call)),
+                );
+              }
+            },
+            failure: (failure) {
+              if (mounted) _showError('Failed to join: ${failure.error.message}');
+            },
+          );
         },
-        failure: (error) {
-          if (mounted) _showError('Failed to join: $error');
+        failure: (failure) {
+          if (mounted) _showError('Failed to create call: ${failure.error.message}');
         },
       );
     } finally {
@@ -164,14 +176,17 @@ class _HomeScreenState extends State<HomeScreen> {
 ```
 
 **Wiring:**
+
 - `makeCall` is synchronous - no `await` needed
 - `getOrCreate()` then `join()` is the required two-step sequence; never call `join()` alone
-- The `Result` from `join()` must be checked - it does not throw on failure
+- Both `getOrCreate()` and `join()` return a `Result` that must be checked
 - `_joining` prevents double-taps while the call is connecting
 
 ---
 
 ## Full Call View Blueprint (StreamCallContainer)
+
+> **Docs:** [Call Container](https://getstream.io/video/docs/flutter/call-container.md) · [Call Content](https://getstream.io/video/docs/flutter/call-content.md)
 
 `StreamCallContainer` is the complete in-call screen with participant grid, controls, and camera feed. Use it unless you are building a fully custom layout.
 
@@ -214,6 +229,7 @@ class _CallScreenState extends State<CallScreen> {
 ```
 
 **Wiring:**
+
 - `StreamCallContainer` manages participant layout, controls bar, and camera feed internally
 - `onLeaveCallTap` is called when the user taps the hang-up control; call `leave()` and then navigate away
 - `dispose()` calls `leave()` as a safety net for cases where the screen is popped without the hang-up button (e.g. OS back gesture)
@@ -223,7 +239,9 @@ class _CallScreenState extends State<CallScreen> {
 
 ## Custom Call Controls Blueprint
 
-Replace the SDK's default controls bar with your own by building controls that call directly into `call.camera`, `call.microphone`, and `call.speakerphone`.
+> **Docs:** [Call Controls](https://getstream.io/video/docs/flutter/call-controls.md)
+
+Replace the SDK's default controls bar with your own by building controls that call the `Call` device methods (`setMicrophoneEnabled`, `setCameraEnabled`, `flipCamera`).
 
 ```dart
 // custom_call_controls.dart
@@ -237,14 +255,15 @@ class CustomCallControls extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<CallState>(
-      stream: call.state,
-      initialData: call.state.value,
-      builder: (context, snapshot) {
-        final state = snapshot.requireData;
-        final local = state.localParticipant;
-        final micOn = local?.isAudioEnabled ?? false;
-        final cameraOn = local?.isVideoEnabled ?? false;
+    return PartialCallStateBuilder<({bool micOn, bool cameraOn})>(
+      call: call,
+      selector: (state) => (
+        micOn: state.localParticipant?.isAudioEnabled ?? false,
+        cameraOn: state.localParticipant?.isVideoEnabled ?? false,
+      ),
+      builder: (context, data) {
+        final micOn = data.micOn;
+        final cameraOn = data.cameraOn;
 
         return SafeArea(
           child: Padding(
@@ -256,24 +275,20 @@ class CustomCallControls extends StatelessWidget {
                   icon: micOn ? Icons.mic : Icons.mic_off,
                   active: micOn,
                   onTap: () async {
-                    micOn
-                        ? await call.microphone.disable()
-                        : await call.microphone.enable();
+                    await call.setMicrophoneEnabled(enabled: !micOn);
                   },
                 ),
                 _ControlButton(
                   icon: cameraOn ? Icons.videocam : Icons.videocam_off,
                   active: cameraOn,
                   onTap: () async {
-                    cameraOn
-                        ? await call.camera.disable()
-                        : await call.camera.enable();
+                    await call.setCameraEnabled(enabled: !cameraOn);
                   },
                 ),
                 _ControlButton(
                   icon: Icons.flip_camera_ios,
                   active: true,
-                  onTap: () async => call.camera.flip(),
+                  onTap: () async => call.flipCamera(),
                 ),
                 _ControlButton(
                   icon: Icons.call_end,
@@ -310,8 +325,8 @@ class _ControlButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final bg = backgroundColor ??
         (active
-            ? Colors.white.withOpacity(0.15)
-            : Colors.red.withOpacity(0.8));
+            ? Colors.white.withValues(alpha: 0.15)
+            : Colors.red.withValues(alpha: 0.8));
 
     return GestureDetector(
       onTap: onTap,
@@ -327,13 +342,17 @@ class _ControlButton extends StatelessWidget {
 ```
 
 **Wiring:**
-- Use `StreamBuilder<CallState>` on `call.state` to rebuild controls when audio/video state changes
+
+- Use `StreamBuilder<CallState>` on `call.state.asStream()` to rebuild controls when audio/video state changes; for fewer rebuilds, prefer `PartialCallStateBuilder` with a selector
 - `local?.isAudioEnabled` and `local?.isVideoEnabled` reflect current toggle state
-- `call.camera.flip()` is synchronous from the widget side; errors are swallowed - add try/catch for production
+- `setMicrophoneEnabled` / `setCameraEnabled` / `flipCamera` all return `Future<Result<None>>`; check the result in production code
+- Pre-built equivalents exist if you only need standard buttons: `ToggleMicrophoneOption`, `ToggleCameraOption`, `FlipCameraOption`, `ToggleSpeakerphoneOption`
 
 ---
 
 ## Participant Tile Blueprint
+
+> **Docs:** [Call Participants](https://getstream.io/video/docs/flutter/call-participants.md) · [Participant Label](https://getstream.io/video/docs/flutter/ui-cookbook/participant-label.md) · [Video Fallback](https://getstream.io/video/docs/flutter/ui-cookbook/video-fallback.md)
 
 Renders a single participant's video with name and audio status overlaid.
 
@@ -350,7 +369,7 @@ class ParticipantTile extends StatelessWidget {
   });
 
   final Call call;
-  final CallParticipant participant;
+  final CallParticipantState participant; // NOT CallParticipant - that is a different model
 
   @override
   Widget build(BuildContext context) {
@@ -362,6 +381,7 @@ class ParticipantTile extends StatelessWidget {
           StreamVideoRenderer(
             call: call,
             participant: participant,
+            videoTrackType: SfuTrackType.video, // required
             videoFit: VideoFit.cover,
           ),
           // Name + mute indicator overlay
@@ -417,14 +437,18 @@ class ParticipantTile extends StatelessWidget {
 ```
 
 **Wiring:**
-- `StreamVideoRenderer` requires both `call` and `participant` to resolve the correct media track
+
+- `StreamVideoRenderer` requires `call`, `participant` (a `CallParticipantState`), and `videoTrackType` - omitting `videoTrackType` does not compile
 - `VideoFit.cover` fills the tile and may crop; use `VideoFit.contain` to avoid cropping
 - `isSpeaking` updates automatically from call state - no extra stream subscription needed inside the tile
 - Wrap the tile in `LayoutBuilder` or give it a fixed size so `StreamVideoRenderer` knows the render resolution
+- Consider the pre-built `StreamCallParticipants` widget (grid/spotlight layout modes) before hand-rolling tiles
 
 ---
 
 ## Participant Grid Blueprint
+
+> **Docs:** [Call Participants](https://getstream.io/video/docs/flutter/call-participants.md) · [Participant List](https://getstream.io/video/docs/flutter/ui-cookbook/participant-list.md)
 
 Displays all remote participants in a grid with the local participant in a corner PiP.
 
@@ -441,11 +465,11 @@ class ParticipantGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<CallState>(
-      stream: call.state,
+      stream: call.state.asStream(), // StateEmitter is not a Stream - convert
       initialData: call.state.value,
       builder: (context, snapshot) {
         final state = snapshot.requireData;
-        final remote = state.remoteParticipants;
+        final others = state.otherParticipants; // everyone except local
         final local = state.localParticipant;
 
         return Stack(
@@ -459,11 +483,11 @@ class ParticipantGrid extends StatelessWidget {
                 crossAxisSpacing: 8,
                 mainAxisSpacing: 8,
               ),
-              itemCount: remote.length,
+              itemCount: others.length,
               itemBuilder: (context, index) {
                 return ParticipantTile(
                   call: call,
-                  participant: remote[index],
+                  participant: others[index],
                 );
               },
             ),
@@ -485,6 +509,8 @@ class ParticipantGrid extends StatelessWidget {
 ```
 
 **Wiring:**
-- `remoteParticipants` excludes the local user - avoids showing your own video in the grid
+
+- `otherParticipants` excludes the local user - avoids showing your own video in the grid (there is no `remoteParticipants` getter)
 - The local PiP is positioned with `Stack`; adjust the `bottom` offset to clear your custom controls bar
-- `StreamBuilder` on `call.state` rebuilds the grid when participants join or leave
+- `StreamBuilder` on `call.state.asStream()` rebuilds the grid when participants join or leave
+- The pre-built `StreamCallParticipants(call: call, participants: ...)` provides grid and spotlight layouts out of the box - prefer it unless the design needs full control

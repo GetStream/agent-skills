@@ -8,25 +8,28 @@ Rules: [../RULES.md](../RULES.md).
 
 ## Quick ref
 
-- **Call type:** `StreamCallType('livestream')`
+- **Call type:** `StreamCallType.liveStream()`
 - **Package:** same `stream_video_flutter` as standard calls
 - **Host path:** `getOrCreate()` -> `join()` -> backstage preview -> `call.goLive()` -> `call.stopLive()` -> `call.end()` -> `call.leave()`
-- **Viewer path (WebRTC):** `getOrCreate()` -> `join()` -> watch `remoteParticipants` -> `call.leave()`
-- **Viewer path (HLS):** get `call.state.value.egress?.hls?.playlistUrl` -> play with `video_player`
-- **Docs:** `https://getstream.io/video/docs/flutter/advanced/livestreaming/`
+- **Viewer path (WebRTC):** `getOrCreate()` -> show the pre-built `LivestreamPlayer` (auto-joins, handles backstage/ended states)
+- **Viewer path (HLS):** get `call.state.value.egress.hlsPlaylistUrl` -> play with `video_player`
+- **Docs:** [Livestreaming guide](https://getstream.io/video/docs/flutter/guides/livestreaming.md) · [Watching a livestream](https://getstream.io/video/docs/flutter/ui-cookbook/watching-a-livestream.md) · [Broadcasting (HLS/RTMP)](https://getstream.io/video/docs/flutter/advanced/broadcasting.md)
+- **Beyond this file:** TikTok-style vertical livestream feeds and "viewer calls the host mid-broadcast" live in [`VIDEO-ADVANCED-FLUTTER.md`](VIDEO-ADVANCED-FLUTTER.md) + [`VIDEO-ADVANCED-FLUTTER-blueprints.md`](VIDEO-ADVANCED-FLUTTER-blueprints.md)
 
 ---
 
 ## Call type: `livestream`
 
+> **Docs:** [Livestreaming guide](https://getstream.io/video/docs/flutter/guides/livestreaming.md) · [Call types](https://getstream.io/video/docs/flutter/guides/call-types.md)
+
 The `livestream` call type ships with a permission model designed for broadcasting:
 
-| Role | Publish audio | Publish video | Receive | End call |
-|---|---|---|---|---|
-| Host / admin | Yes | Yes | Yes | Yes |
-| Viewer (subscriber) | No | No | Yes | No |
+| Role                | Publish audio | Publish video | Receive | End call |
+| ------------------- | ------------- | ------------- | ------- | -------- |
+| Host / admin        | Yes           | Yes           | Yes     | Yes      |
+| Viewer (subscriber) | No            | No            | Yes     | No       |
 
-Configure the call type in the Stream Dashboard before using it. Use `StreamCallType('livestream')` in all `makeCall` calls.
+Configure the call type in the Stream Dashboard before using it. Use `StreamCallType.liveStream()` in all `makeCall` calls (factory constructor - `StreamCallType('livestream')` does not exist).
 
 ---
 
@@ -36,31 +39,138 @@ When a host joins a `livestream` call, the call starts in **backstage mode** by 
 
 - The host can set up camera and mic
 - Viewers who attempt to join receive a "call not yet live" response
-- `call.state.value.backstage` is `true`
+- `call.state.value.isBackstage` is `true`
 
 Call `await call.goLive()` to exit backstage and open the call to viewers. Call `await call.stopLive()` to return to backstage (or end the session entirely).
 
 ```dart
-// Read backstage state from call state
-final isBackstage = call.state.value.backstage;
+// Read backstage state from call state (the field is isBackstage, not backstage)
+final isBackstage = call.state.value.isBackstage;
+```
+
+> **Docs:** [Livestreaming guide](https://getstream.io/video/docs/flutter/guides/livestreaming.md)
+
+---
+
+## Roles, permissions, and backstage security
+
+For the general permissions model (roles, capabilities, grants, `hasPermission`,
+`grant/revokePermissions`) see [`VIDEO-FLUTTER.md`](VIDEO-FLUTTER.md) > Roles and
+Permissions. This section covers the **livestream-specific gating** that most commonly
+causes bugs.
+
+> **Docs:** [Permissions & moderation](https://getstream.io/video/docs/flutter/guides/permissions-and-moderation.md) · [Livestreaming guide](https://getstream.io/video/docs/flutter/guides/livestreaming.md)
+
+### Guest viewers cannot read or join by default
+
+> **GOTCHA - `User.guest` viewers get a 403 on a `livestream` call out of the box.**
+> The built-in `guest` role has minimal capabilities and is **not** granted `read-call`
+> or `join-call` on the `livestream` call type. A viewer connecting as a guest
+> (`User.guest`) will fail `getOrCreate()` / `join()`.
+>
+> To support guest viewers, grant the `guest` role `read-call` and `join-call` (plus
+> `create-call` if a viewer may open the call before the host has created it) on the
+> `livestream` call type - via **Stream Dashboard -> Video & Audio -> Call Types ->
+> livestream -> Roles & Permissions** (or the API). Otherwise, use authenticated
+> `User.regular` viewers, which already have these capabilities on `livestream`.
+
+### Who can join backstage
+
+While a livestream is in backstage (before `goLive()`), the server only admits users whose
+effective capabilities include `join-backstage` (`CallPermission.joinBackstage`). By
+default the `livestream` call type grants this to the **host** role only - regular
+viewers' `join()` **fails** with a "call is not live" error until the host goes live.
+
+```dart
+// Mark the creator as host so they get join-backstage (set at create time):
+final result = await call.getOrCreate(
+  members: [
+    MemberRequest(userId: StreamVideo.instance.currentUser.id, role: 'host'),
+  ],
+);
+result.fold(
+  success: (_) { /* proceed to join() */ },
+  failure: (failure) {
+    debugPrint('getOrCreate failed: ${failure.error.message}');
+  },
+);
+```
+
+The host's role and the `join-backstage` grant are configured **server-side** (Dashboard /
+call type grants). The Flutter SDK does not assign roles - it only sends the desired role
+on the member and reads back `call.state.value.ownCapabilities`.
+
+### Backstage gotcha: `joinAheadTimeSeconds` lets viewers in early
+
+`StreamBackstageSettings` has a `joinAheadTimeSeconds` field. When the call has a scheduled
+start (`startsAt`) and `joinAheadTimeSeconds > 0`, **regular viewers can join the backstage
+call that many seconds before `startsAt` - even without `join-backstage`**. From that
+moment they receive the host's published audio and video.
+
+```dart
+await call.update(
+  startsAt: DateTime.now().toUtc().add(const Duration(minutes: 5)),
+  backstage: const StreamBackstageSettings(
+    enabled: true,
+    joinAheadTimeSeconds: 120, // viewers may join 2 min before startsAt
+  ),
+);
+```
+
+> **SECURITY GOTCHA - hosts can be heard/seen during "private" setup.** Backstage feels
+> like a private green room, but `joinAheadTimeSeconds` is a hole in that assumption: any
+> viewer who joins inside the join-ahead window hears and sees the host live, before
+> `goLive()` is ever called. Mitigations:
+>
+> - Keep `joinAheadTimeSeconds` at `0` (the default) unless you specifically want a
+>   pre-show lobby. If unset, viewers can only join once the call starts/goes live.
+> - Treat the period between (`startsAt - joinAheadTimeSeconds`) and `goLive()` as
+>   **public**. Do not say or show anything in front of the camera/mic that viewers should
+>   not receive - or keep the host muted / camera off until `goLive()`.
+> - If you grant `join-backstage` to a custom role, remember those users bypass the live
+>   gate entirely (always, not just in the join-ahead window).
+
+### Verify before treating backstage as private
+
+```dart
+// Are non-hosts currently able to be here? If startsAt is near and join-ahead is on,
+// assume YES regardless of isBackstage.
+final s = call.state.value;
+final scheduledStart = s.startsAt;            // DateTime?
+final joinAhead = s.settings.backstage.joinAheadTimeSeconds ?? 0;
+// Anyone may already be receiving you if:
+//   !s.isBackstage  (live)  OR
+//   (scheduledStart != null && joinAhead > 0 &&
+//      DateTime.now().toUtc().isAfter(scheduledStart.subtract(Duration(seconds: joinAhead))))
 ```
 
 ---
 
 ## Host flow
 
+> **Docs:** [Livestreaming guide](https://getstream.io/video/docs/flutter/guides/livestreaming.md) · [Hosting a livestream](https://getstream.io/video/docs/flutter/ui-cookbook/hosting-a-livestream.md)
+
 ### 1. Create and join (enters backstage)
 
 ```dart
 final call = StreamVideo.instance.makeCall(
-  callType: StreamCallType('livestream'),
+  callType: StreamCallType.liveStream(),
   id: 'my-livestream-id',
 );
-await call.getOrCreate();
-final result = await call.join();
-result.fold(
-  success: (_) { /* show backstage preview */ },
-  failure: (error) { /* show error */ },
+final createResult = await call.getOrCreate();
+createResult.fold(
+  success: (_) async {
+    final result = await call.join();
+    result.fold(
+      success: (_) { /* show backstage preview */ },
+      failure: (failure) {
+        debugPrint('join failed: ${failure.error.message}');
+      },
+    );
+  },
+  failure: (failure) {
+    debugPrint('getOrCreate failed: ${failure.error.message}');
+  },
 );
 ```
 
@@ -70,9 +180,12 @@ The host is placed in backstage. Observe `call.state` to track the connection li
 
 ```dart
 await call.goLive();
+
+// Optionally kick off server-side pipelines in the same step:
+await call.goLive(startHls: true, startRecording: true);
 ```
 
-Transitions the call from backstage to live. Viewers can now join. `call.state.value.backstage` becomes `false`.
+Transitions the call from backstage to live. Viewers can now join. `call.state.value.isBackstage` becomes `false`. `goLive` returns `Result<CallMetadata>`.
 
 ### 3. Stop the broadcast
 
@@ -80,7 +193,7 @@ Transitions the call from backstage to live. Viewers can now join. `call.state.v
 await call.stopLive();
 ```
 
-Returns the call to backstage. Active WebRTC viewers are disconnected. The host remains connected.
+Returns the call to backstage (`isBackstage` becomes `true` again); published tracks stop reaching viewers. The host remains connected.
 
 ### 4. End the call for everyone
 
@@ -102,38 +215,87 @@ Always call `leave()` after `end()` to clean up local call state. Skipping it le
 
 ## Viewer flow (WebRTC)
 
-WebRTC viewers join as subscribers. They receive the host's audio and video tracks in real time.
+> **Docs:** [Watching a livestream](https://getstream.io/video/docs/flutter/ui-cookbook/watching-a-livestream.md) · [Livestreaming guide](https://getstream.io/video/docs/flutter/guides/livestreaming.md)
+
+**Use the pre-built `LivestreamPlayer`.** It auto-joins the call, renders the host video, and handles the backstage ("waiting for host"), ended, reconnecting, and no-video states - plus participant count, multi-host layouts, screen-share spotlight, recordings-when-ended, and PiP. Do not hand-build a viewer unless the design demands it.
 
 ```dart
-// Join
 final call = StreamVideo.instance.makeCall(
-  callType: StreamCallType('livestream'),
+  callType: StreamCallType.liveStream(),
   id: 'my-livestream-id',
 );
-await call.getOrCreate();
-await call.join();
+final result = await call.getOrCreate();
+result.fold(
+  success: (_) { /* proceed to show the LivestreamPlayer */ },
+  failure: (failure) {
+    debugPrint('getOrCreate failed: ${failure.error.message}');
+  },
+);
 
-// Watch host via remoteParticipants
-final hostParticipant = call.state.value.remoteParticipants.firstOrNull;
+// On success, in the widget tree - no manual join() needed:
+LivestreamPlayer(
+  call: call,
+  // joinBehaviour: LivestreamJoinBehaviour.autoJoinAsap (default)
+  //   .autoJoinWhenLive - wait in a preview until the host goes live
+  //   .manualJoin - you call join() yourself
+  // connectOptions defaults to camera/mic disabled - correct for viewers
+)
+```
+
+Useful `LivestreamPlayer` parameters: `showParticipantCount`, `showRecordingsWhenEnded`, `backButtonBuilder`, `livestreamBackstageWidgetBuilder` / `livestreamEndedWidgetBuilder` (custom waiting/ended screens), `showMultipleHosts` + `layoutMode`, `videoFit`, `pictureInPictureConfiguration`, `onCallDisconnected`.
+
+### Fully custom viewer (only when LivestreamPlayer does not fit)
+
+Viewers join as subscribers and render the host manually:
+
+```dart
+final call = StreamVideo.instance.makeCall(
+  callType: StreamCallType.liveStream(),
+  id: 'my-livestream-id',
+);
+final createResult = await call.getOrCreate();
+createResult.fold(
+  success: (_) async {
+    // CallConnectOptions defaults camera/mic to disabled
+    final result = await call.join();
+    result.fold(
+      success: (_) { /* now rendering the host */ },
+      failure: (failure) {
+        debugPrint('join failed: ${failure.error.message}');
+      },
+    );
+  },
+  failure: (failure) {
+    debugPrint('getOrCreate failed: ${failure.error.message}');
+  },
+);
+
+// Watch the host - otherParticipants excludes the local viewer
+final hostParticipant = call.state.value.otherParticipants.firstOrNull;
 
 // Leave
 await call.leave();
 ```
 
-If the call is still in backstage when the viewer joins, `remoteParticipants` will be empty until the host calls `goLive()`. Observe `call.state.value.backstage` to show a "waiting for stream" UI.
+If the call is still in backstage when the viewer joins, `otherParticipants` will be empty until the host calls `goLive()`. Observe `call.state.value.isBackstage` to show a "waiting for stream" UI.
 
 ```dart
-StreamBuilder<CallState>(
-  stream: call.state,
-  initialData: call.state.value,
-  builder: (context, snapshot) {
-    final state = snapshot.requireData;
-    if (state.backstage) {
-      return const WaitingForHostWidget();
-    }
-    final host = state.remoteParticipants.firstOrNull;
+PartialCallStateBuilder<({bool isBackstage, String? hostSessionId})>(
+  call: call,
+  selector: (state) => (
+    isBackstage: state.isBackstage,
+    hostSessionId: state.otherParticipants.firstOrNull?.sessionId,
+  ),
+  builder: (context, data) {
+    if (data.isBackstage) return const WaitingForHostWidget();
+    final host = call.state.value.otherParticipants.firstOrNull;
     if (host == null) return const WaitingForHostWidget();
-    return StreamVideoRenderer(call: call, participant: host, videoFit: VideoFit.cover);
+    return StreamVideoRenderer(
+      call: call,
+      participant: host,
+      videoTrackType: SfuTrackType.video, // required
+      videoFit: VideoFit.cover,
+    );
   },
 )
 ```
@@ -142,20 +304,21 @@ StreamBuilder<CallState>(
 
 ## Viewer flow (HLS)
 
-HLS is better for large audiences (thousands of viewers). It introduces higher latency (~10–30 s) but scales without per-viewer WebRTC connections. HLS viewers do **not** join the call via `join()`.
+> **Docs:** [Broadcasting (HLS/RTMP)](https://getstream.io/video/docs/flutter/advanced/broadcasting.md) · [Watching a livestream](https://getstream.io/video/docs/flutter/ui-cookbook/watching-a-livestream.md)
 
-### Get the HLS URL
+HLS is better for large audiences (thousands of viewers). It introduces higher latency (~10-30 s) but scales without per-viewer WebRTC connections. HLS viewers do **not** join the call via `join()`.
 
-The HLS URL is at `call.state.value.egress?.hls?.playlistUrl`. It is populated after the host calls `goLive()` and the HLS broadcast initializes (a few seconds after `goLive()`).
+### Start HLS and get the URL
+
+HLS only runs if it is started - via `call.goLive(startHls: true)`, an explicit `call.startHLS()`, or auto-broadcast enabled on the call type in the dashboard. Stop with `call.stopHLS()`.
+
+The URL is at `call.state.value.egress.hlsPlaylistUrl` (`egress` is non-nullable; the field is flat). It populates a few seconds after the broadcast starts.
 
 ```dart
-// Poll until the HLS URL becomes available
-StreamBuilder<CallState>(
-  stream: call.state,
-  initialData: call.state.value,
-  builder: (context, snapshot) {
-    final state = snapshot.requireData;
-    final hlsUrl = state.egress?.hls?.playlistUrl;
+PartialCallStateBuilder<String?>(
+  call: call,
+  selector: (state) => state.egress.hlsPlaylistUrl,
+  builder: (context, hlsUrl) {
     if (hlsUrl == null) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -222,21 +385,19 @@ class _HLSPlayerWidgetState extends State<HLSPlayerWidget> {
 
 ---
 
-## Large-scale livestreams (v1.3.1+)
+## Large-scale livestreams (v1.3.3+)
 
-For high-viewer-count broadcasts, pass `hintHighScaleLivestreamPublisher: true` when creating the call. This hints the SFU to optimize for one-to-many distribution:
+For high-viewer-count broadcasts, the **host** passes `hintHighScaleLivestreamPublisher: true` to `join()`. This hints the SFU to optimize for one-to-many distribution:
 
 ```dart
-await call.getOrCreate(
-  video: CallSettingsRequest(
-    hintHighScaleLivestreamPublisher: true,
-  ),
-);
+await call.join(hintHighScaleLivestreamPublisher: true);
 ```
 
 ---
 
 ## Participant and viewer count
+
+> **Docs:** [Call state](https://getstream.io/video/docs/flutter/guides/call-and-participant-state.md)
 
 For WebRTC-connected viewers, read participant count from call state:
 
@@ -245,7 +406,7 @@ For WebRTC-connected viewers, read participant count from call state:
 final totalCount = call.state.value.callParticipants.length;
 
 // Viewers only (excludes local participant)
-final viewerCount = call.state.value.remoteParticipants.length;
+final viewerCount = call.state.value.otherParticipants.length;
 ```
 
 This count reflects only WebRTC-connected users. HLS viewers are not included. For accurate total viewer counts across both paths, use your own backend counter or the Stream server-side event stream.
@@ -254,17 +415,23 @@ This count reflects only WebRTC-connected users. HLS viewers are not included. F
 
 ## Call settings for hosts and viewers
 
-Set camera and mic state before joining by disabling them after `join()`:
+Set the initial camera/mic state via `CallConnectOptions` passed to `join()` - do not "join then disable":
 
 ```dart
-// Host: camera and mic on (enabled by default)
-await call.join();
+// Host: publish camera and mic from the start
+await call.join(
+  connectOptions: CallConnectOptions(
+    camera: TrackOption.enabled(),
+    microphone: TrackOption.enabled(),
+  ),
+);
 
-// Viewer: disable camera and mic immediately after joining
+// Viewer: CallConnectOptions defaults camera and microphone to disabled,
+// so a bare join() is already correct for viewers
 await call.join();
-await call.camera.disable();
-await call.microphone.disable();
 ```
+
+To toggle later: `call.setCameraEnabled(enabled:)` / `call.setMicrophoneEnabled(enabled:)`.
 
 The `livestream` call type also enforces no-publish for viewers via server-side permissions, so even with default settings, viewers cannot broadcast audio or video.
 
@@ -278,13 +445,15 @@ Same as standard video calls - see [`VIDEO-FLUTTER.md`](VIDEO-FLUTTER.md) for th
 
 ## Gotchas
 
-- **Never use `StreamCallContainer` in a livestream flow.** `StreamCallContainer` is designed for standard calls - it renders a participant grid and default controls that override the custom host/viewer UI. Livestream views own their entire UI.
-- **Always observe `call.state.value.backstage` for live status.** Do not maintain a separate `isLive` boolean - derive it from `backstage`.
+- **Use `LivestreamPlayer` for viewers.** It handles join, backstage/ended states, host filtering, and PiP. Hand-roll the viewer UI only when the design demands it.
+- **Never use `StreamCallContainer` in a livestream flow.** `StreamCallContainer` is designed for standard calls - it renders a participant grid and default controls that override the custom host/viewer UI. Use `LivestreamPlayer` (viewer) or a custom host view.
+- **Always observe `call.state.value.isBackstage` for live status.** Do not maintain a separate `isLive` boolean - derive it from `isBackstage`. (The field is `isBackstage`; there is no `backstage` getter.)
 - **Guard `join()` against double-calls.** Use a `_joined` flag or check that the call is not already in an active state before calling `join()`. Navigating back and re-entering a view can trigger a second `join()` while the previous session is still tearing down.
 - **Never skip `getOrCreate()` before `join()`.** Calling `join()` on a call that does not exist server-side returns a failure.
 - **`call.end()` followed by `call.leave()`.** `end()` terminates the session server-side but does not reset local call state. Always follow it with `leave()`.
-- **`call.state.value.backstage` is `true` until `goLive()` is called.** A viewer who joins before `goLive()` will not see video until backstage ends. Show a "waiting for host" state and observe the state stream.
+- **`call.state.value.isBackstage` is `true` until `goLive()` is called.** A viewer who joins before `goLive()` will not see video until backstage ends. `LivestreamPlayer` shows its backstage state automatically; custom UIs must observe the state stream.
 - **Never publish from a viewer.** The `livestream` call type blocks viewer publishing via server-side permissions. Do not show camera/mic enable controls in the viewer UI.
-- **HLS latency is expected.** HLS viewers see the stream 10–30 seconds behind live. Do not attempt to synchronize WebRTC and HLS viewers.
+- **HLS must be started.** `goLive(startHls: true)`, `call.startHLS()`, or dashboard auto-broadcast - otherwise `egress.hlsPlaylistUrl` stays null forever.
+- **HLS latency is expected.** HLS viewers see the stream 10-30 seconds behind live. Do not attempt to synchronize WebRTC and HLS viewers.
 - **`VideoPlayerController` must be created in `initState`, not `build`.** Creating it in `build` reinitializes the player on every rebuild.
-- **HLS URL appears a few seconds after `goLive()`.** The HLS broadcast initialization is asynchronous. Poll `call.state.value.egress?.hls?.playlistUrl` until it is non-null before starting playback.
+- **HLS URL appears a few seconds after the broadcast starts.** The initialization is asynchronous. Observe `call.state.value.egress.hlsPlaylistUrl` until it is non-null before starting playback.
