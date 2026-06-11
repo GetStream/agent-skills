@@ -87,7 +87,7 @@ These calls are mutating. **All demo ids must be namespaced** so they cannot col
 Before running any `UpdateUsers` / `GetOrCreateChannel` / `SendMessage` / `GetOrCreateFollows` / `AddActivity` / `UpdateFeedGroup` / `AddActivityReaction`:
 
 1. **Generate a per-session demo prefix** and hold it in context. Default form: `demo-<short_random>-` where `<short_random>` is 4-6 lowercase chars (e.g., `demo-k3p9-`). Every demo user id, channel id, activity id, and seeded record custom field uses this prefix. Do not reuse a prefix across sessions - generate a fresh one each time so retries land in a fresh namespace.
-2. **Detect whether the selected app already has real data.** For Chat in scope, run `stream api QueryChannels --body '{"filter_conditions":{"type":"messaging"},"limit":1}'`. For Feeds in scope, run `stream api QueryActivities --body '{"limit":1}'`. Check whether either response includes records that do **not** start with a `demo-` prefix.
+2. **Detect whether the selected app already has real data.** For Chat in scope, run `stream api QueryChannels --request '{"filter_conditions":{"type":"messaging"},"limit":1}'`. For Feeds in scope, run `stream api QueryActivities --request '{"limit":1}'`. Check whether either response includes records that do **not** start with a `demo-` prefix.
 3. **Confirm explicitly when the app is non-empty.** If real channels or activities exist, surface the count and a sample id, and require the user to type a confirmation before continuing:
    > Selected Stream app `"<app_name>"` already has real data (e.g., `<example_cid_or_activity_id>`). I am about to create demo users / channels / follows / activities namespaced under `<demo_prefix>` so they cannot collide. Confirm with `seed demo` to proceed, or say `cancel`.
 4. **Empty / dev app:** announce and proceed without explicit confirmation:
@@ -103,7 +103,7 @@ User records must exist before channel membership can be added. Apply the demo p
 
 ```bash
 # <demo_prefix> e.g. demo-k3p9-
-stream api UpdateUsers --body '{"users":{"<token_user_id>":{"id":"<token_user_id>","name":"<display_name>"},"<demo_prefix>alice":{"id":"<demo_prefix>alice","name":"Alice (demo)"},"<demo_prefix>bob":{"id":"<demo_prefix>bob","name":"Bob (demo)"},"<demo_prefix>carol":{"id":"<demo_prefix>carol","name":"Carol (demo)"}}}'
+stream api UpdateUsers --request '{"users":{"<token_user_id>":{"id":"<token_user_id>","name":"<display_name>"},"<demo_prefix>alice":{"id":"<demo_prefix>alice","name":"Alice (demo)"},"<demo_prefix>bob":{"id":"<demo_prefix>bob","name":"Bob (demo)"},"<demo_prefix>carol":{"id":"<demo_prefix>carol","name":"Carol (demo)"}}}'
 ```
 
 `UpdateUsers` is upsert - it is safe to re-run. The same demo users serve both Chat (as channel members) and Feeds (as the owners of `user:<demo_user_id>` feeds that the connected user's timeline will follow).
@@ -113,7 +113,7 @@ stream api UpdateUsers --body '{"users":{"<token_user_id>":{"id":"<token_user_id
 Use `GetOrCreateChannel`. Prefix every channel id with `<demo_prefix>` and tag the channel with a `seeded_by_skill: true` marker in `data.custom` so later runs can detect this skill's own seeded data:
 
 ```bash
-stream api GetOrCreateChannel type=messaging id=<demo_prefix>general --body '{"data":{"name":"General (demo)","created_by_id":"<token_user_id>","members":[{"user_id":"<token_user_id>"},{"user_id":"<demo_prefix>alice"},{"user_id":"<demo_prefix>bob"}],"custom":{"seeded_by_skill":true,"demo_prefix":"<demo_prefix>"}}}'
+stream api GetOrCreateChannel --type messaging --id <demo_prefix>general --request '{"data":{"name":"General (demo)","created_by_id":"<token_user_id>","members":[{"user_id":"<token_user_id>"},{"user_id":"<demo_prefix>alice"},{"user_id":"<demo_prefix>bob"}],"custom":{"seeded_by_skill":true,"demo_prefix":"<demo_prefix>"}}}'
 ```
 
 Use namespaced channel ids such as `<demo_prefix>general`, `<demo_prefix>random`, `<demo_prefix>team-alpha`. Make sure the token user appears in `data.members`. `GetOrCreateChannel` is idempotent on the `(type, id)` pair - re-running with the same prefix returns the existing channel rather than duplicating it.
@@ -130,7 +130,7 @@ Before sending, check whether the channel already contains a message with the sa
 
 ```bash
 # Skip-if-present check (one query per (channel, seed_key)):
-stream api QueryChannels --body '{"filter_conditions":{"type":"messaging","cid":"messaging:<demo_prefix>general"},"messages_limit":50}'
+stream api QueryChannels --request '{"filter_conditions":{"type":"messaging","cid":"messaging:<demo_prefix>general"},"messages_limit":50}'
 # If the returned messages already include one whose custom.seed_key matches
 # <seed_key>, skip the send for that key.
 ```
@@ -138,7 +138,7 @@ stream api QueryChannels --body '{"filter_conditions":{"type":"messaging","cid":
 Then send only the missing messages:
 
 ```bash
-stream api SendMessage type=messaging id=<demo_prefix>general --body '{"message":{"text":"Hello from Alice","user_id":"<demo_prefix>alice","custom":{"seed_key":"<demo_prefix>general:hello-1","seeded_by_skill":true}}}'
+stream api SendMessage --type messaging --id <demo_prefix>general --request '{"message":{"text":"Hello from Alice","user_id":"<demo_prefix>alice","custom":{"seed_key":"<demo_prefix>general:hello-1","seeded_by_skill":true}}}'
 ```
 
 Generate `seed_key` deterministically per channel + index (`<demo_prefix><channel_short>:hello-1`, `:hello-2`, ...). A second `SendMessage` with the same `seed_key` should be skipped client-side - the Stream API itself does not dedupe on custom fields, so the skip-if-present check above is what makes seeding safe to retry.
@@ -150,7 +150,7 @@ Do not send demo messages when the user only asked for credentials or channels.
 A `timeline` feed only renders activities from feeds it follows, so a Feeds app stays empty until the connected user's timeline follows somebody. Use `GetOrCreateFollows` (idempotent batch upsert) to set up follows from `timeline:<token_user_id>` to each demo user's `user:` feed:
 
 ```bash
-stream api GetOrCreateFollows --body '{"follows":[{"source":"timeline:<token_user_id>","target":"user:<demo_prefix>alice"},{"source":"timeline:<token_user_id>","target":"user:<demo_prefix>bob"},{"source":"timeline:<token_user_id>","target":"user:<demo_prefix>carol"}]}'
+stream api GetOrCreateFollows --request '{"follows":[{"source":"timeline:<token_user_id>","target":"user:<demo_prefix>alice"},{"source":"timeline:<token_user_id>","target":"user:<demo_prefix>bob"},{"source":"timeline:<token_user_id>","target":"user:<demo_prefix>carol"}]}'
 ```
 
 `GetOrCreateFollows` is upsert - re-running is safe, existing follows are returned without error. The endpoint also broadcasts `FollowAddedEvent` only for newly created follows, so re-runs do not double-fire notifications.
@@ -162,10 +162,10 @@ If the user wants their own posts on their own timeline (the "self-follow"), the
 For each demo user, post 1-3 activities on their `user:` feed via `AddActivity`. Required fields: `feeds` (target feed array), `type`. Use a deterministic `id` per (user, index) so retries are idempotent - re-running with the same `id` returns the existing activity instead of creating a duplicate.
 
 ```bash
-stream api AddActivity --body '{"id":"<demo_prefix>alice-1","feeds":["user:<demo_prefix>alice"],"user_id":"<demo_prefix>alice","type":"post","text":"Just shipped a new feature! Activity feeds are wild.","custom":{"seeded_by_skill":true,"demo_prefix":"<demo_prefix>"}}'
-stream api AddActivity --body '{"id":"<demo_prefix>alice-2","feeds":["user:<demo_prefix>alice"],"user_id":"<demo_prefix>alice","type":"post","text":"Loving the React Native ecosystem lately.","custom":{"seeded_by_skill":true,"demo_prefix":"<demo_prefix>"}}'
-stream api AddActivity --body '{"id":"<demo_prefix>bob-1","feeds":["user:<demo_prefix>bob"],"user_id":"<demo_prefix>bob","type":"post","text":"Stream Feeds makes social apps surprisingly simple.","custom":{"seeded_by_skill":true,"demo_prefix":"<demo_prefix>"}}'
-stream api AddActivity --body '{"id":"<demo_prefix>carol-1","feeds":["user:<demo_prefix>carol"],"user_id":"<demo_prefix>carol","type":"post","text":"Anyone else excited about the new SDK?","custom":{"seeded_by_skill":true,"demo_prefix":"<demo_prefix>"}}'
+stream api AddActivity --request '{"id":"<demo_prefix>alice-1","feeds":["user:<demo_prefix>alice"],"user_id":"<demo_prefix>alice","type":"post","text":"Just shipped a new feature! Activity feeds are wild.","custom":{"seeded_by_skill":true,"demo_prefix":"<demo_prefix>"}}'
+stream api AddActivity --request '{"id":"<demo_prefix>alice-2","feeds":["user:<demo_prefix>alice"],"user_id":"<demo_prefix>alice","type":"post","text":"Loving the React Native ecosystem lately.","custom":{"seeded_by_skill":true,"demo_prefix":"<demo_prefix>"}}'
+stream api AddActivity --request '{"id":"<demo_prefix>bob-1","feeds":["user:<demo_prefix>bob"],"user_id":"<demo_prefix>bob","type":"post","text":"Stream Feeds makes social apps surprisingly simple.","custom":{"seeded_by_skill":true,"demo_prefix":"<demo_prefix>"}}'
+stream api AddActivity --request '{"id":"<demo_prefix>carol-1","feeds":["user:<demo_prefix>carol"],"user_id":"<demo_prefix>carol","type":"post","text":"Anyone else excited about the new SDK?","custom":{"seeded_by_skill":true,"demo_prefix":"<demo_prefix>"}}'
 ```
 
 Generate ids deterministically per user + index (`<demo_prefix>alice-1`, `:alice-2`, ...). Tag every seeded activity with `custom.seeded_by_skill: true` and `custom.demo_prefix: <demo_prefix>` so later runs can identify this skill's seeded data.
@@ -181,8 +181,8 @@ After the follows and activities are in place, the connected user's timeline wil
 # min_popularity: 1 means "at least one reaction-equivalent in cutoff_window".
 # cutoff_window 7d is the default but worth making explicit so the selector
 # does not silently drift if defaults change.
-stream api UpdateFeedGroup id=foryou \
-  --body '{"activity_selectors":[{"type":"popular","min_popularity":1,"cutoff_window":"7d"}]}'
+stream api UpdateFeedGroup --id foryou \
+  --request '{"activity_selectors":[{"type":"popular","min_popularity":1,"cutoff_window":"7d"}]}'
 ```
 
 This is a **server-side config on the feed group itself**, not on a per-user feed. It applies to every `foryou:<user_id>` feed in the app. Once configured, every user's `foryou` feed will return activities that match the selector.
@@ -192,10 +192,10 @@ This is a **server-side config on the feed group itself**, not on a per-user fee
 The `popular` selector picks activities by their popularity score. A freshly seeded activity has score 0, so it does not clear `min_popularity: 1` and does **not** appear in `foryou` even after C6. Adding one reaction per activity bumps the score to 1 and makes the activity eligible. Use `AddActivityReaction` (one call per activity). Use a non-`<token_user_id>` reactor (e.g. carol reacts to alice) so the demo looks realistic - the connected user does not see their own reaction pre-filled on every post.
 
 ```bash
-stream api AddActivityReaction activity_id=<demo_prefix>alice-1 --body '{"type":"like","user_id":"<demo_prefix>carol"}'
-stream api AddActivityReaction activity_id=<demo_prefix>alice-2 --body '{"type":"like","user_id":"<demo_prefix>bob"}'
-stream api AddActivityReaction activity_id=<demo_prefix>bob-1 --body '{"type":"like","user_id":"<demo_prefix>alice"}'
-stream api AddActivityReaction activity_id=<demo_prefix>carol-1 --body '{"type":"like","user_id":"<demo_prefix>alice"}'
+stream api AddActivityReaction --activity-id <demo_prefix>alice-1 --request '{"type":"like","user_id":"<demo_prefix>carol"}'
+stream api AddActivityReaction --activity-id <demo_prefix>alice-2 --request '{"type":"like","user_id":"<demo_prefix>bob"}'
+stream api AddActivityReaction --activity-id <demo_prefix>bob-1 --request '{"type":"like","user_id":"<demo_prefix>alice"}'
+stream api AddActivityReaction --activity-id <demo_prefix>carol-1 --request '{"type":"like","user_id":"<demo_prefix>alice"}'
 ```
 
 `AddActivityReaction` is **not** idempotent by default - a second call with the same `(activity_id, type, user_id)` will fail with "reaction already exists" or, with `enforce_unique: true`, replace the existing reaction. The safest pattern for re-runs is to skip silently on the "already exists" error rather than crash the seeding flow. Adding more variety (`type: "love"` from one user, `type: "like"` from another) is fine - the popularity formula counts all reactions equally.

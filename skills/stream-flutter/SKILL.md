@@ -105,9 +105,9 @@ Ask **one message** with all setup questions together - do not split into rounds
 Once the user replies, execute all steps without pausing. For feed groups, if the user said "set up automatically":
 
 ```bash
-stream api CreateFeedGroup --body '{"id": "user", "type": "flat"}'
-stream api CreateFeedGroup --body '{"id": "timeline", "type": "flat"}'
-stream api CreateFeedGroup --body '{"id": "notification", "type": "notification"}'
+stream api CreateFeedGroup --request '{"id": "user", "type": "flat"}'
+stream api CreateFeedGroup --request '{"id": "timeline", "type": "flat"}'
+stream api CreateFeedGroup --request '{"id": "notification", "type": "notification"}'
 ```
 
 If the CLI commands fail (the Feeds API may use different endpoints than Chat), tell the user once:
@@ -152,7 +152,7 @@ Create 3-5 channels with random realistic usernames. Use `messaging` as the defa
 **Sub-step C1 - upsert all users** (seed users + the token user):
 
 ```bash
-stream api UpdateUsers --body '{
+stream api UpdateUsers --request '{
   "users": {
     "<token_user_id>": {"id": "<token_user_id>", "name": "<Display Name>"},
     "alice": {"id": "alice", "name": "Alice"},
@@ -166,8 +166,8 @@ stream api UpdateUsers --body '{
 **Sub-step C2 - create each channel** (no members in the body; members are added in C3):
 
 ```bash
-stream api GetOrCreateChannel type=messaging id=<channel-id> \
-  --body '{"data": {"name": "<Channel Name>"}}'
+stream api GetOrCreateChannel --type messaging --id <channel-id> \
+  --request '{"data": {"name": "<Channel Name>"}}'
 ```
 
 Repeat for each channel (e.g. `general`, `random`, `team-alpha`).
@@ -175,8 +175,8 @@ Repeat for each channel (e.g. `general`, `random`, `team-alpha`).
 **Sub-step C3 - add members to each channel** using `add_members`. The token user **must** be in every channel so the `Filter.in_('members', [userId])` query in the app returns results.
 
 ```bash
-stream api UpdateChannel type=messaging id=<channel-id> \
-  --body '{
+stream api UpdateChannel --type messaging --id <channel-id> \
+  --request '{
     "add_members": [
       {"user_id": "<token_user_id>"},
       {"user_id": "alice"},

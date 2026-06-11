@@ -34,7 +34,7 @@ Everything needed to wire the Feeds SDK into a working Next.js application.
 stream api ListFeedGroups
 
 # Create custom feed group if needed:
-stream api CreateFeedGroup --body '{"id":"<name>","default_visibility":"visible","activity_selectors":[{"type":"current_feed"}]}'
+stream api CreateFeedGroup --request '{"id":"<name>","default_visibility":"visible","activity_selectors":[{"type":"current_feed"}]}'
 ```
 
 Default feed groups on a Feeds v3 app:

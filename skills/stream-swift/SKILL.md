@@ -126,14 +126,14 @@ Create 3-5 channels with random realistic usernames. Use `messaging` as the chan
 First create the user records (users must exist before they can be channel members):
 
 ```bash
-stream api UpdateUsers --body '{"users":{"<token_user_id>":{"id":"<token_user_id>","name":"Token User"},"alice":{"id":"alice","name":"Alice"},"bob":{"id":"bob","name":"Bob"}}}'
+stream api UpdateUsers --request '{"users":{"<token_user_id>":{"id":"<token_user_id>","name":"Token User"},"alice":{"id":"alice","name":"Alice"},"bob":{"id":"bob","name":"Bob"}}}'
 ```
 
 Then create each channel, adding members via `data.members` (an array of `{"user_id":"..."}` objects - top-level `members` is a pagination shape, not membership):
 
 ```bash
-stream api GetOrCreateChannel type=messaging id=<channel-id> \
-  --body '{"data":{"name":"<display name>","created_by_id":"<token_user_id>","members":[{"user_id":"<token_user_id>"},{"user_id":"alice"},{"user_id":"bob"}]}}'
+stream api GetOrCreateChannel --type messaging --id <channel-id> \
+  --request '{"data":{"name":"<display name>","created_by_id":"<token_user_id>","members":[{"user_id":"<token_user_id>"},{"user_id":"alice"},{"user_id":"bob"}]}}'
 ```
 
 Use short memorable channel IDs (e.g. `general`, `random`, `team-alpha`). The token user **must** appear in `data.members` for at least one channel, or the channel list renders empty on first launch. If a call fails with a parameter error, check `stream api GetOrCreateChannel -h`.

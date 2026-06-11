@@ -95,7 +95,7 @@ These calls are mutating. The user's upfront "yes" covers the consent. Announce 
 User records must exist before they can be added to a channel; otherwise `GetOrCreateChannel` rejects the call with `users ... don't exist`. Create the token user and all seed members in a single `UpdateUsers` batch:
 
 ```bash
-stream api UpdateUsers --body '{"users":{"<token_user_id>":{"id":"<token_user_id>","name":"Token User"},"alice":{"id":"alice","name":"Alice"},"bob":{"id":"bob","name":"Bob"},"carol":{"id":"carol","name":"Carol"}}}'
+stream api UpdateUsers --request '{"users":{"<token_user_id>":{"id":"<token_user_id>","name":"Token User"},"alice":{"id":"alice","name":"Alice"},"bob":{"id":"bob","name":"Bob"},"carol":{"id":"carol","name":"Carol"}}}'
 ```
 
 Pick a small set of random realistic usernames (e.g. `alice`, `bob`, `carol`, `dave`, `eve`) and include the token user id explicitly.
@@ -105,8 +105,8 @@ Pick a small set of random realistic usernames (e.g. `alice`, `bob`, `carol`, `d
 `data.members` accepts an array of `{"user_id": "..."}` objects (not bare strings) and adds them as channel members during creation. Top-level `members` on this endpoint is a pagination shape - do not use it for membership. Include the token user explicitly.
 
 ```bash
-stream api GetOrCreateChannel type=messaging id=<channel-id> \
-  --body '{"data":{"name":"<display name>","created_by_id":"<token_user_id>","members":[{"user_id":"<token_user_id>"},{"user_id":"alice"},{"user_id":"bob"}]}}'
+stream api GetOrCreateChannel --type messaging --id <channel-id> \
+  --request '{"data":{"name":"<display name>","created_by_id":"<token_user_id>","members":[{"user_id":"<token_user_id>"},{"user_id":"alice"},{"user_id":"bob"}]}}'
 ```
 
 Generate short memorable channel IDs (e.g. `general`, `random`, `team-alpha`). Make sure the **token user id** appears in `data.members` for at least one channel - otherwise the channel list renders empty on first launch.

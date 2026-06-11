@@ -185,7 +185,7 @@ export const OwnFeedsContextProvider = ({ children }: PropsWithChildren) => {
     // foryou is the connected user's explore / discover feed. The selector
     // (e.g. `popular`) is configured server-side on the feed group itself;
     // see FEEDS-REACT-NATIVE.md > For You feed / Explore for the prerequisite
-    // dashboard or `stream api UpdateFeedGroup id=foryou` setup.
+    // dashboard or `stream api UpdateFeedGroup --id foryou` setup.
     const foryou = client.feed("foryou", connectedUser.id);
     setOwnFeed(feed);
     setOwnTimeline(timeline);
@@ -235,7 +235,7 @@ Wiring:
 - Self-follow is idempotent: the `own_follows` check skips it after the first run.
 - Most apps mount this exactly once, above the navigator.
 - Do not pass `Feed` objects through navigation params. Instead, read them from this context on the destination screen.
-- **`foryou` requires a server-side selector config to return any activities** (its default is empty). Configure it once per app with `stream api UpdateFeedGroup id=foryou --body '{"activity_selectors":[{"type":"popular","min_popularity":1,"cutoff_window":"7d"}]}'` (or via the dashboard) and seed at least one reaction per activity in dev so the popularity score clears `min_popularity`. See [`../credentials.md`](../credentials.md) > Step C6 / C7. If foryou is not in scope for your app, drop it from the context value - all three feeds are independent.
+- **`foryou` requires a server-side selector config to return any activities** (its default is empty). Configure it once per app with `stream api UpdateFeedGroup --id foryou --request '{"activity_selectors":[{"type":"popular","min_popularity":1,"cutoff_window":"7d"}]}'` (or via the dashboard) and seed at least one reaction per activity in dev so the popularity score clears `min_popularity`. See [`../credentials.md`](../credentials.md) > Step C6 / C7. If foryou is not in scope for your app, drop it from the context value - all three feeds are independent.
 
 ---
 
