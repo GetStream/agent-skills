@@ -13,14 +13,14 @@ Rules: [../RULES.md](../RULES.md).
 - **Host path:** `getOrCreate()` -> `join()` -> backstage preview -> `call.goLive()` -> `call.stopLive()` -> `call.end()` -> `call.leave()`
 - **Viewer path (WebRTC):** `getOrCreate()` -> show the pre-built `LivestreamPlayer` (auto-joins, handles backstage/ended states)
 - **Viewer path (HLS):** get `call.state.value.egress.hlsPlaylistUrl` -> play with `video_player`
-- **Docs:** [Livestreaming guide](https://getstream.io/video/docs/flutter/guides/livestreaming/) · [Watching a livestream](https://getstream.io/video/docs/flutter/ui-cookbook/livestreaming/watching-a-livestream/) · [Broadcasting (HLS/RTMP)](https://getstream.io/video/docs/flutter/advanced/broadcasting/)
-- **Beyond this file:** TikTok-style vertical livestream feeds (docs: [Livestream feed](https://getstream.io/video/docs/flutter/ui-cookbook/livestreaming/livestream-feed/)) and "viewer calls the host mid-broadcast" live in [`VIDEO-ADVANCED-FLUTTER.md`](VIDEO-ADVANCED-FLUTTER.md) + [`VIDEO-ADVANCED-FLUTTER-blueprints.md`](VIDEO-ADVANCED-FLUTTER-blueprints.md)
+- **Docs:** [Livestreaming guide](https://getstream.io/video/docs/flutter/guides/livestreaming.md) · [Watching a livestream](https://getstream.io/video/docs/flutter/ui-cookbook/watching-a-livestream.md) · [Broadcasting (HLS/RTMP)](https://getstream.io/video/docs/flutter/advanced/broadcasting.md)
+- **Beyond this file:** TikTok-style vertical livestream feeds and "viewer calls the host mid-broadcast" live in [`VIDEO-ADVANCED-FLUTTER.md`](VIDEO-ADVANCED-FLUTTER.md) + [`VIDEO-ADVANCED-FLUTTER-blueprints.md`](VIDEO-ADVANCED-FLUTTER-blueprints.md)
 
 ---
 
 ## Call type: `livestream`
 
-> **Docs:** [Livestreaming guide](https://getstream.io/video/docs/flutter/guides/livestreaming/) · [Call types](https://getstream.io/video/docs/flutter/guides/call-types/)
+> **Docs:** [Livestreaming guide](https://getstream.io/video/docs/flutter/guides/livestreaming.md) · [Call types](https://getstream.io/video/docs/flutter/guides/call-types.md)
 
 The `livestream` call type ships with a permission model designed for broadcasting:
 
@@ -48,7 +48,7 @@ Call `await call.goLive()` to exit backstage and open the call to viewers. Call 
 final isBackstage = call.state.value.isBackstage;
 ```
 
-> **Docs:** [Livestreaming guide](https://getstream.io/video/docs/flutter/guides/livestreaming/)
+> **Docs:** [Livestreaming guide](https://getstream.io/video/docs/flutter/guides/livestreaming.md)
 
 ---
 
@@ -59,7 +59,7 @@ For the general permissions model (roles, capabilities, grants, `hasPermission`,
 Permissions. This section covers the **livestream-specific gating** that most commonly
 causes bugs.
 
-> **Docs:** [Permissions & moderation](https://getstream.io/video/docs/flutter/guides/permissions-and-moderation/) · [Livestreaming guide](https://getstream.io/video/docs/flutter/guides/livestreaming/)
+> **Docs:** [Permissions & moderation](https://getstream.io/video/docs/flutter/guides/permissions-and-moderation.md) · [Livestreaming guide](https://getstream.io/video/docs/flutter/guides/livestreaming.md)
 
 ### Guest viewers cannot read or join by default
 
@@ -148,7 +148,7 @@ final joinAhead = s.settings.backstage.joinAheadTimeSeconds ?? 0;
 
 ## Host flow
 
-> **Docs:** [Livestreaming guide](https://getstream.io/video/docs/flutter/guides/livestreaming/) · [Hosting a livestream](https://getstream.io/video/docs/flutter/ui-cookbook/livestreaming/hosting-a-livestream/)
+> **Docs:** [Livestreaming guide](https://getstream.io/video/docs/flutter/guides/livestreaming.md) · [Hosting a livestream](https://getstream.io/video/docs/flutter/ui-cookbook/hosting-a-livestream.md)
 
 ### 1. Create and join (enters backstage)
 
@@ -215,7 +215,7 @@ Always call `leave()` after `end()` to clean up local call state. Skipping it le
 
 ## Viewer flow (WebRTC)
 
-> **Docs:** [Watching a livestream](https://getstream.io/video/docs/flutter/ui-cookbook/livestreaming/watching-a-livestream/) · [Livestreaming guide](https://getstream.io/video/docs/flutter/guides/livestreaming/)
+> **Docs:** [Watching a livestream](https://getstream.io/video/docs/flutter/ui-cookbook/watching-a-livestream.md) · [Livestreaming guide](https://getstream.io/video/docs/flutter/guides/livestreaming.md)
 
 **Use the pre-built `LivestreamPlayer`.** It auto-joins the call, renders the host video, and handles the backstage ("waiting for host"), ended, reconnecting, and no-video states - plus participant count, multi-host layouts, screen-share spotlight, recordings-when-ended, and PiP. Do not hand-build a viewer unless the design demands it.
 
@@ -304,7 +304,7 @@ PartialCallStateBuilder<({bool isBackstage, String? hostSessionId})>(
 
 ## Viewer flow (HLS)
 
-> **Docs:** [Broadcasting (HLS/RTMP)](https://getstream.io/video/docs/flutter/advanced/broadcasting/) · [Watching a livestream](https://getstream.io/video/docs/flutter/ui-cookbook/livestreaming/watching-a-livestream/)
+> **Docs:** [Broadcasting (HLS/RTMP)](https://getstream.io/video/docs/flutter/advanced/broadcasting.md) · [Watching a livestream](https://getstream.io/video/docs/flutter/ui-cookbook/watching-a-livestream.md)
 
 HLS is better for large audiences (thousands of viewers). It introduces higher latency (~10-30 s) but scales without per-viewer WebRTC connections. HLS viewers do **not** join the call via `join()`.
 
@@ -397,7 +397,7 @@ await call.join(hintHighScaleLivestreamPublisher: true);
 
 ## Participant and viewer count
 
-> **Docs:** [Call state](https://getstream.io/video/docs/flutter/guides/call-state/)
+> **Docs:** [Call state](https://getstream.io/video/docs/flutter/guides/call-and-participant-state.md)
 
 For WebRTC-connected viewers, read participant count from call state:
 

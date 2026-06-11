@@ -26,7 +26,7 @@ Full widget blueprints: [VIDEO-FLUTTER-blueprints.md](VIDEO-FLUTTER-blueprints.m
 
 ### Installation
 
-> **Docs:** [Installation](https://getstream.io/video/docs/flutter/setup/installation/) · [Quickstart](https://getstream.io/video/docs/flutter/setup/quickstart/)
+> **Docs:** [Installation](https://getstream.io/video/docs/flutter/installation.md) · [Quickstart](https://getstream.io/video/docs/flutter/quickstart.md)
 
 ```yaml
 # pubspec.yaml
@@ -48,7 +48,7 @@ Install only what is needed. Do not add `stream_video` separately when `stream_v
 
 Complete platform setup **before** wiring the client. Missing permissions cause silent failures or crashes at call time, not at install time.
 
-> **Docs:** [Installation](https://getstream.io/video/docs/flutter/setup/installation/)
+> **Docs:** [Installation](https://getstream.io/video/docs/flutter/installation.md)
 
 #### Android
 
@@ -183,7 +183,7 @@ diagnostics. Trust `flutter analyze` (whole project, clean) and `flutter build b
 
 ### Client Initialization
 
-> **Docs:** [Quickstart](https://getstream.io/video/docs/flutter/setup/quickstart/) · [Authentication](https://getstream.io/video/docs/flutter/guides/authentication/)
+> **Docs:** [Quickstart](https://getstream.io/video/docs/flutter/quickstart.md) · [Authentication](https://getstream.io/video/docs/flutter/guides/client-and-authentication.md)
 
 Initialize `StreamVideo` **once** before `runApp`. Never create it inside a `build` method, `StatelessWidget`, or a computed getter that re-runs on rebuild.
 
@@ -220,7 +220,7 @@ Accessing `StreamVideo.instance` before construction throws a `StateError`.
 
 ## User Authentication
 
-> **Docs:** [Authentication](https://getstream.io/video/docs/flutter/guides/authentication/)
+> **Docs:** [Authentication](https://getstream.io/video/docs/flutter/guides/client-and-authentication.md)
 
 The API key and secret are shared between Chat and Video - one Stream project, one key.
 
@@ -315,7 +315,7 @@ only for livestream viewers, never for 1:1 / group calling or anything that need
 
 ## Making and Joining Calls
 
-> **Docs:** [Joining & Creating Calls](https://getstream.io/video/docs/flutter/guides/joining-and-creating-calls/)
+> **Docs:** [Joining & Creating Calls](https://getstream.io/video/docs/flutter/guides/joining-and-creating-calls.md)
 
 ### Create a Call object
 
@@ -436,7 +436,7 @@ final sub = StreamVideo.instance.onRingingEvent((event) {
 
 ## Call Controls
 
-> **Docs:** [Camera](https://getstream.io/video/docs/flutter/guides/camera-and-microphone/camera/) · [Microphone & Audio](https://getstream.io/video/docs/flutter/guides/camera-and-microphone/microphone-and-audio/) · [Camera Zoom](https://getstream.io/video/docs/flutter/ui-cookbook/utilities/camera-zoom/) · [Camera Focus](https://getstream.io/video/docs/flutter/ui-cookbook/utilities/camera-focus/)
+> **Docs:** [Camera](https://getstream.io/video/docs/flutter/guides/camera-and-microphone/camera.md) · [Microphone & Audio](https://getstream.io/video/docs/flutter/guides/camera-and-microphone/microphone-and-audio.md) · [Camera Zoom](https://getstream.io/video/docs/flutter/ui-cookbook/camera-zoom.md) · [Camera Focus](https://getstream.io/video/docs/flutter/ui-cookbook/camera-focus.md)
 
 All device controls are methods on `Call` directly (there are no `call.camera` / `call.microphone` manager objects):
 
@@ -484,7 +484,7 @@ final micOn = local?.isAudioEnabled ?? false;
 
 ## Call State and Participants
 
-> **Docs:** [Call State](https://getstream.io/video/docs/flutter/guides/call-state/) · [Pinning Users](https://getstream.io/video/docs/flutter/ui-cookbook/participants/pinning-users/) · [Participants Sorting](https://getstream.io/video/docs/flutter/guides/participants-sorting/)
+> **Docs:** [Call State](https://getstream.io/video/docs/flutter/guides/call-and-participant-state.md) · [Pinning Users](https://getstream.io/video/docs/flutter/ui-cookbook/pinning-users.md) · [Participants Sorting](https://getstream.io/video/docs/flutter/guides/participant-sorting.md)
 
 `call.state` is a `StateEmitter<CallState>` - it is NOT a `Stream`. Access the current value synchronously via `.value`, or convert with `.asStream()` for reactive widgets:
 
@@ -560,7 +560,7 @@ await call.setParticipantPinnedForEveryone(userId: 'alice', sessionId: session, 
 
 ## Video Rendering
 
-> **Docs:** [Video Renderer](https://getstream.io/video/docs/flutter/ui/video-render/)
+> **Docs:** [Video Renderer](https://getstream.io/video/docs/flutter/video-render.md)
 
 Use `StreamVideoRenderer` to render a participant's video track. `videoTrackType` is **required**:
 
@@ -583,7 +583,7 @@ For the local preview before joining, prefer the pre-built `StreamLobbyView` (se
 
 ## Pre-built UI (StreamCallContainer)
 
-> **Docs:** [UI Overview](https://getstream.io/video/docs/flutter/ui/overview/) · [Call Container](https://getstream.io/video/docs/flutter/ui/call-container/) · [Call Content](https://getstream.io/video/docs/flutter/ui/call-content/)
+> **Docs:** [UI Overview](https://getstream.io/video/docs/flutter/ui-components-overview.md) · [Call Container](https://getstream.io/video/docs/flutter/call-container.md) · [Call Content](https://getstream.io/video/docs/flutter/call-content.md)
 
 `StreamCallContainer` renders the complete call UI - participant grid, controls, and camera feed. Use it unless you need a fully custom layout.
 
@@ -621,7 +621,7 @@ For a composable middle ground between the all-in-one container and a fully cust
 
 ## Lobby / Pre-join Screen (StreamLobbyView)
 
-> **Docs:** [Call Lobby](https://getstream.io/video/docs/flutter/ui-cookbook/layouts/call-lobby/) · [Initial Call Configuration](https://getstream.io/video/docs/flutter/guides/camera-and-microphone/initial-call-configuration/)
+> **Docs:** [Call Lobby](https://getstream.io/video/docs/flutter/ui-cookbook/call-lobby.md) · [Initial Call Configuration](https://getstream.io/video/docs/flutter/guides/camera-and-microphone/initial-call-configuration.md)
 
 `StreamLobbyView` is the pre-built pre-join screen: camera preview, device toggles, and a join button. Do not hand-build a preview screen unless the design requires it.
 
@@ -647,7 +647,7 @@ The `CallConnectOptions` passed to the callback reflect the camera/mic toggles t
 
 ## Screen Sharing
 
-> **Docs:** [Screen Sharing](https://getstream.io/video/docs/flutter/advanced/screen-sharing/)
+> **Docs:** [Screen Sharing](https://getstream.io/video/docs/flutter/advanced/screen-sharing.md)
 
 ```dart
 // Start / stop sharing the local screen
@@ -663,13 +663,13 @@ await call.setScreenShareEnabled(
 
 Render a participant's screen-share track with `StreamVideoRenderer(videoTrackType: SfuTrackType.screenShare, ...)`. The pre-built `ToggleScreenShareOption` control widget is also available.
 
-**iOS broadcast mode** requires the separate `stream_video_screen_sharing` package (native `BroadcastSampleHandler`) plus a Broadcast Upload Extension target in Xcode. **Android** requires a foreground service; screen audio capture is supported via `captureScreenAudio`. Full platform setup: <https://getstream.io/video/docs/flutter/advanced/screen-sharing/>
+**iOS broadcast mode** requires the separate `stream_video_screen_sharing` package (native `BroadcastSampleHandler`) plus a Broadcast Upload Extension target in Xcode. **Android** requires a foreground service; screen audio capture is supported via `captureScreenAudio`. Full platform setup: <https://getstream.io/video/docs/flutter/advanced/screen-sharing.md>
 
 ---
 
 ## Recording
 
-> **Docs:** [Call Recording](https://getstream.io/video/docs/flutter/advanced/call-recording/)
+> **Docs:** [Call Recording](https://getstream.io/video/docs/flutter/advanced/recording.md)
 
 ```dart
 await call.startRecording();          // requires call-type permission
@@ -683,7 +683,7 @@ Recording state is on `call.state` - the pre-built `ToggleRecordingOption` widge
 
 ## Closed Captions and Transcription
 
-> **Docs:** [Closed Captions](https://getstream.io/video/docs/flutter/guides/closed_captions/) · [Closed Caption UI](https://getstream.io/video/docs/flutter/ui-cookbook/utilities/closed_caption/) · [Transcriptions](https://getstream.io/video/docs/flutter/ui-cookbook/utilities/transcriptions/)
+> **Docs:** [Closed Captions](https://getstream.io/video/docs/flutter/guides/closed-captions.md) · [Closed Caption UI](https://getstream.io/video/docs/flutter/ui-cookbook/closed-captions.md) · [Transcriptions](https://getstream.io/video/docs/flutter/ui-cookbook/transcriptions.md)
 
 ```dart
 // Closed captions
@@ -704,7 +704,7 @@ Caption display behavior (visible captions count, visibility duration) is config
 
 ## Picture-in-Picture
 
-> **Docs:** [Picture-in-Picture](https://getstream.io/video/docs/flutter/advanced/picture-in-picture/)
+> **Docs:** [Picture-in-Picture](https://getstream.io/video/docs/flutter/advanced/picture-in-picture.md)
 
 Two parts: the Android activity (below) and the per-screen configuration.
 
@@ -729,7 +729,7 @@ PiP engages automatically when the app goes to background. iOS is supported via 
 
 ## Also available (entry points only)
 
-> **Docs:** [Reactions](https://getstream.io/video/docs/flutter/guides/reactions/) · [Custom Data](https://getstream.io/video/docs/flutter/advanced/custom-data/) · [Background Modes](https://getstream.io/video/docs/flutter/advanced/background-modes/)
+> **Docs:** [Reactions](https://getstream.io/video/docs/flutter/guides/reactions.md) · [Custom Data](https://getstream.io/video/docs/flutter/advanced/custom-data.md) · [Background Modes](https://getstream.io/video/docs/flutter/advanced/background-modes.md)
 
 - **Reactions:** `call.sendReaction(...)`; auto-dismiss configurable via `DefaultCallPreferences.reactionAutoDismissTime`
 - **Custom realtime events:** `call.sendCustomEvent(...)`
@@ -742,7 +742,7 @@ PiP engages automatically when the app goes to background. iOS is supported via 
 
 ## Audio Configuration (v1.3.0+)
 
-> **Docs:** [Microphone & Audio](https://getstream.io/video/docs/flutter/guides/camera-and-microphone/microphone-and-audio/) · [High-Fidelity Audio](https://getstream.io/video/docs/flutter/guides/camera-and-microphone/high-fidelity-audio/)
+> **Docs:** [Microphone & Audio](https://getstream.io/video/docs/flutter/guides/camera-and-microphone/microphone-and-audio.md) · [High-Fidelity Audio](https://getstream.io/video/docs/flutter/guides/camera-and-microphone/high-fidelity-audio.md)
 
 `audioConfigurationPolicy` replaces the old `androidAudioConfiguration` parameter:
 
@@ -775,7 +775,7 @@ For per-call audio config overrides, set on `DefaultCallPreferences` (v1.4.0+).
 
 ## Noise Cancellation
 
-> **Docs:** [Noise Cancellation](https://getstream.io/video/docs/flutter/guides/camera-and-microphone/noise-cancellation/)
+> **Docs:** [Noise Cancellation](https://getstream.io/video/docs/flutter/guides/camera-and-microphone/noise-cancellation.md)
 
 Noise cancellation requires the **separate** `stream_video_noise_cancellation` package - it is NOT built into `stream_video_flutter`:
 
@@ -803,7 +803,7 @@ Whether it engages per call is controlled by the call type's noise cancellation 
 
 ## Video Filters
 
-> **Docs:** [Video Filters](https://getstream.io/video/docs/flutter/advanced/video-filters/)
+> **Docs:** [Video Filters](https://getstream.io/video/docs/flutter/advanced/apply-video-filters.md)
 
 ```yaml
 stream_video_filters: ^1.4.0
@@ -815,7 +815,7 @@ Do not import from `stream_video_flutter` for filters - import from `stream_vide
 
 ## Call Types
 
-> **Docs:** [Call Types](https://getstream.io/video/docs/flutter/guides/call-types/)
+> **Docs:** [Call Types](https://getstream.io/video/docs/flutter/guides/call-types.md)
 
 | Type                               | Use case                                                |
 | ---------------------------------- | ------------------------------------------------------- |
@@ -840,7 +840,7 @@ All call types are factory constructors - there is no public unnamed `StreamCall
 
 ## Roles and Permissions
 
-> **Docs:** [Permissions & Moderation](https://getstream.io/video/docs/flutter/guides/permissions-and-moderation/) · [Permission Requests UI](https://getstream.io/video/docs/flutter/ui-cookbook/utilities/permission-requests/)
+> **Docs:** [Permissions & Moderation](https://getstream.io/video/docs/flutter/guides/permissions-and-moderation.md) · [Permission Requests UI](https://getstream.io/video/docs/flutter/ui-cookbook/permission-requests.md)
 
 Stream Video access control has three layers. **It is configured server-side (Stream
 Dashboard / API), not in the Flutter app** - the SDK only reads the result and lets you
@@ -913,7 +913,7 @@ aliases. To enumerate all server-side permissions at runtime, call the
 
 ## Troubleshooting
 
-> **Docs:** [Troubleshooting](https://getstream.io/video/docs/flutter/advanced/troubleshooting/) · [Network Disruptions](https://getstream.io/video/docs/flutter/advanced/network-disruptions/)
+> **Docs:** [Troubleshooting](https://getstream.io/video/docs/flutter/advanced/troubleshooting.md) · [Network Disruptions](https://getstream.io/video/docs/flutter/advanced/network-disruptions.md)
 
 ### Connection issues
 

@@ -19,7 +19,7 @@ Blueprints in this file (verified against SDK v1.4.0 and the official ringing tu
 
 ## App Entry + Push-Enabled Init Blueprint
 
-> **Docs:** [Push Notifications](https://getstream.io/video/docs/flutter/advanced/incoming-calls/push-notifications/) · [Providers Configuration](https://getstream.io/video/docs/flutter/advanced/incoming-calls/providers-configuration/)
+> **Docs:** [Push Notifications](https://getstream.io/video/docs/flutter/advanced/incoming-calls/push-notifications.md) · [Providers Configuration](https://getstream.io/video/docs/flutter/advanced/incoming-calls/providers-configuration.md)
 
 ```dart
 // main.dart
@@ -83,7 +83,7 @@ A **top-level** function (not a class method), annotated `@pragma('vm:entry-poin
 runs in its own isolate when a ringing FCM data message arrives in background/terminated
 state.
 
-> **Docs:** [Android / Firebase Integration](https://getstream.io/video/docs/flutter/advanced/incoming-calls/android-firebase-integration/)
+> **Docs:** [Android / Firebase Integration](https://getstream.io/video/docs/flutter/advanced/incoming-calls/android-firebase-integration.md)
 
 ```dart
 // push_background.dart
@@ -136,7 +136,7 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 Registers the foreground ringing observer and the Android terminated-state consumer, and
 sets up FCM listeners.
 
-> **Docs:** [Ringing](https://getstream.io/video/docs/flutter/advanced/incoming-calls/ringing/) · [Android / Firebase Integration](https://getstream.io/video/docs/flutter/advanced/incoming-calls/android-firebase-integration/)
+> **Docs:** [Ringing](https://getstream.io/video/docs/flutter/advanced/incoming-calls/ringing.md) · [Android / Firebase Integration](https://getstream.io/video/docs/flutter/advanced/incoming-calls/android-firebase-integration.md)
 
 ```dart
 // home_screen.dart
@@ -228,7 +228,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
 ## Outgoing Ring Blueprint
 
-> **Docs:** [Ringing](https://getstream.io/video/docs/flutter/advanced/incoming-calls/ringing/)
+> **Docs:** [Ringing](https://getstream.io/video/docs/flutter/advanced/incoming-calls/ringing.md)
 
 ```dart
 import 'package:stream_video_flutter/stream_video_flutter.dart';
@@ -281,7 +281,7 @@ Future<void> startRingingCall({
 `StreamCallContainer` renders the right screen based on the call status - outgoing ringing,
 incoming ringing, or the active call - and provides accept/reject/leave/end controls.
 
-> **Docs:** [Call Container](https://getstream.io/video/docs/flutter/ui/call-container/) · [Incoming Call](https://getstream.io/video/docs/flutter/ui/incoming-call/) · [Outgoing Call](https://getstream.io/video/docs/flutter/ui/outgoing-call/)
+> **Docs:** [Call Container](https://getstream.io/video/docs/flutter/call-container.md) · [Incoming Call](https://getstream.io/video/docs/flutter/incoming-call.md) · [Outgoing Call](https://getstream.io/video/docs/flutter/outgoing-call.md)
 
 ```dart
 // call_screen.dart
@@ -321,7 +321,7 @@ class CallScreen extends StatelessWidget {
 
 ## iOS AppDelegate Blueprint
 
-> **Docs:** [iOS / CallKit Integration](https://getstream.io/video/docs/flutter/advanced/incoming-calls/ios-callkit-integration/) (docs show the older `GeneratedPluginRegistrant.register(with: self)` AppDelegate; the `FlutterImplicitEngineDelegate` template below is the current Flutter 3.35+ form — keep it).
+> **Docs:** [iOS / CallKit Integration](https://getstream.io/video/docs/flutter/advanced/incoming-calls/ios-callkit-integration.md) (docs show the older `GeneratedPluginRegistrant.register(with: self)` AppDelegate; the `FlutterImplicitEngineDelegate` template below is the current Flutter 3.35+ form — keep it).
 
 ```swift
 // ios/Runner/AppDelegate.swift
@@ -380,7 +380,7 @@ Required `ios/Runner/Info.plist` entries:
 
 ## Android Manifest + Gradle Blueprint
 
-> **Docs:** [Android / Firebase Integration](https://getstream.io/video/docs/flutter/advanced/incoming-calls/android-firebase-integration/)
+> **Docs:** [Android / Firebase Integration](https://getstream.io/video/docs/flutter/advanced/incoming-calls/android-firebase-integration.md)
 
 `android/app/src/main/AndroidManifest.xml`:
 

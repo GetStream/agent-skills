@@ -20,7 +20,7 @@ Rules: [../RULES.md](../RULES.md).
 - **iOS:** VoIP push + CallKit via one line in `AppDelegate` + Push Notifications capability
 - **Android:** FCM via `google-services.json` + the Google Services Gradle plugin
 - **In-call UI:** `StreamCallContainer(call: call)` renders incoming/outgoing/active automatically
-- **Docs:** [Incoming Calls Overview](https://getstream.io/video/docs/flutter/advanced/incoming-calls/overview/)
+- **Docs:** [Incoming Calls Overview](https://getstream.io/video/docs/flutter/advanced/incoming-calls/overview.md)
 
 Full blueprints (push init, outgoing ring, observers, background handler, AppDelegate,
 manifest, CallScreen): [RINGING-FLUTTER-blueprints.md](RINGING-FLUTTER-blueprints.md).
@@ -43,7 +43,7 @@ WebSocket delivery only works in the foreground; background/terminated needs pus
 VoIP/CallKit; Android uses FCM. Set `StreamVideoOptions(keepConnectionsAliveWhenInBackground: true)`
 for reliable background incoming calls.
 
-> **Docs:** [Incoming Calls Overview](https://getstream.io/video/docs/flutter/advanced/incoming-calls/overview/)
+> **Docs:** [Incoming Calls Overview](https://getstream.io/video/docs/flutter/advanced/incoming-calls/overview.md)
 
 ---
 
@@ -104,7 +104,7 @@ StreamVideo(
 - Device registration is automatic on `connect()` and auto-removed on `disconnect()`.
   Disable with `connect(registerPushDevice: false)`.
 
-> **Docs:** [Push Notifications](https://getstream.io/video/docs/flutter/advanced/incoming-calls/push-notifications/) · [Providers Configuration](https://getstream.io/video/docs/flutter/advanced/incoming-calls/providers-configuration/)
+> **Docs:** [Push Notifications](https://getstream.io/video/docs/flutter/advanced/incoming-calls/push-notifications.md) · [Providers Configuration](https://getstream.io/video/docs/flutter/advanced/incoming-calls/providers-configuration.md)
 
 ### Dashboard providers
 
@@ -118,7 +118,7 @@ Create two push providers in the Stream Dashboard:
 Recommended split: **APNs for iOS, Firebase for Android.** Firebase-on-iOS for video is not
 fully supported.
 
-> **Docs:** [Providers Configuration](https://getstream.io/video/docs/flutter/advanced/incoming-calls/providers-configuration/)
+> **Docs:** [Providers Configuration](https://getstream.io/video/docs/flutter/advanced/incoming-calls/providers-configuration.md)
 
 ---
 
@@ -205,7 +205,7 @@ new users):
 await call.ring(userIds: ['carol']); // userIds, not memberIds; empty rings all absent members
 ```
 
-> **Docs:** [Ringing](https://getstream.io/video/docs/flutter/advanced/incoming-calls/ringing/)
+> **Docs:** [Ringing](https://getstream.io/video/docs/flutter/advanced/incoming-calls/ringing.md)
 
 ---
 
@@ -293,7 +293,7 @@ if (!CurrentPlatform.isIos) {
 WebSocket connection, then accepts. (`consumeIncomingCall({uuid, cid})` is the lower-level
 single-call variant.)
 
-> **Docs:** [Ringing](https://getstream.io/video/docs/flutter/advanced/incoming-calls/ringing/) · [Android / Firebase Integration](https://getstream.io/video/docs/flutter/advanced/incoming-calls/android-firebase-integration/) · [iOS / CallKit Integration](https://getstream.io/video/docs/flutter/advanced/incoming-calls/ios-callkit-integration/)
+> **Docs:** [Ringing](https://getstream.io/video/docs/flutter/advanced/incoming-calls/ringing.md) · [Android / Firebase Integration](https://getstream.io/video/docs/flutter/advanced/incoming-calls/android-firebase-integration.md) · [iOS / CallKit Integration](https://getstream.io/video/docs/flutter/advanced/incoming-calls/ios-callkit-integration.md)
 
 ---
 
@@ -336,7 +336,7 @@ result.fold(
 `dropIfAloneInRingingFlow` (a `DefaultCallPreferences` field, default `true`) auto-ends the
 call when only one participant remains in the ringing flow.
 
-> **Docs:** [Ringing](https://getstream.io/video/docs/flutter/advanced/incoming-calls/ringing/) · [Call Container](https://getstream.io/video/docs/flutter/ui/call-container/)
+> **Docs:** [Ringing](https://getstream.io/video/docs/flutter/advanced/incoming-calls/ringing.md) · [Call Container](https://getstream.io/video/docs/flutter/call-container.md)
 
 ---
 
@@ -364,7 +364,7 @@ call when only one participant remains in the ringing flow.
 Full `AppDelegate` (incl. optional foreground standard-push display):
 [RINGING-FLUTTER-blueprints.md](RINGING-FLUTTER-blueprints.md) > iOS AppDelegate.
 
-> **Docs:** [iOS / CallKit Integration](https://getstream.io/video/docs/flutter/advanced/incoming-calls/ios-callkit-integration/) (note: docs show the older `GeneratedPluginRegistrant.register(with: self)` AppDelegate — the Flutter 3.35+ `FlutterImplicitEngineDelegate`/`SceneDelegate` template in the blueprint is more current).
+> **Docs:** [iOS / CallKit Integration](https://getstream.io/video/docs/flutter/advanced/incoming-calls/ios-callkit-integration.md) (note: docs show the older `GeneratedPluginRegistrant.register(with: self)` AppDelegate — the Flutter 3.35+ `FlutterImplicitEngineDelegate`/`SceneDelegate` template in the blueprint is more current).
 
 ---
 
@@ -385,7 +385,7 @@ Full `AppDelegate` (incl. optional foreground standard-push display):
    `StreamVideoPushNotificationManager.ensureFullScreenIntentPermission()` so lock-screen
    full-screen ringing is allowed.
 
-> **Docs:** [Android / Firebase Integration](https://getstream.io/video/docs/flutter/advanced/incoming-calls/android-firebase-integration/)
+> **Docs:** [Android / Firebase Integration](https://getstream.io/video/docs/flutter/advanced/incoming-calls/android-firebase-integration.md)
 
 ---
 
@@ -406,7 +406,7 @@ Full `AppDelegate` (incl. optional foreground standard-push display):
   `android/app/src/main/res/raw/`, name without extension), channel names,
   `showFullScreenOnLockScreen`.
 
-> **Docs:** [Customization](https://getstream.io/video/docs/flutter/advanced/incoming-calls/customization/)
+> **Docs:** [Customization](https://getstream.io/video/docs/flutter/advanced/incoming-calls/customization.md)
 
 ---
 
@@ -419,7 +419,7 @@ Full `AppDelegate` (incl. optional foreground standard-push display):
 - `handleRingingFlowNotifications(...)` shows the missed-call notification by default; pass
   `handleMissedCall: false` to render it yourself.
 
-> **Docs:** [Push Notifications](https://getstream.io/video/docs/flutter/advanced/incoming-calls/push-notifications/) · [Customization](https://getstream.io/video/docs/flutter/advanced/incoming-calls/customization/)
+> **Docs:** [Push Notifications](https://getstream.io/video/docs/flutter/advanced/incoming-calls/push-notifications.md) · [Customization](https://getstream.io/video/docs/flutter/advanced/incoming-calls/customization.md)
 
 ---
 

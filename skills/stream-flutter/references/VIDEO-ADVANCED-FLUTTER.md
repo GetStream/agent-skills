@@ -24,7 +24,7 @@ Rules: [../RULES.md](../RULES.md).
 
 ## Audio Rooms
 
-> **Docs:** [Audio Room with Chat](https://getstream.io/video/docs/flutter/ui-cookbook/utilities/audio-room-with-chat/) · [Permissions & Moderation](https://getstream.io/video/docs/flutter/guides/permissions-and-moderation/)
+> **Docs:** [Audio Room with Chat](https://getstream.io/video/docs/flutter/ui-cookbook/audio-room-with-chat.md) · [Permissions & Moderation](https://getstream.io/video/docs/flutter/guides/permissions-and-moderation.md)
 
 The `audio_room` call type is built for drop-in audio (Twitter Spaces / Clubhouse style):
 camera off, listeners muted by default, speakers managed through call permissions.
@@ -139,7 +139,7 @@ Full screen blueprint (speakers grid, actions bar, host request cards):
 
 ## Multiple Simultaneous Calls (multicall)
 
-> **Docs:** [Multiple Active Calls](https://getstream.io/video/docs/flutter/advanced/multiple-active-calls/) · [Multicall cookbook](https://getstream.io/video/docs/flutter/ui-cookbook/utilities/multicall/) · [Background Modes](https://getstream.io/video/docs/flutter/advanced/background-modes/)
+> **Docs:** [Multiple Active Calls](https://getstream.io/video/docs/flutter/advanced/multiple-simultaneous-calls-support.md) · [Multicall cookbook](https://getstream.io/video/docs/flutter/ui-cookbook/multicall.md) · [Background Modes](https://getstream.io/video/docs/flutter/advanced/background-modes.md)
 
 By default the SDK keeps **one** active call: joining a second call makes the SDK leave
 the first (`DisconnectReason.replaced`). Opt in to multicall:
@@ -201,7 +201,7 @@ Future<void> switchFocus({required Call from, required Call to}) async {
 
 ### Sharing custom state across ALL participants
 
-> **Docs:** [Custom Data](https://getstream.io/video/docs/flutter/advanced/custom-data/) · [Call Events: Custom event](https://getstream.io/video/docs/flutter/guides/call-events/#custom-event)
+> **Docs:** [Custom Data](https://getstream.io/video/docs/flutter/advanced/custom-data.md) · [Call Events: Custom event](https://getstream.io/video/docs/flutter/guides/call-events.md#custom-event)
 
 To sync app-specific state (badges, pairings, "raise hand", scores, "X is away") to every
 client in a call, choose one of two mechanisms.
@@ -274,7 +274,7 @@ Use case blueprint - host accepts a 1:1 call in a floating window while livestre
 
 ## Chat + Video in One App
 
-> **Docs:** [Chat with Video](https://getstream.io/video/docs/flutter/ui-cookbook/utilities/chat-with-video/)
+> **Docs:** [Chat with Video](https://getstream.io/video/docs/flutter/ui-cookbook/chat-with-video.md)
 
 Stream Chat and Stream Video share one project: **same API key, same user JWT**. Each SDK
 has its own client and its own `User` type - alias the imports.
@@ -318,7 +318,7 @@ overlay): [VIDEO-ADVANCED-FLUTTER-blueprints.md](VIDEO-ADVANCED-FLUTTER-blueprin
 
 ## Querying Calls and Members
 
-> **Docs:** [Querying Calls](https://getstream.io/video/docs/flutter/guides/querying-calls/) · [Query Call Members](https://getstream.io/video/docs/flutter/guides/query-call-members/)
+> **Docs:** [Querying Calls](https://getstream.io/video/docs/flutter/guides/querying-calls.md) · [Query Call Members](https://getstream.io/video/docs/flutter/guides/querying-call-members.md)
 
 ```dart
 // Calls - filterConditions is required (pass {} for all)
@@ -350,7 +350,7 @@ final next = page.getDataOrNull()?.next; // pass as next: for the following page
 
 ## Permissions and Moderation
 
-> **Docs:** [Permissions & Moderation](https://getstream.io/video/docs/flutter/guides/permissions-and-moderation/) · [Call Moderation cookbook](https://getstream.io/video/docs/flutter/ui-cookbook/utilities/call-moderation/)
+> **Docs:** [Permissions & Moderation](https://getstream.io/video/docs/flutter/guides/permissions-and-moderation.md) · [Call Moderation cookbook](https://getstream.io/video/docs/flutter/ui-cookbook/call-moderation.md)
 
 All return `Future<Result<None>>` - check the result, do not fire-and-forget.
 
@@ -377,7 +377,7 @@ Rooms above). Gotcha: use `muteOthers()` for the common "mute everyone else" act
 
 ## Call Events and Custom Events
 
-> **Docs:** [Call Events](https://getstream.io/video/docs/flutter/guides/call-events/) · [Custom Data](https://getstream.io/video/docs/flutter/advanced/custom-data/)
+> **Docs:** [Call Events](https://getstream.io/video/docs/flutter/guides/call-events.md) · [Custom Data](https://getstream.io/video/docs/flutter/advanced/custom-data.md)
 
 `call.callEvents` is the per-call typed event stream (distinct from the client-level
 `StreamVideo.instance.events`):
@@ -406,7 +406,7 @@ closed captions, session counts, reactions, mutes, blocks, and `StreamCallCustom
 
 ## Call Preferences (per-call tuning)
 
-> **Docs:** [Call Preferences](https://getstream.io/video/docs/flutter/advanced/call-preferences/)
+> **Docs:** [Call Preferences](https://getstream.io/video/docs/flutter/advanced/call-preferences.md)
 
 Pass at creation or update mid-call:
 
@@ -436,7 +436,7 @@ leave alone unless you know exactly why).
 
 ## Session Timers (max call duration)
 
-> **Docs:** [Session Timers](https://getstream.io/video/docs/flutter/advanced/session-timers/)
+> **Docs:** [Session Timers](https://getstream.io/video/docs/flutter/advanced/session-timers.md)
 
 ```dart
 final createResult = await call.getOrCreate(
@@ -474,7 +474,7 @@ When the timer expires the call ends automatically for all participants.
 
 ## Network Handling and Quality
 
-> **Docs:** [Network Disruptions](https://getstream.io/video/docs/flutter/advanced/network-disruptions/)
+> **Docs:** [Network Disruptions](https://getstream.io/video/docs/flutter/advanced/network-disruptions.md)
 
 ### Reconnection status UI
 

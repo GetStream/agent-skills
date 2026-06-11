@@ -6,7 +6,7 @@ Load only the section you are implementing. For setup, client initialization, an
 
 ## App Entry Point Blueprint
 
-> **Docs:** [Quickstart](https://getstream.io/video/docs/flutter/setup/quickstart/) · [Authentication](https://getstream.io/video/docs/flutter/guides/authentication/)
+> **Docs:** [Quickstart](https://getstream.io/video/docs/flutter/quickstart.md) · [Authentication](https://getstream.io/video/docs/flutter/guides/client-and-authentication.md)
 
 Initialize `StreamVideo` before `runApp`. No wrapper widget is needed - the SDK uses a singleton pattern.
 
@@ -55,7 +55,7 @@ class MyApp extends StatelessWidget {
 
 ## Home / Join-or-Start Call Blueprint
 
-> **Docs:** [Joining & Creating Calls](https://getstream.io/video/docs/flutter/guides/joining-and-creating-calls/)
+> **Docs:** [Joining & Creating Calls](https://getstream.io/video/docs/flutter/guides/joining-and-creating-calls.md)
 
 Lets the user enter a call ID to join an existing call, or generate a new one.
 
@@ -186,7 +186,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
 ## Full Call View Blueprint (StreamCallContainer)
 
-> **Docs:** [Call Container](https://getstream.io/video/docs/flutter/ui/call-container/) · [Call Content](https://getstream.io/video/docs/flutter/ui/call-content/)
+> **Docs:** [Call Container](https://getstream.io/video/docs/flutter/call-container.md) · [Call Content](https://getstream.io/video/docs/flutter/call-content.md)
 
 `StreamCallContainer` is the complete in-call screen with participant grid, controls, and camera feed. Use it unless you are building a fully custom layout.
 
@@ -239,7 +239,7 @@ class _CallScreenState extends State<CallScreen> {
 
 ## Custom Call Controls Blueprint
 
-> **Docs:** [Call Controls](https://getstream.io/video/docs/flutter/ui/call-controls/)
+> **Docs:** [Call Controls](https://getstream.io/video/docs/flutter/call-controls.md)
 
 Replace the SDK's default controls bar with your own by building controls that call the `Call` device methods (`setMicrophoneEnabled`, `setCameraEnabled`, `flipCamera`).
 
@@ -352,7 +352,7 @@ class _ControlButton extends StatelessWidget {
 
 ## Participant Tile Blueprint
 
-> **Docs:** [Call Participants](https://getstream.io/video/docs/flutter/ui/call-participants/) · [Participant Label](https://getstream.io/video/docs/flutter/ui-cookbook/participants/participant-label/) · [Video Fallback](https://getstream.io/video/docs/flutter/ui-cookbook/participants/video-fallback/)
+> **Docs:** [Call Participants](https://getstream.io/video/docs/flutter/call-participants.md) · [Participant Label](https://getstream.io/video/docs/flutter/ui-cookbook/participant-label.md) · [Video Fallback](https://getstream.io/video/docs/flutter/ui-cookbook/video-fallback.md)
 
 Renders a single participant's video with name and audio status overlaid.
 
@@ -448,7 +448,7 @@ class ParticipantTile extends StatelessWidget {
 
 ## Participant Grid Blueprint
 
-> **Docs:** [Call Participants](https://getstream.io/video/docs/flutter/ui/call-participants/) · [Participant List](https://getstream.io/video/docs/flutter/ui-cookbook/participants/participant-list/)
+> **Docs:** [Call Participants](https://getstream.io/video/docs/flutter/call-participants.md) · [Participant List](https://getstream.io/video/docs/flutter/ui-cookbook/participant-list.md)
 
 Displays all remote participants in a grid with the local participant in a corner PiP.
 

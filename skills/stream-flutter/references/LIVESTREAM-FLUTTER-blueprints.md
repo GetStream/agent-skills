@@ -49,7 +49,7 @@ Lets the user enter a stream ID and choose between hosting (creator) or watching
 
 > **Do NOT use `StreamCallContainer` for livestreaming.** `StreamCallContainer` is designed for standard calls and will render a participant grid that replaces your custom host/viewer UI. Use the pre-built `LivestreamPlayer` for viewers; the host page manages its own layout.
 
-> **Docs:** [Call container](https://getstream.io/video/docs/flutter/ui/call-container/) · [Call content](https://getstream.io/video/docs/flutter/ui/call-content/)
+> **Docs:** [Call container](https://getstream.io/video/docs/flutter/call-container.md) · [Call content](https://getstream.io/video/docs/flutter/call-content.md)
 
 ```dart
 // livestream_mode_selection_page.dart
@@ -151,7 +151,7 @@ class _LivestreamModeSelectionPageState
 
 The creator view manages the full host lifecycle: join in backstage, preview camera, go live, monitor viewer count, and end the stream.
 
-> **Docs:** [Hosting a livestream](https://getstream.io/video/docs/flutter/ui-cookbook/livestreaming/hosting-a-livestream/) · [Livestreaming guide](https://getstream.io/video/docs/flutter/guides/livestreaming/)
+> **Docs:** [Hosting a livestream](https://getstream.io/video/docs/flutter/ui-cookbook/hosting-a-livestream.md) · [Livestreaming guide](https://getstream.io/video/docs/flutter/guides/livestreaming.md)
 
 ```dart
 // creator_livestream_page.dart
@@ -470,7 +470,7 @@ class _CreatorLivestreamPageState extends State<CreatorLivestreamPage> {
 
 Use the SDK's purpose-built `LivestreamPlayer`. It auto-joins (camera/mic disabled by default), renders the host, and handles backstage, ended, reconnecting, and no-video states - plus participant count, multi-host layouts, recordings-when-ended, and PiP.
 
-> **Docs:** [Watching a livestream](https://getstream.io/video/docs/flutter/ui-cookbook/livestreaming/watching-a-livestream/)
+> **Docs:** [Watching a livestream](https://getstream.io/video/docs/flutter/ui-cookbook/watching-a-livestream.md)
 
 ```dart
 // viewer_livestream_page.dart
@@ -571,7 +571,7 @@ class _ViewerLivestreamPageState extends State<ViewerLivestreamPage> {
 
 Joins as a subscriber and renders the host manually.
 
-> **Docs:** [Watching a livestream](https://getstream.io/video/docs/flutter/ui-cookbook/livestreaming/watching-a-livestream/)
+> **Docs:** [Watching a livestream](https://getstream.io/video/docs/flutter/ui-cookbook/watching-a-livestream.md)
 
 ```dart
 // custom_viewer_livestream_page.dart
@@ -737,7 +737,7 @@ class _WaitingForHostOverlay extends StatelessWidget {
 
 Use the HLS path for large-scale audiences where per-viewer WebRTC connections are impractical. HLS viewers do not call `join()`.
 
-> **Docs:** [Broadcasting (HLS/RTMP)](https://getstream.io/video/docs/flutter/advanced/broadcasting/) · [Watching a livestream](https://getstream.io/video/docs/flutter/ui-cookbook/livestreaming/watching-a-livestream/)
+> **Docs:** [Broadcasting (HLS/RTMP)](https://getstream.io/video/docs/flutter/advanced/broadcasting.md) · [Watching a livestream](https://getstream.io/video/docs/flutter/ui-cookbook/watching-a-livestream.md)
 
 ```dart
 // hls_viewer_page.dart

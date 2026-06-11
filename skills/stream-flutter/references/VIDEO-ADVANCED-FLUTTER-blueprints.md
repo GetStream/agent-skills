@@ -10,7 +10,7 @@ basics, see [LIVESTREAM-FLUTTER-blueprints.md](LIVESTREAM-FLUTTER-blueprints.md)
 
 ## Audio Room Screen Blueprint
 
-> **Docs:** [Audio Room with Chat](https://getstream.io/video/docs/flutter/ui-cookbook/utilities/audio-room-with-chat/) · [Permissions & Moderation](https://getstream.io/video/docs/flutter/guides/permissions-and-moderation/)
+> **Docs:** [Audio Room with Chat](https://getstream.io/video/docs/flutter/ui-cookbook/audio-room-with-chat.md) · [Permissions & Moderation](https://getstream.io/video/docs/flutter/guides/permissions-and-moderation.md)
 
 Join in `initState`, render all participants in a grid with a speaking highlight, and
 wire the mic button through the permission loop. The host additionally surfaces incoming
@@ -280,8 +280,6 @@ class _SpeakRequestCard extends StatelessWidget {
 
 ## Livestream Feed Blueprint (TikTok-style vertical pager)
 
-> **Docs:** [Livestream Feed](https://getstream.io/video/docs/flutter/ui-cookbook/livestreaming/livestream-feed/)
-
 One call is joined at a time. A `CallManager` owns join/leave with a **version counter**
 ("latest request wins"): every swipe bumps the version, and any in-flight older join
 aborts itself after each `await`. The old call's `leave()` is intentionally **not
@@ -511,7 +509,7 @@ class _ActiveVideo extends StatelessWidget {
 
 ## Floating Call Panel Blueprint (1:1 call over a livestream, multicall)
 
-> **Docs:** [Multicall cookbook](https://getstream.io/video/docs/flutter/ui-cookbook/utilities/multicall/) · [Multiple Active Calls](https://getstream.io/video/docs/flutter/advanced/multiple-active-calls/)
+> **Docs:** [Multicall cookbook](https://getstream.io/video/docs/flutter/ui-cookbook/multicall.md) · [Multiple Active Calls](https://getstream.io/video/docs/flutter/advanced/multiple-simultaneous-calls-support.md)
 
 The host livestreams; a viewer rings them; the host accepts into a small floating window
 while the broadcast stays connected (video paused), then everything resumes when the call
@@ -718,7 +716,7 @@ await createResult.fold(
 
 ## Chat with Video Blueprints
 
-> **Docs:** [Chat with Video](https://getstream.io/video/docs/flutter/ui-cookbook/utilities/chat-with-video/)
+> **Docs:** [Chat with Video](https://getstream.io/video/docs/flutter/ui-cookbook/chat-with-video.md)
 
 ### Dual client init and login
 
