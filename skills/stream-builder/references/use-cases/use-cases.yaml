@@ -1,0 +1,28 @@
+# Use-case recipes for the stream-builder skill.
+#
+# The builder reads this manifest before Step 4 (Generate code and UI). If the user's
+# request matches a recipe's `signals`, the builder loads that recipe file and follows
+# it as the build plan: the recipe declares which Stream products to scaffold, which
+# product references to load alongside it (`load_with`), and the decisions to ask.
+# If nothing matches, the builder uses the generic product blueprints.
+#
+# This keeps the builder generic: adding a use-case is a new file here + a manifest
+# entry below, never an edit to stream-builder/SKILL.md.
+#
+# Schema per entry:
+#   use_case: kebab-case id (matches the recipe file's frontmatter)
+#   file:     path relative to this directory
+#   signals:  trigger phrases (lowercased substrings of the user's request)
+#   products: Stream products the recipe scaffolds (chat | video | feeds | moderation)
+
+use_cases:
+  - use_case: ai-support-agent
+    file: ai-support-agent.md
+    signals:
+      - "ai support agent"
+      - "support bot"
+      - "help desk"
+      - "rag chat"
+      - "customer support ai"
+      - "ai customer support"
+    products: [chat]

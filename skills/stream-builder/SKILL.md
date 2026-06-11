@@ -222,7 +222,7 @@ If `NO_ICONS`, install `lucide-react`: `npm install lucide-react --legacy-peer-d
 
 ### Step 4: Generate code and UI
 
-**Load [`builder-ui.md`](builder-ui.md)** and **only** the relevant [`references/<Product>.md`](references/) header + `references/<Product>-blueprints.md` for the sections you are implementing - not every reference file. **For multi-product apps (Chat + Video, Chat + Feeds, Video + Feeds, etc.), also load [`references/CROSS-PRODUCT.md`](references/CROSS-PRODUCT.md) before writing AppShell** - it has the canonical multi-client provider hierarchy and an error -> cause -> fix table. **For an AI Support Agent, also load [`references/AI-AGENT.md`](references/AI-AGENT.md)** - it adds the server-side agent loop, the LLM and knowledge-source choices, and Stream's AI wiring on top of the Chat blueprints.
+**Load [`builder-ui.md`](builder-ui.md)** and **only** the relevant [`references/<Product>.md`](references/) header + `references/<Product>-blueprints.md` for the sections you are implementing - not every reference file. **For multi-product apps (Chat + Video, Chat + Feeds, Video + Feeds, etc.), also load [`references/CROSS-PRODUCT.md`](references/CROSS-PRODUCT.md) before writing AppShell** - it has the canonical multi-client provider hierarchy and an error -> cause -> fix table. **If a use-case recipe matched (see Use-case recipes), load that recipe and its `load_with` references** and follow it as the build plan instead of inferring the product set yourself.
 
 ### Step 5: Verify
 
@@ -266,11 +266,14 @@ End with:
 | "Slack", "Discord", "team chat", "channels" | Team Messaging | Chat |
 | "WhatsApp", "iMessage", "DM", "messaging" | Direct Messaging | Chat [+ Video] |
 | "Instagram", "Twitter", "social feed", "Reddit" | Social Feed | Feeds + Chat |
-| "support bot", "AI agent", "AI customer support", "help desk", "RAG chat", "AI support" | AI Support Agent | Chat + AI-agent layer |
-
-**AI Support Agent** is a Chat build plus a server-side LLM agent - not plain Chat. Load [`references/AI-AGENT.md`](references/AI-AGENT.md) and work through its "Ask the user first" decisions (LLM provider/model, knowledge source, trigger, capabilities) **before** building. It reuses the Chat scaffold, token route, and client components, then adds the trigger (webhook or client), the agent loop, Stream's AI wiring (`ai_indicator`, `ai_generated`, streaming), and an optional knowledge layer (local index or external vector store like TurboPuffer). Never degrade an explicit "AI support agent" request to a plain chat box.
 
 **Moderation** is configured via CLI during setup only. **Never build moderation review UI in the app** (RULES.md > Moderation is Dashboard-only) - review happens in the [Stream Dashboard](https://beta.dashboard.getstream.io).
+
+### Use-case recipes
+
+Some requests map to a **use-case recipe**: a drop-in build plan for a specific product (e.g. an AI support agent) that keeps this skill generic. Before Step 4, read [`references/use-cases/use-cases.yaml`](references/use-cases/use-cases.yaml). If the request matches a recipe's `signals`, **load that recipe file and follow it as the build plan** - the recipe declares the Stream products to scaffold, the product references to `load_with`, and the decisions to ask. If nothing matches, use the generic product blueprints above.
+
+Adding a use-case is a new file under `references/use-cases/` plus an entry in `use-cases.yaml` - never a change to this SKILL.md.
 
 ---
 

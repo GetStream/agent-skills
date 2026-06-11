@@ -1,8 +1,15 @@
+---
+use_case: ai-support-agent
+signals: ["ai support agent", "support bot", "help desk", "rag chat", "customer support ai", "ai customer support"]
+products: [chat]
+load_with: [CHAT.md]
+---
+
 # AI Support Agent - Setup & Integration
 
-An **additive layer on top of Chat**, not a separate product. A support ticket is a Stream `messaging` channel; a **bot user** is a member; when the customer sends a message the bot answers with an LLM. Read [CHAT.md](CHAT.md) first - the agent reuses the Chat scaffold, token route, and client components. This file adds the server-side agent loop, the LLM/knowledge choices, and the Stream-native AI wiring.
+An **additive layer on top of Chat**, not a separate product. A support ticket is a Stream `messaging` channel; a **bot user** is a member; when the customer sends a message the bot answers with an LLM. Read [CHAT.md](../CHAT.md) first - the agent reuses the Chat scaffold, token route, and client components. This file adds the server-side agent loop, the LLM/knowledge choices, and the Stream-native AI wiring.
 
-Rules: [../../stream/RULES.md](../../stream/RULES.md) (secrets, no auto-seeding, login screen first, strict mode protection).
+Rules: [RULES.md](../../../stream/RULES.md) (secrets, no auto-seeding, login screen first, strict mode protection).
 
 The canonical, proven implementation of everything here is **`GetStream/nova-support-oneshot`** (`apps/web/agent/*`, `app/api/stream/webhook`, `lib/turbopuffer.ts`, `scripts/ingest.ts`, `scripts/register-webhook.ts`). Prefer distilling from it over inventing.
 
