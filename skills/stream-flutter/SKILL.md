@@ -12,7 +12,7 @@ allowed-tools: >-
   Bash(find . *),
   Bash(cat pubspec.yaml), Bash(cat pubspec.lock),
   Bash(flutter pub *),
-  Bash(stream *)
+  Bash(getstream *)
 ---
 
 # Stream Flutter - skill router + execution flow
@@ -105,9 +105,9 @@ Ask **one message** with all setup questions together - do not split into rounds
 Once the user replies, execute all steps without pausing. For feed groups, if the user said "set up automatically":
 
 ```bash
-stream api CreateFeedGroup --request '{"id": "user", "type": "flat"}'
-stream api CreateFeedGroup --request '{"id": "timeline", "type": "flat"}'
-stream api CreateFeedGroup --request '{"id": "notification", "type": "notification"}'
+getstream api CreateFeedGroup --request '{"id": "user", "type": "flat"}'
+getstream api CreateFeedGroup --request '{"id": "timeline", "type": "flat"}'
+getstream api CreateFeedGroup --request '{"id": "notification", "type": "notification"}'
 ```
 
 If the CLI commands fail (the Feeds API may use different endpoints than Chat), tell the user once:
@@ -128,22 +128,22 @@ Once the user answers, execute all CLI steps in sequence **without pausing for c
 #### Step A - API key
 
 ```bash
-stream env --target flutter
+getstream env --target flutter
 ```
 
-`stream env` writes the app's public API key to `dart_defines.json` (`STREAM_API_KEY`) and prints the wiring steps - run with `flutter run --dart-define-from-file=dart_defines.json` and read it via `String.fromEnvironment('STREAM_API_KEY')`. Follow those steps; you don't need to hold the key yourself. If `stream env` reports the project isn't initialized or you're not signed in, run `stream init`, then re-run `stream env --target flutter`.
+`getstream env` writes the app's public API key to `dart_defines.json` (`STREAM_API_KEY`) and prints the wiring steps - run with `flutter run --dart-define-from-file=dart_defines.json` and read it via `String.fromEnvironment('STREAM_API_KEY')`. Follow those steps; you don't need to hold the key yourself. If `getstream env` reports the project isn't initialized or you're not signed in, run `getstream init`, then re-run `getstream env --target flutter`.
 
 #### Step B - Token
 
 ```bash
 # Never-expiring
-stream token <user_id>
+getstream token <user_id>
 
 # Expiring
-stream token <user_id> --ttl <duration>
+getstream token <user_id> --ttl <duration>
 ```
 
-Hold the token in context. Read the API key with `String.fromEnvironment('STREAM_API_KEY')` (provisioned by `stream env`) and use the real token in code - no placeholder strings.
+Hold the token in context. Read the API key with `String.fromEnvironment('STREAM_API_KEY')` (provisioned by `getstream env`) and use the real token in code - no placeholder strings.
 
 #### Step C - Seed channels (only if the user said yes)
 
@@ -152,7 +152,7 @@ Create 3-5 channels with random realistic usernames. Use `messaging` as the defa
 **Sub-step C1 - upsert all users** (seed users + the token user):
 
 ```bash
-stream api UpdateUsers --request '{
+getstream api UpdateUsers --request '{
   "users": {
     "<token_user_id>": {"id": "<token_user_id>", "name": "<Display Name>"},
     "alice": {"id": "alice", "name": "Alice"},
@@ -166,7 +166,7 @@ stream api UpdateUsers --request '{
 **Sub-step C2 - create each channel** (no members in the body; members are added in C3):
 
 ```bash
-stream api GetOrCreateChannel --type messaging --id <channel-id> \
+getstream api GetOrCreateChannel --type messaging --id <channel-id> \
   --request '{"data": {"name": "<Channel Name>"}}'
 ```
 
@@ -175,7 +175,7 @@ Repeat for each channel (e.g. `general`, `random`, `team-alpha`).
 **Sub-step C3 - add members to each channel** using `add_members`. The token user **must** be in every channel so the `Filter.in_('members', [userId])` query in the app returns results.
 
 ```bash
-stream api UpdateChannel --type messaging --id <channel-id> \
+getstream api UpdateChannel --type messaging --id <channel-id> \
   --request '{
     "add_members": [
       {"user_id": "<token_user_id>"},

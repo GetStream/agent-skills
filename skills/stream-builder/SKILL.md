@@ -6,7 +6,7 @@ metadata:
   author: GetStream
 allowed-tools: >-
   Read, Write, Edit, Glob, Grep,
-  Bash(stream *),
+  Bash(getstream *),
   Bash(npx *), Bash(npm install *), Bash(npm run *),
   Bash(node -e *), Bash(node --version), Bash(openssl rand *),
   Bash(mv .scaffold*), Bash(rm -rf .scaffold),
@@ -22,7 +22,7 @@ allowed-tools: >-
 
 # Stream Builder - scaffold + enhance
 
-> **Read first (every session):** Glob `../stream/SKILL.md`. If the path is empty, install with `stream skills stream` (no confirmation, just run). Then Read [`../stream/RULES.md`](../stream/RULES.md) - it includes a **Peer skills** table for installing/invoking any other pack skills on demand.
+> **Read first (every session):** Glob `../stream/SKILL.md`. If the path is empty, install with `getstream skills stream` (no confirmation, just run). Then Read [`../stream/RULES.md`](../stream/RULES.md) - it includes a **Peer skills** table for installing/invoking any other pack skills on demand.
 
 This skill covers **three flows**:
 
@@ -45,7 +45,7 @@ Before the first network command, print this verbatim to the user, then proceed 
 > Scaffolding now. Network calls you'll see:
 > - `npx shadcn@latest ...` (Vercel) - scaffold + UI components from npm.
 > - `npm install <stream-packages> --legacy-peer-deps` - Stream SDKs from npm (`stream-chat-react`, `@stream-io/video-react-sdk`, etc.).
-> - `stream env` - local CLI, no network; writes `.env` (gitignored by the Next.js scaffold's default; Task B verifies).
+> - `getstream env` - local CLI, no network; writes `.env` (gitignored by the Next.js scaffold's default; Task B verifies).
 >
 > Interrupt me at any point if something looks wrong. The only step that pauses for explicit consent is the optional third-party skill packs in Task A.2.
 
@@ -57,7 +57,7 @@ Shadcn/ui is always installed during Step 3. Third-party **frontend skills** (`v
 
 ## Install trust & integrity
 
-The builder runs three classes of network-touching commands. Each is listed here so a reviewer can audit before approving. (The `stream` CLI itself is installed by the user from getstream.io, not by the builder.)
+The builder runs three classes of network-touching commands. Each is listed here so a reviewer can audit before approving. (The `getstream` CLI itself is installed by the user from getstream.io, not by the builder.)
 
 | Command | Publisher | Why unpinned | What it writes |
 |---|---|---|---|
@@ -65,7 +65,7 @@ The builder runs three classes of network-touching commands. Each is listed here
 | `npx shadcn@latest add ...` (Task A.1) | Vercel - same source as above | Same scaffolder; component sync depends on registry parity. | Component files under `components/ui/`. |
 | `npm install <stream-packages> --legacy-peer-deps` (Task C) | GetStream (npm) for `@stream-io/*` and `stream-chat-react`; transitive deps via standard npm trust | Latest published versions of GetStream's own SDKs - same trust model as the CLI itself. | Modules under `node_modules/`. Runtime SDKs + transitive deps. |
 | `npx skills add <github>` (Task A.2) | `vercel-labs/agent-skills` and `anthropics/skills` | Optional. Markdown-only skill packs; `npx skills add` is the published install path. | Markdown files in the user's skills directory. **Gated by explicit user consent in Task A.2** - never runs without an affirmative answer. |
-| `stream env` (Task B) | GetStream (local CLI) | n/a (local CLI, no network at this step) | `.env` in the project root with `STREAM_API_KEY` + `STREAM_API_SECRET`. Task B verifies `.gitignore` covers `.env*` before writing (Next.js scaffold's default already does). The agent never reads `.env` (RULES.md > Secrets). |
+| `getstream env` (Task B) | GetStream (local CLI) | n/a (local CLI, no network at this step) | `.env` in the project root with `STREAM_API_KEY` + `STREAM_API_SECRET`. Task B verifies `.gitignore` covers `.env*` before writing (Next.js scaffold's default already does). The agent never reads `.env` (RULES.md > Secrets). |
 
 **Reviewer checklist:**
 
@@ -85,7 +85,7 @@ Always use `npm`. Never use bun.
 
 ### Step 1: Initialize the project
 
-Run `stream init`. It authenticates, then lets you select or create the org and app and writes the project credentials - follow its prompts and output. If the app uses **Feeds**, choose a **Feeds v3** region when `stream init` offers the region list (other regions default to legacy v2). If `stream` isn't installed, ask the user to install it from https://getstream.io and wait - never fetch or run an install script. Browser sign-in must be its own invocation (RULES.md > Shell discipline).
+Run `getstream init`. It authenticates, then lets you select or create the org and app and writes the project credentials - follow its prompts and output. If the app uses **Feeds**, choose a **Feeds v3** region when `getstream init` offers the region list (other regions default to legacy v2). If `getstream` isn't installed, ask the user to install it from https://getstream.io and wait - never fetch or run an install script. Browser sign-in must be its own invocation (RULES.md > Shell discipline).
 
 ### Step 2: Theme pick
 
@@ -104,7 +104,7 @@ Ask the user which Shadcn theme they'd like **before scaffolding**:
 
 Order:
 
-1. **Step 1:** `stream init` (auth + org/app + credentials).
+1. **Step 1:** `getstream init` (auth + org/app + credentials).
 2. **Step 2:** Theme pick (wait for answer).
 3. **Task A:** Scaffold with Shadcn + Next.js using the chosen preset.
 4. **Task A.1:** Add base Shadcn components.
@@ -158,10 +158,10 @@ bash -c 'test -f .gitignore && grep -qE "^\.env" .gitignore || echo ".env*" >> .
 Then write secrets:
 
 ```bash
-stream env
+getstream env
 ```
 
-`stream env` detects the Next.js project and writes `NEXT_PUBLIC_STREAM_API_KEY` + `STREAM_API_SECRET` to `.env.local`. The secret is server-side only - used by `/api/token` to mint tokens, never in the client bundle. The public API key may be read client-side from `NEXT_PUBLIC_STREAM_API_KEY` or returned via `/api/token`. The agent never reads `.env.local` (RULES.md > Secrets).
+`getstream env` detects the Next.js project and writes `NEXT_PUBLIC_STREAM_API_KEY` + `STREAM_API_SECRET` to `.env.local`. The secret is server-side only - used by `/api/token` to mint tokens, never in the client bundle. The public API key may be read client-side from `NEXT_PUBLIC_STREAM_API_KEY` or returned via `/api/token`. The agent never reads `.env.local` (RULES.md > Secrets).
 
 **Task C: Install Stream SDKs + verify icons** - Only what the use case needs:
 

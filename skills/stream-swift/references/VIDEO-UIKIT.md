@@ -67,7 +67,7 @@ let token = UserToken(rawValue: "your_static_token")
 let client = StreamVideo(apiKey: "your_api_key", user: user, token: token)
 ```
 
-Token generation: `stream token <user_id>`.
+Token generation: `getstream token <user_id>`.
 
 ### Token provider (expiring tokens)
 

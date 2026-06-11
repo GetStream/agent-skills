@@ -2,7 +2,7 @@
 name: stream-react-native
 description: "Use when creating, building, or integrating Stream Chat, Stream Video, or Stream Feeds in React Native Community CLI or Expo apps - new RN/Expo Chat / Video / Feeds apps from scratch, existing-app integration, stream-chat-react-native, stream-chat-expo, @stream-io/video-react-native-sdk, @stream-io/feeds-react-native-sdk, useCreateFeedsClient, StreamFeeds, StreamFeed, activity feed, timeline feed, notification feed, for-you feed, useFeedActivities, useActivityComments, reactions, comments, follows, migration/setup, channel list, message list, MessageComposer, attachment picker, image/file attachments, media picker, audio messages, threads, thread list, video call, livestream, audio room, ringing, CallContent, ParticipantView, React Navigation, Expo Router, theming, offline support, push notifications, and Chat / Video / Feeds UI customization. Not for Moderation review UI."
 license: See LICENSE in repository root
-compatibility: Supports new or existing React Native CLI and Expo apps running Stream Chat RN or Stream Video RN with React Native New Architecture. The `stream` CLI is the default credentials and requested demo-data path; pasted API key and token are accepted as fallback.
+compatibility: Supports new or existing React Native CLI and Expo apps running Stream Chat RN or Stream Video RN with React Native New Architecture. The `getstream` CLI is the default credentials and requested demo-data path; pasted API key and token are accepted as fallback.
 metadata:
   author: GetStream
 allowed-tools: >-
@@ -11,7 +11,7 @@ allowed-tools: >-
   Bash(ls *), Bash(find . *), Bash(grep *),
   Bash(cat package.json), Bash(cat app.json), Bash(cat app.config.js), Bash(cat app.config.ts),
   Bash(cat babel.config.js), Bash(cat metro.config.js),
-  Bash(command -v stream), Bash(stream *),
+  Bash(command -v getstream), Bash(getstream *),
   Bash(npm view *), Bash(npm install *), Bash(yarn add *), Bash(pnpm add *),
   Bash(curl -Ls https://getstream.io/chat/docs/sdk/react-native/llms.txt),
   Bash(curl -Ls https://getstream.io/chat/docs/react-native/llms.txt),

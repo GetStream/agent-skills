@@ -126,7 +126,7 @@ StreamVideoBuilder(
 ).build()
 ```
 
-Token generation: `stream token <user_id>` (same CLI as Chat - see [`credentials.md`](../credentials.md)).
+Token generation: `getstream token <user_id>` (same CLI as Chat - see [`credentials.md`](../credentials.md)).
 
 ### Token provider (expiring tokens)
 

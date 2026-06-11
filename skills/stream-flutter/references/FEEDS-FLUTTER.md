@@ -395,6 +395,6 @@ await timelineFeed.unfollowMany(targets: [
 - **`client.currentUser`** - available after `connect()`. Accessing it before connect returns null.
 - **Cursor-based pagination** - use `queryMoreActivities()` on the `ActivityList`, not offset arithmetic.
 - **Reactions are on the `Feed`** - use `feed.addActivityReaction(...)` / `feed.deleteActivityReaction(...)`, not a separate reactions client.
-- **Token generation** - use `stream token <user_id>` (Stream CLI) for local dev. Never use the API secret in Flutter code.
+- **Token generation** - use `getstream token <user_id>` (Stream CLI) for local dev. Never use the API secret in Flutter code.
 - **`ActivitiesFilterField.type` removed in v0.5.0** - use `ActivitiesFilterField.activityType` instead.
 - **`ThreadedCommentData` removed in v0.5.0** - use `CommentData` for both flat and threaded comments.

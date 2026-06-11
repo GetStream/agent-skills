@@ -7,10 +7,10 @@ Give your AI coding agent the ability to build, query, and manage [Stream](https
 Install the [Stream CLI](https://getstream.io), then:
 
 ```bash
-stream skills
+getstream skills
 ```
 
-With no arguments, `stream skills` installs the default set - the `stream` router (which includes the CLI layer), `stream-builder`, and `stream-docs`. Platform packs (`stream-swift`, `stream-android`, `stream-react-native`, `stream-flutter`) install on demand via `stream skills <name>` the first time a task needs them. To set up a project at the same time (auth, org/app selection, credentials), run `stream init` instead.
+With no arguments, `getstream skills` installs the default set - the `stream` router (which includes the CLI layer), `stream-builder`, and `stream-docs`. Platform packs (`stream-swift`, `stream-android`, `stream-react-native`, `stream-flutter`) install on demand via `getstream skills <name>` the first time a task needs them. To set up a project at the same time (auth, org/app selection, credentials), run `getstream init` instead.
 
 Use `/stream` for generic routing, or invoke a skill directly with `/stream-builder`, `/stream-docs`, `/stream-swift`, `/stream-android`, `/stream-react-native`, or `/stream-flutter`.
 
@@ -18,7 +18,7 @@ Use `/stream` for generic routing, or invoke a skill directly with `/stream-buil
 
 | Skill | Purpose | When to use |
 |---|---|---|
-| `/stream` | **Router + CLI** - classifies intent, dispatches, and runs `stream` CLI commands | Start here; also handles data queries, app config, and onboarding |
+| `/stream` | **Router + CLI** - classifies intent, dispatches, and runs `getstream` CLI commands | Start here; also handles data queries, app config, and onboarding |
 | `/stream-docs` | Search live SDK documentation from getstream.io | Explicit SDK token (Chat React, Video iOS, ...), "docs", "how do I ... in <framework>" |
 | `/stream-builder` | Scaffold a new web app, or add Chat/Video/Feeds/Moderation to an existing one | "build me a ... app", "scaffold", "add Chat to this app", "integrate Video" |
 | `/stream-swift` | Build or integrate Stream in Swift/SwiftUI/UIKit/iOS apps | Swift, SwiftUI, UIKit, iOS, Xcode |
@@ -30,11 +30,11 @@ The router (`/stream`) owns routing, the CLI layer (queries, app config, onboard
 
 ## What gets installed
 
-The skills are plain markdown. Installation and on-demand skill fetching run through the `stream` CLI; the only other network touch is the optional frontend-skill packs the builder can add with your consent.
+The skills are plain markdown. Installation and on-demand skill fetching run through the `getstream` CLI; the only other network touch is the optional frontend-skill packs the builder can add with your consent.
 
 | Step | Trigger | What it does | Source |
 |---|---|---|---|
-| `stream skills <name>` | Agent, on demand (or you) | Fetches a skill's markdown into your skills directory via the `stream` CLI. | GitHub (`GetStream/agent-skills`) |
+| `getstream skills <name>` | Agent, on demand (or you) | Fetches a skill's markdown into your skills directory via the `getstream` CLI. | GitHub (`GetStream/agent-skills`) |
 | Frontend skill installs (builder only) | Agent asks first, then runs | Installs three third-party skill packs for UI scaffolding - see below. | GitHub (listed) |
 
 ### Frontend skills (builder only)
@@ -56,14 +56,14 @@ Decline and the builder still runs - Stream reference files cover the SDK wiring
 - **Build and extend Swift apps** - wire Stream into SwiftUI or UIKit Xcode projects with iOS-specific setup patterns (`/stream-swift`)
 - **Build and extend Android apps** - wire Stream into Jetpack Compose Android Studio / Gradle projects with Android-specific setup patterns (`/stream-android`)
 - **Build and extend React Native apps** - wire Stream Chat or Stream Video into Expo or RN CLI projects (`/stream-react-native`)
-- **Query live data** - "any active calls?", "show flagged messages", "list my channels" - natural language to the `stream` CLI (`/stream`)
-- **Configure apps and moderation** - channel types, roles, permissions, blocklists, automod - via the `stream` CLI (`/stream`)
+- **Query live data** - "any active calls?", "show flagged messages", "list my channels" - natural language to the `getstream` CLI (`/stream`)
+- **Configure apps and moderation** - channel types, roles, permissions, blocklists, automod - via the `getstream` CLI (`/stream`)
 - **Answer SDK questions** - token patterns, strict mode, client/server instantiation, theme wiring (`/stream-builder` or `/stream-docs`)
 - **Search live SDK docs** - ask questions about any Stream SDK, framework, or version; answers come verbatim from getstream.io with citations (`/stream-docs`)
 
 ## How it works
 
-The `/stream` router classifies intent, runs `stream` CLI commands itself (queries, app config, onboarding), and routes building and docs to dedicated sub-skills. Platform sub-skills such as `/stream-react-native` can also be invoked explicitly.
+The `/stream` router classifies intent, runs `getstream` CLI commands itself (queries, app config, onboarding), and routes building and docs to dedicated sub-skills. Platform sub-skills such as `/stream-react-native` can also be invoked explicitly.
 
 | Intent | Skill |
 |---|---|

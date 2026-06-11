@@ -21,16 +21,16 @@ Rules: [../../stream/RULES.md](../../stream/RULES.md) (moderation is Dashboard-o
 **CLI commands (run when moderation is included):**
 ```bash
 # Create blocklist (NOT idempotent - check first to avoid 400 error):
-stream api ListBlockLists 2>&1 | grep -q '"profanity"' || \
-  stream api CreateBlockList --request '{"name":"profanity","words":[<generate a comprehensive list of common profanity>]}'
+getstream api ListBlockLists 2>&1 | grep -q '"profanity"' || \
+  getstream api CreateBlockList --request '{"name":"profanity","words":[<generate a comprehensive list of common profanity>]}'
 
 # Attach blocklist to the channel type being used (e.g., livestream, team, messaging):
-stream api UpdateChannelType --name livestream --request '{"blocklist":"profanity","blocklist_behavior":"flag","automod":"disabled","automod_behavior":"flag"}'
+getstream api UpdateChannelType --name livestream --request '{"blocklist":"profanity","blocklist_behavior":"flag","automod":"disabled","automod_behavior":"flag"}'
 
 # Enable blocklist in moderation config (required for review queue population):
-stream api UpsertConfig --request '{"key":"chat","block_list_config":{"enabled":true,"rules":[{"name":"profanity","action":"flag"}]}}'
+getstream api UpsertConfig --request '{"key":"chat","block_list_config":{"enabled":true,"rules":[{"name":"profanity","action":"flag"}]}}'
 # If Feeds is also used - chat config does NOT cover feeds:
-stream api UpsertConfig --request '{"key":"feeds","block_list_config":{"enabled":true,"rules":[{"name":"profanity","action":"flag"}]}}'
+getstream api UpsertConfig --request '{"key":"feeds","block_list_config":{"enabled":true,"rules":[{"name":"profanity","action":"flag"}]}}'
 ```
 
 **IMPORTANT:** Do NOT use `2>/dev/null || true` to suppress CreateBlockList errors - this also swallows the CLI's refusals and confirmation prompts, causing silent failure. The blocklist must exist before `UpsertConfig` runs, or it will fail with "Blocklist not found".

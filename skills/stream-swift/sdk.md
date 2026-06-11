@@ -40,7 +40,7 @@ Bad ownership points:
 Use the simplest token shape that matches the user's environment:
 
 - **Backend exists:** prefer a backend-issued Stream token.
-- **No backend / demo flow:** generate a token with the Stream CLI (see Step 0.5 in `SKILL.md`). Never-expiring: `stream token <user_id>`. Expiring: `stream token <user_id> --ttl <duration>` (e.g. `1h`, `1d`, `30m`, `1800s`).
+- **No backend / demo flow:** generate a token with the Stream CLI (see Step 0.5 in `SKILL.md`). Never-expiring: `getstream token <user_id>`. Expiring: `getstream token <user_id> --ttl <duration>` (e.g. `1h`, `1d`, `30m`, `1800s`).
 - **User pastes their own:** accept it and move on.
 
 Keep the split clear:

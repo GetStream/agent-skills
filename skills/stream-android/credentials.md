@@ -6,7 +6,7 @@ Run this **once per session** for tracks A, B, and D, right after intent classif
 
 Collect the Stream **API key**, a **user token**, and any product-specific setup (Chat: optionally seed channels; Feeds: confirm feed groups; Video: nothing extra - calls are ephemeral) - all before touching code - so the app has something real to show from the first run.
 
-This skill uses the **`stream`** CLI (binary name `stream`). It is the same binary used by [`skills/stream`](../stream/SKILL.md). Do **not** confuse it with the `stream-cli` binary from `GetStream/stream-cli` on GitHub - the command surface is different.
+This skill uses the **`getstream`** CLI (binary name `getstream`). It is the same binary used by [`skills/stream`](../stream/SKILL.md). Do **not** confuse it with the `stream-cli` binary from `GetStream/stream-cli` on GitHub - the command surface is different.
 
 ## Single upfront question (ask exactly once, then act immediately)
 
@@ -47,10 +47,10 @@ Once the user answers, execute all CLI steps in sequence **without pausing for c
 
 ### Step A0 - Confirm CLI install and auth (preflight, mandatory)
 
-The binary is named **`stream`**. Detect it before any other CLI step:
+The binary is named **`getstream`**. Detect it before any other CLI step:
 
 ```bash
-command -v stream
+command -v getstream
 ```
 
 If `stream` does not resolve, ask the user to install it from https://getstream.io and wait - never fetch or run an install script yourself.
@@ -60,26 +60,26 @@ Authentication and app selection happen in Step A below: run the command and fol
 ### Step A - API key
 
 ```bash
-stream env --target android
+getstream env --target android
 ```
 
-`stream env` writes the app's public API key to `local.properties` (`STREAM_API_KEY`) and prints the wiring steps - expose it via `buildConfigField` in the module `build.gradle` and read `BuildConfig.STREAM_API_KEY`. Follow those steps; you don't need to hold the key yourself, and the secret is never written for Android.
+`getstream env` writes the app's public API key to `local.properties` (`STREAM_API_KEY`) and prints the wiring steps - expose it via `buildConfigField` in the module `build.gradle` and read `BuildConfig.STREAM_API_KEY`. Follow those steps; you don't need to hold the key yourself, and the secret is never written for Android.
 
-If `stream env` reports the project isn't initialized or you're not signed in, run `stream init`, then re-run `stream env --target android`.
+If `getstream env` reports the project isn't initialized or you're not signed in, run `getstream init`, then re-run `getstream env --target android`.
 
 ### Step B - Token
 
-`stream token` accepts a TTL as a duration string (`30s`, `2h`, `1d`); no need to compute an epoch. Omit `--ttl` for a never-expiring token.
+`getstream token` accepts a TTL as a duration string (`30s`, `2h`, `1d`); no need to compute an epoch. Omit `--ttl` for a never-expiring token.
 
 ```bash
 # Never-expiring
-stream token <user_id>
+getstream token <user_id>
 
 # Expiring (use the user's requested duration verbatim, e.g. 1h, 30m, 1d)
-stream token <user_id> --ttl 1h
+getstream token <user_id> --ttl 1h
 ```
 
-Hold the token in context. In generated code, read the API key from `BuildConfig.STREAM_API_KEY` (written by `stream env`) and reference the token via a named constant (e.g. in `Config.kt`) - do not hardcode the secret.
+Hold the token in context. In generated code, read the API key from `BuildConfig.STREAM_API_KEY` (written by `getstream env`) and reference the token via a named constant (e.g. in `Config.kt`) - do not hardcode the secret.
 
 ### Step C - Seed channels (Chat projects only; only if the user said yes)
 
@@ -95,7 +95,7 @@ These calls are mutating. The user's upfront "yes" covers the consent. Announce 
 User records must exist before they can be added to a channel; otherwise `GetOrCreateChannel` rejects the call with `users ... don't exist`. Create the token user and all seed members in a single `UpdateUsers` batch:
 
 ```bash
-stream api UpdateUsers --request '{"users":{"<token_user_id>":{"id":"<token_user_id>","name":"Token User"},"alice":{"id":"alice","name":"Alice"},"bob":{"id":"bob","name":"Bob"},"carol":{"id":"carol","name":"Carol"}}}'
+getstream api UpdateUsers --request '{"users":{"<token_user_id>":{"id":"<token_user_id>","name":"Token User"},"alice":{"id":"alice","name":"Alice"},"bob":{"id":"bob","name":"Bob"},"carol":{"id":"carol","name":"Carol"}}}'
 ```
 
 Pick a small set of random realistic usernames (e.g. `alice`, `bob`, `carol`, `dave`, `eve`) and include the token user id explicitly.
@@ -105,13 +105,13 @@ Pick a small set of random realistic usernames (e.g. `alice`, `bob`, `carol`, `d
 `data.members` accepts an array of `{"user_id": "..."}` objects (not bare strings) and adds them as channel members during creation. Top-level `members` on this endpoint is a pagination shape - do not use it for membership. Include the token user explicitly.
 
 ```bash
-stream api GetOrCreateChannel --type messaging --id <channel-id> \
+getstream api GetOrCreateChannel --type messaging --id <channel-id> \
   --request '{"data":{"name":"<display name>","created_by_id":"<token_user_id>","members":[{"user_id":"<token_user_id>"},{"user_id":"alice"},{"user_id":"bob"}]}}'
 ```
 
 Generate short memorable channel IDs (e.g. `general`, `random`, `team-alpha`). Make sure the **token user id** appears in `data.members` for at least one channel - otherwise the channel list renders empty on first launch.
 
-If a call fails with a parameter error, fall back to `stream api GetOrCreateChannel -h` to confirm the exact signature, then retry.
+If a call fails with a parameter error, fall back to `getstream api GetOrCreateChannel -h` to confirm the exact signature, then retry.
 
 After seeding, print a brief summary:
 
@@ -126,4 +126,4 @@ After all CLI steps succeed, return to [`SKILL.md`](SKILL.md) -> **Project signa
 - Never put the API **secret** in app code - the CLI uses it server-side only.
 - Never invent or fabricate credentials.
 - Never ask "should I continue?" between Step A, B, C, and D - execute the whole sequence once the user's upfront answers are in.
-- Never use `stream-cli` (the public Go CLI from `GetStream/stream-cli`) commands here - that is a different binary with a different command surface (`stream-cli chat get-app`, `stream-cli chat create-token`, etc.). This skill targets the `stream` binary only.
+- Never use `stream-cli` (the public Go CLI from `GetStream/stream-cli`) commands here - that is a different binary with a different command surface (`stream-cli chat get-app`, `stream-cli chat create-token`, etc.). This skill targets the `getstream` binary only.

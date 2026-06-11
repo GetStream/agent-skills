@@ -200,5 +200,5 @@ Access the clients elsewhere via `ChatService.shared.client` and `VideoService.s
 ## Shared resources
 
 - **Same API key** - one Stream project covers both Chat and Video.
-- **Same JWT format** - `stream token <user_id>` generates a token valid for both products. The CLI uses the app's secret server-side; only the API key and token go into the app.
+- **Same JWT format** - `getstream token <user_id>` generates a token valid for both products. The CLI uses the app's secret server-side; only the API key and token go into the app.
 - **Same user ID** - the user ID must match in both SDK initializations if the same person is using both Chat and Video.

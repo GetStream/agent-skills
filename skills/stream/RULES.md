@@ -14,11 +14,11 @@ When adding a new peer pack, edit `peers.yaml` only.
 
 ## Secrets
 
-Never Read/Edit **`.env`** / **`.env.local`** in chat - the secret leaks into the conversation. Let the CLI own it: `stream env` writes the platform's API key var (and the secret, for server targets) into the right file, and that's all you need. Don't grep, don't cat, don't `echo >>` a file holding the secret. Never hardcode the secret in code.
+Never Read/Edit **`.env`** / **`.env.local`** in chat - the secret leaks into the conversation. Let the CLI own it: `getstream env` writes the platform's API key var (and the secret, for server targets) into the right file, and that's all you need. Don't grep, don't cat, don't `echo >>` a file holding the secret. Never hardcode the secret in code.
 
-**The secret is server-side only** - never in the client bundle, never `NEXT_PUBLIC`. The **public API key** may be client-exposed: `stream env` writes it with the framework's client prefix (e.g. `NEXT_PUBLIC_STREAM_API_KEY`, `EXPO_PUBLIC_STREAM_API_KEY`). The client may read that var directly or receive `apiKey` from the `/api/token` response; either way the **token** is minted server-side (with the secret) and returned by `/api/token`.
+**The secret is server-side only** - never in the client bundle, never `NEXT_PUBLIC`. The **public API key** may be client-exposed: `getstream env` writes it with the framework's client prefix (e.g. `NEXT_PUBLIC_STREAM_API_KEY`, `EXPO_PUBLIC_STREAM_API_KEY`). The client may read that var directly or receive `apiKey` from the `/api/token` response; either way the **token** is minted server-side (with the secret) and returned by `/api/token`.
 
-**`.gitignore` before any `.env` write.** Before any tool writes secrets to `.env` (notably `stream env` in builder Task B), confirm a line covering `.env*` exists in `.gitignore` and add one if missing. The Next.js scaffold's default already does - this rule covers the edge case where the project's `.gitignore` was hand-edited or doesn't exist yet.
+**`.gitignore` before any `.env` write.** Before any tool writes secrets to `.env` (notably `getstream env` in builder Task B), confirm a line covering `.env*` exists in `.gitignore` and add one if missing. The Next.js scaffold's default already does - this rule covers the edge case where the project's `.gitignore` was hand-edited or doesn't exist yet.
 
 - Narrow `searchParams.get()` (returns `string | null`) with guards before passing to SDK methods.
 
@@ -63,15 +63,15 @@ Shadcn components use `@base-ui/react`, NOT `@radix-ui`. Key differences:
 
 ## CLI safety
 
-The `stream` CLI owns onboarding, auth, and credentials. Drive it from the **Stream CLI** section of [`SKILL.md`](SKILL.md) and **read the CLI's output to understand what happened** - it explains failures and next steps the same way for an agent as for a person. There are no exit-code conventions to memorize.
+The `getstream` CLI owns onboarding, auth, and credentials. Drive it from the **Stream CLI** section of [`SKILL.md`](SKILL.md) and **read the CLI's output to understand what happened** - it explains failures and next steps the same way for an agent as for a person. There are no exit-code conventions to memorize.
 
-- **No guessing.** Endpoint names, parameters, and body shapes come from `stream api -h` (or `stream -h`), never from training-data recall. If you're about to type a `stream api <Endpoint>` you haven't confirmed this turn, stop and look it up first. This applies to **every** sub-skill, including `stream-builder` follow-ups and one-off "let me just check" queries.
+- **No guessing.** Endpoint names, parameters, and body shapes come from `getstream api -h` (or `stream -h`), never from training-data recall. If you're about to type a `getstream api <Endpoint>` you haven't confirmed this turn, stop and look it up first. This applies to **every** sub-skill, including `stream-builder` follow-ups and one-off "let me just check" queries.
 - **Confirm before writing.** Default to read-only. Before any operation that creates, changes, or deletes - or any outward-facing action - describe it and get the user's confirmation. When the CLI refuses an operation and asks for an explicit flag or confirmation, it is flagging a dangerous action: surface it, confirm, then re-run with the flag the CLI named.
-- **Sign-in opens a browser.** `stream init` / `stream login` launch a browser flow - run them as their own invocation (never chained with `&&` or wrapped in a heredoc). If sign-in hangs, ask the user to run it themselves with `! <command>`.
+- **Sign-in opens a browser.** `getstream init` / `getstream login` launch a browser flow - run them as their own invocation (never chained with `&&` or wrapped in a heredoc). If sign-in hangs, ask the user to run it themselves with `! <command>`.
 
 ## Onboarding & phase order
 
-Onboarding is owned by the CLI: `stream init` authenticates, selects or creates the org + app, and writes project credentials; `stream env` provisions the app's server-side secret without exposing it. If `stream` isn't installed, ask the user to install it from https://getstream.io and wait - never fetch or run an install script. **The `stream-docs` skill skips onboarding entirely** and never runs the CLI except an on-demand read-only probe when the SDK can't be resolved from user input.
+Onboarding is owned by the CLI: `getstream init` authenticates, selects or creates the org + app, and writes project credentials; `getstream env` provisions the app's server-side secret without exposing it. If `getstream` isn't installed, ask the user to install it from https://getstream.io and wait - never fetch or run an install script. **The `stream-docs` skill skips onboarding entirely** and never runs the CLI except an on-demand read-only probe when the SDK can't be resolved from user input.
 
 - Do not load `references/*.md` (in the `stream-builder` skill) until the user names the product(s).
 - Do not load `builder-ui.md` (in the `stream-builder` skill) before Step 4.
@@ -81,7 +81,7 @@ Onboarding is owned by the CLI: `stream init` authenticates, selects or creates 
 
 - **Never `bash -ce` or `set -e`** in probes or batched phases. `grep` (and friends) return exit 1 on "no match," which under `-e` aborts the whole script and leaves you with partial output. Tolerate specific failures explicitly (`|| echo NOT_FOUND`, `|| true`) instead.
 - **One `bash -c` per phase where possible.** Chain with `&&` on a single line to minimize sandbox approval prompts. If you need to read JSON and then act on it, use one call to read and one batched call for the writes.
-- **Browser sign-in stays its own invocation.** `stream init` / `stream login` open a browser - never chain with `&&`, embed in a heredoc, or bundle with other commands. Hang recovery is in CLI safety above.
+- **Browser sign-in stays its own invocation.** `getstream init` / `getstream login` open a browser - never chain with `&&`, embed in a heredoc, or bundle with other commands. Hang recovery is in CLI safety above.
 
 ## Cross-track follow-ups
 

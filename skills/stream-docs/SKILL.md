@@ -20,7 +20,7 @@ Answer questions from Stream's official SDK documentation by fetching live pages
 
 **Docs index:** `https://getstream.io/cli/llms.txt`
 
-> **No CLI gate, no up-front shell.** This skill never invokes Write, Edit, npm, scaffold tools, or `Bash(stream *)`. Pure docs questions with an explicit SDK reach `WebFetch` without running *any* shell command. A small read-only probe runs **only on demand** - inside Step 1a below - when the SDK can't be resolved from the user's input. If the user's question requires running the CLI or building code, offer to switch - the user re-enters via the `stream` router or the `stream-builder` skill.
+> **No CLI gate, no up-front shell.** This skill never invokes Write, Edit, npm, scaffold tools, or `Bash(getstream *)`. Pure docs questions with an explicit SDK reach `WebFetch` without running *any* shell command. A small read-only probe runs **only on demand** - inside Step 1a below - when the SDK can't be resolved from the user's input. If the user's question requires running the CLI or building code, offer to switch - the user re-enters via the `stream` router or the `stream-builder` skill.
 
 ---
 

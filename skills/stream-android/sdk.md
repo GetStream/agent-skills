@@ -43,7 +43,7 @@ Exact builder shapes and singleton accessors live in the matching reference file
 Use the simplest token shape that matches the user's environment:
 
 - **Backend exists:** prefer a backend-issued Stream token via a `TokenProvider` - the SDK will call it again automatically when the token expires.
-- **No backend / demo flow:** generate a token with the Stream CLI (binary is `stream` - see [`credentials.md`](credentials.md)). Never-expiring: `stream token <user_id>`. Expiring: `stream token <user_id> --ttl 1h` (units: `s`/`m`/`h`/`d`).
+- **No backend / demo flow:** generate a token with the Stream CLI (binary is `stream` - see [`credentials.md`](credentials.md)). Never-expiring: `getstream token <user_id>`. Expiring: `getstream token <user_id> --ttl 1h` (units: `s`/`m`/`h`/`d`).
 - **User pastes their own:** accept it and pass it to the client.
 
 Keep the split clear:

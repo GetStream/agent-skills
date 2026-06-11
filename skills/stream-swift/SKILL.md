@@ -11,7 +11,7 @@ allowed-tools: >-
   Bash(grep *),
   Bash(find . *),
   Bash(cat Package.swift), Bash(cat Package.resolved), Bash(cat Podfile),
-  Bash(stream *)
+  Bash(getstream *)
 ---
 
 # Stream Swift - skill router + execution flow
@@ -100,24 +100,24 @@ Once the user answers, execute all CLI steps in sequence **without pausing for c
 #### Step A - API key
 
 ```bash
-stream env --target ios
+getstream env --target ios
 ```
 
-`stream env` writes the app's public API key to `Secrets.xcconfig` (`STREAM_API_KEY`) and prints the wiring steps - set the xcconfig as the target's configuration file, add `STREAM_API_KEY = $(STREAM_API_KEY)` to `Info.plist`, and read it with `Bundle.main.object(forInfoDictionaryKey:)`. Follow those steps; you don't need to hold the key yourself, and the secret is never written for iOS.
+`getstream env` writes the app's public API key to `Secrets.xcconfig` (`STREAM_API_KEY`) and prints the wiring steps - set the xcconfig as the target's configuration file, add `STREAM_API_KEY = $(STREAM_API_KEY)` to `Info.plist`, and read it with `Bundle.main.object(forInfoDictionaryKey:)`. Follow those steps; you don't need to hold the key yourself, and the secret is never written for iOS.
 
-If `stream env` reports the project isn't initialized or you're not signed in, run `stream init`, then re-run `stream env --target ios`.
+If `getstream env` reports the project isn't initialized or you're not signed in, run `getstream init`, then re-run `getstream env --target ios`.
 
 #### Step B - Token
 
 ```bash
 # Never-expiring
-stream token <user_id>
+getstream token <user_id>
 
 # Expiring
-stream token <user_id> --ttl <duration>
+getstream token <user_id> --ttl <duration>
 ```
 
-Hold the token in context. In generated code, read the API key from `Info.plist` via `Bundle.main` (provisioned by `stream env`) and reference the token via a named constant (e.g. `Config.userToken`) - do not hardcode the secret.
+Hold the token in context. In generated code, read the API key from `Info.plist` via `Bundle.main` (provisioned by `getstream env`) and reference the token via a named constant (e.g. `Config.userToken`) - do not hardcode the secret.
 
 #### Step C - Seed channels (Chat projects only; only if the user said yes)
 
@@ -126,17 +126,17 @@ Create 3-5 channels with random realistic usernames. Use `messaging` as the chan
 First create the user records (users must exist before they can be channel members):
 
 ```bash
-stream api UpdateUsers --request '{"users":{"<token_user_id>":{"id":"<token_user_id>","name":"Token User"},"alice":{"id":"alice","name":"Alice"},"bob":{"id":"bob","name":"Bob"}}}'
+getstream api UpdateUsers --request '{"users":{"<token_user_id>":{"id":"<token_user_id>","name":"Token User"},"alice":{"id":"alice","name":"Alice"},"bob":{"id":"bob","name":"Bob"}}}'
 ```
 
 Then create each channel, adding members via `data.members` (an array of `{"user_id":"..."}` objects - top-level `members` is a pagination shape, not membership):
 
 ```bash
-stream api GetOrCreateChannel --type messaging --id <channel-id> \
+getstream api GetOrCreateChannel --type messaging --id <channel-id> \
   --request '{"data":{"name":"<display name>","created_by_id":"<token_user_id>","members":[{"user_id":"<token_user_id>"},{"user_id":"alice"},{"user_id":"bob"}]}}'
 ```
 
-Use short memorable channel IDs (e.g. `general`, `random`, `team-alpha`). The token user **must** appear in `data.members` for at least one channel, or the channel list renders empty on first launch. If a call fails with a parameter error, check `stream api GetOrCreateChannel -h`.
+Use short memorable channel IDs (e.g. `general`, `random`, `team-alpha`). The token user **must** appear in `data.members` for at least one channel, or the channel list renders empty on first launch. If a call fails with a parameter error, check `getstream api GetOrCreateChannel -h`.
 
 After seeding, print a brief summary:
 

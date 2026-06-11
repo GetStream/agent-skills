@@ -125,7 +125,7 @@ let token = UserToken(rawValue: "your_static_token")
 let streamVideo = StreamVideo(apiKey: "your_api_key", user: user, token: token)
 ```
 
-Token generation: `stream token <user_id>` (same CLI as Chat).
+Token generation: `getstream token <user_id>` (same CLI as Chat).
 
 ### Token provider (expiring tokens)
 
@@ -401,7 +401,7 @@ A failed WebSocket connection prevents calls from being established.
 
 **Expired token** - tokens have an expiry date. Verify at [jwt.io](https://jwt.io). When using expiring tokens always supply a `tokenProvider` so the SDK can refresh automatically without a manual reconnect.
 
-**Wrong secret for token generation** - each Stream app has its own secret. Tokens from the docs examples are signed with demo app secrets; yours will be rejected. Generate tokens from your own dashboard secret or via `stream token <user_id>`.
+**Wrong secret for token generation** - each Stream app has its own secret. Tokens from the docs examples are signed with demo app secrets; yours will be rejected. Generate tokens from your own dashboard secret or via `getstream token <user_id>`.
 
 **User-token mismatch** - the token must be signed for the same user ID passed to `StreamVideo(user:)`. Mismatched IDs produce an auth error even if both values look valid. Verify at [jwt.io](https://jwt.io).
 
