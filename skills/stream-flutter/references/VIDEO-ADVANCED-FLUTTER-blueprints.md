@@ -847,7 +847,7 @@ SizedBox(
     child: const Column(
       children: [
         Expanded(child: StreamMessageListView()),
-        StreamMessageInput(),
+        StreamMessageComposer(),
       ],
     ),
   ),

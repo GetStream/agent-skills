@@ -50,6 +50,7 @@ class MyApp extends StatelessWidget {
 ```
 
 **Wiring:**
+
 - `WidgetsFlutterBinding.ensureInitialized()` is required before any async work in `main`
 - `await client.connectUser(...)` must complete before `runApp` so the app starts with an active session
 - `StreamChat` in `builder` wraps every route in the app, not just `home`
@@ -58,6 +59,8 @@ class MyApp extends StatelessWidget {
 ---
 
 ## Channel List Page Blueprint
+
+> **Docs:** [StreamChannelListView](https://getstream.io/chat/docs/sdk/flutter/stream-chat-flutter/channel-list/stream-channel-list-view.md)
 
 ```dart
 // channel_list_page.dart
@@ -108,6 +111,7 @@ class _ChannelListPageState extends State<ChannelListPage> {
 ```
 
 **Wiring:**
+
 - `StreamChannelListController` must be `late final` on `State` - never created in `build`
 - `Filter.in_('members', [userId])` restricts the list to channels the current user belongs to
 - `SortOption.desc('last_message_at')` sorts by most recent activity
@@ -117,6 +121,8 @@ class _ChannelListPageState extends State<ChannelListPage> {
 ---
 
 ## Channel Page Blueprint
+
+> **Docs:** [StreamMessageListView](https://getstream.io/chat/docs/sdk/flutter/stream-chat-flutter/message-list/stream-message-list-view.md) · [StreamChannelHeader](https://getstream.io/chat/docs/sdk/flutter/stream-chat-flutter/stream-channel-header.md)
 
 ```dart
 // channel_page.dart
@@ -131,7 +137,7 @@ class ChannelPage extends StatefulWidget {
 }
 
 class _ChannelPageState extends State<ChannelPage> {
-  late final _composerController = StreamMessageComposerController();
+  final _composerController = StreamMessageComposerController();
   final _focusNode = FocusNode();
 
   @override
@@ -151,13 +157,11 @@ class _ChannelPageState extends State<ChannelPage> {
             config: const StreamMessageListViewConfiguration(
               swipeToReply: true,
             ),
-            builders: StreamMessageListViewBuilders(
-              threadBuilder: (_, parent) => ThreadPage(parent: parent!),
-            ),
+            threadBuilder: (_, parent) => ThreadPage(parent: parent!),
             onReplyTap: _reply,
           ),
         ),
-        StreamMessageInput(
+        StreamMessageComposer(
           messageComposerController: _composerController,
           focusNode: _focusNode,
           onQuotedMessageCleared: _composerController.clearQuotedMessage,
@@ -176,12 +180,13 @@ class _ChannelPageState extends State<ChannelPage> {
 ```
 
 **Wiring:**
+
 - `StreamChannelHeader` reads channel name and state from the `StreamChannel` ancestor
 - `StreamMessageListView` handles message loading, pagination, and reactions automatically
-- `builders.threadBuilder` receives the parent message and returns the thread screen (v10: moved from top-level to `builders:`)
-- `config.swipeToReply: true` enables swipe-to-quote gesture (v10: moved from top-level to `config:`)
+- `threadBuilder` (top-level) receives the parent message and returns the thread screen
+- `config.swipeToReply: true` enables the swipe-to-quote gesture
 - `onReplyTap` sets `quotedMessage` on the composer controller and focuses the input
-- `StreamMessageComposerController` replaced `StreamMessageInputController` in v10; `messageComposerController:` replaced `messageInputController:`
+- `StreamMessageComposer` is the composer widget; its controller parameter is `messageComposerController:`
 - Dispose both `_composerController` and `_focusNode` in `dispose()`
 
 ---
@@ -206,7 +211,7 @@ class ThreadPage extends StatelessWidget {
         Expanded(
           child: StreamMessageListView(parentMessage: parent),
         ),
-        StreamMessageInput(
+        StreamMessageComposer(
           messageComposerController: StreamMessageComposerController(
             message: Message(parentId: parent.id),
           ),
@@ -218,54 +223,51 @@ class ThreadPage extends StatelessWidget {
 ```
 
 **Wiring:**
+
 - `StreamThreadHeader` shows the parent message context in the app bar
 - `parentMessage: parent` tells `StreamMessageListView` to show thread replies only
-- `StreamMessageComposerController(message: Message(parentId: parent.id))` pre-configures the composer to send replies into the thread (v10: `StreamMessageInputController` → `StreamMessageComposerController`, `messageInputController:` → `messageComposerController:`)
+- `StreamMessageComposerController(message: Message(parentId: parent.id))` pre-configures the composer to send replies into the thread
 
 ---
 
 ## Custom Theme Blueprint
 
+> **Docs:** [StreamChat & Theming](https://getstream.io/chat/docs/sdk/flutter/stream-chat-flutter/stream-chat-and-theming.md)
+
+Base colors come from your app's Material 3 `ColorScheme`. Set that on `MaterialApp`, then pass `StreamChatThemeData` to `StreamChat` (via `themeData:`) only to override specific components.
+
 ```dart
-StreamChat(
-  client: client,
-  streamChatThemeData: StreamChatThemeData(
-    colorTheme: StreamColorTheme.light(
-      accentPrimary: const Color(0xFF005FFF),
-      appBg: Colors.white,
-      barsBg: Colors.white,
-    ),
-    channelHeaderTheme: const StreamChannelHeaderThemeData(
-      color: Colors.white,
-      titleStyle: TextStyle(
-        color: Color(0xFF0D1019),
-        fontWeight: FontWeight.w600,
-        fontSize: 16,
-      ),
-      subtitleStyle: TextStyle(
-        color: Color(0xFF7A7A7A),
-        fontSize: 13,
-      ),
-    ),
-    channelPreviewTheme: const StreamChannelPreviewThemeData(
-      titleStyle: TextStyle(
-        fontWeight: FontWeight.w600,
-        fontSize: 14,
-      ),
-    ),
-    messageListViewTheme: const StreamMessageListViewThemeData(
-      backgroundColor: Color(0xFFF7F7F8),
-    ),
+MaterialApp(
+  theme: ThemeData(
+    colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF005FFF)),
+    useMaterial3: true,
   ),
-  child: widget,
+  builder: (context, widget) => StreamChat(
+    client: client,
+    themeData: StreamChatThemeData(
+      messageListViewTheme: const StreamMessageListViewThemeData(
+        backgroundColor: Color(0xFFF7F7F8),
+      ),
+      channelListItemTheme: const StreamChannelListItemThemeData(
+        titleStyle: TextStyle(
+          fontWeight: FontWeight.w600,
+          fontSize: 14,
+        ),
+      ),
+    ),
+    child: widget,
+  ),
+  home: const ChannelListPage(),
 )
 ```
 
 **Wiring:**
-- All theme changes must be passed at `StreamChat` creation time - not applied later
-- `StreamColorTheme.light(...)` or `StreamColorTheme.dark(...)` sets the base palette
-- Component-specific themes (`channelHeaderTheme`, `channelPreviewTheme`, etc.) override individual widget styles
+
+- The whole UI's palette derives from the ambient Material `ColorScheme` — recolor by customizing `ThemeData` on `MaterialApp`
+- `StreamChatThemeData` is passed via `themeData:` and overrides individual component themes
+- Component slots: `channelHeaderTheme` / `channelListHeaderTheme` / `threadHeaderTheme` (`StreamAppBarThemeData`), `messageListViewTheme` (`StreamMessageListViewThemeData`), `channelListItemTheme` (`StreamChannelListItemThemeData`), `quotedMessageTheme`, plus thread/voice/poll themes
 - Unset properties fall back to SDK defaults
+- Read the resolved theme with `StreamChatTheme.of(context)`
 
 ---
 
@@ -305,6 +307,7 @@ StreamChannelListView(
 ```
 
 **Wiring:**
+
 - `StreamChannelAvatar` renders the channel's avatar (auto-generated from members if no image is set)
 - `StreamChannelName` renders the channel display name, falling back to member names for DMs
 - `defaultWidget.copyWith(selected: true)` preserves the default layout with a selection highlight (useful for split-view)
@@ -350,6 +353,7 @@ class _SplitViewState extends State<SplitView> {
 ```
 
 **Wiring:**
+
 - `ValueKey(_selectedChannel!.cid)` forces `StreamChannel` to rebuild when the selected channel changes, preventing stale message lists
 - `ChannelListPage` receives `selectedChannel` to highlight the active item (passed to `defaultWidget.copyWith(selected: ...)` in `itemBuilder`)
 - Use `Expanded(flex: 2, ...)` to give the message list 2/3 of the available width
@@ -437,6 +441,7 @@ class _LoginPageState extends State<LoginPage> {
 ```
 
 **Wiring:**
+
 - `StreamChat.of(context).client` accesses the already-created client from the widget tree
 - `connectUser` is async - always `await` it
 - Check `mounted` before calling `setState` after an async gap to avoid "setState after dispose"
@@ -465,11 +470,11 @@ StreamBuilder<List<Member>>(
 
 Common streams on `channel.state`:
 
-| Stream | Data type |
-|---|---|
-| `messagesStream` | `List<Message>` |
-| `membersStream` | `List<Member>` |
-| `lastMessageStream` | `Message?` |
+| Stream               | Data type                     |
+| -------------------- | ----------------------------- |
+| `messagesStream`     | `List<Message>`               |
+| `membersStream`      | `List<Member>`                |
+| `lastMessageStream`  | `Message?`                    |
 | `typingEventsStream` | `Map<User, TypingStartEvent>` |
-| `unreadCountStream` | `int` |
-| `readStream` | `List<Read>` |
+| `unreadCountStream`  | `int`                         |
+| `readStream`         | `List<Read>`                  |
