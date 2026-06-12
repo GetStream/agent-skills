@@ -65,6 +65,16 @@ import { WithComponents } from 'stream-chat-react';
 
 **Bonus:** `ChatView` (+ `ChatView.Selector` / `.Channels` / `.Threads`) and `ThreadList` / `ThreadListItem` for a channel/thread switcher.
 
+**Beyond the common path (docs-first expansion points)** - features the blueprints above don't cover; fetch the matching [`DOCS.md`](DOCS.md) row before building:
+- **Polls** - prebuilt `Poll` component; create / vote (needs `polls` enabled on the channel type)
+- **AI assistant / streaming responses** - typewriter effect + `AIStateIndicator` (AI Integrations, LangChain, Vercel AI SDK)
+- **Voice messages** - record in the composer (`audioRecordingEnabled`) and play back the voice-recording attachment
+- **Shared location** - static + live location messages
+- **Message reminders** - "remind me" / saved-for-later
+- **Blocking users** - block / unblock a user
+- **Threads manager** - `ChatView` channel/thread switcher + `ThreadList` (unread-threads inbox)
+- **Moderation bounce** - let a user review / edit / retry their own message bounced by moderation (`MessageBounce`)
+
 **Docs-first:** for any customization (custom message UI, theming, reactions, composer UI, channel header, search, AI, ...) fetch the matching page from [`DOCS.md`](DOCS.md) before writing - the prebuilt props and customization API evolve. Component reference pages live at `https://getstream.io/chat/docs/sdk/react/components/{category}/{component}.md`.
 
 ---

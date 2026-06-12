@@ -40,6 +40,19 @@ The full per-product page list lives in these manifests. Fetch the index when a 
 | channel state context, read channel state in a custom component | ChannelStateContext | https://getstream.io/chat/docs/sdk/react/components/contexts/channel-state-context.md |
 | message context, read message state in a custom component | MessageContext | https://getstream.io/chat/docs/sdk/react/components/contexts/message-context.md |
 
+## Chat React - feature components (beyond the common path)
+
+First-class prebuilt features the common-path blueprints don't cover. Most need a Dashboard/channel-type toggle (e.g. `polls`) - fetch the page before building.
+
+| Trigger keywords (in the user's request) | Topic | Fetch first |
+|---|---|---|
+| poll, create poll, vote, poll message | Poll | https://getstream.io/chat/docs/sdk/react/components/message-components/poll.md |
+| voice message, record audio, audio recorder, record voice in composer | Audio Recorder (composer) | https://getstream.io/chat/docs/sdk/react/components/message-composer/audio-recorder.md |
+| voice recording attachment, play voice message, waveform | Voice Recording Attachment | https://getstream.io/chat/docs/sdk/react/components/message-components/attachment/voice-recording.md |
+| chat view, channel + thread switcher, ChatView.Selector/.Channels/.Threads | ChatView | https://getstream.io/chat/docs/sdk/react/components/utility-components/chat-view.md |
+| thread list, threads manager, unread threads, ThreadList/ThreadListItem | ThreadList | https://getstream.io/chat/docs/sdk/react/components/core-components/thread-list.md |
+| message bounce, review bounced message, moderation prompt on own message | MessageBounceContext | https://getstream.io/chat/docs/sdk/react/components/contexts/message-bounce-context.md |
+
 ## Chat React - UI Cookbook (customization + theming recipes)
 
 | Trigger keywords (in the user's request) | Topic | Fetch first |
