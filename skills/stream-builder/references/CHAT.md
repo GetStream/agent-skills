@@ -10,7 +10,7 @@ Rules: [../../stream/RULES.md](../../stream/RULES.md) (secrets, no auto-seeding,
 
 ## Quick ref
 
-- **Packages:** `stream-chat`, `stream-chat-react`; import `stream-chat-react/dist/css/index.css` (v14+; v13 used `dist/css/v2/index.css`).
+- **Packages:** `stream-chat`, `stream-chat-react`; import `stream-chat-react/css/index.css` (v14+ preferred alias; v13 used `dist/css/v2/index.css`).
 - **First:** **App Integration** -> **Setup** (CLI / channel types) before UI.
 - **Per feature:** Jump to section (Channel List, Message List, ...) when implementing that screen.
 - **Below the next rule:** full blueprints - **do not load past it** until you implement that component.
@@ -65,9 +65,9 @@ const client = StreamChat.getInstance(process.env.STREAM_API_KEY!, process.env.S
 
 - Always generate real tokens server-side via `client.createToken()` - never `devToken()`
 - `StreamChat.getInstance(apiKey, apiSecret)` is fine server-side (singleton OK)
-- `client.channel("livestream", id)` - no third arg with `{ name }` (TS error in current SDKs)
+- `client.channel(type, id, { name, image, members })` - the 3rd arg accepts custom channel data (`ChannelData`); Stream's own tutorial does `client.channel('livestream', 'spacex', { name, image })`. With strict custom-data typing, declare custom fields on `CustomChannelData`
 - Listen for `user.banned` event to show banned state in UI
-- Import `stream-chat-react/dist/css/index.css` for default styles (v14+; the `/v2/` subpath was removed)
+- Import `stream-chat-react/css/index.css` for default styles - the preferred aliased path (`dist/css/index.css` also resolves; v14+, the `/v2/` subpath was removed)
 - `MessageInput` was renamed/removed in v14 - use `MessageComposer` from `stream-chat-react` instead
 - Token endpoint as `GET /api/token?user_id=xxx`
 - `upsertUsers` takes an **array** of user objects: `client.upsertUsers([{ id, name, role }])` - NOT an object keyed by ID

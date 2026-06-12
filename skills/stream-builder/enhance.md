@@ -24,7 +24,7 @@ Before writing any code, understand what's already in place:
 
 1. **Install** only the new SDKs: `npm install <new-packages> --legacy-peer-deps` (the `stream` skill's [`RULES.md`](../stream/RULES.md) > Package manager).
 2. **Configure via CLI:** run setup commands from the relevant `references/<Product>.md` (App Integration -> Setup). Feeds needs feed groups created; Moderation needs blocklist + config.
-3. **Import CSS** if the product needs it (Chat: `stream-chat-react/dist/css/v2/index.css`, Video: `@stream-io/video-react-sdk/dist/css/styles.css`).
+3. **Import CSS** if the product needs it (Chat: `stream-chat-react/css/index.css` (v14+ preferred alias; v13 used `dist/css/v2/index.css`), Video: `@stream-io/video-react-sdk/dist/css/styles.css`).
 
 ## E3: Integrate
 

@@ -19,7 +19,7 @@ import {
 } from "@stream-io/feeds-react-sdk";
 import { useTheme } from "next-themes";
 
-import "stream-chat-react/dist/css/index.css";
+import "stream-chat-react/css/index.css";
 import "@stream-io/video-react-sdk/dist/css/styles.css";
 
 type Auth = {
@@ -121,7 +121,7 @@ function WatchScreen({ callId }: { callId: string }) {
 | `No permission to publish VIDEO` / `AUDIO` (livestream) | `livestream` `call_member`/`host` roles default to `*-owner` grants only | Grant unrestricted `send-video` + `send-audio` to **`user`, `call_member`, AND `host`** roles; join with `data: { members: [{ user_id, role: "host" }] }`. See `VIDEO.md` |
 | "Setting up your camera..." never clears | useEffect bails on strict-mode remount due to `useRef` lock | Use mounted-flag cleanup; setCall after join, then enable camera/mic in independent try/catch blocks |
 | `MessageInput` undefined import (chat) | Renamed in stream-chat-react v14 | Use `MessageComposer` from `stream-chat-react` |
-| `Module not found: stream-chat-react/dist/css/v2/index.css` | v14 removed the `/v2/` subpath | Import `stream-chat-react/dist/css/index.css` |
+| `Module not found: stream-chat-react/dist/css/v2/index.css` | v14 removed the `/v2/` subpath | Import `stream-chat-react/css/index.css` (preferred alias; `dist/css/index.css` also works) |
 
 ## Token route
 

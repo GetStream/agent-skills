@@ -352,7 +352,7 @@ The core content unit in chat. A single message with author info, text, attachme
 | `message__file` | In message payload | - | `message.attachments[].asset_url`, `.title`, `.file_size` where `type === 'file'` |
 | `message__og-*` | In message payload | - | `message.attachments[].og_scrape_url`, `.title`, `.text`, `.image_url` |
 | `message__deleted` | In message payload | - | `message.deleted_at` (truthy = deleted) |
-| `message__reaction` | In message payload | - | `message.reaction_groups` (keyed by type; each has `count`, `sum_scores`, `first_reaction_at`, `last_reaction_at`) - recommended. `message.reaction_counts` still works but is deprecated. Also `message.own_reactions[]` |
+| `message__reaction` | In message payload | - | `message.reaction_groups` (keyed by type; each has `count`, `sum_scores`, `first_reaction_at`, `last_reaction_at`) - preferred. `message.reaction_counts` still works. Also `message.own_reactions[]` |
 | Reaction - add | - | `channel.sendReaction(message.id, { type: 'like' })` | Supports `{ enforce_unique: true }` option as third arg to replace all user's existing reactions |
 | Reaction - remove | - | `channel.deleteReaction(message.id, 'like')` | Removes current user's reaction of that type |
 | `message__thread-count` | In message payload | - | `message.reply_count` |
@@ -361,8 +361,8 @@ The core content unit in chat. A single message with author info, text, attachme
 | `message__status` (read) | `channel.state.read` | - | Map of `userId -> { last_read, user }` - compare with `message.created_at` |
 | Edit | - | `client.updateMessage({ id: message.id, text: newText })` | - |
 | Delete | - | `client.deleteMessage(message.id)` | Sets `message.deleted_at`. Pass `{ hardDelete: true }` for permanent deletion |
-| Pin | - | `client.pinMessage(message, timeoutOrExpiration)` | Takes message object (not ID). Second arg is optional: timeout in seconds, expiration date, or null for no expiry |
-| Unpin | - | `client.unpinMessage(message)` | Takes message object (not ID) |
+| Pin | - | `client.pinMessage(message, timeoutOrExpiration)` | Accepts a message object or message id. Second arg is optional: timeout in seconds, expiration date, or null for no expiry |
+| Unpin | - | `client.unpinMessage(message)` | Accepts a message object or message id |
 | `message__reaction-groups` | In message payload | - | `message.reaction_groups` - keyed by type, each has `count`, `sum_scores`, `first_reaction_at`, `last_reaction_at`. Recommended replacement for `reaction_counts` |
 | `message__mentioned-users` | In message payload | - | `message.mentioned_users` - enriched user objects for @mentions in the message |
 | Flag | - | `client.flagMessage(message.id)` | See MODERATION.md |
