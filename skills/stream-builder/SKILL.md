@@ -222,7 +222,7 @@ If `NO_ICONS`, install `lucide-react`: `npm install lucide-react --legacy-peer-d
 
 ### Step 4: Generate code and UI
 
-**Load [`builder-ui.md`](builder-ui.md)** and **only** the relevant [`references/<Product>.md`](references/) header + `references/<Product>-blueprints.md` for the sections you are implementing - not every reference file. **For multi-product apps (Chat + Video, Chat + Feeds, Video + Feeds, etc.), also load [`references/CROSS-PRODUCT.md`](references/CROSS-PRODUCT.md) before writing AppShell** - it has the canonical multi-client provider hierarchy and an error -> cause -> fix table.
+**Load [`builder-ui.md`](builder-ui.md)** and **only** the relevant [`references/<Product>.md`](references/) header + `references/<Product>-blueprints.md` for the sections you are implementing - not every reference file. **For multi-product apps (Chat + Video, Chat + Feeds, Video + Feeds, etc.), also load [`references/CROSS-PRODUCT.md`](references/CROSS-PRODUCT.md) before writing AppShell** - it has the canonical multi-client provider hierarchy and an error -> cause -> fix table. **If a use-case recipe matched (see Use-case recipes), load that recipe and its `load_with` references** and follow it as the build plan instead of inferring the product set yourself.
 
 ### Step 5: Verify
 
@@ -268,6 +268,12 @@ End with:
 | "Instagram", "Twitter", "social feed", "Reddit" | Social Feed | Feeds + Chat |
 
 **Moderation** is configured via CLI during setup only. **Never build moderation review UI in the app** (RULES.md > Moderation is Dashboard-only) - review happens in the [Stream Dashboard](https://beta.dashboard.getstream.io).
+
+### Use-case recipes
+
+Some requests map to a **use-case recipe**: a drop-in build plan for a specific product (e.g. an AI support agent) that keeps this skill generic. Before Step 4, read [`references/use-cases/_use-cases.yaml`](references/use-cases/_use-cases.yaml). If the request matches a recipe's `signals`, **load that recipe file and follow it as the build plan** - the recipe declares the Stream products to scaffold, the product references to `load_with`, and the decisions to ask. If nothing matches, use the generic product blueprints above.
+
+Adding a use-case is a new file under `references/use-cases/` plus an entry in `_use-cases.yaml` - never a change to this SKILL.md.
 
 ---
 
