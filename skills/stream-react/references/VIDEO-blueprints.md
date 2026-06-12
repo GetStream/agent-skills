@@ -35,11 +35,11 @@ import { StreamVideo, StreamTheme, StreamCall, SpeakerLayout, CallControls } fro
 | `StreamCall` | Call provider around a `Call` object | `call` (req) |
 | `SpeakerLayout` | Dominant speaker / screen-share focus + participants bar | `participantsBarPosition` (`top`/`bottom`/`left`/`right`/`null`), `excludeLocalParticipant`, `mirrorLocalParticipantVideo` |
 | `PaginatedGridLayout` | Equal participants in a paginated grid | `groupSize`, `excludeLocalParticipant`, `pageArrowsVisible` |
-| `LivestreamLayout` | One-to-many broadcast (used by `LivestreamPlayer`) | `muted`, `enableFullscreen`, `showParticipantCount`, `showDuration`, `showLiveBadge` |
-| `ParticipantView` | One participant's video/audio (building block) | `participant` (req), `ParticipantViewUI`, `VideoPlaceholder`, `trackType` (`videoTrack`/`screenShareTrack`) |
+| `LivestreamLayout` | One-to-many broadcast (used by `LivestreamPlayer`) | `muted`, `enableFullScreen`, `showParticipantCount`, `showDuration`, `showLiveBadge` |
+| `ParticipantView` | One participant's video/audio (building block) | `participant` (req), `ParticipantViewUI`, `VideoPlaceholder`, `trackType` (`videoTrack`/`screenShareTrack`/`none`) |
 | `CallControls` | Permission-aware control bar | `onLeave`. Building-block buttons: `ScreenShareButton`, `RecordCallButton`, `ReactionsButton`, `ToggleAudioPublishingButton`, `ToggleVideoPublishingButton`, ... |
 | `CallParticipantsList` | Participant list w/ mute status, search, per-user actions | `onClose`, `activeUsersSearchFn`, `debounceSearchInterval` |
-| `DeviceSettings` | Camera/mic/speaker settings panel | `visualType` (`list`/`dropdown`). Companions: `DeviceSelectorVideo`, `DeviceSelectorAudioInput`, `AudioVolumeIndicator` |
+| `DeviceSettings` | Camera/mic/speaker settings panel | `visualType` (`menu`/`portal`, default `menu` - the `MenuVisualType` enum). Companions: `DeviceSelectorVideo`, `DeviceSelectorAudioInput`, `AudioVolumeIndicator` |
 | `VideoPreview` | Lobby self-view before joining | `mirror`, `DisabledVideoPreview`, `NoCameraPreview` |
 | `LivestreamPlayer` | Watch a WebRTC livestream by id/type (manages the call itself) | `callType` (`"livestream"`), `callId`, `joinBehavior` (`asap`/`live`), `layoutProps` |
 
@@ -135,6 +135,8 @@ Pre-join screen where users preview their camera/mic and set preferences before 
 | `lobby__cancel` | - | `call.leave()` | Navigates away |
 | `lobby__audio-level` | `call.microphone.state.mediaStream` | - | Use `AudioContext` + `AnalyserNode` on the stream |
 
+> `call.{camera,microphone,speaker}.listDevices()` returns an **RxJS Observable** of `MediaDeviceInfo[]` - you must `.subscribe()` to it (it is not an array). Inside a `<StreamCall>` context, prefer `useCameraState().devices` / `useMicrophoneState().devices` / `useSpeakerState().devices`, which are already-resolved arrays.
+
 ### Requirements
 
 | Feature | Requirement | Default |
@@ -222,7 +224,7 @@ Container for the active call. Manages participant arrangement in different layo
 | `call-layout__screen-share-video` | Screen share participant's video track | Assign to `srcObject` | `participant.screenShareStream` |
 | Layout mode | Client-side state | - | Auto-switch to spotlight when screen share starts |
 | Self-view | `call.state.localParticipant` | - | Current user's participant object |
-| Join request | `call.on('call.permission_request', cb)` | `call.grantPermissions(userId)` / `call.revokePermissions(userId)` | - |
+| Join request | `call.on('call.permission_request', cb)` | `call.grantPermissions(userId, ['send-audio','send-video'])` / `call.revokePermissions(userId, [...])` | `permissions` (string[]) is **required** - the second arg lists the capabilities to grant/revoke |
 
 ### Requirements
 
@@ -297,7 +299,7 @@ Individual participant's video/audio in the call. Used inside call layouts.
 | Network quality | Participant stats | - | `participant.connectionQuality` - `ConnectionQuality.EXCELLENT`, `.GOOD`, `.POOR`, `.UNSPECIFIED` |
 | Pin | - | Client-side state | Layout prioritizes pinned participant |
 | Mute participant | - | `call.muteUser(userId, 'audio')` | Host/admin only |
-| Remove participant | - | `call.blockUser(userId)` | Host/admin only |
+| Remove participant | - | `call.kickUser({ user_id: userId })` | Host/admin only. Removes from the call; add `block: true` to also ban from rejoining. `call.blockUser(userId)` *bans* without removing - not the same as "remove" |
 
 ### Requirements
 
@@ -306,7 +308,7 @@ Individual participant's video/audio in the call. Used inside call layouts.
 | Video rendering | Participant has granted camera permission and is publishing | - |
 | Audio rendering | Attach `participant.audioStream` to an `<audio>` element (not in tile HTML - managed globally) | - |
 | Network quality | Automatic | Available - tracked by SDK |
-| Host controls (mute/remove) | User has `call.state.ownCapabilities` including `'mute-users'`, `'block-users'` | Depends on call type role |
+| Host controls (mute/remove) | User has `call.state.ownCapabilities` including `'mute-users'`, `'remove-call-member'` (remove/kick), `'block-users'` (ban) | Depends on call type role |
 
 ---
 
@@ -516,8 +518,8 @@ Side panel showing all participants in the current call with their status.
 | Mic status | Participant state | - | `hasAudio(participant)` (import from `@stream-io/video-client`) |
 | Camera status | Participant state | - | `hasVideo(participant)` (import from `@stream-io/video-client`) |
 | Mute participant | - | `call.muteUser(userId, 'audio')` | Host/admin only |
-| Remove participant | - | `call.blockUser(userId)` | Host/admin only |
-| Invite | - | `call.updateCallMembers({ members: [{ user_id: id }] })` then ring or notify | - |
+| Remove participant | - | `call.kickUser({ user_id: userId })` | Host/admin only. Removes from the call; add `block: true` to also ban from rejoining. `call.blockUser(userId)` *bans* without removing - not the same as "remove" |
+| Invite | - | `call.updateCallMembers({ update_members: [{ user_id: id }] })` then ring or notify | The key is `update_members` (not `members`); `remove_members: [userId]` removes |
 
 ### Requirements
 

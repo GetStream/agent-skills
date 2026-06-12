@@ -179,10 +179,10 @@ Severity guide: **Blocker** = call won't reliably connect, leaks/keeps publishin
 | Browser permission state surfaced (one-shot prompt) | `hasBrowserPermission`, `isPromptingPermission` | UI explains denied/pending permissions (the user gets only one prompt) | High |
 | Device switcher (camera / mic / speaker) | device-settings components, `useCameraState`/`useMicrophoneState` device lists | Users can pick a non-default device | Medium |
 | Device verification before joining | `AudioVolumeIndicator`, `SpeakerTest`, `MicCaptureErrorNotification` | Devices are *verified working*, not just selected | Medium |
-| Persist device selection | `usePersistedDevicePreferences` | Selection persists across sessions | Low |
+| Device selection persists across sessions | `devicePersistence` in the `StreamVideoClient` options | **On by default** on web - PASS unless `options.devicePersistence.enabled === false`. `usePersistedDevicePreferences` is now a **deprecated no-op**; its presence or absence is irrelevant - do NOT FAIL an app for omitting it | Low |
 | Lobby / preview before joining | a lobby screen | Users check devices/frame before connecting | Medium |
 | Audio connecting indicator | audio-connecting UI | Distinguishes "connecting" from "muted"/"broken" | Low |
-| Speaking-while-muted handled or disabled | `useMicrophoneState().isSpeakingWhileMuted`, `disableSpeakingWhileMutedNotification` | Surfaced to the user or explicitly disabled | Medium |
+| Speaking-while-muted handled or disabled | `useMicrophoneState().isSpeakingWhileMuted`, `call.microphone.disableSpeakingWhileMutedNotification()` | Surfaced to the user (read `isSpeakingWhileMuted`) or explicitly disabled (call the manager method) | Medium |
 | Autoplay-blocked audio handled | `useIsAutoplayBlocked`, `call.resumeAudio(` | A user-gesture element calls `resumeAudio()` when audio is blocked | High |
 | Filters expose a manual toggle on low-end devices | noise-cancellation / background-blur usage | If filters are used, a user toggle exists (blur isn't auto-disabled) | Medium (N/A if no filters) |
 
