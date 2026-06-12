@@ -46,6 +46,7 @@ class MyApp extends StatelessWidget {
 ```
 
 **Wiring:**
+
 - `stream_chat_flutter_core` exports `StreamChatClient` from `stream_chat` - import only `stream_chat_flutter_core`
 - `StreamChatCore` (not `StreamChat`) is the inherited widget for the core package
 - `await client.connectUser(...)` before `runApp` - same as the UI package
@@ -53,6 +54,8 @@ class MyApp extends StatelessWidget {
 ---
 
 ## Custom Channel List Blueprint
+
+> **Docs:** [StreamChannelListController](https://getstream.io/chat/docs/sdk/flutter/stream-chat-flutter-core/stream-channel-list-controller.md) · [PagedValueListenableBuilder](https://getstream.io/chat/docs/sdk/flutter/stream-chat-flutter-core/paged-value-listenable-builder.md)
 
 ```dart
 // channel_list_page.dart
@@ -189,6 +192,7 @@ class _ChannelTile extends StatelessWidget {
 ```
 
 **Wiring:**
+
 - `_controller.doInitialLoad()` in `initState` triggers the first page fetch
 - `PagedValueListenableBuilder.value.when(...)` covers loaded / loading / error states
 - Sentinel item at `index == channels.length` triggers `loadMore` when scrolled into view
@@ -379,6 +383,7 @@ class _MessageBubble extends StatelessWidget {
 ```
 
 **Wiring:**
+
 - `channel.watch()` in `addPostFrameCallback` loads initial messages and subscribes to real-time events
 - `StreamBuilder<List<Message>>` re-renders the list on every new message
 - `messages.reversed.toList()` + `reverse: true` on `ListView.builder` shows newest messages at the bottom
@@ -451,6 +456,8 @@ StreamBuilder<OwnUser?>(
 
 ## Message Search Blueprint
 
+> **Docs:** [StreamMessageSearchListController](https://getstream.io/chat/docs/sdk/flutter/stream-chat-flutter-core/stream-message-search-list-controller.md)
+
 ```dart
 class _MessageSearchPageState extends State<MessageSearchPage> {
   late final _controller = StreamMessageSearchListController(
@@ -514,6 +521,7 @@ class _MessageSearchPageState extends State<MessageSearchPage> {
 ```
 
 **Wiring:**
+
 - `StreamMessageSearchListController` mirrors `StreamChannelListController` in structure
 - Update `searchQuery` and call `doInitialLoad()` on each new search term
 - Results are `GetMessageResponse` objects with `.message` and `.channel` fields

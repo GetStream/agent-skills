@@ -10,11 +10,11 @@ This file holds the shared Flutter/Dart patterns that cut across different Strea
 
 Three tiers with increasing control:
 
-| Package | Use when |
-|---|---|
-| `stream_chat_flutter` | Fastest integration - pre-built `StreamChannelListView`, `StreamMessageListView`, `StreamMessageInput`, `StreamChannelHeader` |
-| `stream_chat_flutter_core` | Custom UI - use `StreamChannelListController`, `PagedValueListenableBuilder`, and your own widgets |
-| `stream_chat` | Low-level API access - direct `StreamChatClient` calls, no UI helpers |
+| Package                    | Use when                                                                                                                         |
+| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `stream_chat_flutter`      | Fastest integration - pre-built `StreamChannelListView`, `StreamMessageListView`, `StreamMessageComposer`, `StreamChannelHeader` |
+| `stream_chat_flutter_core` | Custom UI - use `StreamChannelListController`, `PagedValueListenableBuilder`, and your own widgets                               |
+| `stream_chat`              | Low-level API access - direct `StreamChatClient` calls, no UI helpers                                                            |
 
 Default to `stream_chat_flutter` unless the user explicitly needs custom UI or low-level control.
 
@@ -22,8 +22,8 @@ Default to `stream_chat_flutter` unless the user explicitly needs custom UI or l
 
 One package — no pre-built UI:
 
-| Package | Notes |
-|---|---|
+| Package                | Notes                                                                                                  |
+| ---------------------- | ------------------------------------------------------------------------------------------------------ |
 | `stream_feeds: ^0.5.1` | Current package. Requires Dart >=3.6.2. Client, models, reactions, follow/unfollow, pagination. No UI. |
 
 > **Do not use `stream_feed` or `stream_feed_flutter_core`.** Both are deprecated and incompatible with Dart 3. `stream_feeds` is the only correct choice.
@@ -106,7 +106,7 @@ MaterialApp(
 )
 ```
 
-Use Option A when you also need to pass `streamChatThemeData` or `localizationsDelegates`. Use Option B only for the simplest single-screen demos.
+Use Option A when you also need to pass `themeData` or `localizationsDelegates`. Use Option B only for the simplest single-screen demos.
 
 ---
 
@@ -156,7 +156,7 @@ final channel = StreamChannel.of(context).channel;
 Stateful SDK controllers must have explicit ownership:
 
 - `StreamChannelListController` -> stored as a `late final` field on a `State` object, disposed in `dispose()`
-- `StreamMessageComposerController` (was `StreamMessageInputController` before v10) -> stored as a `late final` field on a `State` object, disposed in `dispose()`
+- `StreamMessageComposerController` -> stored as a `late final` field on a `State` object, disposed in `dispose()`
 - Never create controllers inside `build` methods
 
 ```dart
@@ -239,6 +239,19 @@ await client.connectUser(
 ```
 
 Never connect a second user while the first is still connected - this leaves orphaned WebSocket connections.
+
+---
+
+## Advanced chat features — push, offline, lifecycle
+
+Production concerns beyond basic wiring — **push notifications**, **offline / local
+data persistence**, and **connection lifecycle & app backgrounding** — now live in their
+own pair so this file stays focused on shared setup:
+
+- **Reference:** [`references/CHAT-ADVANCED-FLUTTER.md`](references/CHAT-ADVANCED-FLUTTER.md) — SDK patterns, gotchas, and device/persistence APIs.
+- **Blueprints:** [`references/CHAT-ADVANCED-FLUTTER-blueprints.md`](references/CHAT-ADVANCED-FLUTTER-blueprints.md) — copy-pasteable FCM wiring, persistence init, and lazy-connect gate.
+
+Both apply equally to `stream_chat_flutter` and `stream_chat_flutter_core`.
 
 ---
 
