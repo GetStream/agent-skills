@@ -1,6 +1,6 @@
 # SDK reference - cross-cutting patterns
 
-Rules: the `stream` skill's [`RULES.md`](../stream/RULES.md) (secrets, strict mode protection, package manager). **CLI:** complete the `stream-cli` skill's [`preflight.md`](../stream-cli/preflight.md) before any workflow that needs the `stream` CLI.
+Rules: [`RULES.md`](RULES.md) (strict mode protection, package manager) and the `stream` skill's [`RULES.md`](../stream/RULES.md) (secrets). **CLI:** complete the `stream-cli` skill's [`preflight.md`](../stream-cli/preflight.md) before any workflow that needs the `stream` CLI.
 Product-specific SDK wiring, gotchas, and client patterns: see [`references/*.md`](references/) App Integration sections.
 
 ---
@@ -29,7 +29,7 @@ Product-specific SDK wiring, gotchas, and client patterns: see [`references/*.md
 | Product | Package | Instantiation |
 |---------|---------|---------------|
 | Chat | `stream-chat` + `stream-chat-react` | `new StreamChat(apiKey)` - never `getInstance()` on client (RULES.md > Strict mode protection) |
-| Video | `@stream-io/video-react-sdk` | `new StreamVideoClient({ apiKey, user: { id, name }, token })` |
+| Video | `@stream-io/video-react-sdk` | `new StreamVideoClient({ apiKey, user: { id, name }, tokenProvider })` - use `tokenProvider`, **not** a static `token`, so expired tokens auto-refresh (see [`references/VIDEO.md`](references/VIDEO.md) > Client Patterns; the audit FAILs a static prod token as a Blocker) |
 | Feeds v3 | `@stream-io/feeds-react-sdk` | `useCreateFeedsClient({ apiKey, tokenOrProvider, userData })` - returns `FeedsClient \| null` (null until connected). All feed mutations happen client-side. |
 
 ## CSS imports

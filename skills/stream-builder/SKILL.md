@@ -1,6 +1,6 @@
 ---
 name: stream-builder
-description: "Build a new app or add Stream products (Chat, Video, Feeds, Moderation) to an existing app. Scaffold Next.js + Tailwind + Shadcn + Stream SDKs end-to-end with Steps 0-7. Add Chat/Video/Feeds/Moderation to an existing project (enhance flow). Triggers on 'build me a ... app', 'scaffold', 'create a new ...', 'add Chat to this app', 'integrate Video', 'drop Feeds into ...'. Covers livestreaming, video conferencing, team messaging, direct messaging, social feed use cases."
+description: "The framework-agnostic Stream builder (Steps 0-7 scaffold + enhance + Video audit), being extended to support app kinds beyond web. Use ONLY when the user explicitly names 'stream-builder' or '/stream-builder'. Web React / Next.js work - 'build me a chat app', 'scaffold', 'create a new ...', 'add Chat/Video/Feeds to this app', 'integrate Video', livestreaming, video conferencing, team messaging, direct messaging, social feed - defaults to the stream-react skill, not this one. Not auto-selected for generic web build requests."
 license: See LICENSE in repository root
 metadata:
   author: GetStream

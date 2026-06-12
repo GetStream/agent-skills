@@ -27,8 +27,8 @@ type Auth = {
   userId: string;
   name: string;
   chatToken: string;
-  videoToken: string;
   feedToken: string;
+  // videoToken is not stored - the video client's tokenProvider re-fetches it from /api/token
 };
 
 export default function AppShell({ auth, children }: { auth: Auth; children: React.ReactNode }) {
@@ -48,20 +48,26 @@ export default function AppShell({ auth, children }: { auth: Auth; children: Rea
     userData: { id: auth.userId, name: auth.name },
   });
 
-  // VIDEO - canonical useState + useEffect (NOT useMemo)
+  // VIDEO - useState + useEffect (NOT useMemo) - replica of the canonical snippet in
+  // VIDEO.md > Client Patterns; keep in sync (edit there first)
   const [videoClient, setVideoClient] = useState<StreamVideoClient>();
   useEffect(() => {
+    // tokenProvider INSIDE the effect (identity trap - see VIDEO.md); re-fetches on expiry
+    const tokenProvider = () =>
+      fetch(`/api/token?user_id=${auth.userId}`)
+        .then((r) => r.json())
+        .then((d) => d.videoToken as string);
     const c = new StreamVideoClient({
       apiKey: auth.apiKey,
       user: { id: auth.userId, name: auth.name },
-      token: auth.videoToken,
+      tokenProvider,
     });
     setVideoClient(c);
     return () => {
       c.disconnectUser().catch(console.error);
       setVideoClient(undefined);
     };
-  }, [auth.apiKey, auth.userId, auth.name, auth.videoToken]);
+  }, [auth.apiKey, auth.userId, auth.name]);
 
   if (!chatClient || !feedsClient || !videoClient) return <Loading />;
 
@@ -79,12 +85,15 @@ export default function AppShell({ auth, children }: { auth: Auth; children: Rea
 
 The order of `<Chat>` / `<StreamVideo>` / `<StreamFeeds>` doesn't matter - they don't depend on each other. Each provides a context that the per-screen components read.
 
+`useCreateChatClient` and `useCreateFeedsClient` also accept a provider function as `tokenOrProvider` - pass one instead of the static token for long-lived sessions where chat/feed tokens may expire.
+
 ## Per-screen pattern
 
 Inside any screen (Hub, Watch, GoLive, etc.):
 
 ```tsx
 import { useChatContext, Channel, Window, MessageList, MessageComposer } from "stream-chat-react";
+import type { Channel as StreamChannel } from "stream-chat";
 import { useStreamVideoClient, StreamCall } from "@stream-io/video-react-sdk";
 import { useFeedsClient, StreamFeed } from "@stream-io/feeds-react-sdk";
 
@@ -94,7 +103,7 @@ function WatchScreen({ callId }: { callId: string }) {
   const feedsClient = useFeedsClient();              // from <StreamFeeds>
 
   // create a per-screen channel/call/feed from the long-lived clients
-  const [channel, setChannel] = useState(null);
+  const [channel, setChannel] = useState<StreamChannel | null>(null);
   useEffect(() => {
     if (!chatClient) return;
     const ch = chatClient.channel("livestream", callId);

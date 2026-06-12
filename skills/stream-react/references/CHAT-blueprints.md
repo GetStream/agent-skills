@@ -1,12 +1,87 @@
-# Chat - full component blueprints
+# Chat - component blueprints (prebuilt-first)
 
-Setup, routes, and gotchas: [CHAT.md](CHAT.md). Rules: [../../stream/RULES.md](../../stream/RULES.md).
+Setup, routes, and gotchas: [CHAT.md](CHAT.md). Rules: [`../RULES.md`](../RULES.md) (reference authority, strict mode protection) and the cross-cutting [../../stream/RULES.md](../../stream/RULES.md) (secrets, no auto-seeding).
+
+**Build the common path with `stream-chat-react`'s prebuilt components and customize via the documented hooks/props.** Only drop to the hand-built markup in **Fully custom UI (fallback)** below when the user explicitly wants fully bespoke UI - and even then, fetch the matching docs page first ([`DOCS.md`](DOCS.md)).
+
+---
+
+## Prebuilt components (default path)
+
+**CSS (once, in `app/layout.tsx` or the AppShell):**
+```ts
+import 'stream-chat-react/css/index.css'; // v14+ preferred alias (v13 used dist/css/v2/index.css)
+// If you use <EmojiPicker />, also import its stylesheet:
+// import 'stream-chat-react/css/emoji-picker.css';
+```
+
+**Client (strict-mode-safe hook - never `getInstance()` on the client, [`../RULES.md`](../RULES.md) > Strict mode protection):**
+```tsx
+import { useCreateChatClient } from 'stream-chat-react';
+const client = useCreateChatClient({ apiKey, tokenOrProvider: token, userData: { id: userId } });
+if (!client) return null; // null until connected - gate rendering
+```
+
+**Provider hierarchy (the canonical layout):**
+```tsx
+import { Chat, ChannelList, Channel, Window, ChannelHeader,
+  MessageList, MessageComposer, Thread } from 'stream-chat-react';
+
+<Chat client={client} theme={theme /* str-chat__theme-dark | str-chat__theme-light from next-themes */}>
+  <ChannelList filters={filters} sort={sort} options={options} />
+  <Channel>
+    <Window>
+      <ChannelHeader />
+      <MessageList />
+      <MessageComposer />
+    </Window>
+    <Thread />
+  </Channel>
+</Chat>
+```
+`Chat` and `Channel` are context providers; every Stream component must be a child of `<Chat>`. **If you render `<ChannelList>`, do NOT pass a `channel` prop to `<Channel>`** (the list sets the active channel); without a list, pass `channel` explicitly.
+
+| Component | Purpose | Key props |
+|---|---|---|
+| `Chat` | Root provider (client, active channel, theme, i18n) | `client` (req), `theme`, `i18nInstance`, `customClasses` |
+| `ChannelList` | Queries + renders channel previews; click sets active channel | `filters`, `sort`, `options`, `showChannelSearch`, `setActiveChannelOnMount`, `customActiveChannel` |
+| `Channel` | State/logic/UI for one channel; provides the channel contexts | `channel` (omit when using `ChannelList`), `EmptyPlaceholder`, `markReadOnMount`, `doSendMessageRequest` |
+| `Window` | Main-panel wrapper; adds the `str-chat__main-panel--thread-open` class when a `Thread` is open (it does not itself hide children) | `thread` (optional) |
+| `MessageList` | Standard scrollable message list | `Message` (per-list custom UI), `messageActions`, `disableDateSeparator`, `hideDeletedMessages` |
+| `VirtualizedMessageList` | Virtualized variant for high-volume channels | same message-level props + `stickToBottomScrollBehavior`, `additionalVirtuosoProps` (`defaultItemHeight` is deprecated - pass it via `additionalVirtuosoProps`) |
+| `MessageComposer` | Composer + default input UI (v14 name; **not** `MessageInput`) | `audioRecordingEnabled`, `overrideSubmitHandler`, `hideSendButton`, `minRows`/`maxRows` |
+| `Thread` | Parent message + replies (own list + composer) | `Message`, `virtualized`, `additionalMessageListProps` |
+| `Message` | Single-message logic + `MessageContext` (rarely rendered directly) | `message`, `Message` (custom UI), `showAvatar` |
+| `ChannelHeader` | Default channel header bar | `title`, `image`, `Avatar` |
+
+**Customization (v14 mechanism):** register custom UI through the `WithComponents` provider, which writes to `ComponentContext` for its subtree - **not** via per-component `Avatar`/`Input`/`Message` props on `<Channel>`:
+```tsx
+import { WithComponents } from 'stream-chat-react';
+<WithComponents overrides={{ Avatar: CustomAvatar, MessageComposerUI: CustomInput, MessageUI: CustomMessage }}>
+  <Channel>...</Channel>
+</WithComponents>
+```
+`MessageUI` is the canonical `ComponentContext` key for a custom message component (`Message` still works as a deprecated alias). `MessageList`, `VirtualizedMessageList`, and `Thread` still accept a per-list `Message={CustomMessage}` prop for a one-off override. Read state with the documented hooks: `useChatContext()` (`client`, `channel`, `setActiveChannel`), `useChannelStateContext()` (`messages`, ...), `useChannelActionContext()` (`sendMessage`, `openThread`), `useMessageContext()` (`message`, `isMyMessage()`, ...), `useComponentContext()`, `useTypingContext()`.
+
+**Bonus:** `ChatView` (+ `ChatView.Selector` / `.Channels` / `.Threads`) and `ThreadList` / `ThreadListItem` for a channel/thread switcher.
+
+**Beyond the common path (docs-first expansion points)** - features the blueprints above don't cover; fetch the matching [`DOCS.md`](DOCS.md) row before building:
+- **Polls** - prebuilt `Poll` component; create / vote (needs `polls` enabled on the channel type)
+- **AI assistant / streaming responses** - typewriter effect + `AIStateIndicator` (AI Integrations, LangChain, Vercel AI SDK)
+- **Voice messages** - record in the composer (`audioRecordingEnabled`) and play back the voice-recording attachment
+- **Shared location** - static + live location messages
+- **Message reminders** - "remind me" / saved-for-later
+- **Blocking users** - block / unblock a user
+- **Threads manager** - `ChatView` channel/thread switcher + `ThreadList` (unread-threads inbox)
+- **Moderation bounce** - let a user review / edit / retry their own message bounced by moderation (`MessageBounce`)
+
+**Docs-first:** for any customization (custom message UI, theming, reactions, composer UI, channel header, search, AI, ...) fetch the matching page from [`DOCS.md`](DOCS.md) before writing - the prebuilt props and customization API evolve. Component reference pages live at `https://getstream.io/chat/docs/sdk/react/components/{category}/{component}.md`.
 
 ---
 
-## Full blueprints (load on demand)
+## Fully custom UI (fallback)
 
----
+> **Use these only when the user explicitly wants bespoke, fully hand-built UI** (not the prebuilt components above). Each section gives the raw element structure + a wiring table mapping DOM to SDK calls. Still fetch the matching [`DOCS.md`](DOCS.md) page first. The BEM class names are a structural spec (elements + conditional states) - implement with Shadcn components and Tailwind utilities; do not ship the BEM classes or hand-written CSS.
 
 ## Channel List
 
@@ -357,13 +432,12 @@ The core content unit in chat. A single message with author info, text, attachme
 | Reaction - remove | - | `channel.deleteReaction(message.id, 'like')` | Removes current user's reaction of that type |
 | `message__thread-count` | In message payload | - | `message.reply_count` |
 | `message__thread-avatars` | In message payload | - | `message.thread_participants[].image` |
-| `message__thread-last` | In message payload | - | `message.latest_reactions` or thread's last reply timestamp |
+| `message__thread-last` | Thread replies | - | Most recent reply's `created_at` (from `channel.getReplies()` or thread state) |
 | `message__status` (read) | `channel.state.read` | - | Map of `userId -> { last_read, user }` - compare with `message.created_at` |
 | Edit | - | `client.updateMessage({ id: message.id, text: newText })` | - |
 | Delete | - | `client.deleteMessage(message.id)` | Sets `message.deleted_at`. Pass `{ hardDelete: true }` for permanent deletion |
 | Pin | - | `client.pinMessage(message, timeoutOrExpiration)` | Accepts a message object or message id. Second arg is optional: timeout in seconds, expiration date, or null for no expiry |
 | Unpin | - | `client.unpinMessage(message)` | Accepts a message object or message id |
-| `message__reaction-groups` | In message payload | - | `message.reaction_groups` - keyed by type, each has `count`, `sum_scores`, `first_reaction_at`, `last_reaction_at`. Recommended replacement for `reaction_counts` |
 | `message__mentioned-users` | In message payload | - | `message.mentioned_users` - enriched user objects for @mentions in the message |
 | Flag | - | `client.flagMessage(message.id)` | See MODERATION.md |
 | Mute user | - | `client.muteUser(userId, null, { timeout: 60 })` | Three args: userId, null, options object. `timeout` is in minutes |
@@ -481,7 +555,7 @@ Text input for composing and sending messages. Handles attachments, mentions, sl
 | Slash commands | Commands configured on channel type in Dashboard | `/giphy` available by default |
 | @Mentions | Channel members queryable | Available - searches channel members |
 | Typing indicators | "Typing Events" enabled on channel type | On for most |
-| Message length | `channel.config.max_message_length` | 5000 chars default |
+| Message length | `channel.config.max_message_length` | 5000 chars (server-side default) |
 | Slow mode | `channel.data.cooldown` (seconds) | Off - set per channel |
 
 ---

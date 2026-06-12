@@ -1,6 +1,6 @@
 # Builder - UI shell and theme (Step 4)
 
-Load when executing **Step 4** (after scaffold). Rules: the `stream` skill's [`RULES.md`](../stream/RULES.md) (login screen first, theme, reference authority).
+Load when executing **Step 4** (after scaffold). Rules: [`RULES.md`](RULES.md) (login screen first, theme, reference authority).
 
 ### Step 4: Generate ALL code files
 Write every file sequentially. Follow the UI Guidelines below for all visual styling. See **RULES.md > Reference authority** - reference files are the only source of truth for SDK wiring. Before writing each component, load the relevant `references/<Product>-blueprints.md` section.
@@ -39,7 +39,7 @@ This ensures the developer always knows which user they are operating as.
 
 ### Stack
 - Next.js 16, Tailwind v4, TypeScript (match scaffold defaults).
-- **Shadcn/ui with Base UI** - scaffolded via `shadcn init -t next -b base -p <preset>` (random preset per project - see builder.md Task A). Use Shadcn components (`Button`, `Input`, `Textarea`, `Card`, etc.) for all standard UI. Add more via `npx shadcn@latest add <component>` as needed.
+- **Shadcn/ui with Base UI** - scaffolded via `shadcn init -t next -b base -p <preset>` (preset chosen in SKILL.md Step 1b - the user's own preset, or a random fallback; applied in Task A). Use Shadcn components (`Button`, `Input`, `Textarea`, `Card`, etc.) for all standard UI. Add more via `npx shadcn@latest add <component>` as needed.
 - **Icons:** Use whichever icon package the scaffold installed (check `package.json`). If none present, `lucide-react` is installed during Step 3 Task C. Standard PascalCase imports:
   `import { Heart, Send, Bookmark, MoreHorizontal } from "lucide-react"`. If the project uses a different icon package (e.g. `@phosphor-icons/react`), use that one instead - do not mix icon packages.
 - Tailwind utility classes for custom styling beyond Shadcn components - never inline styles.
@@ -73,3 +73,5 @@ Use Shadcn components, Tailwind utilities, and - if the user approved them in St
 ### Reference Blueprints
 
 See RULES.md > Reference authority. Load `references/<Product>.md` (header) for setup + gotchas, and `references/<Product>-blueprints.md` for structure and wiring of each component. Load only the product(s) relevant to the current use case.
+
+**Prebuilt-first default (Chat + Video).** Build the common path with the SDK's prebuilt React components - Chat: `<Chat>` / `<ChannelList>` / `<Channel>` / `<Window>` / `<MessageList>` / `<MessageComposer>` / `<Thread>` (v14 uses `MessageComposer`, not `MessageInput`); Video: `<StreamVideo>` / `<StreamCall>` / `SpeakerLayout` / `PaginatedGridLayout` / `ParticipantView` / `CallControls`. Customize via the documented hooks/props - register custom UI through `<WithComponents overrides={{...}}>` or pass a per-list `<MessageList Message={Custom} />`; read state with `useChannelStateContext()` / `useCallStateHooks()`) - fetch the matching cookbook page first (RULES.md > Docs-first). Drop to fully hand-built markup **only** when the user explicitly wants bespoke UI; the `*-blueprints.md` "Fully custom UI" fallback section has the raw element + wiring tables for that case. Feeds is headless (no prebuilt UI) - always build from its hooks.
