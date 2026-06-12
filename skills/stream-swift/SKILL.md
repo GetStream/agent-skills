@@ -1,265 +1,123 @@
 ---
 name: stream-swift
-description: "Build and integrate Stream Chat, Video, and Feeds in Swift apps. Use for SwiftUI, UIKit, Xcode, and iOS project work with Stream package setup, auth wiring, and view blueprints."
+description: "Build, integrate, and answer how-to questions for Stream Chat, Video, and Feeds in Swift / SwiftUI / UIKit / iOS apps. Routes each request to the exact official iOS docs page, fetches it live, and applies it - with a curated setup flow and iOS-specific pitfalls."
 license: See LICENSE in repository root
-compatibility: Requires an Xcode or Swift/iOS project. No Stream CLI required.
+compatibility: Requires an Xcode or Swift/iOS project for build/integrate work. Docs lookups need only network access.
 metadata:
   author: GetStream
 allowed-tools: >-
   Read, Write, Edit, Glob, Grep,
+  WebFetch(domain:getstream.io),
+  WebFetch(domain:github.com),
+  WebFetch(domain:raw.githubusercontent.com),
   Bash(ls *),
   Bash(grep *),
+  Bash(find * *),
   Bash(find . *),
   Bash(cat Package.swift), Bash(cat Package.resolved), Bash(cat Podfile),
+  Bash(jq *),
   Bash(stream token *),
   Bash(stream chat *),
+  Bash(stream api *),
   Bash(stream config *),
   Bash(stream --safe *)
 ---
 
-# Stream Swift - skill router + execution flow
+# Stream Swift - docs orchestrator for iOS
 
-**Rules:** Read **[`RULES.md`](RULES.md)** once per session - every non-negotiable rule is stated there, nowhere else.
+This skill is **small on purpose**. It does not bundle SDK reference dumps - the official iOS docs are the source of truth and they cover the *entire* surface (Chat, Video, Feeds; SwiftUI and UIKit; polls, drafts, voice, AI, push, screen share, CallKit, SIP, transcriptions, moderation, and more).
 
-This file is the **single entrypoint**: intent classification, local project detection, and module pointers for Stream work in Swift apps.
+Your job is to **orchestrate**: classify the request, point to the *exact* docs page, fetch it live, and apply it inside the user's project - while obeying the curated rules and pitfalls that the docs do not shout about.
 
----
-
-## Step 0: Intent classifier (mandatory first - never skip)
-
-Before any tool call, decide the **track** from the user's input alone - no probes first.
-
-### Signals -> track
-
-| Signal in user input | Track |
-|---|---|
-| Explicit product/framework token: `Chat SwiftUI`, `Chat UIKit`, `Video iOS`, `Feeds Swift`, `Livestream SwiftUI`, etc. | **C - Reference lookup** |
-| Words "docs" or "documentation" around Stream Swift/iOS work | **C - Reference lookup** |
-| "How do I {X} in SwiftUI/UIKit/Xcode?", "What does {SDK type/method/view} do?" | **C - Reference lookup** |
-| "Build me a new iOS app", "create a SwiftUI app", "new UIKit app" + Stream product | **A - New app** |
-| "Build a livestream app", "creator and viewer mode", "go live", "one-to-many broadcast" | **A - New app** (load `LIVESTREAM-SWIFTUI.md` + `LIVESTREAM-SWIFTUI-blueprints.md`) |
-| "Add/integrate Stream into this app", "wire Chat/Video/Feeds into my Xcode project" | **B - Existing app** |
-| "Install Stream packages", "set up Stream in Xcode", "wire auth/token flow" with no broader feature request | **D - Bootstrap / setup** |
-| Bare `/stream-swift` with no args | List the tracks briefly and wait |
-
-### Disambiguation flow
-
-If the request is ambiguous between **build/integrate** and **reference lookup**, ask one short question and wait:
-
-> Do you want me to wire this into the project, or just map the Swift SDK pattern and files?
-
-### After classification
-
-- **Tracks A, B, D** -> run **Project signals** once per session, then continue in [`builder.md`](builder.md) and [`sdk.md`](sdk.md).
-- **Track C** -> skip the probe if the product + framework are explicit. Only run it on demand if the SDK or UI layer is ambiguous.
+**Rules (read once per session):** [`RULES.md`](RULES.md) - non-negotiable rules + iOS pitfalls. Read before writing any code.
 
 ---
 
-## Step 0.5: Credentials, token, and seed data (tracks A, B, D only)
+## The docs convention (the core mechanism)
 
-Run this once per session, right after intent classification, before the Project signals probe.
+Every Stream docs page has a Markdown twin that coding agents can read directly: **take the page URL, drop the trailing `/`, add `.md`.**
 
-### Goal
-
-Collect the Stream **API key**, a **user token**, and optionally seed a few channels - all before touching code - so the app has real data to show from the first run.
-
-### Single upfront question (ask exactly once, then act immediately)
-
-Post **one message** asking all relevant things together. Do not split into multiple rounds.
-
-**For Chat projects:**
-
-> To wire everything up with real data, I need a few quick answers:
->
-> 1. **Credentials** - Should I fetch your API key from the dashboard and generate a token via the Stream CLI, or will you paste them yourself?
-> 2. **Token expiry** - If I'm generating the token: should it expire? (e.g. `1h`, `1d`, `30m`) or never expire?
-> 3. **Seed channels** - Should I pre-create a few channels with random usernames so the app has something to show immediately?
->
-> If you want to handle everything yourself, just paste your API key and token and tell me whether to seed channels.
-
-**For Feeds projects** (no channel seeding - feed groups are configured in the dashboard):
-
-> To wire everything up with real data, I need a couple of quick answers:
->
-> 1. **Credentials** - Should I fetch your API key from the dashboard and generate a token via the Stream CLI, or will you paste them yourself?
-> 2. **Token expiry** - If I'm generating the token: should it expire? (e.g. `1h`, `1d`, `30m`) or never expire?
-> 3. **Feed groups** - What feed groups do you need? (defaults: `user`, `timeline`, `notification` - tell me if you want different names)
->
-> If you want to handle everything yourself, just paste your API key and token and confirm the feed group names.
-
-**For Video projects** (calls are ephemeral - no seeding needed):
-
-> To wire everything up, I need a couple of quick answers:
->
-> 1. **Credentials** - Should I fetch your API key from the dashboard and generate a token via the Stream CLI, or will you paste them yourself?
-> 2. **Token expiry** - If I'm generating the token: should it expire? (e.g. `1h`, `1d`, `30m`) or never expire?
->
-> If you want to handle everything yourself, just paste your API key and token.
-
-### After the user replies - act without further prompting
-
-Once the user answers, execute all CLI steps in sequence **without pausing for confirmation between them**. Narrate each step briefly as you go (one line per action), but do not stop to ask "shall I continue?".
-
-#### Step A - API key
-
-```bash
-stream --safe keys
+```
+https://getstream.io/chat/docs/sdk/ios/basics/integration/   ->   https://getstream.io/chat/docs/sdk/ios/basics/integration.md
 ```
 
-`stream keys` auto-resolves the org and app and prints the API key on a line shaped `API Key:  <key>`. Output format is fixed — `-o json` is ignored. Extract with:
+Always fetch the `.md` variant - it is clean Markdown with verbatim code, no page chrome.
 
-```bash
-api_key=$(stream --safe keys | awk '/^API Key:/ {print $3}')
-```
+Per-product **index** pages list every doc page with its `.md` URL. Fetch these to discover or confirm a page:
 
-Note: `stream keys` also auto-copies the **app secret** to the system clipboard. The SDK never needs the secret — discard with `pbcopy </dev/null` if that's a concern.
-
-#### Step B - Token
-
-```bash
-# Never-expiring
-stream token <user_id>
-
-# Expiring
-stream token <user_id> --ttl <duration>
-```
-
-Hold the token in context. In generated code, reference credentials via named constants (e.g., `Config.apiKey`, `Config.userToken` defined in a dedicated config file) — do not embed raw credential values directly in code snippets.
-
-#### Step C - Seed channels (Chat projects only; only if the user said yes)
-
-Create 3-5 channels with random realistic usernames. Use `messaging` as the default channel type.
-
-```bash
-# Create a channel and add members (repeat for each channel)
-stream chat channel create --type messaging --id <channel-id> --members <user1>,<user2>
-```
-
-Generate short memorable channel IDs (e.g. `general`, `random`, `team-alpha`) and use a small set of random usernames (e.g. `alice`, `bob`, `carol`, `dave`, `eve`). Make sure the token user is a member of at least one channel so they can see it on first launch.
-
-After seeding, print a brief summary:
-
-> Created channels: `general` (alice, bob), `random` (carol, dave), `team-alpha` (alice, eve)
-
-#### Step D - Proceed automatically
-
-After all CLI steps succeed, move straight to **Project signals** and then into `builder.md` - no additional prompt needed. If any CLI step fails, explain the error briefly and ask the user to paste the missing value manually before continuing.
-
-### What NOT to do
-
-- Never put the API **secret** in app code - the CLI uses it server-side only.
-- Never invent or fabricate credentials.
-- Never ask "should I continue?" between Step A, B, C, and D - execute the whole sequence once the user's upfront answers are in.
-
----
-
-## Project signals (tracks A/B/D - once per session; Track C on demand only)
-
-Read-only local probe. Use it to detect whether the user is in an Xcode project, a Swift package, or an empty directory.
-
-```bash
-bash -c 'echo "=== XCODE ==="; find . -maxdepth 3 \( -name "*.xcodeproj" -o -name "*.xcworkspace" \) -print 2>/dev/null; echo "=== MANIFESTS ==="; find . -maxdepth 3 \( -name "Package.swift" -o -name "Package.resolved" -o -name "Podfile" \) -print 2>/dev/null; echo "=== EMPTY ==="; test -z "$(ls -A 2>/dev/null)" && echo "EMPTY_CWD" || echo "NON_EMPTY"'
-```
-
-Hold the result in conversation context. Don't re-run it unless the user changes directory or the project shape clearly changed.
-
-Use the result to produce a **one-line status**, for example:
-
-- `SwiftUI app detected - MyApp.xcodeproj - ready for Stream wiring`
-- `UIKit workspace detected - Podfile present - preserve existing package manager`
-- `No Xcode project found - user needs to create the app in Xcode first`
-
----
-
-## Module map
-
-| Track | Module(s) |
-|---|---|
-| A - New app | [`builder.md`](builder.md) + [`sdk.md`](sdk.md) + relevant reference files |
-| B - Existing app | [`builder.md`](builder.md) + [`sdk.md`](sdk.md) + relevant reference files |
-| C - Reference lookup | [`sdk.md`](sdk.md) + relevant reference files |
-| D - Bootstrap / setup | [`builder.md`](builder.md) + [`sdk.md`](sdk.md) |
-
----
-
-## Reference layout
-
-Shared Swift/iOS patterns live in **[`sdk.md`](sdk.md)**.
-
-Product and framework specifics live under **`references/`** using a flat naming scheme that can grow with the full Stream Swift surface:
-
-- **Reference:** `references/<PRODUCT>-<FRAMEWORK>.md`
-- **Blueprints:** `references/<PRODUCT>-<FRAMEWORK>-blueprints.md`
-
-Current extracted modules:
-
-- **Chat + SwiftUI:** [`references/CHAT-SWIFTUI.md`](references/CHAT-SWIFTUI.md) + [`references/CHAT-SWIFTUI-blueprints.md`](references/CHAT-SWIFTUI-blueprints.md)
-- **Chat + UIKit:** [`references/CHAT-UIKIT.md`](references/CHAT-UIKIT.md) + [`references/CHAT-UIKIT-blueprints.md`](references/CHAT-UIKIT-blueprints.md)
-- **Video + SwiftUI:** [`references/VIDEO-SWIFTUI.md`](references/VIDEO-SWIFTUI.md) + [`references/VIDEO-SWIFTUI-blueprints.md`](references/VIDEO-SWIFTUI-blueprints.md)
-- **Video + UIKit:** [`references/VIDEO-UIKIT.md`](references/VIDEO-UIKIT.md) + [`references/VIDEO-UIKIT-blueprints.md`](references/VIDEO-UIKIT-blueprints.md)
-- **Livestream + SwiftUI:** [`references/LIVESTREAM-SWIFTUI.md`](references/LIVESTREAM-SWIFTUI.md) + [`references/LIVESTREAM-SWIFTUI-blueprints.md`](references/LIVESTREAM-SWIFTUI-blueprints.md)
-- **Combined Chat + Video (SwiftUI or UIKit):** [`references/COMBINED-CHAT-VIDEO.md`](references/COMBINED-CHAT-VIDEO.md)
-- **Feeds (SwiftUI or UIKit):** [`references/FEEDS-SWIFTUI.md`](references/FEEDS-SWIFTUI.md) + [`references/FEEDS-SWIFTUI-blueprints.md`](references/FEEDS-SWIFTUI-blueprints.md)
-
-> **Feeds has no pre-built UI components.** `FEEDS-SWIFTUI.md` covers SDK patterns for both SwiftUI and UIKit - only the view layer differs. Load both files for any Feeds request.
-
-Future Swift product coverage should stay in this naming family instead of creating more top-level skills.
-
----
-
-## Track A - New app
-
-**Full detail:** [`builder.md`](builder.md) - use the **new-project path**.
-
-| Phase | Name | What you do |
+| Product | Live index (always current) | Page URL shape |
 |---|---|---|
-| **A1** | Detect | Run **Project signals**. If there is no iOS app yet, tell the user to create one in Xcode first. |
-| **A2** | Choose lane | Confirm product(s) and UI layer: SwiftUI, UIKit, or mixed. |
-| **A3** | Install + wire | Follow [`builder.md`](builder.md) + [`sdk.md`](sdk.md), then load only the needed product references. |
-| **A4** | Verify | Confirm package resolution, client lifetime, auth, and first rendered screen. |
+| Chat (iOS SDK: UI + State Layer) | `https://getstream.io/cli/docs/chat-sdk-ios.md` | `https://getstream.io/chat/docs/sdk/ios/...md` |
+| Chat (low-level client API reference) | `https://getstream.io/cli/docs/chat-ios-swift.md` | `https://getstream.io/chat/docs/ios-swift/...md` |
+| Video | `https://getstream.io/cli/docs/video-ios.md` | `https://getstream.io/video/docs/ios/...md` |
+| Feeds | `https://getstream.io/cli/docs/activity-feeds-ios.md` | `https://getstream.io/activity-feeds/docs/ios/...md` |
+
+**URL grounding:** only fetch a page URL that you got from [`docs-map.md`](docs-map.md) or from a live index fetch in this conversation. Do not invent doc paths from memory - many look guessable but are wrong. If a page is not in the map, fetch the live index and pick from it.
 
 ---
 
-## Track B - Existing app
+## Step 0: Classify the request (always first)
 
-**Full detail:** [`builder.md`](builder.md) - use the **existing-project path**.
+From the user's words alone, resolve three things:
 
-| Phase | Name | What you do |
+1. **Product** - Chat, Video, Feeds, or a combination.
+2. **Framework** - SwiftUI, UIKit, or mixed (default to SwiftUI when the user is starting fresh and has not said).
+3. **Mode** - one of:
+   - **How-to / reference** ("how do I add reactions?", "what does CallViewModel do?", "theming") -> go straight to **Docs lookup**. No setup, no credentials.
+   - **Integrate** ("add Chat to my app", "wire Video into this project") -> run **Setup** ([`setup.md`](setup.md)) then **Docs lookup** for the feature.
+   - **New app** ("build a livestream app", "new SwiftUI chat app") -> **Setup** then **Docs lookup**, scoped to the requested screens.
+   - **Push setup** ("add push notifications for chat", "ringing should wake the app on a call", VoIP, CallKit) -> run [`push.md`](push.md): create the Stream push provider(s) via the CLI and wire the client capabilities + code. Uses the Stream CLI like Setup.
+
+If product and framework are explicit, do not probe - proceed. If genuinely ambiguous between "wire it in" and "just explain", ask one short question:
+
+> Want me to wire this into the project, or just map the docs page and pattern?
+
+### Chat only: pick the UI strategy first (before any code)
+
+Stream Chat ships **two layers**, and the pre-built UI is not the right answer for every vertical. Decide from the app's vertical before routing:
+
+| App vertical | UI looks like... | Strategy |
 |---|---|---|
-| **B1** | Detect | Run **Project signals** and inspect the existing app structure before editing. |
-| **B2** | Preserve | Keep the current UI layer, package manager, and navigation architecture unless the user asks for a migration. |
-| **B3** | Integrate | Use [`sdk.md`](sdk.md) for shared wiring, then load only the needed product reference files. |
-| **B4** | Verify | Confirm the requested Stream flow builds and renders inside the existing app. |
+| Social / community chat, marketplace, workplace (Slack-like), support, DMs | A standard messenger: channel list + message bubbles + composer | **Pre-built UI components** (`StreamChatSwiftUI` / `StreamChatUI`), customized via ViewFactory + theming |
+| Livestream chat (Twitch, YouTube, Kalshi), live shopping, overlay/ticker chat, bespoke surfaces | Nothing like a messenger - custom overlays, ephemeral high-volume feeds | **Custom UI on the low-level client + State Layer** - do **not** use the pre-built components |
+
+The pre-built components are built to be *customized*, but for a livestream-style UI that means fighting them. There, drop to the low-level `StreamChat` client and its State Layer and build views from scratch. Route accordingly via [`docs-map.md`](docs-map.md) (it has separate "Pre-built UI" and "Custom UI" sections for Chat).
+
+The vertical also picks the **channel type and permission model** (e.g. `messaging` membership-gated for social/marketplace vs `livestream` public + anonymous viewers) - see [`RULES.md`](RULES.md) "Permissions". Decide both axes together.
+
+If the vertical is unclear, ask one question:
+
+> Does this chat look like a standard messenger (channel list + bubbles), or a bespoke surface like livestream/overlay chat? It decides whether we use the pre-built components or build custom UI on the low-level client.
 
 ---
 
-## Track C - Reference lookup
+## Step 1: Docs lookup (every request ends here)
 
-Load only the relevant files for the requested product and UI layer.
-
-- Shared lifecycle / auth / state patterns -> [`sdk.md`](sdk.md)
-- Chat SwiftUI setup and gotchas -> [`references/CHAT-SWIFTUI.md`](references/CHAT-SWIFTUI.md)
-- Chat SwiftUI view structure -> [`references/CHAT-SWIFTUI-blueprints.md`](references/CHAT-SWIFTUI-blueprints.md)
-- Chat UIKit setup and gotchas -> [`references/CHAT-UIKIT.md`](references/CHAT-UIKIT.md)
-- Chat UIKit view controller structure -> [`references/CHAT-UIKIT-blueprints.md`](references/CHAT-UIKIT-blueprints.md)
-- Video SwiftUI setup and gotchas -> [`references/VIDEO-SWIFTUI.md`](references/VIDEO-SWIFTUI.md)
-- Video SwiftUI view structure -> [`references/VIDEO-SWIFTUI-blueprints.md`](references/VIDEO-SWIFTUI-blueprints.md)
-- Video UIKit setup and gotchas -> [`references/VIDEO-UIKIT.md`](references/VIDEO-UIKIT.md)
-- Video UIKit view controller structure -> [`references/VIDEO-UIKIT-blueprints.md`](references/VIDEO-UIKIT-blueprints.md)
-- Livestream SwiftUI (call type, backstage, goLive/stopLive, host/viewer flows, HLS) -> [`references/LIVESTREAM-SWIFTUI.md`](references/LIVESTREAM-SWIFTUI.md)
-- Livestream SwiftUI view structure (mode selection, creator, WebRTC viewer, HLS viewer) -> [`references/LIVESTREAM-SWIFTUI-blueprints.md`](references/LIVESTREAM-SWIFTUI-blueprints.md)
-- Combined Chat + Video (collision table, file isolation, UIKit + SwiftUI blueprints) -> [`references/COMBINED-CHAT-VIDEO.md`](references/COMBINED-CHAT-VIDEO.md)
-- Feeds SDK patterns (setup, FeedState, activities, reactions, comments, follow, notifications) -> [`references/FEEDS-SWIFTUI.md`](references/FEEDS-SWIFTUI.md)
-- Feeds SwiftUI view blueprints (timeline, row, composer, comments, profile, notifications) -> [`references/FEEDS-SWIFTUI-blueprints.md`](references/FEEDS-SWIFTUI-blueprints.md)
+1. Open [`docs-map.md`](docs-map.md). Find the row matching product + framework + feature -> it gives the exact `.md` URL(s).
+2. If the feature is not in the map, fetch the live index for the product (table above) and pick the best-matching page.
+3. **Fetch the `.md` page(s)** with WebFetch. Fetch at most 3 pages per request; if more are needed, hand the user the index URL.
+4. Apply the page's guidance to the user's project: use its code verbatim where possible, adapt only to fit the existing app shape (lifecycle, navigation, package manager).
+5. **Cite the page** you used: `Source: [Title](https://getstream.io/...)`. Never answer SDK specifics from training data - if you did not fetch it this conversation, fetch it now or say you could not find it.
+6. **If the docs do not fully cover it** - a specific UI customization, an exact `ViewFactory` signature, an undocumented option, real wiring - escalate to the **SDK source code + example apps** (see "When the docs fall short" in [`docs-map.md`](docs-map.md)). The source is the final source of truth; read the version the project actually pins, and say where you found it rather than presenting it as documented.
+7. **Apply best practices.** Use the API mindfully - no `queryChannels` spam, no rendering loops, authenticate once - per [`RULES.md`](RULES.md) "Mindful API usage", and read the vertical's best-practices page (e.g. livestream) before scaling.
 
 ---
 
-## Track D - Bootstrap / setup
+## Setup (integrate / new app only)
 
-Use when the user wants the install and wiring path more than a feature build:
+When the mode is integrate or new app, run [`setup.md`](setup.md) once per session before feature work. It covers, in order:
 
-- detect the project shape
-- choose SwiftUI vs UIKit ownership
-- install Stream packages with the project's existing package strategy
-- wire auth and client lifetime via [`sdk.md`](sdk.md)
-- stop before product-specific UI if the user only asked for setup
+1. **Project signals** - detect Xcode project / Swift package / Podfile / empty dir.
+2. **Credentials** - API key + user token via the Stream CLI (or user-pasted), optional seed channels.
+3. **Install** - add the right Stream packages with the project's existing package manager.
+4. **Wire the client** - initialize once at app launch, connect the user.
+
+Then return here for **Docs lookup** on the specific screens.
+
+If there is **no iOS project at all**, do not scaffold one from the CLI - tell the user to create the app in Xcode first, then continue.
+
+---
+
+## What this skill no longer carries
+
+There are no `references/*.md` blueprint files. Anything that used to live there now comes from the live docs via the map. This keeps the skill current automatically and covers far more than the old bundled set. The only curated, non-doc content is [`RULES.md`](RULES.md) (rules + pitfalls), [`setup.md`](setup.md) (the CLI-driven setup flow), and [`push.md`](push.md) (the CLI + code runbook for push / VoIP / CallKit, which automates what the docs only describe).
