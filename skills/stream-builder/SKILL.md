@@ -271,9 +271,9 @@ End with:
 
 ### Use-case recipes
 
-Some requests map to a **use-case recipe**: a drop-in build plan for a specific product (e.g. an AI support agent) that keeps this skill generic. Before Step 4, read [`references/use-cases/use-cases.yaml`](references/use-cases/use-cases.yaml). If the request matches a recipe's `signals`, **load that recipe file and follow it as the build plan** - the recipe declares the Stream products to scaffold, the product references to `load_with`, and the decisions to ask. If nothing matches, use the generic product blueprints above.
+Some requests map to a **use-case recipe**: a drop-in build plan for a specific product (e.g. an AI support agent) that keeps this skill generic. Before Step 4, read [`references/use-cases/_use-cases.yaml`](references/use-cases/_use-cases.yaml). If the request matches a recipe's `signals`, **load that recipe file and follow it as the build plan** - the recipe declares the Stream products to scaffold, the product references to `load_with`, and the decisions to ask. If nothing matches, use the generic product blueprints above.
 
-Adding a use-case is a new file under `references/use-cases/` plus an entry in `use-cases.yaml` - never a change to this SKILL.md.
+Adding a use-case is a new file under `references/use-cases/` plus an entry in `_use-cases.yaml` - never a change to this SKILL.md.
 
 ---
 
