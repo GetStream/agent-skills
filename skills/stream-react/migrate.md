@@ -48,7 +48,7 @@ Work strictly from the fetched guide:
    # pnpm:  pnpm add stream-chat-react@<target> stream-chat@<target>
    ```
    Use the **detected package manager** from M1 (yarn/pnpm don't need `--legacy-peer-deps`). Do not introduce a second lockfile or bump packages the migration doesn't touch.
-2. **Apply each breaking change** the guide lists - renamed/removed exports (e.g. Chat v14: `MessageInput` -> `MessageComposer`; CSS path `dist/css/v2/index.css` -> `dist/css/index.css`; overrides moved to `<WithComponents>`), changed prop/hook signatures, run any codemod the guide provides.
+2. **Apply each breaking change** the guide lists - renamed/removed exports (e.g. Chat v14: `MessageInput` -> `MessageComposer`; CSS path `dist/css/v2/index.css` -> `css/index.css` (the preferred aliased path; `dist/css/index.css` also resolves); overrides moved to `<WithComponents>`), changed prop/hook signatures, run any codemod the guide provides.
 3. **Search the codebase** for each removed/renamed symbol so nothing is missed (`grep -rn "<oldSymbol>" app/ src/ components/`).
 4. Do **not** introduce features the user didn't ask for; this track is an upgrade, not a redesign.
 

@@ -60,7 +60,7 @@ Use Shadcn components, Tailwind utilities, and - if the user approved them in St
 
 ### Stream SDK CSS & Providers
 
-- **Chat:** Import `stream-chat-react/dist/css/index.css` (v14+; v13 used `dist/css/v2/index.css`). Use `useCreateChatClient` from `stream-chat-react` to instantiate. Match theme: `useTheme()` -> `str-chat__theme-dark` or `str-chat__theme-light` to `<Chat>`.
+- **Chat:** Import `stream-chat-react/css/index.css` (v14+ preferred alias; v13 used `dist/css/v2/index.css`). Use `useCreateChatClient` from `stream-chat-react` to instantiate. Match theme: `useTheme()` -> `str-chat__theme-dark` or `str-chat__theme-light` to `<Chat>`.
 - **Video:** Import `@stream-io/video-react-sdk/dist/css/styles.css`. Instantiate `StreamVideoClient` with the canonical `useState` + `useEffect` pattern (NOT `useMemo` - see `references/VIDEO.md`).
 - **Feeds:** No CSS import - headless SDK. Wrap app in `<StreamFeeds client={client}>`, then per-feed in `<StreamFeed feed={feed}>`. Use `useCreateFeedsClient()` for client creation - **gate rendering on `client !== null`** (returns `null` until connected). Call `feed.getOrCreate({ watch: true })` inside `setTimeout(50ms)` + `mounted` guard (strict mode protection) before passing to `<StreamFeed>`. See `references/FEEDS.md` for complete patterns.
 

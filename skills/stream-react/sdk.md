@@ -35,8 +35,8 @@ Product-specific SDK wiring, gotchas, and client patterns: see [`references/*.md
 ## CSS imports
 
 ```ts
-// Chat (v14+; v13 used dist/css/v2/index.css)
-import 'stream-chat-react/dist/css/index.css';
+// Chat (v14+ preferred alias; v13 used dist/css/v2/index.css)
+import 'stream-chat-react/css/index.css';
 // Video
 import '@stream-io/video-react-sdk/dist/css/styles.css';
 ```

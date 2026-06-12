@@ -10,7 +10,9 @@ Setup, routes, and gotchas: [CHAT.md](CHAT.md). Rules: [`../RULES.md`](../RULES.
 
 **CSS (once, in `app/layout.tsx` or the AppShell):**
 ```ts
-import 'stream-chat-react/dist/css/index.css'; // v14+ (v13 used dist/css/v2/index.css)
+import 'stream-chat-react/css/index.css'; // v14+ preferred alias (v13 used dist/css/v2/index.css)
+// If you use <EmojiPicker />, also import its stylesheet:
+// import 'stream-chat-react/css/emoji-picker.css';
 ```
 
 **Client (strict-mode-safe hook - never `getInstance()` on the client, [`../RULES.md`](../RULES.md) > Strict mode protection):**
