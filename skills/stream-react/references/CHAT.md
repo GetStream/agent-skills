@@ -6,7 +6,7 @@ Rules: [../RULES.md](../RULES.md) (login screen first, strict mode protection, r
 
 - **Blueprint** - HTML with BEM classes defining structure and conditional rendering
 - **Wiring** - API calls to read/write each element, exact property paths
-- **Requirements** - Dashboard settings, API params, and prerequisites
+- **Requirements** - Dashboard settings, API params, and prerequisites. The **Default** column in each Requirements table reflects server-side channel-type defaults (set in the Dashboard / via the API), not values enforced by the SDK.
 
 ## Quick ref
 
@@ -65,10 +65,10 @@ const client = StreamChat.getInstance(process.env.STREAM_API_KEY!, process.env.S
 
 - Always generate real tokens server-side via `client.createToken()` - never `devToken()`
 - `StreamChat.getInstance(apiKey, apiSecret)` is fine server-side (singleton OK)
-- `client.channel("livestream", id)` - no third arg with `{ name }` (TS error in current SDKs)
+- `client.channel(type, id, { name, image, members })` - the 3rd arg accepts custom channel data (`ChannelData`); Stream's own tutorial does `client.channel('livestream', 'spacex', { name, image })`. With strict custom-data typing, declare custom fields on `CustomChannelData`
 - Listen for `user.banned` event to show banned state in UI
 - Import `stream-chat-react/dist/css/index.css` for default styles (v14+; the `/v2/` subpath was removed)
-- `MessageInput` was renamed/removed in v14 - use `MessageComposer` from `stream-chat-react` instead
+- `MessageInput` was renamed/removed in v14 - use `MessageComposer` from `stream-chat-react` instead. Note: the React `<MessageComposer />` UI component is distinct from the `MessageComposer` *state class* in `stream-chat` (same name, different thing)
 - Token endpoint as `GET /api/token?user_id=xxx`
 - `upsertUsers` takes an **array** of user objects: `client.upsertUsers([{ id, name, role }])` - NOT an object keyed by ID
 - `<Chat>` lives at app root; `<Channel>` is what swaps per conversation. Don't construct/destruct `StreamChat` per screen.

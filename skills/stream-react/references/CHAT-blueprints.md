@@ -44,22 +44,22 @@ import { Chat, ChannelList, Channel, Window, ChannelHeader,
 | `Chat` | Root provider (client, active channel, theme, i18n) | `client` (req), `theme`, `i18nInstance`, `customClasses` |
 | `ChannelList` | Queries + renders channel previews; click sets active channel | `filters`, `sort`, `options`, `showChannelSearch`, `setActiveChannelOnMount`, `customActiveChannel` |
 | `Channel` | State/logic/UI for one channel; provides the channel contexts | `channel` (omit when using `ChannelList`), `EmptyPlaceholder`, `markReadOnMount`, `doSendMessageRequest` |
-| `Window` | Main-panel layout that yields when a `Thread` opens | `thread` (optional) |
+| `Window` | Main-panel wrapper; adds the `str-chat__main-panel--thread-open` class when a `Thread` is open (it does not itself hide children) | `thread` (optional) |
 | `MessageList` | Standard scrollable message list | `Message` (per-list custom UI), `messageActions`, `disableDateSeparator`, `hideDeletedMessages` |
-| `VirtualizedMessageList` | Virtualized variant for high-volume channels | same message-level props + `stickToBottomScrollBehavior`, `defaultItemHeight` |
+| `VirtualizedMessageList` | Virtualized variant for high-volume channels | same message-level props + `stickToBottomScrollBehavior`, `additionalVirtuosoProps` (`defaultItemHeight` is deprecated - pass it via `additionalVirtuosoProps`) |
 | `MessageComposer` | Composer + default input UI (v14 name; **not** `MessageInput`) | `audioRecordingEnabled`, `overrideSubmitHandler`, `hideSendButton`, `minRows`/`maxRows` |
 | `Thread` | Parent message + replies (own list + composer) | `Message`, `virtualized`, `additionalMessageListProps` |
 | `Message` | Single-message logic + `MessageContext` (rarely rendered directly) | `message`, `Message` (custom UI), `showAvatar` |
-| `ChannelHeader` | Default channel header bar | `title`, `image`, `live` |
+| `ChannelHeader` | Default channel header bar | `title`, `image`, `Avatar` |
 
 **Customization (v14 mechanism):** register custom UI through the `WithComponents` provider, which writes to `ComponentContext` for its subtree - **not** via per-component `Avatar`/`Input`/`Message` props on `<Channel>`:
 ```tsx
 import { WithComponents } from 'stream-chat-react';
-<WithComponents overrides={{ Avatar: CustomAvatar, MessageComposerUI: CustomInput, Message: CustomMessage }}>
+<WithComponents overrides={{ Avatar: CustomAvatar, MessageComposerUI: CustomInput, MessageUI: CustomMessage }}>
   <Channel>...</Channel>
 </WithComponents>
 ```
-`MessageList`, `VirtualizedMessageList`, and `Thread` still accept a per-list `Message={CustomMessage}` prop for a one-off override. Read state with the documented hooks: `useChatContext()` (`client`, `channel`, `setActiveChannel`), `useChannelStateContext()` (`messages`, ...), `useChannelActionContext()` (`sendMessage`, `openThread`), `useMessageContext()` (`message`, `isMyMessage`, ...), `useComponentContext()`, `useTypingContext()`.
+`MessageUI` is the canonical `ComponentContext` key for a custom message component (`Message` still works as a deprecated alias). `MessageList`, `VirtualizedMessageList`, and `Thread` still accept a per-list `Message={CustomMessage}` prop for a one-off override. Read state with the documented hooks: `useChatContext()` (`client`, `channel`, `setActiveChannel`), `useChannelStateContext()` (`messages`, ...), `useChannelActionContext()` (`sendMessage`, `openThread`), `useMessageContext()` (`message`, `isMyMessage()`, ...), `useComponentContext()`, `useTypingContext()`.
 
 **Bonus:** `ChatView` (+ `ChatView.Selector` / `.Channels` / `.Threads`) and `ThreadList` / `ThreadListItem` for a channel/thread switcher.
 
@@ -415,7 +415,7 @@ The core content unit in chat. A single message with author info, text, attachme
 | `message__file` | In message payload | - | `message.attachments[].asset_url`, `.title`, `.file_size` where `type === 'file'` |
 | `message__og-*` | In message payload | - | `message.attachments[].og_scrape_url`, `.title`, `.text`, `.image_url` |
 | `message__deleted` | In message payload | - | `message.deleted_at` (truthy = deleted) |
-| `message__reaction` | In message payload | - | `message.reaction_groups` (keyed by type; each has `count`, `sum_scores`, `first_reaction_at`, `last_reaction_at`) - recommended. `message.reaction_counts` still works but is deprecated. Also `message.own_reactions[]` |
+| `message__reaction` | In message payload | - | `message.reaction_groups` (keyed by type; each has `count`, `sum_scores`, `first_reaction_at`, `last_reaction_at`) - preferred. `message.reaction_counts` still works. Also `message.own_reactions[]` |
 | Reaction - add | - | `channel.sendReaction(message.id, { type: 'like' })` | Supports `{ enforce_unique: true }` option as third arg to replace all user's existing reactions |
 | Reaction - remove | - | `channel.deleteReaction(message.id, 'like')` | Removes current user's reaction of that type |
 | `message__thread-count` | In message payload | - | `message.reply_count` |
@@ -424,8 +424,8 @@ The core content unit in chat. A single message with author info, text, attachme
 | `message__status` (read) | `channel.state.read` | - | Map of `userId -> { last_read, user }` - compare with `message.created_at` |
 | Edit | - | `client.updateMessage({ id: message.id, text: newText })` | - |
 | Delete | - | `client.deleteMessage(message.id)` | Sets `message.deleted_at`. Pass `{ hardDelete: true }` for permanent deletion |
-| Pin | - | `client.pinMessage(message, timeoutOrExpiration)` | Takes message object (not ID). Second arg is optional: timeout in seconds, expiration date, or null for no expiry |
-| Unpin | - | `client.unpinMessage(message)` | Takes message object (not ID) |
+| Pin | - | `client.pinMessage(message, timeoutOrExpiration)` | Accepts a message object or message id. Second arg is optional: timeout in seconds, expiration date, or null for no expiry |
+| Unpin | - | `client.unpinMessage(message)` | Accepts a message object or message id |
 | `message__mentioned-users` | In message payload | - | `message.mentioned_users` - enriched user objects for @mentions in the message |
 | Flag | - | `client.flagMessage(message.id)` | See MODERATION.md |
 | Mute user | - | `client.muteUser(userId, null, { timeout: 60 })` | Three args: userId, null, options object. `timeout` is in minutes |
@@ -543,7 +543,7 @@ Text input for composing and sending messages. Handles attachments, mentions, sl
 | Slash commands | Commands configured on channel type in Dashboard | `/giphy` available by default |
 | @Mentions | Channel members queryable | Available - searches channel members |
 | Typing indicators | "Typing Events" enabled on channel type | On for most |
-| Message length | `channel.config.max_message_length` | 5000 chars default |
+| Message length | `channel.config.max_message_length` | 5000 chars (server-side default) |
 | Slow mode | `channel.data.cooldown` (seconds) | Off - set per channel |
 
 ---
