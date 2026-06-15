@@ -24,7 +24,7 @@ One package — no pre-built UI:
 
 | Package                | Notes                                                                                                  |
 | ---------------------- | ------------------------------------------------------------------------------------------------------ |
-| `stream_feeds: ^0.5.1` | Current package. Requires Dart >=3.6.2. Client, models, reactions, follow/unfollow, pagination. No UI. |
+| `stream_feeds: ^0.5.1` | Current package. Requires Dart >=3.10.0. Client, models, reactions, follow/unfollow, pagination. No UI. |
 
 > **Do not use `stream_feed` or `stream_feed_flutter_core`.** Both are deprecated and incompatible with Dart 3. `stream_feeds` is the only correct choice.
 

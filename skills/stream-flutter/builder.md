@@ -74,7 +74,7 @@ Add the dependency to `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  stream_feeds: ^0.5.1 # check pub.dev for latest; requires Dart >=3.6.2
+  stream_feeds: ^0.5.1 # check pub.dev for latest; requires Dart >=3.10.0
 ```
 
 > **Package name is `stream_feeds` (plural).** Do not use `stream_feed` (deprecated, fails to compile on Dart 3) or `stream_feed_flutter_core` (old package, incompatible with `stream_feeds`). `stream_feeds` is the only package needed.
