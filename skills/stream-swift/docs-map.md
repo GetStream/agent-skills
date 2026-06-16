@@ -22,6 +22,8 @@ All page URLs end in `.md` (the Markdown twin - see [`SKILL.md`](SKILL.md)). Fet
 - Standard-messenger vertical (social, marketplace, workplace, support, DMs) -> **Pre-built UI** (sections below).
 - Livestream / live-shopping / overlay chat -> **Custom UI on the low-level client + State Layer** (its own section below) - do not use the pre-built components.
 
+**Matching a reference design (screenshot / Figma / "make it look like <app>")?** Do not pick rows à la carte and stop at theming. First run [`design-matching.md`](design-matching.md): it decomposes the design into every region (header, composer button set, timestamp + read-receipt placement, bubble shape/tail, date separators, attachments, ...) and maps each to its `ViewFactory` slot or theming token. The rows below are where it sends you per region; the full ~100-slot surface lives in `ViewFactory.swift` (read it - most slots are undocumented).
+
 Install is shared by both layers: `https://getstream.io/chat/docs/sdk/ios/basics/integration.md`
 
 ### Chat - Pre-built UI (SwiftUI / UIKit)
@@ -321,12 +323,16 @@ How to search (prefer the version-accurate local checkout - no network, matches 
 1. **Local SwiftPM checkout** - the exact source for the project's pinned version:
 
    ```bash
-   find ~/Library/Developer/Xcode/DerivedData -type d -path "*SourcePackages/checkouts/stream-*-sw*" 2>/dev/null
-   # then grep for the symbol, e.g. a ViewFactory slot:
-   grep -rn "func makeMessageListModifier" <checkout>/Sources
+   # List candidates WITH their actual tag — a sibling project's DerivedData can
+   # hold a DIFFERENT version of the same package, so never blindly take head -1.
+   for d in $(find ~/Library/Developer/Xcode/DerivedData /tmp -type d -path "*checkouts/stream-*-sw*" 2>/dev/null); do
+     echo "$(git -C "$d" describe --tags 2>/dev/null)  ->  $d"
+   done
+   # Pick the one whose tag == the version in Package.resolved, then grep it:
+   grep -rn "func makeMessageListModifier" <matching-checkout>/Sources
    ```
 
-   (For `swift build` projects the checkout is under `.build/checkouts/`.) Cross-check the version against `Package.resolved`.
+   (For `swift build` projects the checkout is under `.build/checkouts/`.) **Cross-check the tag against `Package.resolved` before reading — the API differs across majors/minors (Options-based slots, the `Styles` protocol, `chatBackground*` tokens, and the `StreamChatCommonUI` Appearance only exist on recent versions). The checkout the build actually compiles (this project's own DerivedData or your `-derivedDataPath`) is authoritative; if source you read contradicts the live docs about a symbol's existence, you are probably on the wrong version.**
 
 2. **GitHub** - for the demo/example apps (not included in the SPM checkout) and when no local checkout exists. Browse `Sources/` for the API and the demo folder for real usage; read raw files from `raw.githubusercontent.com/GetStream/<repo>/<tag>/...`.
 
