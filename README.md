@@ -93,7 +93,7 @@ The skill pack is markdown only - no code, no build step. The generic `/stream` 
 | SDK wiring during builder/enhance                     | `stream-builder` + its `sdk.md` and `references/*.md` |
 | Build or integrate a React Native CLI/Expo app        | `stream-react-native` + its `sdk.md` and `references/*.md` |
 | Search the official SDK documentation (no CLI needed) | `stream-docs` (Track D) |
-| Build or integrate a Swift/iOS app                    | `stream-swift` + its `builder.md`, `sdk.md`, and `references/*.md` |
+| Build or integrate a Swift/iOS app                    | `stream-swift` (docs orchestrator: `docs-map.md` + `setup.md`) |
 | Build or integrate an Android app                     | `stream-android` + its `builder.md`, `sdk.md`, and `references/*.md` |
 
 > **Routing precedence:** when user input contains a platform signal (e.g. `react native`, `expo`, `stream video rn`, `swift`, `ios`), the matching platform peer (`stream-react-native`, `stream-swift`) wins over the web `stream-builder` rows. The web builder is the default only when no platform signal is present.
@@ -118,11 +118,14 @@ Cross-cutting rules (secrets, login screen, strict mode, package manager, base U
   - [`enhance.md`](skills/stream-builder/enhance.md) - add Stream to an existing app
   - [`sdk.md`](skills/stream-builder/sdk.md) - cross-cutting SDK wiring patterns
   - [`references/`](skills/stream-builder/references/) - per-product setup, gotchas, and component blueprints
-- [`skills/stream-swift/`](skills/stream-swift/) - **Swift/iOS sub-skill**
-  - [`SKILL.md`](skills/stream-swift/SKILL.md) - entrypoint: intent classifier, local project detection, module pointers
-  - [`RULES.md`](skills/stream-swift/RULES.md) - Swift/iOS non-negotiable rules
-  - [`builder.md`](skills/stream-swift/builder.md) + [`sdk.md`](skills/stream-swift/sdk.md) - shared Swift app integration flow and SDK ownership patterns
-  - [`references/`](skills/stream-swift/references/) - product/framework-specific Swift references and blueprints
+- [`skills/stream-swift/`](skills/stream-swift/) - **Swift/iOS sub-skill** (docs orchestrator)
+  - [`SKILL.md`](skills/stream-swift/SKILL.md) - entrypoint: the `.md` docs convention, intent classifier, docs-lookup loop
+  - [`RULES.md`](skills/stream-swift/RULES.md) - Swift/iOS non-negotiable rules + curated iOS pitfalls
+  - [`docs-map.md`](skills/stream-swift/docs-map.md) - intent -> exact official iOS docs page (Chat/Video/Feeds, SwiftUI/UIKit), plus best-practices pages and a source-code/example-app fallback (SDK repos) for what the docs do not cover
+  - [`setup.md`](skills/stream-swift/setup.md) - CLI-driven credentials, install, and client-wiring flow
+  - [`push.md`](skills/stream-swift/push.md) - seamless push runbook: APNs key, CLI push-provider creation, client wiring, VoIP + CallKit
+  - [`design-matching.md`](skills/stream-swift/design-matching.md) - reproduce a reference design with the **pre-built components**: region -> `ViewFactory`/`Styles`/theming map
+  - [`custom-ui.md`](skills/stream-swift/custom-ui.md) - the **components-vs-custom** decision + how to build a livestream/bespoke surface on the low-level client + State Layer
 - [`skills/stream-react-native/`](skills/stream-react-native/) - **React Native Chat + Video sub-skill**
   - [`SKILL.md`](skills/stream-react-native/SKILL.md) - RN/Expo intent classifier with Chat/Video product router, project detection, module pointers
   - [`RULES.md`](skills/stream-react-native/RULES.md) - Chat and Video RN non-negotiable rules (incl. Chat + Video interop)
