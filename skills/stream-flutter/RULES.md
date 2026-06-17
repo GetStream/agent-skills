@@ -18,6 +18,12 @@ Default token model:
 
 ---
 
+## Surface permission prerequisites proactively (Chat)
+
+Permissions are checked on **client-side calls only**; server-side calls (CLI / backend with the secret) bypass them. So seeding works while the same action 403s from the app. **Whenever the app does more than chat inside channels the user already belongs to — discovering channels, self-joining, or signing in as a guest — name the required channel-type grant in the same turn you build the feature**, before any runtime error. Most commonly: `Read Channel` (`ReadChannel`) to browse non-member channels, `Add Own Channel Membership` (`AddOwnChannelMembership`) to self-join; `guest` is stricter than `user` and needs the grants too. Detail and exact error strings: [`references/CHAT-FLUTTER.md`](references/CHAT-FLUTTER.md) → Channel permissions & roles; the proactive prompt lives in [`SKILL.md`](SKILL.md) Step 0.5 → Permissions awareness. This is a heads-up, not a blocker — build the feature, but never let discover/join/guest flows fail silently on first run.
+
+---
+
 ## No wrapper or bridge abstractions
 
 Do **not** introduce intermediate types - `ChatManager`, `VideoCallBridge`, `StreamWrapper`, `SDKAdapter`, `FeedsService`, or similar - between the app and the Stream SDK.
@@ -92,6 +98,7 @@ Load only the product/package reference files that match the request.
 
 - `CHAT-FLUTTER.md` + `CHAT-FLUTTER-blueprints.md` for Chat with pre-built UI (`stream_chat_flutter`)
 - `CHAT-CORE.md` + `CHAT-CORE-blueprints.md` for Chat with custom UI (`stream_chat_flutter_core`)
+- `CHAT-ADVANCED-FLUTTER.md` + `CHAT-ADVANCED-FLUTTER-blueprints.md` for advanced Chat concerns — push notifications, offline/local persistence, connection lifecycle & backgrounding (both UI tiers)
 - `VIDEO-FLUTTER.md` + `VIDEO-FLUTTER-blueprints.md` for Video calling (`stream_video_flutter`)
 - `LIVESTREAM-FLUTTER.md` + `LIVESTREAM-FLUTTER-blueprints.md` for Livestreaming (host/viewer flows, backstage, HLS)
 - `VIDEO-ADVANCED-FLUTTER.md` + `VIDEO-ADVANCED-FLUTTER-blueprints.md` for advanced Video use cases (audio rooms, multicall, chat+video, livestream feed, querying/events/preferences/moderation)

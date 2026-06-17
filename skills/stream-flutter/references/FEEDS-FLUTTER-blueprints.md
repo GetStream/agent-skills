@@ -41,24 +41,30 @@ Future<void> main() async {
 ///
 /// Without this, posting to the `user` feed has no effect on the `timeline`
 /// feed — the two are independent until a follow relationship is created.
-/// The call is idempotent (following an already-followed feed is a no-op).
+/// Loads the feed first so we can skip if the follow already exists (avoids
+/// duplicate follow/notification activities).
 Future<void> _setupFollows(StreamFeedsClient client) async {
-  final userId       = client.currentUser!.id;
+  final userId       = client.user.id;
   final timelineFeed = client.feedFromId(FeedId.timeline(userId));
-  await timelineFeed.follow(targetFid: FeedId.user(userId));
+  await timelineFeed.getOrCreate();
+  final alreadyFollowing = timelineFeed.state.following
+      .any((f) => f.targetFeed.fid == FeedId.user(userId));
+  if (!alreadyFollowing) {
+    await timelineFeed.follow(
+      targetFid: FeedId.user(userId),
+      createNotificationActivity: false,
+    );
+  }
 }
 
 /// Seeds sample posts for development. Skips if posts already exist.
 /// Remove or gate behind a debug flag in production.
 Future<void> _seedPosts(StreamFeedsClient client) async {
-  final userId   = client.currentUser!.id;
+  final userId   = client.user.id;
   final userFeed = client.feedFromId(FeedId.user(userId));
 
-  final activityList = client.activityList(
-    ActivitiesQuery(fid: FeedId.user(userId), limit: 1),
-  );
-  final state = await activityList.get();
-  if (state.activities.isNotEmpty) return;
+  await userFeed.getOrCreate();
+  if (userFeed.state.activities.isNotEmpty) return;
 
   for (final text in [
     'Just shipped a new feature! 🚀',
@@ -66,7 +72,11 @@ Future<void> _seedPosts(StreamFeedsClient client) async {
     'Stream Feeds makes social apps surprisingly simple.',
   ]) {
     await userFeed.addActivity(
-      request: FeedAddActivityRequest(type: 'post', text: text),
+      request: FeedAddActivityRequest(
+        type: 'post',
+        feeds: [userFeed.fid.rawValue],
+        text: text,
+      ),
     );
   }
 }
@@ -116,11 +126,8 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  late final _activityList = widget.client.activityList(
-    ActivitiesQuery(
-      fid: FeedId.timeline(widget.client.currentUser!.id),
-      limit: 20,
-    ),
+  late final Feed _timelineFeed = widget.client.feedFromId(
+    FeedId.timeline(widget.client.user.id),
   );
   List<ActivityData> _activities = [];
   bool _loading = true;
@@ -129,27 +136,32 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    _sub = _activityList.stream.listen((state) {
+    _sub = _timelineFeed.stream.listen((state) {
       if (mounted) setState(() => _activities = state.activities);
     });
-    _activityList.get().then((state) {
-      if (mounted) setState(() { _activities = state.activities; _loading = false; });
+    _timelineFeed.getOrCreate().then((_) {
+      if (mounted) {
+        setState(() { _activities = _timelineFeed.state.activities; _loading = false; });
+      }
     });
   }
 
   @override
   void dispose() {
     _sub?.cancel();
+    _timelineFeed.dispose();
     super.dispose();
   }
 
   Future<void> _refresh() async {
-    final state = await _activityList.get();
-    setState(() => _activities = state.activities);
+    await _timelineFeed.getOrCreate();
+    setState(() => _activities = _timelineFeed.state.activities);
   }
 
   Future<void> _loadMore() async {
-    await _activityList.queryMoreActivities(limit: 20);
+    if (_timelineFeed.state.canLoadMoreActivities) {
+      await _timelineFeed.queryMoreActivities(limit: 20);
+    }
   }
 
   @override
@@ -169,7 +181,8 @@ class _HomePageState extends State<HomePage> {
                       if (i == _activities.length - 1) _loadMore();
                       return ActivityCard(
                         activity: _activities[i],
-                        client: widget.client,
+                        feed: _timelineFeed,
+                        currentUserId: widget.client.user.id,
                       );
                     },
                   ),
@@ -204,10 +217,16 @@ import 'package:flutter/material.dart';
 import 'package:stream_feeds/stream_feeds.dart';
 
 class ActivityCard extends StatefulWidget {
-  const ActivityCard({super.key, required this.activity, required this.client});
+  const ActivityCard({
+    super.key,
+    required this.activity,
+    required this.feed,
+    required this.currentUserId,
+  });
 
   final ActivityData activity;
-  final StreamFeedsClient client;
+  final Feed feed;
+  final String currentUserId;
 
   @override
   State<ActivityCard> createState() => _ActivityCardState();
@@ -220,22 +239,19 @@ class _ActivityCardState extends State<ActivityCard> {
   @override
   void initState() {
     super.initState();
-    _liked     = widget.activity.ownReactions['like']?.isNotEmpty ?? false;
-    _likeCount = widget.activity.reactionCounts['like'] ?? 0;
+    _liked     = widget.activity.ownReactions.any((r) => r.type == 'like');
+    _likeCount = widget.activity.reactionGroups['like']?.count ?? 0;
   }
 
   Future<void> _toggleLike() async {
-    final feed = widget.client.feedFromId(
-      FeedId.timeline(widget.client.currentUser!.id),
-    );
     if (_liked) {
-      await feed.deleteActivityReaction(
+      await widget.feed.deleteActivityReaction(
         activityId: widget.activity.id,
         type: 'like',
       );
       setState(() { _liked = false; _likeCount--; });
     } else {
-      await feed.addActivityReaction(
+      await widget.feed.addActivityReaction(
         activityId: widget.activity.id,
         request: const AddReactionRequest(type: 'like', enforceUnique: true),
       );
@@ -246,11 +262,11 @@ class _ActivityCardState extends State<ActivityCard> {
   @override
   Widget build(BuildContext context) {
     final activity = widget.activity;
-    final name     = activity.actor?.name ?? activity.actor?.id ?? 'Unknown';
-    final handle   = '@${activity.actor?.id ?? '?'}';
+    final name     = activity.user.name ?? activity.user.id;
+    final handle   = '@${activity.user.id}';
     final text     = activity.text ?? '';
     final time     = activity.createdAt;
-    final commentCount = activity.reactionCounts['comment'] ?? 0;
+    final commentCount = activity.commentCount;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -380,10 +396,14 @@ class _ComposePageState extends State<ComposePage> {
     setState(() => _posting = true);
     try {
       final userFeed = widget.client.feedFromId(
-        FeedId.user(widget.client.currentUser!.id),
+        FeedId.user(widget.client.user.id),
       );
       await userFeed.addActivity(
-        request: FeedAddActivityRequest(type: 'post', text: text),
+        request: FeedAddActivityRequest(
+          type: 'post',
+          feeds: [userFeed.fid.rawValue],
+          text: text,
+        ),
       );
       if (mounted) Navigator.pop(context);
     } finally {
@@ -457,6 +477,13 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
+  late final Feed _userFeed = widget.client.feedFromId(
+    FeedId.user(widget.userId),
+  );
+  late final Feed _timelineFeed = widget.client.feedFromId(
+    FeedId.timeline(widget.client.user.id),
+  );
+
   bool? _isFollowing;
   bool _loadingFollow = false;
   List<ActivityData> _activities = [];
@@ -468,43 +495,38 @@ class _ProfilePageState extends State<ProfilePage> {
     _load();
   }
 
-  Future<void> _load() async {
-    final activityList = widget.client.activityList(
-      ActivitiesQuery(fid: FeedId.user(widget.userId), limit: 20),
-    );
-    final followList = widget.client.followList(
-      FollowsQuery(
-        sourceFid: FeedId.timeline(widget.client.currentUser!.id),
-        limit: 1,
-      ),
-    );
+  @override
+  void dispose() {
+    _userFeed.dispose();
+    _timelineFeed.dispose();
+    super.dispose();
+  }
 
-    final results = await Future.wait([activityList.get(), followList.get()]);
+  Future<void> _load() async {
+    // Load the target user's posts and the current user's timeline (for follow state).
+    await Future.wait([_userFeed.getOrCreate(), _timelineFeed.getOrCreate()]);
 
     setState(() {
-      _activities = (results[0] as ActivityListState).activities;
-      final follows = (results[1] as FollowListState).follows;
-      _isFollowing = follows.any((f) => f.targetFid == FeedId.user(widget.userId));
+      _activities = _userFeed.state.activities;
+      _isFollowing = _timelineFeed.state.following
+          .any((f) => f.targetFeed.fid == FeedId.user(widget.userId));
       _loading = false;
     });
   }
 
   Future<void> _toggleFollow() async {
     setState(() => _loadingFollow = true);
-    final timelineFeed = widget.client.feedFromId(
-      FeedId.timeline(widget.client.currentUser!.id),
-    );
     if (_isFollowing!) {
-      await timelineFeed.unfollow(targetFid: FeedId.user(widget.userId));
+      await _timelineFeed.unfollow(targetFid: FeedId.user(widget.userId));
     } else {
-      await timelineFeed.follow(targetFid: FeedId.user(widget.userId));
+      await _timelineFeed.follow(targetFid: FeedId.user(widget.userId));
     }
     setState(() { _isFollowing = !_isFollowing!; _loadingFollow = false; });
   }
 
   @override
   Widget build(BuildContext context) {
-    final isOwnProfile = widget.userId == widget.client.currentUser!.id;
+    final isOwnProfile = widget.userId == widget.client.user.id;
 
     return Scaffold(
       appBar: AppBar(title: Text('@${widget.userId}')),
@@ -560,7 +582,8 @@ class _ProfilePageState extends State<ProfilePage> {
                       children: [
                         ActivityCard(
                           activity: _activities[i],
-                          client: widget.client,
+                          feed: _userFeed,
+                          currentUserId: widget.client.user.id,
                         ),
                         const Divider(height: 1),
                       ],

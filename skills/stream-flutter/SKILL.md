@@ -214,6 +214,23 @@ After all CLI steps succeed, move straight to **Project signals** and then into 
 - Never invent or fabricate credentials.
 - Never ask "should I continue?" between Step A, B, C, and D - execute the whole sequence once the user's upfront answers are in.
 
+### Permissions awareness (Chat - surface proactively)
+
+Stream Chat checks permissions **per role, per scope on every client-side call** — but **server-side calls (the CLI and your backend, using the API _secret_) bypass all checks**. That asymmetry is the #1 source of "it worked when you seeded it, but the app 403s": seeding channels via the CLI succeeds regardless of grants, then the same query/join from the app hits the connected user's role and fails.
+
+**When the app you're about to build does anything beyond chatting inside channels the user is already a member of, tell the integrator about the relevant grants _before_ writing the feature — don't wait for a runtime 403.** Map the scenario to the grant:
+
+| App behaviour you're building                                                                    | Grant the connecting role needs on the channel type            | Default `messaging` for `user`/`guest` |
+| ------------------------------------------------------------------------------------------------ | -------------------------------------------------------------- | -------------------------------------- |
+| **Discover / browse groups** the user didn't create (`queryChannels` without a `members` filter) | `Read Channel` (`ReadChannel`)                                 | often **off**                          |
+| **Join an existing group** (`channel.addMembers([myId])`)                                        | `Add Own Channel Membership` (`AddOwnChannelMembership`)       | often **off**                          |
+| **Leave a group** (`channel.removeMembers([myId])`)                                              | `Remove Own Channel Membership` (`RemoveOwnChannelMembership`) | varies                                 |
+| **Create a group**                                                                               | `Create Channel` (`CreateChannel`)                             | usually on                             |
+
+`guest` users (name-only / no-backend sign-in) are stricter than `user` — if the app uses guest auth, the same grants must be added to the **`guest`** role too. Point the integrator to **Dashboard → Chat → Roles & Permissions** (permissions v2) for the role + `messaging` type, or `UpdateChannelType` via API/CLI. Full detail and the exact error string: [`references/CHAT-FLUTTER.md`](references/CHAT-FLUTTER.md) → Channel permissions & roles (custom-UI builds: [`references/CHAT-CORE.md`](references/CHAT-CORE.md)).
+
+This is a **prompt, not a blocker** — build the feature as requested, but call out the prerequisite in the same turn so discover/join/create don't silently fail on first run.
+
 ---
 
 ## Project signals (tracks A/B/D - once per session; Track C on demand only)
@@ -233,6 +250,14 @@ Use the result to produce a **one-line status**, for example:
 - `Flutter app detected - stream_feed already in pubspec.yaml`
 - `Flutter app detected - no Stream dependency yet, ready to install`
 - `No Flutter project found - user needs to run flutter create first`
+
+### Version prerequisite (Chat - existing project)
+
+When a Stream Chat dependency is already present, check the resolved version (`pubspec.yaml` constraint or the `version:` in `pubspec.lock`). **These skills target `stream_chat_flutter` / `stream_chat_flutter_core` v10 only.** If the project is pinned to **9.x or earlier**, stop before editing code and tell the user:
+
+> Your project uses `stream_chat_flutter` v<found>. These instructions only cover v10, and a lot changed between v9 and v10 (widget names, controllers, theming, reaction/delete APIs). Please migrate to `stream_chat_flutter: ^10.0.0` first using the official upgrade guide — this skill does not handle the migration. Once you're on v10, I can continue.
+
+Only proceed with Chat work once the project resolves a v10 (`^10.0.0`) dependency. New installs always use `^10.0.0`, so this check applies to existing integrations only.
 
 ---
 
@@ -262,6 +287,7 @@ Current extracted modules:
 
 - **Chat + pre-built UI (`stream_chat_flutter`):** [`references/CHAT-FLUTTER.md`](references/CHAT-FLUTTER.md) + [`references/CHAT-FLUTTER-blueprints.md`](references/CHAT-FLUTTER-blueprints.md)
 - **Chat + custom UI (`stream_chat_flutter_core`):** [`references/CHAT-CORE.md`](references/CHAT-CORE.md) + [`references/CHAT-CORE-blueprints.md`](references/CHAT-CORE-blueprints.md)
+- **Chat advanced (push, offline, lifecycle — both UI tiers):** [`references/CHAT-ADVANCED-FLUTTER.md`](references/CHAT-ADVANCED-FLUTTER.md) + [`references/CHAT-ADVANCED-FLUTTER-blueprints.md`](references/CHAT-ADVANCED-FLUTTER-blueprints.md) - push notifications, offline/local persistence, connection lifecycle & backgrounding
 - **Video (`stream_video_flutter`):** [`references/VIDEO-FLUTTER.md`](references/VIDEO-FLUTTER.md) + [`references/VIDEO-FLUTTER-blueprints.md`](references/VIDEO-FLUTTER-blueprints.md)
 - **Livestream (`stream_video_flutter`):** [`references/LIVESTREAM-FLUTTER.md`](references/LIVESTREAM-FLUTTER.md) + [`references/LIVESTREAM-FLUTTER-blueprints.md`](references/LIVESTREAM-FLUTTER-blueprints.md)
 - **Video advanced use cases (`stream_video_flutter`):** [`references/VIDEO-ADVANCED-FLUTTER.md`](references/VIDEO-ADVANCED-FLUTTER.md) + [`references/VIDEO-ADVANCED-FLUTTER-blueprints.md`](references/VIDEO-ADVANCED-FLUTTER-blueprints.md) - audio rooms, multicall, chat+video, livestream feed, querying/events/preferences/moderation
@@ -281,7 +307,7 @@ Additional Stream product coverage should stay in this naming family instead of 
 | **A1** | Detect         | Run **Project signals**. If there is no Flutter app yet, tell the user to run `flutter create my_app` first.                                                                                                                                                                       |
 | **A2** | Choose lane    | Confirm package choice: `stream_chat_flutter` (pre-built UI, fastest), `stream_chat_flutter_core` (custom UI), `stream_video_flutter` (video/livestream), or `stream_feed` / `stream_feed_flutter_core` (activity feeds, no pre-built UI). For Feeds, default to Twitter-style UI. |
 | **A3** | Install + wire | Follow [`builder.md`](builder.md) + [`sdk.md`](sdk.md), then load only the needed reference files.                                                                                                                                                                                 |
-| **A4** | Verify         | Confirm `flutter pub get` succeeds, client connects, and first screen renders.                                                                                                                                                                                                     |
+| **A4** | Verify         | Confirm `flutter pub get` succeeds, client connects, and first screen renders. If the app discovers/joins channels or uses guest auth, re-state the permission prerequisite (Step 0.5 → Permissions awareness) so those flows don't 403 on first run.                              |
 
 ---
 
@@ -289,12 +315,12 @@ Additional Stream product coverage should stay in this naming family instead of 
 
 **Full detail:** [`builder.md`](builder.md) - use the **existing-project path**.
 
-| Phase  | Name      | What you do                                                                                               |
-| ------ | --------- | --------------------------------------------------------------------------------------------------------- |
-| **B1** | Detect    | Run **Project signals** and inspect the existing app structure before editing.                            |
-| **B2** | Preserve  | Keep the current navigation, state management, and widget architecture unless the user asks for a change. |
-| **B3** | Integrate | Use [`sdk.md`](sdk.md) for shared wiring, then load only the needed reference files.                      |
-| **B4** | Verify    | Confirm the requested Stream flow builds and renders inside the existing app.                             |
+| Phase  | Name      | What you do                                                                                                                                                                                                                                     |
+| ------ | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **B1** | Detect    | Run **Project signals** and inspect the existing app structure before editing.                                                                                                                                                                  |
+| **B2** | Preserve  | Keep the current navigation, state management, and widget architecture unless the user asks for a change.                                                                                                                                       |
+| **B3** | Integrate | Use [`sdk.md`](sdk.md) for shared wiring, then load only the needed reference files.                                                                                                                                                            |
+| **B4** | Verify    | Confirm the requested Stream flow builds and renders inside the existing app. If it discovers/joins channels or uses guest auth, re-state the permission prerequisite (Step 0.5 → Permissions awareness) so those flows don't 403 on first run. |
 
 ---
 
@@ -302,8 +328,10 @@ Additional Stream product coverage should stay in this naming family instead of 
 
 Load only the relevant files for the requested package.
 
-- Shared lifecycle / auth / state patterns -> [`sdk.md`](sdk.md)
-- Chat pre-built UI setup, widgets, theming -> [`references/CHAT-FLUTTER.md`](references/CHAT-FLUTTER.md)
+- Shared lifecycle / auth / state / client-ownership patterns -> [`sdk.md`](sdk.md)
+- Chat advanced production concerns — **push notifications, offline/local persistence, connection lifecycle & backgrounding** (both UI tiers) -> [`references/CHAT-ADVANCED-FLUTTER.md`](references/CHAT-ADVANCED-FLUTTER.md)
+- Chat advanced wiring blueprints (FCM setup + background handler, persistence init, lazy-connect gate) -> [`references/CHAT-ADVANCED-FLUTTER-blueprints.md`](references/CHAT-ADVANCED-FLUTTER-blueprints.md)
+- Chat pre-built UI setup, widgets, theming, **member/user lists, message search, composer flags (voice/polls/drafts), filter operators, permissions** -> [`references/CHAT-FLUTTER.md`](references/CHAT-FLUTTER.md)
 - Chat pre-built UI widget blueprints -> [`references/CHAT-FLUTTER-blueprints.md`](references/CHAT-FLUTTER-blueprints.md)
 - Chat custom UI setup and controllers -> [`references/CHAT-CORE.md`](references/CHAT-CORE.md)
 - Chat custom UI widget blueprints -> [`references/CHAT-CORE-blueprints.md`](references/CHAT-CORE-blueprints.md)

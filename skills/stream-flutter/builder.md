@@ -74,7 +74,7 @@ Add the dependency to `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  stream_feeds: ^0.5.1 # check pub.dev for latest; requires Dart >=3.6.2
+  stream_feeds: ^0.5.1 # check pub.dev for latest; requires Dart >=3.10.0
 ```
 
 > **Package name is `stream_feeds` (plural).** Do not use `stream_feed` (deprecated, fails to compile on Dart 3) or `stream_feed_flutter_core` (old package, incompatible with `stream_feeds`). `stream_feeds` is the only package needed.
@@ -106,6 +106,24 @@ Add the following permissions to `android/app/src/main/AndroidManifest.xml` if n
 ```
 
 `photo_manager` requires additional setup for Android 10+ (API 29+). Follow [pub.dev/packages/photo_manager#android-10-q-29](https://pub.dev/packages/photo_manager#android-10-q-29) for the manifest changes needed to access the photo library.
+
+> **⚠️ AGP 9 breaks `file_picker` (transitive dep of `stream_chat_flutter`).** If `flutter build`/`run` fails with:
+>
+> ```
+> GeneratedPluginRegistrant.java:NN: error: cannot find symbol
+>   ...add(new com.mr.flutter.plugin.filepicker.FilePickerPlugin());
+> symbol: class FilePickerPlugin
+> ```
+>
+> the project was scaffolded with the bleeding-edge Android toolchain (check `android/settings.gradle.kts` — AGP `com.android.application` version `9.x`). `file_picker` (pulled in for attachment picking) skips applying its Kotlin plugin under AGP 9, so `FilePickerPlugin.kt` never compiles and the generated registrant can't find the class. **This is a toolchain mismatch, not an app-code bug — don't `flutter clean` and retry (it won't help).** Pin to a compatible set:
+>
+> | File                                               | Setting                                      | Change to               |
+> | -------------------------------------------------- | -------------------------------------------- | ----------------------- |
+> | `android/settings.gradle.kts`                      | `id("com.android.application") version`      | `"8.9.1"`               |
+> | `android/settings.gradle.kts`                      | `id("org.jetbrains.kotlin.android") version` | `"2.1.0"`               |
+> | `android/gradle/wrapper/gradle-wrapper.properties` | `distributionUrl`                            | `gradle-8.11.1-all.zip` |
+>
+> Then rebuild (no clean needed — Gradle downloads the pinned distribution). AGP 8.9.1 + Gradle 8.11.1 + Kotlin 2.1.0 support `compileSdk` 35/36 and the `kotlin { compilerOptions { jvmTarget } }` DSL the Flutter template uses. Bump these as the Stream/Flutter plugins gain AGP 9 support.
 
 #### iOS
 
@@ -293,6 +311,8 @@ Available extracted modules:
 - Chat pre-built UI widget blueprints: [`references/CHAT-FLUTTER-blueprints.md`](references/CHAT-FLUTTER-blueprints.md)
 - Chat custom UI (core): [`references/CHAT-CORE.md`](references/CHAT-CORE.md)
 - Chat custom UI blueprints: [`references/CHAT-CORE-blueprints.md`](references/CHAT-CORE-blueprints.md)
+- Chat advanced — push notifications, offline/local persistence, connection lifecycle & backgrounding (both UI tiers): [`references/CHAT-ADVANCED-FLUTTER.md`](references/CHAT-ADVANCED-FLUTTER.md)
+- Chat advanced wiring blueprints: [`references/CHAT-ADVANCED-FLUTTER-blueprints.md`](references/CHAT-ADVANCED-FLUTTER-blueprints.md)
 - Video setup, call types, controls, state: [`references/VIDEO-FLUTTER.md`](references/VIDEO-FLUTTER.md)
 - Video widget blueprints: [`references/VIDEO-FLUTTER-blueprints.md`](references/VIDEO-FLUTTER-blueprints.md)
 - Livestream SDK patterns: [`references/LIVESTREAM-FLUTTER.md`](references/LIVESTREAM-FLUTTER.md)
