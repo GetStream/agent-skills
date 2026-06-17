@@ -124,6 +124,8 @@ Cross-cutting rules (secrets, login screen, strict mode, package manager, base U
   - [`docs-map.md`](skills/stream-swift/docs-map.md) - intent -> exact official iOS docs page (Chat/Video/Feeds, SwiftUI/UIKit), plus best-practices pages and a source-code/example-app fallback (SDK repos) for what the docs do not cover
   - [`setup.md`](skills/stream-swift/setup.md) - CLI-driven credentials, install, and client-wiring flow
   - [`push.md`](skills/stream-swift/push.md) - seamless push runbook: APNs key, CLI push-provider creation, client wiring, VoIP + CallKit
+  - [`design-matching.md`](skills/stream-swift/design-matching.md) - reproduce a reference design with the **pre-built components**: region -> `ViewFactory`/`Styles`/theming map
+  - [`custom-ui.md`](skills/stream-swift/custom-ui.md) - the **components-vs-custom** decision + how to build a livestream/bespoke surface on the low-level client + State Layer
 - [`skills/stream-react-native/`](skills/stream-react-native/) - **React Native Chat + Video sub-skill**
   - [`SKILL.md`](skills/stream-react-native/SKILL.md) - RN/Expo intent classifier with Chat/Video product router, project detection, module pointers
   - [`RULES.md`](skills/stream-react-native/RULES.md) - Chat and Video RN non-negotiable rules (incl. Chat + Video interop)

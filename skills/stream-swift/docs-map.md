@@ -19,8 +19,8 @@ All page URLs end in `.md` (the Markdown twin - see [`SKILL.md`](SKILL.md)). Fet
 
 **First decide the layer** (see "pick the UI strategy" in [`SKILL.md`](SKILL.md)):
 
-- Standard-messenger vertical (social, marketplace, workplace, support, DMs) -> **Pre-built UI** (sections below).
-- Livestream / live-shopping / overlay chat -> **Custom UI on the low-level client + State Layer** (its own section below) - do not use the pre-built components.
+- Standard-messenger vertical (social, marketplace, workplace, support, DMs) -> **Pre-built UI** (sections below); reference design -> [`design-matching.md`](design-matching.md).
+- Livestream / live-shopping / overlay chat -> **Custom UI on the low-level client + State Layer** (its own section below) - do not use the pre-built components; run [`custom-ui.md`](custom-ui.md).
 
 **Matching a reference design (screenshot / Figma / "make it look like <app>")?** Do not pick rows à la carte and stop at theming. First run [`design-matching.md`](design-matching.md): it decomposes the design into every region (header, composer button set, timestamp + read-receipt placement, bubble shape/tail, date separators, attachments, ...) and maps each to its `ViewFactory` slot or theming token. The rows below are where it sends you per region; the full ~100-slot surface lives in `ViewFactory.swift` (read it - most slots are undocumented).
 
@@ -98,7 +98,7 @@ Install is shared by both layers: `https://getstream.io/chat/docs/sdk/ios/basics
 
 ### Chat - Custom UI (low-level client + State Layer)
 
-Use this layer for livestream / live-shopping / overlay chat and any bespoke surface. There are **no** pre-built views here - you drive the SDK's state objects and render your own SwiftUI/UIKit. Two sources:
+Use this layer for livestream / live-shopping / overlay chat and any bespoke surface. There are **no** pre-built views here - you drive the SDK's state objects and render your own SwiftUI/UIKit. **Run [`custom-ui.md`](custom-ui.md) first** - it carries the components-vs-custom decision and the build procedure (which State Layer object - `LivestreamChat` for high volume vs `Chat` - viewer auth, feed rendering, composer, and `StreamChatCommonUI` usage). The pages below are what it routes to. Two sources:
 
 **(a) State Layer + Controllers** - how to observe state and react in your own views. Prefix `https://getstream.io/chat/docs/sdk/ios`:
 
@@ -106,6 +106,7 @@ Use this layer for livestream / live-shopping / overlay chat and any bespoke sur
 |---|---|
 | State overview (start here) | `.../client.md` |
 | State Layer (modern async/await: `Chat`, `ChannelList`, `MessageSearch`, ...) | `.../client/state-layer/state-layer-overview.md` |
+| Livestream chat object (`LivestreamChat` - in-memory, high-volume) | `.../client/livestream-chat.md` |
 | Controllers (delegate-based alternative) | `.../client/controllers/controllers-overview.md` |
 | Channels state and filtering | `.../client/controllers/channels.md` |
 | Listening to events | `.../client/controllers/events.md` |
