@@ -1,6 +1,6 @@
 # Stream Agent Skills
 
-Give your AI coding agent the ability to build, query, and manage [Stream](https://getstream.io) - Chat, Video, Feeds, Moderation, Swift/iOS integrations, React Native Chat and Video, and Flutter Chat, Video, and Feeds.
+Give your AI coding agent the ability to build, query, and manage [Stream](https://getstream.io) - Chat, Video, Feeds, Moderation, Swift/iOS integrations, and React Native Chat and Video.
 
 ## Install
 
@@ -8,7 +8,7 @@ Give your AI coding agent the ability to build, query, and manage [Stream](https
 npx skills add GetStream/agent-skills
 ```
 
-That's the only command you ever need. It installs the router (`stream`) plus every specialist skill below — and even if you install the router alone, it silently pulls in whatever sub-skill a task needs, on demand. Use `/stream` for generic Stream routing, or invoke a sub-skill directly with `/stream-cli`, `/stream-docs`, `/stream-builder`, `/stream-swift`, `/stream-android`, `/stream-react-native`, or `/stream-flutter`.
+That's the only command you ever need. It installs the router (`stream`) plus every specialist skill below — and even if you install the router alone, it silently pulls in whatever sub-skill a task needs, on demand. Use `/stream` for generic Stream routing, or invoke a sub-skill directly with `/stream-cli`, `/stream-docs`, `/stream-builder`, `/stream-swift`, `/stream-android`, or `/stream-react-native`.
 
 ### Install - direct from GitHub (no third-party CLI)
 
@@ -44,7 +44,6 @@ The router skill at [`skills/stream/`](skills/stream/) owns core web, CLI, docs,
 | `/stream-swift` | Build or integrate Stream in Swift/SwiftUI/UIKit/iOS apps | Swift, SwiftUI, UIKit, iOS, Xcode |
 | `/stream-android` | Build or integrate Stream in Android/Jetpack Compose apps | Android, Jetpack Compose, Kotlin, Android Studio, Gradle |
 | `/stream-react-native` | Create, build, or integrate Stream Chat or Stream Video React Native in RN CLI or Expo apps | React Native, Expo, `stream-chat-react-native`, `stream-chat-expo`, `@stream-io/video-react-native-sdk`, video call, livestream, audio room, ringing |
-| `/stream-flutter` | Build and integrate Stream Chat, Video, and Feeds in Flutter apps | Flutter, Dart, `stream_chat_flutter`, `stream_chat_flutter_core`, `stream_video_flutter`, `stream_feed`, `stream_feed_flutter_core` |
 
 ## What gets installed
 
@@ -75,7 +74,6 @@ Decline and the builder still runs - Stream reference files cover the SDK wiring
 - **Build and extend Swift apps** - wire Stream into SwiftUI or UIKit Xcode projects with iOS-specific setup patterns (`/stream-swift`)
 - **Build and extend Android apps** - wire Stream into Jetpack Compose Android Studio / Gradle projects with Android-specific setup patterns (`/stream-android`)
 - **Build and extend React Native apps** - wire Stream Chat or Stream Video into Expo or RN CLI projects (`/stream-react-native`)
-- **Build and extend Flutter apps** - wire Stream Chat, Video, or Feeds into Flutter projects with pre-built or custom UI (`/stream-flutter`)
 - **Query live data** - "any active calls?", "show flagged messages", "list my channels" - natural language to CLI (`/stream-cli`)
 - **Set up moderation** - blocklists, automod config, and content policies via the Stream CLI (`/stream-cli`)
 - **Answer SDK questions** - token patterns, strict mode, client/server instantiation, theme wiring (`/stream-builder` or `/stream-docs`)
@@ -97,9 +95,8 @@ The skill pack is markdown only - no code, no build step. The generic `/stream` 
 | Search the official SDK documentation (no CLI needed) | `stream-docs` (Track D) |
 | Build or integrate a Swift/iOS app                    | `stream-swift` (docs orchestrator: `docs-map.md` + `setup.md`) |
 | Build or integrate an Android app                     | `stream-android` + its `builder.md`, `sdk.md`, and `references/*.md` |
-| Build or integrate a Flutter app                      | `stream-flutter` + its `builder.md`, `sdk.md`, and `references/*.md` |
 
-> **Routing precedence:** when user input contains a platform signal (e.g. `react native`, `expo`, `stream video rn`, `swift`, `ios`, `flutter`, `dart`), the matching platform peer (`stream-react-native`, `stream-swift`, `stream-flutter`) wins over the web `stream-builder` rows. The web builder is the default only when no platform signal is present.
+> **Routing precedence:** when user input contains a platform signal (e.g. `react native`, `expo`, `stream video rn`, `swift`, `ios`), the matching platform peer (`stream-react-native`, `stream-swift`) wins over the web `stream-builder` rows. The web builder is the default only when no platform signal is present.
 
 Cross-cutting rules (secrets, login screen, strict mode, package manager, base UI, moderation Dashboard-only, ...) live once in [`skills/stream/RULES.md`](skills/stream/RULES.md) and apply to every sub-skill.
 
@@ -140,8 +137,3 @@ Cross-cutting rules (secrets, login screen, strict mode, package manager, base U
   - [`RULES.md`](skills/stream-android/RULES.md) - Android non-negotiable rules
   - [`builder.md`](skills/stream-android/builder.md) + [`sdk.md`](skills/stream-android/sdk.md) - shared Android app integration flow and SDK ownership patterns
   - [`references/`](skills/stream-android/references/) - product/framework-specific Android references and blueprints
-- [`skills/stream-flutter/`](skills/stream-flutter/) - **Flutter sub-skill**
-  - [`SKILL.md`](skills/stream-flutter/SKILL.md) - entrypoint: intent classifier, local project detection, module pointers
-  - [`RULES.md`](skills/stream-flutter/RULES.md) - Flutter non-negotiable rules
-  - [`builder.md`](skills/stream-flutter/builder.md) + [`sdk.md`](skills/stream-flutter/sdk.md) - shared Flutter app integration flow and SDK ownership patterns
-  - [`references/`](skills/stream-flutter/references/) - product/package-specific Flutter references and blueprints (Chat pre-built UI, Chat custom UI, Chat advanced, Video, Livestream, Video advanced, Ringing, Feeds)
