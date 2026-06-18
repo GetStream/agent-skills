@@ -255,7 +255,9 @@ Use the result to produce a **one-line status**, for example:
 
 When a Stream Chat dependency is already present, check the resolved version (`pubspec.yaml` constraint or the `version:` in `pubspec.lock`). **These skills target `stream_chat_flutter` / `stream_chat_flutter_core` v10 only.** If the project is pinned to **9.x or earlier**, stop before editing code and tell the user:
 
-> Your project uses `stream_chat_flutter` v<found>. These instructions only cover v10, and a lot changed between v9 and v10 (widget names, controllers, theming, reaction/delete APIs). Please migrate to `stream_chat_flutter: ^10.0.0` first using the official upgrade guide — this skill does not handle the migration. Once you're on v10, I can continue.
+> Your project uses `stream_chat_flutter` v<found>. These instructions cover v10. A lot changed between v9 and v10 (widget names, controllers, theming, reaction/delete APIs). The official migration guides are at **https://github.com/GetStream/stream-chat-flutter/tree/master/migrations** — refer to the relevant version's guide for step-by-step instructions. Once you're on v10, I can continue with the full feature set.
+
+If the user asks for help with the migration itself, fetch the relevant migration doc from the URL above and walk them through it step by step.
 
 Only proceed with Chat work once the project resolves a v10 (`^10.0.0`) dependency. New installs always use `^10.0.0`, so this check applies to existing integrations only.
 

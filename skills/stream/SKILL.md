@@ -114,7 +114,7 @@ For a bare `/stream` (and whenever the user wants to pick a skill directly), out
 > - `/stream-swift` - Swift - SwiftUI - UIKit - iOS
 > - `/stream-android` - Android - Jetpack Compose - Kotlin
 > - `/stream-react-native` - React Native - Expo
-> - `/stream-flutter` - build or integrate Stream Chat into a Flutter app (install confirmed first)
+> - `/stream-flutter` - Flutter - Dart
 >
 > Or just ask - query data or run `getstream` commands directly: *"list my channels"*. New to a skill? Just describe the task and I'll install the right one automatically.
 
