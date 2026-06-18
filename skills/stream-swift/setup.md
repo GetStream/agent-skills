@@ -56,7 +56,7 @@ getstream api UpdateUsers --request '{"users":{"<token_user_id>":{"id":"<token_u
 getstream api GetOrCreateChannel --type messaging --id <channel-id> --request '{"data":{"created_by_id":"<token_user_id>","members":[{"user_id":"<token_user_id>"},{"user_id":"alice"}]}}'
 ```
 
-`getstream init` is interactive; non-interactively it writes a `.stream/init-*.yaml` listing your apps as commented `app_id:` lines — uncomment one (or a `new_app:` block), then run `getstream init --command .stream/init-*.yaml`. It writes `.stream/creds.yaml`, after which `env`/`token`/`api` work. If `getstream env` reports the project isn't initialized or you're not signed in, run `getstream init` (or `getstream login`), then re-run `getstream env --target ios`. To seed messages, attribute the sender server-side with `message.user_id` and include `original_width`/`original_height` on image attachments (without them the SwiftUI media gallery treats images as landscape and stacks a 2-photo album vertically instead of side-by-side):
+To seed messages, attribute the sender server-side with `message.user_id` and include `original_width`/`original_height` on image attachments (without them the SwiftUI media gallery treats images as landscape and stacks a 2-photo album vertically instead of side-by-side):
 ```bash
 getstream api SendMessage --type messaging --id <channel-id> \
   --request '{"message":{"user_id":"alice","text":"Hi","attachments":[{"type":"image","image_url":"<url>","thumb_url":"<url>","original_width":1200,"original_height":900}]}}'
