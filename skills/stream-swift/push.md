@@ -40,22 +40,22 @@ The provider stores the key **server-side**; the SDK never sees it. Use `UpsertP
 # Regular APNs provider (Chat push + Video alert push)
 jq -n --rawfile key /path/AuthKey_<KEYID>.p8 \
   '{push_provider:{type:"apn",name:"apn",apn_auth_type:"token",apn_auth_key:$key,apn_key_id:"<KEYID>",apn_team_id:"<TEAMID>",apn_topic:"<BUNDLE_ID>",apn_development:true}}' \
-  | stream api UpsertPushProvider --body @-
+  | getstream api UpsertPushProvider --request @-
 ```
 
 ```bash
 # VoIP provider (only for ringing video calls; same key, name "voip")
 jq -n --rawfile key /path/AuthKey_<KEYID>.p8 \
   '{push_provider:{type:"apn",name:"voip",apn_auth_type:"token",apn_auth_key:$key,apn_key_id:"<KEYID>",apn_team_id:"<TEAMID>",apn_topic:"<BUNDLE_ID>",apn_development:true}}' \
-  | stream api UpsertPushProvider --body @-
+  | getstream api UpsertPushProvider --request @-
 ```
 
 Notes:
 
 - `apn_development:true` targets the **sandbox** (debug builds run from Xcode). Set `false` for TestFlight / App Store builds - flip it per environment, or keep separate dev/prod apps.
 - Preview the request without sending: append `--dry-run`.
-- Confirm: `stream api ListPushProviders`. Remove one: `stream api DeletePushProvider type=apn name=voip`.
-- If the user prefers a file over stdin, write the JSON to a temp file and use `--body @/tmp/apn.json`, then delete it. Never echo the `.p8` contents into the chat.
+- Confirm: `getstream api ListPushProviders`. Remove one: `getstream api DeletePushProvider --type apn --name voip`.
+- If the user prefers a file over stdin, write the JSON to a temp file and use `--request @/tmp/apn.json`, then delete it. Never echo the `.p8` contents into the chat.
 
 Exact field schema (from the live API): `type`, `name`, `apn_auth_type` (`token` | `certificate`), `apn_auth_key`, `apn_key_id`, `apn_team_id`, `apn_topic`, `apn_development`, `apn_host`, `apn_p12_cert`.
 
@@ -125,7 +125,7 @@ If unclear, ask one question:
 
 ## Step 6: Verify
 
-- `stream api ListPushProviders` -> the provider(s) exist with the right `name` and `apn_topic`.
-- `stream api CheckPush ...` tests the push config server-side; or do an end-to-end test: a real message from a second user (chat) / a ringing call from a second user (video).
+- `getstream api ListPushProviders` -> the provider(s) exist with the right `name` and `apn_topic`.
+- `getstream api CheckPush ...` tests the push config server-side; or do an end-to-end test: a real message from a second user (chat) / a ringing call from a second user (video).
 - **Real device required** - APNs and especially VoIP do **not** work on the simulator.
-- A device token registers only **after** connecting the user (chat) / initializing `StreamVideo` with the config (video). If push is silent, confirm the device appears via `stream api ListDevices` and that `apn_development` matches the build (sandbox vs production).
+- A device token registers only **after** connecting the user (chat) / initializing `StreamVideo` with the config (video). If push is silent, confirm the device appears via `getstream api ListDevices` and that `apn_development` matches the build (sandbox vs production).

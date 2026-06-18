@@ -5,7 +5,7 @@ For adding Stream products to an **existing Next.js project**. Reuses the refere
 > **Reviewing, not adding?** If the user wants to **audit/check an existing Stream Video integration against best practices** ("is my video app production-ready?", "what am I missing?") rather than add a feature, run the **Integration best-practices audit** section in [`references/VIDEO.md`](references/VIDEO.md). It is a read-only review with a fixed checklist + output contract - produce findings first, fix only if asked.
 
 **Rules:** the `stream` skill's [`RULES.md`](../stream/RULES.md) (secrets, no auto-seeding, login screen first, package manager).
-**Preflight:** hand off to the `stream-cli` skill before any npm installs, `stream api` setup, or token routes - it owns install, credentials, and auth. Wait for its `OK` readout, then continue here. Do not inline-read its files; the hand-off primes its endpoint cache + cookbook for any ad-hoc query you need later (RULES.md > CLI safety).
+**Onboard first:** run `getstream init` to authenticate and select or create the org + app before any npm installs, `getstream env`, or token routes. See [`../stream/SKILL.md`](../stream/SKILL.md) > Stream CLI for usage.
 **SDK wiring (shared with the scaffold flow):** [`sdk.md`](sdk.md) and the relevant [`references/<Product>.md`](references/) - enhance uses the same wiring patterns as scaffold; only the surrounding setup differs.
 
 ---
@@ -16,7 +16,7 @@ Before writing any code, understand what's already in place:
 
 1. **Packages:** check `package.json` for `stream-chat`, `stream-chat-react`, `@stream-io/video-react-sdk`, `@stream-io/node-sdk`.
 2. **Auth:** does the app already have a `/api/token` route? If so, **extend** it with the new product's token - don't create a second token route.
-3. **Credentials:** check for `.env` with `STREAM_API_KEY` / `STREAM_API_SECRET`. If missing, hand off to the `stream-cli` skill to resolve them (it runs `stream env` against the active app), then resume here.
+3. **Credentials:** check for `.env` with `STREAM_API_KEY` / `STREAM_API_SECRET`. If missing, run `getstream init` (if the dir isn't a Stream project yet) then `getstream env` to write them - never read or print the secret.
 4. **UI framework:** confirm Tailwind, Shadcn, or whatever the project uses. Do **not** install Shadcn or change the styling setup unless the user asks.
 5. **Directory structure:** note whether the project uses `app/` or `src/app/` - match the existing convention.
 

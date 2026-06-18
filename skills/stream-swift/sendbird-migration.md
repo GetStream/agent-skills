@@ -172,7 +172,7 @@ This is the biggest conceptual shift.
 | `SendbirdChat.initialize(params:)` / `SendbirdUI.initialize(applicationId:)` | `ChatClient(config: ChatClientConfig(apiKey: .init(apiKey)))` |
 | **Two UI layers each init separately** (`SendbirdUIKit.SendbirdUI` + `SendbirdSwiftUI.SendbirdUI`) | **One `ChatClient`** for SwiftUI *and* UIKit. SwiftUI also needs the `StreamChat` wrapper object created once before any view renders. |
 | `SBUGlobals.currentUser = SBUUser(userId:)` then `SendbirdUI.connect { }` | `chatClient.connectUser(userInfo: UserInfo(id:name:imageURL:), token: token) { }` |
-| **Test mode**: connecting with any userId auto-creates that user, no token | **Always token-authed**: `Token` (dev token from CLI/`stream token <id>` for local; backend-issued in production). No "anyone can be anyone". |
+| **Test mode**: connecting with any userId auto-creates that user, no token | **Always token-authed**: `Token` (dev token from CLI/`getstream token <id>` for local; backend-issued in production). No "anyone can be anyone". |
 | App ID is the only credential | API **key** (client-safe) + per-user **token**. Never ship the API **secret**. |
 
 The two Sendbird bootstraps usually **collapse into one** Stream stack object:
@@ -344,7 +344,7 @@ but render as plain text. Do it as a real **custom attachment**, and mind three 
    custom fields come back as `custom: {}`). Only KNOWN attachment fields survive — so map your
    payload's fields onto `title` / `text` via `CodingKeys` (`case subtitle = "text"`) and make
    `init(from:)` resilient (defaults for anything that may be dropped). Verify with
-   `stream api QueryChannels --body '{"filter_conditions":{"cid":"..."},"state":true}'`.
+   `getstream api QueryChannels --request '{"filter_conditions":{"cid":"..."},"state":true}'`.
 
 4. **Don't send right after `synchronize()`** — it races the local store (`ChannelDoesNotExist`
    / `ChannelNotCreatedYet`). For an **existing** channel use `channelController(for: cid)` (NOT
@@ -491,7 +491,7 @@ Sendbird's client-side multi-user seeding (connect as user A, then B, then C —
 auto-creates them) **does not map** to Stream: the client can only act as the connected
 user and can't mint other users.
 
-- **Create users / cross-user messages**: server-side — Stream CLI (`stream api UpdateUsers`,
+- **Create users / cross-user messages**: server-side — Stream CLI (`getstream api UpdateUsers`,
   `GetOrCreateChannel`, `UpdateChannel add_members`, `SendMessage` with `user_id`) or your backend.
 - **Channels the current user owns + that user's own messages**: the client can do these
   (`channelController(createChannelWithId:)`, `createNewMessage`). Keep a thin client-side

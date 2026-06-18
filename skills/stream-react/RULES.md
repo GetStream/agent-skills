@@ -11,11 +11,13 @@ other files reference this file - do not duplicate these rules inline.
 
 ## Env vars are server-side only
 
-**Env vars are server-side only.** The client never reads `process.env` for Stream
-credentials - it receives `apiKey`, `userId`, and its token from the `/api/token` response
-(upserted once per login) and holds them in React state. No `NEXT_PUBLIC_STREAM_*` vars. This
-keeps secrets out of the client bundle *and* sidesteps the `.env` hook entirely. (The core
-"never read/edit `.env`" rule lives in [`../stream/RULES.md`](../stream/RULES.md) > Secrets.)
+**The secret is server-side only** - never in the client bundle, never `NEXT_PUBLIC`.
+`getstream env` writes the **public** API key with the framework's client prefix
+(`NEXT_PUBLIC_STREAM_API_KEY`) plus the server-only `STREAM_API_SECRET` to `.env.local`. The
+client may read `NEXT_PUBLIC_STREAM_API_KEY` directly or receive `apiKey` from the
+`/api/token` response; either way the token is minted server-side (with the secret) and
+returned by `/api/token`. (The core "never read/edit `.env`" rule lives in
+[`../stream/RULES.md`](../stream/RULES.md) > Secrets.)
 
 - Narrow `searchParams.get()` (returns `string | null`) with guards before passing to SDK methods.
 
@@ -120,7 +122,7 @@ and memory - fetch it.
 
 ## Builder phase order (React)
 
-The generic preflight + phase-order discipline lives in [`../stream/RULES.md`](../stream/RULES.md) > Preflight & phase order. React-specific additions:
+The generic onboarding + phase-order discipline lives in [`../stream/RULES.md`](../stream/RULES.md) > Onboarding & phase order. React-specific additions:
 
 - Do not load `references/*.md` until the user names the product(s).
 - Do not load [`builder-ui.md`](builder-ui.md) before Step 4.
@@ -142,8 +144,8 @@ The following live in [`../stream/RULES.md`](../stream/RULES.md) and apply here 
 - **Peer skills** - Glob/install/invoke procedure for sibling packs.
 - **Secrets** - never Read/Edit `.env`; let the CLI own it; `.gitignore` before any `.env` write.
 - **No auto-seeding** - the `/api/token` route upserts only the requesting user; no demo users/content unless asked.
-- **CLI safety** - no guessing endpoints; route `stream api` calls through `stream-cli`.
-- **Preflight & phase order** - hand off to `stream-cli` for preflight before real work.
-- **Shell discipline** - no `bash -ce`/`set -e` in probes; `stream auth login` stays its own invocation.
+- **CLI safety** - no guessing endpoints; confirm with `getstream api -h` and read the CLI's output.
+- **Onboarding** - run `getstream init` (auth + org/app + credentials) before build/integrate work.
+- **Shell discipline** - no `bash -ce`/`set -e` in probes; browser sign-in (`getstream init` / `getstream login`) stays its own invocation.
 - **Cross-track follow-ups** - offer, do not auto-execute, the natural next action across tracks.
 - **Sandboxed / blocked shell fallback** - print commands for the user and continue read-only.

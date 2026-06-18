@@ -234,7 +234,7 @@ final client = StreamVideo(
 );
 ```
 
-Token generation: `stream token <user_id>` (same CLI as Chat).
+Token generation: `getstream token <user_id>` (same CLI as Chat).
 
 ### Token provider (expiring tokens)
 

@@ -21,19 +21,19 @@ Rules: [../RULES.md](../RULES.md) (moderation is Dashboard-only).
 **CLI commands (run when moderation is included):**
 ```bash
 # Create blocklist (NOT idempotent - check first to avoid 400 error):
-stream api ListBlockLists 2>&1 | grep -q '"profanity"' || \
-  stream api CreateBlockList name=profanity --body '{"words":[<generate a comprehensive list of common profanity>]}'
+getstream api ListBlockLists 2>&1 | grep -q '"profanity"' || \
+  getstream api CreateBlockList --request '{"name":"profanity","words":[<generate a comprehensive list of common profanity>]}'
 
 # Attach blocklist to the channel type being used (e.g., livestream, team, messaging):
-stream api UpdateChannelType name=livestream --body '{"blocklist":"profanity","blocklist_behavior":"flag"}' automod=disabled automod_behavior=flag
+getstream api UpdateChannelType --name livestream --request '{"blocklist":"profanity","blocklist_behavior":"flag","automod":"disabled","automod_behavior":"flag"}'
 
 # Enable blocklist in moderation config (required for review queue population):
-stream api upsert_config --body '{"key":"chat","block_list_config":{"enabled":true,"rules":[{"name":"profanity","action":"flag"}]}}'
+getstream api UpsertConfig --request '{"key":"chat","block_list_config":{"enabled":true,"rules":[{"name":"profanity","action":"flag"}]}}'
 # If Feeds is also used - chat config does NOT cover feeds:
-stream api upsert_config --body '{"key":"feeds","block_list_config":{"enabled":true,"rules":[{"name":"profanity","action":"flag"}]}}'
+getstream api UpsertConfig --request '{"key":"feeds","block_list_config":{"enabled":true,"rules":[{"name":"profanity","action":"flag"}]}}'
 ```
 
-**IMPORTANT:** Do NOT use `2>/dev/null || true` to suppress CreateBlockList errors - this also swallows CLI confirmation prompts (exit code 5), causing silent failure. The blocklist must exist before `upsert_config` runs, or it will fail with "Blocklist not found".
+**IMPORTANT:** Do NOT use `2>/dev/null || true` to suppress CreateBlockList errors - this also swallows the CLI's own error output, causing silent failure. The blocklist must exist before `UpsertConfig` runs, or it will fail with "Blocklist not found".
 
 ### Server Routes
 
@@ -41,7 +41,7 @@ No moderation-specific server routes needed - review happens in the Dashboard. T
 
 ### Gotchas
 
-- Blocklist alone doesn't populate review queue - MUST also `upsert_config` with `block_list_config.enabled: true`
+- Blocklist alone doesn't populate review queue - MUST also `UpsertConfig` with `block_list_config.enabled: true`
 - Need BOTH `key: "chat"` AND `key: "feeds"` configs if both products are used - chat config doesn't cover feeds
 - Use `flag` not `block` for `blocklist_behavior` - flag delivers content AND flags it in review queue
 - `CreateBlockList` is NOT idempotent - returns 400 if exists. Check with `ListBlockLists` first. Do NOT use `2>/dev/null || true` - it swallows CLI confirmation prompts

@@ -12,11 +12,11 @@ allowed-tools: >-
   Bash(find . *),
   Bash(cat pubspec.yaml), Bash(cat pubspec.lock),
   Bash(flutter pub *),
-  Bash(stream token *),
-  Bash(stream keys *),
-  Bash(stream api *),
-  Bash(stream auth *),
-  Bash(stream config *)
+  Bash(getstream token *),
+  Bash(getstream env *),
+  Bash(getstream api *),
+  Bash(getstream login *),
+  Bash(getstream init *)
 ---
 
 # Stream Flutter - skill router + execution flow
@@ -113,9 +113,9 @@ Ask **one message** with all setup questions together — do not split into roun
 Once the user replies, execute all steps without pausing. For feed groups, if the user said "set up automatically":
 
 ```bash
-stream api CreateFeedGroup --body '{"id": "user", "type": "flat"}'
-stream api CreateFeedGroup --body '{"id": "timeline", "type": "flat"}'
-stream api CreateFeedGroup --body '{"id": "notification", "type": "notification"}'
+getstream api CreateFeedGroup --request '{"id": "user", "type": "flat"}'
+getstream api CreateFeedGroup --request '{"id": "timeline", "type": "flat"}'
+getstream api CreateFeedGroup --request '{"id": "notification", "type": "notification"}'
 ```
 
 If the CLI commands fail (the Feeds API may use different endpoints than Chat), tell the user once:
@@ -138,21 +138,21 @@ Once the user answers, execute all CLI steps in sequence **without pausing for c
 #### Step A - API key
 
 ```bash
-stream keys
+getstream env --target flutter
 ```
 
-This prints the API key and copies the secret to clipboard. Extract the `API Key:` field from the output. Hold it in context. If the command returns a 401 error, the CLI session has expired — run `stream auth logout && stream auth login` to re-authenticate, then retry.
+This writes the public API key to `dart_defines.json`; the app reads it via `String.fromEnvironment('STREAM_API_KEY')` and is run with `flutter run --dart-define-from-file=dart_defines.json`. If the command returns a 401 error, the CLI session has expired - run `getstream login` to re-authenticate, then retry.
 
-**If `stream` is not installed** (`command not found`): install it with `brew install GetStream/stream-cli/stream-cli` (macOS) or `npm install -g getstream-cli`, then `stream auth login` — or, if the user prefers, skip the CLI entirely and have them paste the API key + a token per user (Dashboard → Explorer has a token generator). Decide based on the user's answer to the upfront credentials question; don't stall.
+**If `getstream` is not installed** (`command not found`): ask the user to install it from https://getstream.io and wait. Or, if the user prefers, skip the CLI entirely and have them paste the API key + a token per user (Dashboard -> Explorer has a token generator). Decide based on the user's answer to the upfront credentials question; don't stall.
 
 #### Step B - Token
 
 ```bash
 # Never-expiring
-stream token <user_id>
+getstream token <user_id>
 
 # Expiring
-stream token <user_id> --ttl <duration>
+getstream token <user_id> --ttl <duration>
 ```
 
 Hold the token in context. Use it (and the API key) in every code snippet - no placeholder strings.
@@ -164,7 +164,7 @@ Create 3-5 channels with random realistic usernames. Use `messaging` as the defa
 **Sub-step C1 — upsert all users** (seed users + the token user):
 
 ```bash
-stream api UpdateUsers --body '{
+getstream api UpdateUsers --request '{
   "users": {
     "<token_user_id>": {"id": "<token_user_id>", "name": "<Display Name>"},
     "alice": {"id": "alice", "name": "Alice"},
@@ -178,8 +178,8 @@ stream api UpdateUsers --body '{
 **Sub-step C2 — create each channel** (no members in the body; members are added in C3):
 
 ```bash
-stream api GetOrCreateChannel type=messaging id=<channel-id> \
-  --body '{"data": {"name": "<Channel Name>"}}'
+getstream api GetOrCreateChannel --type messaging --id <channel-id> \
+  --request '{"data": {"name": "<Channel Name>"}}'
 ```
 
 Repeat for each channel (e.g. `general`, `random`, `team-alpha`).
@@ -187,8 +187,8 @@ Repeat for each channel (e.g. `general`, `random`, `team-alpha`).
 **Sub-step C3 — add members to each channel** using `add_members`. The token user **must** be in every channel so the `Filter.in_('members', [userId])` query in the app returns results.
 
 ```bash
-stream api UpdateChannel type=messaging id=<channel-id> \
-  --body '{
+getstream api UpdateChannel --type messaging --id <channel-id> \
+  --request '{
     "add_members": [
       {"user_id": "<token_user_id>"},
       {"user_id": "alice"},

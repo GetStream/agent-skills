@@ -5,12 +5,10 @@ license: See LICENSE in repository root
 metadata:
   author: GetStream
   requires:
-    bins: ["stream", "node", "npm"]
-    skills: ["stream-cli"]
+    bins: ["getstream", "node", "npm"]
 allowed-tools: >-
   Read, Write, Edit, Glob, Grep,
-  Bash(stream *),
-  Bash(npx skills add GetStream/agent-skills *),
+  Bash(getstream *),
   Bash(npx *), Bash(npm install *), Bash(npm run *),
   Bash(yarn *), Bash(pnpm *),
   Bash(node -e *), Bash(node --version), Bash(openssl rand *),
@@ -25,23 +23,23 @@ allowed-tools: >-
 
 # Stream React (web) - scaffold + enhance + audit + migrate
 
-> **Read first (every session):** Read [`RULES.md`](RULES.md) (React/Next.js non-negotiables) and the cross-cutting [`../stream/RULES.md`](../stream/RULES.md). Where the two files state the same rule differently (e.g. Strict mode protection, Package manager), **this pack's [`RULES.md`](RULES.md) wins for React work**. Glob `../stream/SKILL.md`; if empty, install with `npx skills add GetStream/agent-skills --s stream -y`.
+> **Read first (every session):** Read [`RULES.md`](RULES.md) (React/Next.js non-negotiables) and the cross-cutting [`../stream/RULES.md`](../stream/RULES.md). Where the two files state the same rule differently (e.g. Strict mode protection, Package manager), **this pack's [`RULES.md`](RULES.md) wins for React work**. Glob `../stream/SKILL.md`; if empty, install with `getstream skills stream`.
 >
-> **Peer:** this pack hands every CLI action (preflight, credentials, auth, every `stream api` call) to **`stream-cli`**. Glob its path from [`../stream/peers.yaml`](../stream/peers.yaml); install silently if missing (`npx skills add GetStream/agent-skills --s stream-cli -y`). See [`../stream-cli/preflight.md`](../stream-cli/preflight.md).
+> **CLI:** CLI usage (onboarding, credentials, auth, every `getstream api` call) lives in the root skill - its "Stream CLI" section in [`../stream/SKILL.md`](../stream/SKILL.md), with CLI safety in [`../stream/RULES.md`](../stream/RULES.md). Glob `../stream/SKILL.md`; install silently if missing (`getstream skills stream`).
 
 This skill builds, enhances, audits, and migrates Stream Chat, Video, and Feeds in **React / Next.js web** apps - the default pack for all web React work. It covers **four tracks**:
 
 - **Track A - Scaffold a new app:** Steps 0-7 below. Use when the cwd is empty / new and the user said "build me a ... app".
 - **Track E - Enhance an existing app:** see [`enhance.md`](enhance.md). Skips scaffold + theme; reuses the same SDK wiring and component blueprints.
-- **Track F - Audit an existing integration (read-only):** for "audit/review my video integration", "check my app against best practices", "is my video app production-ready?", "what am I missing before launch?". **Video only:** load the **Integration best-practices audit** section in [`references/VIDEO.md`](references/VIDEO.md) and follow its protocol - it has a Video-specific checklist + output contract. **If the user asks to audit Chat or Feeds**, say up front there is no dedicated best-practices checklist for those yet, then do a general docs-based review (fetch the relevant pages from [`references/DOCS.md`](references/DOCS.md) and check the app against them) rather than applying the Video checklist. **Skip preflight, auth, the CLI, and all build steps** - this track only reads the app and reports findings. Fix issues only if the user then asks.
+- **Track F - Audit an existing integration (read-only):** for "audit/review my video integration", "check my app against best practices", "is my video app production-ready?", "what am I missing before launch?". **Video only:** load the **Integration best-practices audit** section in [`references/VIDEO.md`](references/VIDEO.md) and follow its protocol - it has a Video-specific checklist + output contract. **If the user asks to audit Chat or Feeds**, say up front there is no dedicated best-practices checklist for those yet, then do a general docs-based review (fetch the relevant pages from [`references/DOCS.md`](references/DOCS.md) and check the app against them) rather than applying the Video checklist. **Skip onboarding, auth, the CLI, and all build steps** - this track only reads the app and reports findings. Fix issues only if the user then asks.
 - **Track M - Migrate / upgrade an SDK version:** see [`migrate.md`](migrate.md). For "upgrade stream-chat-react to v14", "migrate to the new SDK", "bump my Stream version". Docs-driven: detect the installed version, fetch the matching release guide, apply it. Never migrate from memory.
 
 ### Flow dispatch - choose exactly one
 
-- **Track A:** hand off to `stream-cli` for preflight, then continue to **Start** and execute Steps 0-7.
-- **Track E:** hand off to `stream-cli` for preflight, then Read and execute [`enhance.md`](enhance.md). **Do not enter Start or any scaffold task.**
-- **Track F:** skip preflight and go directly to the audit in [`references/VIDEO.md`](references/VIDEO.md). **Do not enter Start or any build step.**
-- **Track M:** skip preflight and Read [`migrate.md`](migrate.md) first; it fetches the live release guide before any edit. **Do not enter Start or any scaffold task.**
+- **Track A:** run `getstream init` to onboard (authenticate + select/create org + app + write credentials), then continue to **Start** and execute Steps 0-7.
+- **Track E:** run `getstream init` to onboard (authenticate + select/create org + app + write credentials), then Read and execute [`enhance.md`](enhance.md). **Do not enter Start or any scaffold task.**
+- **Track F:** skip onboarding and go directly to the audit in [`references/VIDEO.md`](references/VIDEO.md). **Do not enter Start or any build step.**
+- **Track M:** skip onboarding and Read [`migrate.md`](migrate.md) first; it fetches the live release guide before any edit. **Do not enter Start or any scaffold task.**
 
 ---
 
@@ -62,7 +60,7 @@ When a request hits one of these: **match -> `WebFetch` the page's `.md` URL fro
 
 > **Track A only.** Tracks E, F, and M branch in **Flow dispatch** above and never enter this section.
 
-Once preflight has reported `OK Stream CLI vN.N.N | ...` (owned by the `stream-cli` skill), announce the network plan once, then **immediately start executing Steps 0-7** - do not ask permission to begin (the user has authorized the build by asking for it). The only pauses for input are the theme + app pick (Step 1b) and the skill-pack consent (Task A.2).
+Once `getstream init` has onboarded (authenticated + selected/created org + app + written credentials), announce the network plan once, then **immediately start executing Steps 0-7** - do not ask permission to begin (the user has authorized the build by asking for it). The only pauses for input are the theme + app pick (Step 1b) and the skill-pack consent (Task A.2).
 
 ### Trust readout (announce, then continue on the same turn - do not wait)
 
@@ -71,7 +69,7 @@ Before the first network command, print this verbatim to the user, then proceed 
 > Scaffolding now. Network calls you'll see:
 > - `npx shadcn@latest ...` (Vercel) - scaffold + UI components from npm.
 > - `npm install <stream-packages> --legacy-peer-deps` - Stream SDKs from npm (`stream-chat-react`, `@stream-io/video-react-sdk`, etc.).
-> - `stream env` - local CLI, no network; writes `.env` (gitignored by the Next.js scaffold's default; Task B verifies).
+> - `getstream env` - local CLI, no network; writes `.env.local` (gitignored by the Next.js scaffold's default; Task B verifies).
 >
 > Interrupt me at any point if something looks wrong. I'll pause twice for your input: the theme + Stream-app pick (Step 1b) and the optional third-party skill packs (Task A.2).
 
@@ -83,7 +81,7 @@ Shadcn/ui is always installed during Step 3. Third-party **frontend skills** (`v
 
 ## Install trust & integrity
 
-This builder runs three classes of network-touching commands. Each is listed here so a reviewer can audit before approving. The full CLI installer audit (SHA-256 verification, TTY confirmation, scoped platform) lives in the `stream-cli` skill's [`bootstrap.md`](../stream-cli/bootstrap.md#what-the-installer-does).
+This builder runs three classes of network-touching commands. Each is listed here so a reviewer can audit before approving. CLI install instructions live in the root skill's "Stream CLI" section in [`../stream/SKILL.md`](../stream/SKILL.md).
 
 | Command | Publisher | Why unpinned | What it writes |
 |---|---|---|---|
@@ -91,32 +89,32 @@ This builder runs three classes of network-touching commands. Each is listed her
 | `npx shadcn@latest add ...` (Task A.1) | Vercel - same source as above | Same scaffolder; component sync depends on registry parity. | Component files under `components/ui/`. |
 | `npm install <stream-packages> --legacy-peer-deps` (Task C) | GetStream (npm) for `@stream-io/*` and `stream-chat-react`; transitive deps via standard npm trust | Latest published versions of GetStream's own SDKs - same trust model as the CLI itself. | Modules under `node_modules/`. Runtime SDKs + transitive deps. |
 | `npx skills add <github>` (Task A.2) | `vercel-labs/agent-skills` and `anthropics/skills` | Optional. Markdown-only skill packs; `npx skills add` is the published install path. | Markdown files in the user's skills directory. **Gated by explicit user consent in Task A.2** - never runs without an affirmative answer. |
-| `stream env` (Task B) | GetStream - installed via the `stream-cli` skill's [`bootstrap.md`](../stream-cli/bootstrap.md) (SHA-256 verified) | n/a (local CLI, no network at this step) | `.env` in the project root with `STREAM_API_KEY` + `STREAM_API_SECRET`. Task B verifies `.gitignore` covers `.env*` before writing (Next.js scaffold's default already does). The agent never reads `.env` (RULES.md > Secrets). |
+| `getstream env` (Task B) | GetStream - install instructions in the root skill's "Stream CLI" section in [`../stream/SKILL.md`](../stream/SKILL.md) | n/a (local CLI, no network at this step) | `.env.local` in the project root with `NEXT_PUBLIC_STREAM_API_KEY` + `STREAM_API_SECRET`. Task B verifies `.gitignore` covers `.env*` before writing (Next.js scaffold's default already does). The agent never reads `.env.local` (RULES.md > Secrets). |
 
 **Reviewer checklist:**
 
 - All `npx` invocations resolve to the publishers listed above; substitute a different publisher and the install fails.
 - `npx skills add` runs **only after** the disclosure prompt in Task A.2 and an explicit user "yes."
-- `.env` is written by the Stream CLI directly, not by the agent, and is not transmitted into the conversation.
+- `.env.local` is written by the Stream CLI directly, not by the agent, and is not transmitted into the conversation.
 - If the user wants to pin a specific shadcn version, replace `@latest` with `@<version>` in Tasks A and A.1.
 
 ---
 
 ## Builder Steps
 
-Execute phases **in order** (later steps depend on earlier ones). Do **not** run independent phases in parallel. Shell discipline (one `bash -c` per phase, no `bash -ce`, `stream auth login` standalone) lives in [`../stream/RULES.md`](../stream/RULES.md) > Shell discipline.
+Execute phases **in order** (later steps depend on earlier ones). Do **not** run independent phases in parallel. Shell discipline (one `bash -c` per phase, no `bash -ce`, `getstream login` standalone) lives in [`../stream/RULES.md`](../stream/RULES.md) > Shell discipline.
 
-**Two-call exception:** If you must Read JSON (e.g. `OrganizationRead`) and then choose IDs, use one call for the read, one batched call for all creates + `stream config set`.
+**Two-call exception:** If you must Read JSON (e.g. `OrganizationRead`) and then choose IDs, use one call for the read, one batched call for all creates.
 
 ### Step 0: Package manager
 Always use `npm`. Never use bun. ([`RULES.md`](RULES.md) > Package manager.)
 
 ### Step 1: Auth
-Run the **Provisioning > Step 1: Auth** flow in [`builder.md`](builder.md) (auth probe via `stream api OrganizationRead`; `stream auth login` as its own invocation on exit 2; hang recovery). On **exit 0**, continue to Step 1b.
+Run the **Provisioning > Step 1: Auth** flow in [`builder.md`](builder.md) (auth probe via `getstream api OrganizationRead`; `getstream login` as its own invocation on exit 2; hang recovery). On **exit 0**, continue to Step 1b.
 
 ### Step 1b: Theme + app pick
 
-Ask both setup questions in **one message** before doing anything else - a single pause, the same "ask exactly once, then act" pattern the other platform packs use for credentials. Build the app options from what is already in context: the configured org/app from preflight's `stream config list` and the org list from Step 1's `OrganizationRead` output.
+Ask both setup questions in **one message** before doing anything else - a single pause, the same "ask exactly once, then act" pattern the other platform packs use for credentials. Build the app options from what is already in context: the configured org/app from `getstream init` and the org list from Step 1's `OrganizationRead` output.
 
 > **Quick setup - two questions:**
 > 1. **Theme:** I can use a random shadcn theme, or you can design your own at [ui.shadcn.com/create](https://ui.shadcn.com/create) and share the `--preset` value (e.g. `--preset b1Gdi7z7r`). Random, or do you have a preset?
@@ -129,7 +127,7 @@ Ask both setup questions in **one message** before doing anything else - a singl
 - **Account has no orgs at all** -> drop question 2, announce that a fresh org + app will be created, and ask only the theme.
 
 ### Step 2: Pick org + app
-Run the **Provisioning > Step 2: Pick org + app** flow in [`builder.md`](builder.md) - execute the Step 1b choice with no further prompting: configured app by default, `stream config set` for a selected existing app (plus the Feeds v3 check), or the create-new flow (`app-<hash>` naming, `AppCreate` with `region_id=1 feeds_version=v3`, never the auto-created app, org-limit fallback) **only** when the user chose it or no orgs exist.
+Run **Provisioning** in [`builder.md`](builder.md): `getstream init` handles auth and org/app selection-or-creation (including the Feeds v3 region choice). Let `init` drive it - interactively or via its command file; don't provision with raw `getstream api` calls.
 
 ### Step 3: Scaffold + .env + SDKs + Configure - SEQUENTIALLY
 
@@ -193,10 +191,10 @@ Do **not** modify `layout.tsx` or `globals.css` after scaffold - use Shadcn's de
 Then write secrets:
 
 ```bash
-stream env
+getstream env
 ```
 
-`stream env` writes `STREAM_API_KEY` and `STREAM_API_SECRET` - both server-side. The client never reads env vars directly; it gets `apiKey`, `userId`, and its token from the `/api/token` response and holds them in React state. No `NEXT_PUBLIC_*` duplication, no `.env` gymnastics ([`RULES.md`](RULES.md) > Env vars are server-side only).
+`getstream env` detects the Next.js project and writes `NEXT_PUBLIC_STREAM_API_KEY` + `STREAM_API_SECRET` to `.env.local`. The secret is server-side only - used by `/api/token` to mint tokens, never in the client bundle. The public API key may be read client-side from `NEXT_PUBLIC_STREAM_API_KEY` or returned via `/api/token`. The agent never reads `.env.local` ([`RULES.md`](RULES.md) > Env vars).
 
 **Task C: Install Stream SDKs + verify icons** - Only what the use case needs:
 

@@ -30,7 +30,7 @@ Never hardcode a Stream API secret in app code, `AndroidManifest.xml`, BuildConf
 Default token model:
 
 - Use a backend-issued token (via a `TokenProvider`) when the user already has a backend.
-- Use a CLI-generated token (`stream token <user_id>`, optionally with `--ttl 30s|2h|1d` — see [`credentials.md`](credentials.md)) for local dev and demo flows - this is the preferred path when no backend exists. The binary is `stream`, not `stream-cli`.
+- Use a CLI-generated token (`getstream token <user_id>`, optionally with `--ttl 30s|2h|1d` - see [`credentials.md`](credentials.md)) for local dev and demo flows - this is the preferred path when no backend exists. The binary is `getstream`, not `stream-cli`.
 - Use a static token only when the user explicitly wants to paste one themselves.
 - Never use `ChatClient.devToken(userId)` in production - dev tokens disable token verification and let any client impersonate any user.
 - Never invent or generate fake production credentials.

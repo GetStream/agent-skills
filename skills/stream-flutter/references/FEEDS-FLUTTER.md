@@ -459,6 +459,6 @@ await client.getOrCreateUnfollows(
 - **Reactions are on the `Feed`** — use `feed.addActivityReaction(...)` / `feed.deleteActivityReaction(...)`, not a separate reactions client.
 - **Partial update / batch follow live in different places** — `feed.updateActivityPartial(id:, request:)` is on the `Feed`; `client.getOrCreateFollows(...)` / `client.getOrCreateUnfollows(...)` are on the client. There is no `client.partialUpdateActivity`, `feed.followMany`, or `feed.unfollowMany`.
 - **Dispose feeds and subscriptions** — call `feed.dispose()` and cancel any `feed.stream` subscription in `dispose()`.
-- **Token generation** — use `stream token <user_id>` (Stream CLI) for local dev. Never use the API secret in Flutter code.
+- **Token generation** — use `getstream token <user_id>` (Stream CLI) for local dev. Never use the API secret in Flutter code.
 - **`ActivitiesFilterField.type` removed in v0.5.0** — use `ActivitiesFilterField.activityType` instead.
 - **`ThreadedCommentData` removed in v0.5.0** — use `CommentData` for both flat and threaded comments.

@@ -2,7 +2,7 @@
 name: stream-android
 description: "Build and integrate Stream Chat, Video, and Feeds in Android apps. Use for Jetpack Compose, Android Studio, and Gradle project work — including Stream package setup, auth and token wiring, screen blueprints, and any follow-up Stream UI work such as adding screens, navigating between channel list and channel/message screens, channel tap handling, deep links, push routing, theming, custom channel/message UI, video calling flows (joining/starting calls, ringing, custom call controls and participant tiles), and Feeds surfaces (timeline, activity composer, threaded comments, follow graph / profile, notification feed, stories)."
 license: See LICENSE in repository root
-compatibility: Requires an Android Studio / Gradle project (Kotlin). The `stream` CLI (binary name `stream`, installed from `getstream.io/cli/install.sh`) is the default path for the credentials flow (API key fetch, token mint, and any product-specific setup — see `credentials.md`); only optional when the user pastes the API key and token themselves.
+compatibility: Requires an Android Studio / Gradle project (Kotlin). The `getstream` CLI (binary name `getstream`) is the default path for the credentials flow (API key fetch, token mint, and any product-specific setup - see `credentials.md`); only optional when the user pastes the API key and token themselves.
 metadata:
   author: GetStream
 allowed-tools:
@@ -19,11 +19,8 @@ allowed-tools:
   - Bash(cat **/build.gradle)
   - Bash(cat **/build.gradle.kts)
   - Bash(cat gradle/libs.versions.toml)
-  - Bash(command -v stream)
-  - Bash(stream token *)
-  - Bash(stream config *)
-  - Bash(stream --safe *)
-  - Bash(stream api *)
+  - Bash(command -v getstream)
+  - Bash(getstream *)
 ---
 
 # Stream Android - skill router + execution flow
@@ -73,7 +70,7 @@ Follow [`credentials.md`](credentials.md) to:
 - generate a user token via the Stream CLI (or accept one from the user)
 - run any product-specific setup (Chat: optionally seed channels; Feeds: confirm feed groups; Video: nothing — calls are ephemeral)
 
-Use the resulting API key and token in every code snippet — never placeholder strings. If a track A/B/D task reaches code work and credentials haven't been collected yet, return to `credentials.md` before continuing.
+Wire the API key from `getstream env`'s output (e.g. `BuildConfig.STREAM_API_KEY`) and use the real user token in code snippets - never placeholder strings. If a track A/B/D task reaches code work and credentials haven't been collected yet, return to `credentials.md` before continuing.
 
 ---
 
