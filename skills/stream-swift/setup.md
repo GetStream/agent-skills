@@ -39,6 +39,11 @@ If the user says they will paste credentials, take them and skip the CLI steps b
 ### CLI steps (run in sequence, narrate one line each)
 
 ```bash
+# Onboard ONCE in the project dir: authenticate + select/create org & app + write
+# project credentials. REQUIRED first — env/token/api all fail with
+# "stream project is not initialized; run `getstream init` first" otherwise.
+getstream init
+
 # API key -> Secrets.xcconfig (read via Info.plist / Bundle.main); the secret is never printed
 getstream env --target ios
 
@@ -49,6 +54,12 @@ getstream token <user_id> --ttl <duration>
 # Seed channels (Chat only, if requested): create the users first, then each channel
 getstream api UpdateUsers --request '{"users":{"<token_user_id>":{"id":"<token_user_id>","name":"Token User"},"alice":{"id":"alice","name":"Alice"}}}'
 getstream api GetOrCreateChannel --type messaging --id <channel-id> --request '{"data":{"created_by_id":"<token_user_id>","members":[{"user_id":"<token_user_id>"},{"user_id":"alice"}]}}'
+```
+
+To seed messages, attribute the sender server-side with `message.user_id` and include `original_width`/`original_height` on image attachments (without them the SwiftUI media gallery treats images as landscape and stacks a 2-photo album vertically instead of side-by-side):
+```bash
+getstream api SendMessage --type messaging --id <channel-id> \
+  --request '{"message":{"user_id":"alice","text":"Hi","attachments":[{"type":"image","image_url":"<url>","thumb_url":"<url>","original_width":1200,"original_height":900}]}}'
 ```
 
 Pick `--type` to match the vertical, not always `messaging`: `messaging` for social / marketplace / DMs, `team` for workplace, `livestream` for livestream / live-shopping (its permissions allow public + anonymous access). See [`RULES.md`](RULES.md) "Permissions". Use short channel ids (`general`, `random`) and a small set of usernames (`alice`, `bob`, `carol`). Make the token user a member of at least one channel so it shows on first launch. Print a one-line summary of what was created.
