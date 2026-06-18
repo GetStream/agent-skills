@@ -261,8 +261,8 @@ Use the **Request -> Blueprint section** table at the top of each blueprints fil
 
 ## CLI and shell discipline
 
-Credentials and requested demo data use the `stream` binary. If the binary is missing, follow [`../stream-cli/bootstrap.md`](../stream-cli/bootstrap.md) instead of introducing a new installer flow.
+Credentials and requested demo data use the `getstream` binary. If the binary is missing, ask the user to install it from https://getstream.io and wait - never run an install script or introduce a new installer flow.
 
-For `stream api` calls, follow [`../stream/RULES.md`](../stream/RULES.md) > CLI safety: discover endpoints before running them, use `--safe` first for read operations, and only run mutating demo-data calls after the user explicitly asks for demo data.
+For `getstream api` calls, follow [`../stream/RULES.md`](../stream/RULES.md) > CLI safety: confirm endpoints with `getstream api -h` before running them, and only run mutating demo-data calls after the user explicitly asks for demo data.
 
 Do not read or print `.env` files. Do not use `bash -ce` in probes.

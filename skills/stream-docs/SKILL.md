@@ -7,7 +7,6 @@ metadata:
 allowed-tools: >-
   Read, Glob, Grep,
   WebFetch(domain:getstream.io),
-  Bash(npx skills add GetStream/agent-skills *),
   Bash(grep *), Bash(ls *), Bash(test *),
   Bash(cat package.json), Bash(cat go.mod),
   Bash(cat requirements.txt), Bash(cat pyproject.toml)
@@ -15,13 +14,13 @@ allowed-tools: >-
 
 # Stream - Docs search (live SDK documentation)
 
-> **Read first (every session):** Glob `../stream/SKILL.md`. If the path is empty, install with `npx skills add GetStream/agent-skills --s stream -y` (no confirmation, just run). Then Read [`../stream/RULES.md`](../stream/RULES.md) - it includes a **Peer skills** table for installing/invoking any other pack skills on demand.
+> **Read first (every session):** Glob `../stream/SKILL.md` and Read [`../stream/RULES.md`](../stream/RULES.md) (both ship with this skill) - RULES.md includes a **Peer skills** table for installing/invoking any other pack skills on demand.
 
 Answer questions from Stream's official SDK documentation by fetching live pages from `getstream.io`. Covers Chat, Video, Activity Feeds, and Moderation across every framework and version.
 
 **Docs index:** `https://getstream.io/cli/llms.txt`
 
-> **No CLI gate, no up-front shell.** This skill never invokes Write, Edit, npm, scaffold tools, or `Bash(stream *)`. Pure docs questions with an explicit SDK reach `WebFetch` without running *any* shell command. A small read-only probe runs **only on demand** - inside Step 1a below - when the SDK can't be resolved from the user's input. If the user's question requires running the CLI or building code, offer to switch - the user re-enters via the `stream` router, the `stream-cli` skill, or the `stream-builder` skill.
+> **No CLI gate, no up-front shell.** This skill never invokes Write, Edit, npm, scaffold tools, or `Bash(getstream *)`. Pure docs questions with an explicit SDK reach `WebFetch` without running *any* shell command. A small read-only probe runs **only on demand** - inside Step 1a below - when the SDK can't be resolved from the user's input. If the user's question requires running the CLI or building code, offer to switch - the user re-enters via the `stream` router or the `stream-builder` skill.
 
 ---
 
@@ -165,7 +164,7 @@ Stop at the first step that gives a confident answer:
 
 ### Step 1a - Project detection
 
-**Check project signals first.** The `stream-cli` skill's [`preflight.md`](../stream-cli/preflight.md) > Project signals runs once per session for the CLI and builder skills, populating `PKG` (Stream npm packages with versions) and `NATIVE` (non-npm project files). If those signals are already in conversation context, use them directly - no extra probe.
+**Check project signals first.** Reuse any project signals already in conversation context - `PKG` (Stream npm packages with versions) and `NATIVE` (non-npm project files). If they aren't available yet, run the probe below.
 
 Only run a fresh probe if:
 - project signals hasn't run yet in this conversation (rare - usually means you're answering before the router classified)

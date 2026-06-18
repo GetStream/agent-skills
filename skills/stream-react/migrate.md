@@ -2,7 +2,7 @@
 
 For upgrading an existing React / Next.js app's Stream SDK to a newer major/minor version ("upgrade `stream-chat-react` to v14", "migrate to the new SDK", "bump my Stream version"). **Docs-driven and read-only until you've fetched the guide** - never apply a migration from memory ([`RULES.md`](RULES.md) > Docs-first for cookbook / advanced features).
 
-> **Rules:** [`RULES.md`](RULES.md) (package manager, docs-first) and the cross-cutting [`../stream/RULES.md`](../stream/RULES.md). This track does **not** scaffold, provision, or need `stream auth` - it edits an existing project. Preserve the project's existing package manager + lockfile.
+> **Rules:** [`RULES.md`](RULES.md) (package manager, docs-first) and the cross-cutting [`../stream/RULES.md`](../stream/RULES.md). This track does **not** scaffold, provision, or need to authenticate - it edits an existing project. Preserve the project's existing package manager + lockfile.
 
 ---
 

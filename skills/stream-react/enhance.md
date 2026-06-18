@@ -5,7 +5,7 @@ For adding Stream products to an **existing React project** - Next.js or any oth
 > **Reviewing, not adding?** If the user wants to **audit/check an existing Stream Video integration against best practices** ("is my video app production-ready?", "what am I missing?") rather than add a feature, run the **Integration best-practices audit** section in [`references/VIDEO.md`](references/VIDEO.md). It is a read-only review with a fixed checklist + output contract - produce findings first, fix only if asked.
 
 **Rules:** [`RULES.md`](RULES.md) (login screen first, package manager - preserve the existing project's) and the `stream` skill's [`RULES.md`](../stream/RULES.md) (secrets, no auto-seeding).
-**Preflight:** hand off to the `stream-cli` skill before any npm installs, `stream api` setup, or token routes - it owns install, credentials, and auth. Wait for its `OK` readout, then continue here. Do not inline-read its files; the hand-off primes its endpoint cache + cookbook for any ad-hoc query you need later (RULES.md > CLI safety).
+**Onboard first:** run `getstream init` to authenticate and select or create the org + app before any npm installs, `getstream env`, or token routes. CLI usage and posture live in the root [`../stream/SKILL.md`](../stream/SKILL.md) (Stream CLI section) and [`../stream/RULES.md`](../stream/RULES.md) > CLI safety.
 **SDK wiring (shared with the scaffold flow):** [`sdk.md`](sdk.md) and the relevant [`references/<Product>.md`](references/) - enhance uses the same wiring patterns as scaffold; only the surrounding setup differs.
 
 ---
@@ -17,7 +17,7 @@ Before writing any code, understand what's already in place:
 1. **Packages:** check `package.json` for `stream-chat`, `stream-chat-react`, `@stream-io/video-react-sdk`, `@stream-io/node-sdk`.
 2. **Framework:** detect from `package.json` - **Next.js** (has `next`; route handlers under `app/` or `pages/api`; build = `next build`) vs **another React stack** (Vite/CRA/Remix/etc.; no Next.js `/api` routes; build = the project's own `build` script). This drives where the token endpoint lives (E3) and the verify command (E4).
 3. **Auth:** does the app already have a server token endpoint (Next.js `/api/token` route, or an equivalent endpoint in the app's own backend)? If so, **extend** it with the new product's token - don't create a second token endpoint.
-4. **Credentials:** check for `.env` with `STREAM_API_KEY` / `STREAM_API_SECRET`. If missing, hand off to the `stream-cli` skill to resolve them (it runs `stream env` against the active app), then resume here.
+4. **Credentials:** check for `.env` with `STREAM_API_KEY` / `STREAM_API_SECRET`. If missing, run `getstream init` (if the dir isn't a Stream project yet) then `getstream env` to write them - never read or print the secret.
 5. **UI framework:** confirm Tailwind, Shadcn, or whatever the project uses. Do **not** install Shadcn or change the styling setup unless the user asks.
 6. **Directory structure:** note whether the project uses `app/`, `src/app/`, `pages/`, or `src/` - match the existing convention.
 

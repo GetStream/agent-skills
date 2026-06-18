@@ -1,53 +1,17 @@
 # Provisioning, Use Case Matching, and Page Flow
 
-The pieces the React builder relies on that are not React-specific: **provisioning** (auth + org/app selection or creation, Steps 1-2 of [`SKILL.md`](SKILL.md)), **use-case matching** (which products a request needs), and **page flow** (hub-first navigation every app follows).
+The pieces the React builder relies on that are not React-specific: **provisioning** (onboarding via `getstream init`, Step 1 of [`SKILL.md`](SKILL.md)), **use-case matching** (which products a request needs), and **page flow** (hub-first navigation every app follows).
 
-> **CLI execution:** every `stream ...` command here is run through the `stream-cli` peer - complete its [`preflight.md`](../stream-cli/preflight.md) first. No guessing endpoint names ([`../stream/RULES.md`](../stream/RULES.md) > CLI safety).
-> **Shell discipline:** one `bash -c` per phase, no `bash -ce`/`set -e` in probes, and `stream auth login` always as its own unwrapped invocation ([`../stream/RULES.md`](../stream/RULES.md) > Shell discipline).
+> **CLI execution:** CLI usage and posture live in the root `stream` skill - its [`SKILL.md`](../stream/SKILL.md) (Stream CLI section) and [`../stream/RULES.md`](../stream/RULES.md) (CLI safety: no guessing endpoints, read the CLI's output).
+> **Shell discipline:** one `bash -c` per phase, no `bash -ce`/`set -e` in probes, and browser sign-in (`getstream init` / `getstream login`) always as its own unwrapped invocation ([`../stream/RULES.md`](../stream/RULES.md) > Shell discipline).
 
 ---
 
 ## Provisioning
 
-### Step 1: Auth
+Run `getstream init`. It authenticates (opening a browser as its own invocation), then lets you select or create the org and app and writes the project credentials - follow its prompts and output. If the use case includes **Feeds**, choose a **Feeds v3** region when `getstream init` offers the region list (other regions default to legacy v2, where v3 feed groups are unavailable). If `getstream` isn't installed, ask the user to install it from https://getstream.io and wait - never fetch or run an install script.
 
-**Test auth first, then act - don't skip this and don't wait until Step 2 surfaces an error.** Run `stream api OrganizationRead` as a probe:
-
-- **Exit 0** -> already authenticated. **Keep the `OrganizationRead` output in context** - Step 1b presents the org list from it. Continue to Step 1b (theme + app pick) in [`SKILL.md`](SKILL.md).
-- **Exit 2 / "not authenticated"** -> **immediately** run `stream auth login` as its **own** Bash invocation. This is a hard constraint:
-  - Browser PKCE requires an unwrapped `stream auth login` call - **never** chain with `&&`, embed in a heredoc, or bundle with other commands.
-  - Do not ask the user first; just run it. Give it up to ~3 minutes for the browser flow.
-- **Login hangs past ~60s, or the user reports the browser is stuck** -> run `stream auth logout` to clear any stale session state, then retry `stream auth login` **once**. If the second attempt also hangs, stop and ask the user to run `! stream auth login` themselves (the `!` prefix runs it in-session so you see the result).
-
-**No account?** Open `https://getstream.io/try-for-free/`, then `stream auth login` after signup.
-
-### Step 2: Pick org + app
-
-**Never create an org or app unprompted.** The user chooses in the combined Step 1b prompt ([`SKILL.md`](SKILL.md)); this step only executes that choice, with no further prompting. The inputs are already in hand: preflight's `stream config list` (currently configured org/app) and Step 1's `OrganizationRead` output (org list).
-
-- **Use the configured app** - the default whenever one is configured and the user didn't pick otherwise. Nothing to set; echo it once before continuing: `Using Stream app "<name>" (org <org>)`.
-- **Pick another existing app:** enumerate the chosen org's apps first - discover the app-list endpoint via the `stream-cli` cache (`~/.stream/cache/API.md`, [`../stream/RULES.md`](../stream/RULES.md) > CLI safety - never guess) - then set defaults:
-  ```bash
-  stream config set org <org_id> && stream config set app <app_id>
-  ```
-- **Feeds caveat for any existing app:** if the use case includes Feeds, confirm the selected app is **Feeds v3** (`stream --safe api GetApp`). If it is not, tell the user and recommend creating a new app - v3 feed groups are not available on v2 apps.
-- **Create new** - only when the user chose it, or when the account has no orgs at all (announce that case). **App names are globally unique** - always `app-<hash>` where hash = `openssl rand -hex 4`. If there are already 10 orgs, do NOT create a new org - pick an existing `builder-*` org and create the app inside it.
-
-  ```bash
-  HASH=$(openssl rand -hex 4)
-  stream api OrganizationCreate name=builder-$HASH slug=builder-$HASH
-
-  # Create app with Feeds v3 + US East (region_id=1):
-  stream api AppCreate name=app-$HASH org_id=<org_id> is_development=true region_id=1 feeds_version=v3
-
-  # Set defaults:
-  stream config set org <org_id> && stream config set app <app_id>
-  ```
-
-  **Never use the auto-created app** from OrganizationCreate - it uses Feeds v2 and US Ohio.
-  **Fallback (org limit / 429):** pick an existing `builder-*` org from the `OrganizationRead` output, create the new app in it.
-
-**Two-call exception:** if you must Read JSON (e.g. `OrganizationRead`) and then choose IDs, use one call for the read, one batched call for all creates + `stream config set`.
+`getstream init` is the single onboarding step - it replaces any manual auth / org-create / app-create / config-set sequence. Don't provision orgs or apps with raw `getstream api` calls; let `init` drive the selection (interactively, or via its command file in non-interactive runs).
 
 ---
 

@@ -11,7 +11,7 @@ Never hardcode a Stream API secret in app code, `pubspec.yaml`, or chat. The cli
 Default token model:
 
 - Use a backend-issued token when the user already has a backend.
-- Use a CLI-generated token (`stream token <user_id>` or `stream token <user_id> --ttl <duration>`) for local dev and demo flows - this is the preferred path when no backend exists.
+- Use a CLI-generated token (`getstream token <user_id>` or `getstream token <user_id> --ttl <duration>`) for local dev and demo flows - this is the preferred path when no backend exists.
 - Use a static token only when the user explicitly wants to paste one themselves.
 - Never invent or generate fake production credentials.
 - The API secret never leaves the CLI/server side; only the API key and the generated token go into app code.

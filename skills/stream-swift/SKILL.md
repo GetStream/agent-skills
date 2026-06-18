@@ -16,11 +16,7 @@ allowed-tools: >-
   Bash(find . *),
   Bash(cat Package.swift), Bash(cat Package.resolved), Bash(cat Podfile),
   Bash(jq *),
-  Bash(stream token *),
-  Bash(stream chat *),
-  Bash(stream api *),
-  Bash(stream config *),
-  Bash(stream --safe *)
+  Bash(getstream *)
 ---
 
 # Stream Swift - docs orchestrator for iOS

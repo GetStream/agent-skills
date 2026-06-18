@@ -7,7 +7,7 @@ Every rule below is stated once. Read it before writing code. The docs cover *ho
 ## Secrets and auth
 
 - Never hardcode a Stream API **secret** in app code, `Info.plist`, or chat. The client holds only the **API key** and a **user token**; the secret stays server-side / in the CLI.
-- Token model: backend-issued token when a backend exists; CLI token (`stream token <user_id>` or `... --ttl <duration>`) for local/demo (preferred when no backend); a static pasted token only when the user insists.
+- Token model: backend-issued token when a backend exists; CLI token (`getstream token <user_id>` or `... --ttl <duration>`) for local/demo (preferred when no backend); a static pasted token only when the user insists.
 - Never invent or fabricate credentials. Never use `devToken()` in production - it lets any client impersonate any user.
 - In generated code, reference credentials via named constants (`Config.apiKey`, `Config.userToken`) in a dedicated config file - never embed raw values inline.
 

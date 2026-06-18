@@ -4,55 +4,37 @@ Give your AI coding agent the ability to build, query, and manage [Stream](https
 
 ## Install
 
-```bash
-npx skills add GetStream/agent-skills
-```
-
-That's the only command you ever need. It installs the router (`stream`) plus every specialist skill below — and even if you install the router alone, it silently pulls in whatever sub-skill a task needs, on demand. Use `/stream` for generic Stream routing, or invoke a sub-skill directly with `/stream-cli`, `/stream-docs`, `/stream-builder`, `/stream-swift`, `/stream-android`, or `/stream-react-native`.
-
-### Install - direct from GitHub (no third-party CLI)
-
-If you'd rather not route through `skills.sh`, clone this repo into your skills directory:
+Install the [Stream CLI](https://getstream.io), then:
 
 ```bash
-# Claude Code
-git clone https://github.com/GetStream/agent-skills ~/.claude/skills/stream-pack
-
-# Or download a tagged release tarball
-curl -L https://github.com/GetStream/agent-skills/archive/refs/heads/main.tar.gz | tar -xz -C ~/.claude/skills/
+getstream skills
 ```
 
-This is byte-for-byte the same content `npx skills add` installs, fetched directly from GitHub.
+With no arguments, `getstream skills` installs the default set - the `stream` router (which includes the CLI layer), `stream-builder`, and `stream-docs`. Platform packs (`stream-swift`, `stream-android`, `stream-react-native`, `stream-flutter`) install on demand via `getstream skills <name>` the first time a task needs them. To set up a project at the same time (auth, org/app selection, credentials), run `getstream init` instead.
+
+Use `/stream` for generic routing, or invoke a skill directly with `/stream-builder`, `/stream-docs`, `/stream-swift`, `/stream-android`, `/stream-react-native`, or `/stream-flutter`.
 
 ## Skills
 
-### Core
-
 | Skill | Purpose | When to use |
 |---|---|---|
-| `/stream` | **Router** - classifies intent and dispatches | Always start here if you don't know which sub-skill applies |
-
-The router skill at [`skills/stream/`](skills/stream/) owns core web, CLI, docs, and peer-pack routing rules. Platform sub-skills can add their own `RULES.md`.
-
-### Sub-skills
-
-| Skill | Purpose | When to use |
-|---|---|---|
-| `/stream-cli` | Query Stream data, run `stream api / config / auth`, install the CLI binary | "list channels", "show flagged", "find users", `stream api ...`, "install the CLI" |
+| `/stream` | **Router + CLI** - classifies intent, dispatches, and runs `getstream` CLI commands | Start here; also handles data queries, app config, and onboarding |
 | `/stream-docs` | Search live SDK documentation from getstream.io | Explicit SDK token (Chat React, Video iOS, ...), "docs", "how do I ... in <framework>" |
-| `/stream-builder` | Scaffold a new app, or add Chat/Video/Feeds/Moderation to an existing one | "build me a ... app", "scaffold", "add Chat to this app", "integrate Video" |
+| `/stream-builder` | Scaffold a new web app, or add Chat/Video/Feeds/Moderation to an existing one | "build me a ... app", "scaffold", "add Chat to this app", "integrate Video" |
 | `/stream-swift` | Build or integrate Stream in Swift/SwiftUI/UIKit/iOS apps | Swift, SwiftUI, UIKit, iOS, Xcode |
 | `/stream-android` | Build or integrate Stream in Android/Jetpack Compose apps | Android, Jetpack Compose, Kotlin, Android Studio, Gradle |
 | `/stream-react-native` | Create, build, or integrate Stream Chat or Stream Video React Native in RN CLI or Expo apps | React Native, Expo, `stream-chat-react-native`, `stream-chat-expo`, `@stream-io/video-react-native-sdk`, video call, livestream, audio room, ringing |
+| `/stream-flutter` | Build or integrate Stream Chat in Flutter apps | Flutter, Dart, `stream_chat_flutter`, `stream_chat_flutter_core` |
+
+The router (`/stream`) owns routing, the CLI layer (queries, app config, onboarding), and the cross-cutting rules in [`skills/stream/RULES.md`](skills/stream/RULES.md). Platform sub-skills can add their own `RULES.md`.
 
 ## What gets installed
 
-This pack is **markdown only** - no code, no postinstall scripts, no binaries. Two install paths touch the network; each is listed below so you can audit before running.
+The skills are plain markdown. Installation and on-demand skill fetching run through the `getstream` CLI; the only other network touch is the optional frontend-skill packs the builder can add with your consent.
 
 | Step | Trigger | What it does | Source |
 |---|---|---|---|
-| `npx skills add GetStream/agent-skills` | Manual, by you | Fetches this repo's markdown into your skills directory via the [`skills.sh` CLI](https://skills.sh/docs/cli) ([source](https://github.com/skills-sh/skills-cli)). | GitHub (`GetStream/agent-skills`) |
-| `curl -sSL https://getstream.io/cli/install.sh \| bash` | Agent runs only after you approve | Installs the `stream` CLI binary. Skipped entirely for docs-only usage (`/stream-docs`). Full audit of what the installer does - including SHA-256 verification and TTY confirmation - in [`skills/stream-cli/bootstrap.md`](skills/stream-cli/bootstrap.md#what-the-installer-does). | `getstream.io/cli/` |
+| `getstream skills <name>` | Agent, on demand (or you) | Fetches a skill's markdown into your skills directory via the `getstream` CLI. | GitHub (`GetStream/agent-skills`) |
 | Frontend skill installs (builder only) | Agent asks first, then runs | Installs three third-party skill packs for UI scaffolding - see below. | GitHub (listed) |
 
 ### Frontend skills (builder only)
@@ -65,7 +47,7 @@ When you ask the agent to scaffold a new app or enhance an existing one via `/st
 | `web-design-guidelines` | Generic UI design polish | [`vercel-labs/agent-skills`](https://github.com/vercel-labs/agent-skills) |
 | `frontend-design` | Frontend structure | [`anthropics/skills`](https://github.com/anthropics/skills) |
 
-Decline and the builder still runs - Stream reference files cover the SDK wiring; the frontend skills only tune generic UI quality. The CLI and docs skills never trigger these installs.
+Decline and the builder still runs - Stream reference files cover the SDK wiring; the frontend skills only tune generic UI quality. The docs skill never triggers these installs.
 
 ## What your agent can do
 
@@ -74,42 +56,37 @@ Decline and the builder still runs - Stream reference files cover the SDK wiring
 - **Build and extend Swift apps** - wire Stream into SwiftUI or UIKit Xcode projects with iOS-specific setup patterns (`/stream-swift`)
 - **Build and extend Android apps** - wire Stream into Jetpack Compose Android Studio / Gradle projects with Android-specific setup patterns (`/stream-android`)
 - **Build and extend React Native apps** - wire Stream Chat or Stream Video into Expo or RN CLI projects (`/stream-react-native`)
-- **Query live data** - "any active calls?", "show flagged messages", "list my channels" - natural language to CLI (`/stream-cli`)
-- **Set up moderation** - blocklists, automod config, and content policies via the Stream CLI (`/stream-cli`)
+- **Query live data** - "any active calls?", "show flagged messages", "list my channels" - natural language to the `getstream` CLI (`/stream`)
+- **Configure apps and moderation** - channel types, roles, permissions, blocklists, automod - via the `getstream` CLI (`/stream`)
 - **Answer SDK questions** - token patterns, strict mode, client/server instantiation, theme wiring (`/stream-builder` or `/stream-docs`)
 - **Search live SDK docs** - ask questions about any Stream SDK, framework, or version; answers come verbatim from getstream.io with citations (`/stream-docs`)
 
 ## How it works
 
-The skill pack is markdown only - no code, no build step. The generic `/stream` router handles core Stream routing, docs, CLI, builder, and declared peer platform packs. Direct sub-skills such as `/stream-react-native` can also be invoked explicitly.
+The `/stream` router classifies intent, runs `getstream` CLI commands itself (queries, app config, onboarding), and routes building and docs to dedicated sub-skills. Platform sub-skills such as `/stream-react-native` can also be invoked explicitly.
 
-
-| Intent                                                | Sub-skill |
-|-------------------------------------------------------|---|
-| Build a new app                                       | `stream-builder` (Track A) |
-| Add a product to an existing app                      | `stream-builder` (Track E) |
-| Data queries and CLI operations                       | `stream-cli` (Track B) |
-| Install the Stream CLI                                | `stream-cli` (Track C) |
-| SDK wiring during builder/enhance                     | `stream-builder` + its `sdk.md` and `references/*.md` |
-| Build or integrate a React Native CLI/Expo app        | `stream-react-native` + its `sdk.md` and `references/*.md` |
+| Intent | Skill |
+|---|---|
+| Build a new app | `stream-builder` (Track A) |
+| Add a product to an existing app | `stream-builder` (Track E) |
+| Data queries, app config, and CLI operations | `stream` (CLI, built in) |
+| SDK wiring during builder/enhance | `stream-builder` + its `sdk.md` and `references/*.md` |
+| Build or integrate a React Native CLI/Expo app | `stream-react-native` + its `sdk.md` and `references/*.md` |
 | Search the official SDK documentation (no CLI needed) | `stream-docs` (Track D) |
-| Build or integrate a Swift/iOS app                    | `stream-swift` (docs orchestrator: `docs-map.md` + `setup.md`) |
-| Build or integrate an Android app                     | `stream-android` + its `builder.md`, `sdk.md`, and `references/*.md` |
+| Build or integrate a Swift/iOS app | `stream-swift` (docs orchestrator: `docs-map.md` + `setup.md`) |
+| Build or integrate an Android app | `stream-android` + its `builder.md`, `sdk.md`, and `references/*.md` |
+| Build or integrate a Flutter app | `stream-flutter` + its `builder.md`, `sdk.md`, and `references/*.md` |
 
-> **Routing precedence:** when user input contains a platform signal (e.g. `react native`, `expo`, `stream video rn`, `swift`, `ios`), the matching platform peer (`stream-react-native`, `stream-swift`) wins over the web `stream-builder` rows. The web builder is the default only when no platform signal is present.
+> **Routing precedence:** when user input contains a platform signal (e.g. `react native`, `expo`, `stream video rn`, `swift`, `ios`, `flutter`), the matching platform peer wins over the web `stream-builder` rows. The web builder is the default only when no platform signal is present.
 
 Cross-cutting rules (secrets, login screen, strict mode, package manager, base UI, moderation Dashboard-only, ...) live once in [`skills/stream/RULES.md`](skills/stream/RULES.md) and apply to every sub-skill.
 
 ## Contents
 
-- [`skills/stream/`](skills/stream/) - **Router skill**
-  - [`SKILL.md`](skills/stream/SKILL.md) - entrypoint: intent classifier, dispatch table, hand-off rules
+- [`skills/stream/`](skills/stream/) - **Router + CLI**
+  - [`SKILL.md`](skills/stream/SKILL.md) - intent classifier, CLI command index, hand-off rules
   - [`RULES.md`](skills/stream/RULES.md) - non-negotiable rules, stated once
-- [`skills/stream-cli/`](skills/stream-cli/) - **CLI sub-skill**
-  - [`SKILL.md`](skills/stream-cli/SKILL.md) - CLI workflow, credential resolution, exit-code recovery
-  - [`cli-cookbook.md`](skills/stream-cli/cli-cookbook.md) - body examples for tricky endpoints, filter/sort syntax
-  - [`bootstrap.md`](skills/stream-cli/bootstrap.md) - CLI binary installer audit
-  - [`preflight.md`](skills/stream-cli/preflight.md) - project signals + CLI gate + auth check (used by builder too)
+  - [`peers.yaml`](skills/stream/peers.yaml) - peer manifest (names, install commands, routing signals)
 - [`skills/stream-docs/`](skills/stream-docs/) - **Docs sub-skill**
   - [`SKILL.md`](skills/stream-docs/SKILL.md) - live documentation lookup with cited sources
 - [`skills/stream-builder/`](skills/stream-builder/) - **Builder sub-skill**
@@ -137,3 +114,8 @@ Cross-cutting rules (secrets, login screen, strict mode, package manager, base U
   - [`RULES.md`](skills/stream-android/RULES.md) - Android non-negotiable rules
   - [`builder.md`](skills/stream-android/builder.md) + [`sdk.md`](skills/stream-android/sdk.md) - shared Android app integration flow and SDK ownership patterns
   - [`references/`](skills/stream-android/references/) - product/framework-specific Android references and blueprints
+- [`skills/stream-flutter/`](skills/stream-flutter/) - **Flutter sub-skill**
+  - [`SKILL.md`](skills/stream-flutter/SKILL.md) - entrypoint: intent classifier, credentials/token flow, module pointers
+  - [`RULES.md`](skills/stream-flutter/RULES.md) - Flutter non-negotiable rules
+  - [`builder.md`](skills/stream-flutter/builder.md) + [`sdk.md`](skills/stream-flutter/sdk.md) - shared Flutter app integration flow and SDK ownership patterns
+  - [`references/`](skills/stream-flutter/references/) - product/framework-specific Flutter references and blueprints

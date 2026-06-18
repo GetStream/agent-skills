@@ -115,7 +115,7 @@ const tokenOrProvider = async () => {
 };
 ```
 
-Local demo tokens can come from [`../credentials.md`](../credentials.md) (`stream token <user_id>`).
+Local demo tokens can come from [`../credentials.md`](../credentials.md) (`getstream token <user_id>`).
 
 ---
 
@@ -206,8 +206,8 @@ The `foryou` group exists by default but ships with **no `activity_selectors` co
 ```bash
 # `popular` formula: reactions + comments*2 + bookmarks*3 + shares*3.
 # min_popularity: 1 means "at least one reaction-equivalent in cutoff_window".
-stream api UpdateFeedGroup id=foryou \
-  --body '{"activity_selectors":[{"type":"popular","min_popularity":1,"cutoff_window":"7d"}]}'
+getstream api UpdateFeedGroup --id foryou \
+  --request '{"activity_selectors":[{"type":"popular","min_popularity":1,"cutoff_window":"7d"}]}'
 ```
 
 For a showcase / demo where you have just seeded activities but no engagement, you also have to seed **at least one reaction per activity** - otherwise the popular score stays at 0 and the activity does not clear `min_popularity`. See [`../credentials.md`](../credentials.md) > Step C7. Once configured, you can layer additional selectors (`following`, `current_feed`, ...) - each picks the latest 1000 activities it matches, and the union is what foryou returns.
@@ -665,7 +665,7 @@ See [Contexts and hooks docs](https://getstream.io/activity-feeds/docs/react-nat
 - **`useCreateFeedsClient` returns `undefined` while connecting.** Always render `null` (or a spinner) until the client resolves; never pass `undefined` to `<StreamFeeds client={...}>`.
 - **Built-in feed groups must exist in the dashboard.** `user`, `timeline`, `notification`, and `foryou` are pre-created on most apps, but custom groups need to exist before `feed.getOrCreate(...)` can use them.
 - **For any screen that should react live to other users' activity, back it with a watched feed (`feed.getOrCreate({ watch: true })`), never with `client.queryActivities()`.** `queryActivities` is for one-shot lookups (search, exports) - it returns raw data and the SDK has no place to apply incoming WebSocket events to it. The SDK only applies `feeds.activity.added` / `feeds.activity.reaction.added` / `feeds.follow.created` events to feeds you have loaded with `watch: true`. If reactions / follows / new posts from elsewhere in the app fail to update a list, you are almost certainly looking at a `queryActivities`-backed screen that should be a `<StreamFeed>` + `useFeedActivities()` screen instead.
-- **`foryou` ships with no `activity_selectors` configured and returns empty until you configure one.** This is server-side on the feed group, not a client setup step. Configure via dashboard or `stream api UpdateFeedGroup id=foryou --body '{"activity_selectors":[{"type":"popular","min_popularity":1,"cutoff_window":"7d"}]}'`. With the `popular` selector, an activity needs popularity >= `min_popularity` to appear (formula: `reactions + comments*2 + bookmarks*3 + shares*3`); seed at least one reaction per activity in demos.
+- **`foryou` ships with no `activity_selectors` configured and returns empty until you configure one.** This is server-side on the feed group, not a client setup step. Configure via dashboard or `getstream api UpdateFeedGroup --id foryou --request '{"activity_selectors":[{"type":"popular","min_popularity":1,"cutoff_window":"7d"}]}'`. With the `popular` selector, an activity needs popularity >= `min_popularity` to appear (formula: `reactions + comments*2 + bookmarks*3 + shares*3`); seed at least one reaction per activity in demos.
 - **`queryActivities` filter field is `activity_type`, not `type`.** A `filter: { type: "post" }` clause silently matches zero rows because `type` here means a different internal field. Use `filter: { activity_type: "post" }` if you want only one activity type - or leave `filter` off entirely if you want every post.
 - **Self-follow is required.** A user's own posts go to their `user` feed and do not appear on their own `timeline` without a `timeline.follow("user:<id>")` relationship. Make this call idempotently on first run.
 - **Reactions live on the client.** Use `client.addActivityReaction` / `client.deleteActivityReaction` (not `feed.addReaction` like Flutter / Swift).

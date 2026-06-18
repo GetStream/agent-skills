@@ -39,15 +39,16 @@ If the user says they will paste credentials, take them and skip the CLI steps b
 ### CLI steps (run in sequence, narrate one line each)
 
 ```bash
-# API key (also copies the app secret to clipboard - discard if unwanted: pbcopy </dev/null)
-api_key=$(stream --safe keys | awk '/^API Key:/ {print $3}')
+# API key -> Secrets.xcconfig (read via Info.plist / Bundle.main); the secret is never printed
+getstream env --target ios
 
 # Token (never-expiring, or add --ttl <duration>)
-stream token <user_id>
-stream token <user_id> --ttl <duration>
+getstream token <user_id>
+getstream token <user_id> --ttl <duration>
 
-# Seed channels (Chat only, if requested) - repeat per channel
-stream chat channel create --type messaging --id <channel-id> --members <user1>,<user2>
+# Seed channels (Chat only, if requested): create the users first, then each channel
+getstream api UpdateUsers --request '{"users":{"<token_user_id>":{"id":"<token_user_id>","name":"Token User"},"alice":{"id":"alice","name":"Alice"}}}'
+getstream api GetOrCreateChannel --type messaging --id <channel-id> --request '{"data":{"created_by_id":"<token_user_id>","members":[{"user_id":"<token_user_id>"},{"user_id":"alice"}]}}'
 ```
 
 Pick `--type` to match the vertical, not always `messaging`: `messaging` for social / marketplace / DMs, `team` for workplace, `livestream` for livestream / live-shopping (its permissions allow public + anonymous access). See [`RULES.md`](RULES.md) "Permissions". Use short channel ids (`general`, `random`) and a small set of usernames (`alice`, `bob`, `carol`). Make the token user a member of at least one channel so it shows on first launch. Print a one-line summary of what was created.
