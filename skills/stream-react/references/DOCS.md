@@ -138,7 +138,7 @@ First-class prebuilt features the common-path blueprints don't cover. Most need 
 | best practices, production readiness, audit (Track F anchor) | Integration Best Practices | https://getstream.io/video/docs/react/advanced/integration-best-practices.md |
 | chat with video, chat alongside call, call + chat | Chat Integration | https://getstream.io/video/docs/react/advanced/chat-with-video.md |
 | recording, record call, start/stop recording | Recording | https://getstream.io/video/docs/react/advanced/recording.md |
-| broadcasting, HLS, RTMP, go live | Broadcasting | https://getstream.io/video/docs/react/advanced/broadcasting.md |
+| broadcasting, HLS/RTMP egress, restream to YouTube/Twitch | Broadcasting (HLS/RTMP egress only - NOT the WebRTC host flow) | https://getstream.io/video/docs/react/advanced/broadcasting.md |
 | video filters, background blur, audio filters | Video & Audio filters | https://getstream.io/video/docs/react/advanced/apply-video-filters.md |
 
 ---

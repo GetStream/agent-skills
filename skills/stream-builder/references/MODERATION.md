@@ -25,7 +25,7 @@ getstream api ListBlockLists 2>&1 | grep -q '"profanity"' || \
   getstream api CreateBlockList --request '{"name":"profanity","words":[<generate a comprehensive list of common profanity>]}'
 
 # Attach blocklist to the channel type being used (e.g., livestream, team, messaging):
-getstream api UpdateChannelType --name livestream --request '{"blocklist":"profanity","blocklist_behavior":"flag","automod":"disabled","automod_behavior":"flag"}'
+getstream api UpdateChannelType --name livestream --request '{"max_message_length":5000,"blocklist":"profanity","blocklist_behavior":"flag","automod":"disabled","automod_behavior":"flag"}'
 
 # Enable blocklist in moderation config (required for review queue population):
 getstream api UpsertConfig --request '{"key":"chat","block_list_config":{"enabled":true,"rules":[{"name":"profanity","action":"flag"}]}}'

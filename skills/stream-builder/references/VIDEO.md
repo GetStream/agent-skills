@@ -27,7 +27,9 @@ Everything needed to wire the UI components above into a working Next.js applica
 
 **Packages:** `@stream-io/video-react-sdk` (client), `@stream-io/node-sdk` (server)
 
-No CLI commands needed for `default` call type. For `livestream` call type, you must update **all three** publishing roles - `user`, `call_member`, and `host`. Stream evaluates capabilities against the role applied at join-time (`call_member` / `host`), not the user-level role, and the `host` defaults restrict `send-video` to call owners only:
+**Step 1 - set the app's primary use case (do this on every Video build).** Before touching call types, run the one-time `UpdateApp` write described in the *Primary use case* subsection below, choosing the value with that subsection's table and precedence rule. **The `livestream` call type is a separate concept from the `video_primary_use_case` hint - do not let the call type pick the hint.** A shopping / commerce / auction app (e.g. Whatnot) uses the `livestream` call *type* **and** sets `video_primary_use_case` to **`live-shopping`** (not `livestreaming`). Skipping this step or defaulting it to `livestreaming` for a commerce app is the failure to avoid.
+
+**Step 2 - call types & permissions.** No CLI commands needed for `default` call type. For `livestream` call type, you must update **all three** publishing roles - `user`, `call_member`, and `host`. Stream evaluates capabilities against the role applied at join-time (`call_member` / `host`), not the user-level role, and the `host` defaults restrict `send-video` to call owners only:
 
 ```bash
 # 1. Disable backstage so users can join without goLive()
@@ -42,6 +44,53 @@ getstream api UpdateCallType --name livestream --request '{"grants":{"call_membe
 # 4. Grant unrestricted send-video / send-audio to host role
 getstream api UpdateCallType --name livestream --request '{"grants":{"host":["block-user","create-call","create-call-reaction","enable-noise-cancellation-any-team","end-call","join-backstage-owner","join-call","join-ended-call-owner","kick-user-owner","mute-users","pin-call-track","read-call","read-call-stats-owner","remove-call-member-owner","screenshare","send-audio","send-event","send-video","start-broadcasting","start-frame-recording","start-recording","stop-broadcasting","stop-frame-recording","stop-recording","update-call-member-owner","update-call-member-role-owner","update-call-owner","update-call-permissions-owner"]}}'
 ```
+
+### Primary use case (app-level onboarding hint)
+
+`video_primary_use_case` is an optional, app-level setting on the Stream app (one per app, nullable). It is a **soft onboarding / display hint** that records what the app is *for*. It does **not** change call types, grants, or any runtime behavior - it is pure metadata.
+
+**This is not product selection and not a use-case recipe.** The builder's [Use Case Matching](../SKILL.md) table and the [Use-case recipes](../SKILL.md) decide *what to build* (which products, which blueprints). This setting only *labels the app you already decided to build*. Same vocabulary ("livestreaming", ...), different layer: setting it neither pulls in extra blueprints nor replaces any of the Setup CLI above (a livestream app still needs the role grants regardless of this value).
+
+**Allowed values** - hard-code these. The field is **not yet in the CLI's bundled schema**, so do not try to discover it with `--schema`; the CLI forwards `--request` JSON as-is, so read and write work anyway:
+
+`video-calling`, `voice-calling`, `livestreaming`, `audio-rooms`, `ai-agents`, `live-shopping`, `other`
+
+Pick the value from signals in the user's request:
+
+| Value | Signals in the request | Maps to builder use case |
+|---|---|---|
+| `video-calling` | "Zoom", "Google Meet", "video call", "video conferencing", "meeting", 1:1 / group video | Video Conferencing |
+| `voice-calling` | "voice call", "audio call", phone-style / Discord-style voice (no video) | - |
+| `livestreaming` | "Twitch", "YouTube Live", "Kick", "livestream", "go live", "broadcast to viewers" | Livestreaming |
+| `audio-rooms` | "Clubhouse", "Twitter/X Spaces", "audio room", "drop-in audio", "stage with speakers/listeners" | - |
+| `ai-agents` | "AI agent", "voice agent", "vision agent", an AI avatar that joins the call | - (see the `vision-agents` skill) |
+| `live-shopping` | "Whatnot", "QVC", "TikTok Shop", "live shopping", "live commerce", "shoppable livestream", "sell products during a stream", "auction" | Livestreaming variant |
+| `other` | Video is in scope but none of the above fit | - |
+
+**`live-shopping` vs `livestreaming` - check shopping first.** Live shopping is a livestreaming variant, so their signals overlap and the broader `livestreaming` will win by default. If the request mentions shopping, commerce, selling, products, a marketplace, or auctions (e.g. Whatnot, QVC, TikTok Shop) - **even alongside generic livestream words** like "live" or "stream" - pick `live-shopping`. Only fall back to `livestreaming` when there is no commerce signal at all.
+
+If signals are ambiguous, fold the choice into the **same product question you already ask to decide the build** - do not add a separate prompt just for this hint. When still unsure, set `other` (or leave it unset) rather than guessing; the value is changeable later.
+
+**Set it once during Setup (Task D), after `getstream init`:**
+
+```bash
+getstream api UpdateApp --request '{"video_primary_use_case":"livestreaming"}'
+```
+
+- `--app-id` is optional inside an initialized project; both read and write require a current login (`getstream login`).
+- Constrain input to the allowed set **yourself** before writing - server-side enum rejection of unknown values is not relied upon.
+- Setting is non-destructive and changeable, and never touches call types. Only ever set it to an allowed value; clearing it back to `null` via the API is not supported in this flow.
+
+**Read it** (e.g. to confirm what an existing app is configured for):
+
+```bash
+getstream api GetApp --jq '.app.video_primary_use_case'   # -> "livestreaming", or null if never set
+```
+
+**By track:**
+- **Scaffold (Track A):** set the hint during Task D, mapped from the detected use case, when Video is part of the build.
+- **Enhance (Track E):** when you add Video to an existing app, set it the same way during Video setup if it is unset.
+- **Audit (Track F):** the audit is code-only and **does not run the CLI**. Do not read or write this value yourself. But if the user tells you the app's `video_primary_use_case` (or has already read it), use it to scope which use-case-specific checklist rows apply (e.g. livestream-only rows).
 
 ### Server Routes
 
