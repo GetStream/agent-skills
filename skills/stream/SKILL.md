@@ -99,6 +99,19 @@ CLI tasks - querying data, configuring an app, onboarding, installing skills - a
 
 ---
 
+## Sendbird data migration (shared, language-agnostic)
+
+A platform pack's Sendbird migration covers the **code/SDK** swap (e.g. `stream-swift`
+`sendbird-migration.md`). Moving the **data** (users, channels, message history, reactions)
+is server-side and SDK-independent, so it lives once, here, in
+[`sendbird-data-migration.md`](sendbird-data-migration.md) - **any** platform pack hands off
+to it. It picks a strategy (hard switch / uni-directional / bi-directional sync), exports from
+Sendbird, builds the JSONL import file, validates, and imports via the `getstream` CLI
+(`CreateImportURL` -> upload -> `CreateImport` -> `GetImport`). Read it when a code migration
+finishes and the user wants their history brought over.
+
+---
+
 ## Quick navigation
 
 For a bare `/stream` (and whenever the user wants to pick a skill directly), output the block below **verbatim** - keep the Core / Platform SDKs split, the examples, and the closing line - then wait:

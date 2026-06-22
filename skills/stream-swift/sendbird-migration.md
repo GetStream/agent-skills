@@ -628,3 +628,30 @@ title with a `.principal` item in the same modifier.
    checklist (bubble bg+text both directions, alignment, header info button, composer suggestion
    placement, custom card/icon rendering & padding, badge tint). Compare against the Sendbird
    original and iterate — a green build and a correct channel list are **not** "done".
+9. **Offer data migration** (§10) — once the code migration builds, connects, and looks right,
+   ask whether to migrate the Sendbird **data** too, and if so run the shared runbook.
+
+---
+
+## 10. Data migration (offer it after the code migration)
+
+The steps above migrate the **code/SDK**. They do **not** move any history — a migrated app
+connects to an **empty** Stream app until you either seed it or import the Sendbird data. So
+once the migration builds, connects, and matches the source design, **ask the user whether they
+also want to migrate their Sendbird data**:
+
+> The SDK migration is done and verified. Do you also want to migrate your Sendbird **data**
+> (users, channels, message history, reactions) into Stream? There are three approaches:
+> **A** hard switch (simplest, needs a maintenance window), **B** uni-directional sync (zero
+> downtime, the most common choice), or **C** bi-directional sync (zero downtime, no forced app
+> update, Enterprise).
+
+Data migration is **server-side and SDK-independent** — it is identical whether the client is
+Swift, Kotlin, Flutter, or React — so it lives in a shared, language-agnostic runbook rather
+than here: [`../stream/sendbird-data-migration.md`](../stream/sendbird-data-migration.md). If
+the user says yes, **read that file and follow it**: pick the strategy (its §0), then export
+from Sendbird, build the JSONL import file, validate, and import via the `getstream` CLI
+(`CreateImportURL` -> upload -> `CreateImport` -> `GetImport`), adding real-time sync for B/C.
+
+Do **not** start a data migration unsolicited — it touches production data and may incur
+attachment-transfer cost. If the user only wanted the SDK swap, stop after step 8.
