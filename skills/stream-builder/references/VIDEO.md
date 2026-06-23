@@ -27,7 +27,7 @@ Everything needed to wire the UI components above into a working Next.js applica
 
 **Packages:** `@stream-io/video-react-sdk` (client), `@stream-io/node-sdk` (server)
 
-**Step 1 - set the app's primary use case (do this on every Video build).** Before touching call types, run the one-time `UpdateApp` write described in the *Primary use case* subsection below, choosing the value with that subsection's table and precedence rule. **The `livestream` call type is a separate concept from the `video_primary_use_case` hint - do not let the call type pick the hint.** A shopping / commerce / auction app (e.g. Whatnot) uses the `livestream` call *type* **and** sets `video_primary_use_case` to **`live-shopping`** (not `livestreaming`). Skipping this step or defaulting it to `livestreaming` for a commerce app is the failure to avoid.
+**Step 1 - set the app's primary use case.** Before touching call types, run the one-time `UpdateApp` write described in the Primary use case subsection below, choosing the value with that subsection's table and precedence rule. Do not confuse call types with `video_primary_use_case`: a shopping app (e.g. Whatnot) uses the `livestream` call type,m but the `video_primary_use_case` is `live-shopping`.
 
 **Step 2 - call types & permissions.** No CLI commands needed for `default` call type. For `livestream` call type, you must update **all three** publishing roles - `user`, `call_member`, and `host`. Stream evaluates capabilities against the role applied at join-time (`call_member` / `host`), not the user-level role, and the `host` defaults restrict `send-video` to call owners only:
 
@@ -47,29 +47,25 @@ getstream api UpdateCallType --name livestream --request '{"grants":{"host":["bl
 
 ### Primary use case (app-level onboarding hint)
 
-`video_primary_use_case` is an optional, app-level setting on the Stream app (one per app, nullable). It is a **soft onboarding / display hint** that records what the app is *for*. It does **not** change call types, grants, or any runtime behavior - it is pure metadata.
+`video_primary_use_case` is an optional, app-level setting on the Stream app (one per app, nullable). It is a soft hint what the app is for. It is pure metadata, and does not affect configuration on runtime behavior.
 
-**This is not product selection and not a use-case recipe.** The builder's [Use Case Matching](../SKILL.md) table and the [Use-case recipes](../SKILL.md) decide *what to build* (which products, which blueprints). This setting only *labels the app you already decided to build*. Same vocabulary ("livestreaming", ...), different layer: setting it neither pulls in extra blueprints nor replaces any of the Setup CLI above (a livestream app still needs the role grants regardless of this value).
+**This is not product selection.** The [Use Case Matching](../builder.md) table decides what to build. This setting only labels the app you already decided to build.
 
-**Allowed values** - hard-code these. The field is **not yet in the CLI's bundled schema**, so do not try to discover it with `--schema`; the CLI forwards `--request` JSON as-is, so read and write work anyway:
+**Allowed values** - hard-code these, do not try to discover it with `--help` or `--schema`:
 
-`video-calling`, `voice-calling`, `livestreaming`, `audio-rooms`, `ai-agents`, `live-shopping`, `other`
-
-Pick the value from signals in the user's request:
-
-| Value | Signals in the request | Maps to builder use case |
+| Value | Signals in the request | Maps to Use Case Matching |
 |---|---|---|
 | `video-calling` | "Zoom", "Google Meet", "video call", "video conferencing", "meeting", 1:1 / group video | Video Conferencing |
 | `voice-calling` | "voice call", "audio call", phone-style / Discord-style voice (no video) | - |
 | `livestreaming` | "Twitch", "YouTube Live", "Kick", "livestream", "go live", "broadcast to viewers" | Livestreaming |
 | `audio-rooms` | "Clubhouse", "Twitter/X Spaces", "audio room", "drop-in audio", "stage with speakers/listeners" | - |
-| `ai-agents` | "AI agent", "voice agent", "vision agent", an AI avatar that joins the call | - (see the `vision-agents` skill) |
+| `ai-agents` | "AI agent", "voice agent", "vision agent", an AI avatar that joins the call | - |
 | `live-shopping` | "Whatnot", "QVC", "TikTok Shop", "live shopping", "live commerce", "shoppable livestream", "sell products during a stream", "auction" | Livestreaming variant |
 | `other` | Video is in scope but none of the above fit | - |
 
-**`live-shopping` vs `livestreaming` - check shopping first.** Live shopping is a livestreaming variant, so their signals overlap and the broader `livestreaming` will win by default. If the request mentions shopping, commerce, selling, products, a marketplace, or auctions (e.g. Whatnot, QVC, TikTok Shop) - **even alongside generic livestream words** like "live" or "stream" - pick `live-shopping`. Only fall back to `livestreaming` when there is no commerce signal at all.
+**`live-shopping` vs `livestreaming` - check shopping first.** Live shopping is a livestreaming variant, so their signals overlap. If the request mentions shopping, commerce, selling, products, a marketplace, or auctions (e.g. Whatnot, QVC, TikTok Shop) - pick `live-shopping`. Only fall back to `livestreaming` when there is no commerce signal at all.
 
-If signals are ambiguous, fold the choice into the **same product question you already ask to decide the build** - do not add a separate prompt just for this hint. When still unsure, set `other` (or leave it unset) rather than guessing; the value is changeable later.
+If signals are ambiguous, fold the choice into the same product question you already ask to decide the build. Do not add a separate prompt just for this hint. When still unsure, set `other` (or leave it unset) rather than guessing; the value is changeable later.
 
 **Set it once during Setup (Task D), after `getstream init`:**
 

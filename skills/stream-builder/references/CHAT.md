@@ -66,24 +66,20 @@ const client = StreamChat.getInstance(process.env.STREAM_API_KEY!, process.env.S
 - Always generate real tokens server-side via `client.createToken()` - never `devToken()`
 - `StreamChat.getInstance(apiKey, apiSecret)` is fine server-side (singleton OK)
 - `client.channel(type, id, { name, image, members })` - the 3rd arg accepts custom channel data (`ChannelData`); Stream's own tutorial does `client.channel('livestream', 'spacex', { name, image })`.
-- **Custom channel data + custom events need module augmentation, or `tsc` fails (stream-chat v9+ strict typing).** A custom channel field like `name` errors with *`'name' does not exist in type 'ChannelData'`*, and a custom `channel.sendEvent({ type: 'bid.placed', ... })` fails the closed `EventTypes` union. Declare custom fields once in a `.d.ts`, and cast custom `sendEvent` payloads. (Both bite any app that rides realtime signaling - bids, presence, reactions - over chat events.)
+- SDK uses module augmentation for custom data types. A custom channel field like `name` and a custom `channel.sendEvent({ type: 'bid.placed', ... })` both raise a type error by default. Declare custom fields and events using module augmentation and interface merging:
   ```ts
-  // lib/stream-custom-data.d.ts
   import "stream-chat"
-  import type { DefaultChannelData } from "stream-chat-react"
   declare module "stream-chat" {
-    interface CustomChannelData extends DefaultChannelData {
-      name?: string                       // add your custom channel fields here
+    interface CustomChannelData {
+      name?: string // add your custom channel fields here
+    }
+    interface CustomEventTypes {
+      "bid.placed": true // your custom event type
     }
     interface CustomEventData {
-      payload?: Record<string, unknown>   // your custom-event payload shape
+      payload?: Record<string, unknown> // your custom event payload shape
     }
   }
-  ```
-  Custom event *type* names are not in the SDK's `EventTypes` union, so cast when sending (and never put a dot in a custom type name - dots are reserved for built-in events):
-  ```ts
-  const event = { type, user: { id }, payload } as unknown as Parameters<typeof channel.sendEvent>[0]
-  await channel.sendEvent(event)
   ```
 - Listen for `user.banned` event to show banned state in UI
 - Import `stream-chat-react/css/index.css` for default styles - the preferred aliased path (`dist/css/index.css` also resolves; v14+, the `/v2/` subpath was removed)
