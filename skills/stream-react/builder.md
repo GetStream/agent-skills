@@ -29,6 +29,8 @@ Run `getstream init`. It authenticates (opening a browser as its own invocation)
 
 **Moderation** is configured via CLI during setup only. **Never build moderation review UI in the app** ([`RULES.md`](RULES.md) > Moderation is Dashboard-only) - review happens in the [Stream Dashboard](https://beta.dashboard.getstream.io).
 
+**Video apps - decide the `video_primary_use_case` here.** When this table selects Video, also decide the `video_primary_use_case` value using the table + precedence in [`references/VIDEO.md`](references/VIDEO.md) > Primary use case. Do not confuse it with call types - e.g. a Whatnot-style live-shopping app uses the `livestream` call type but sets `video_primary_use_case: live-shopping`, not `livestreaming`. This is pure metadata and does not change which products you build or which blueprints you load.
+
 ---
 
 ## Page Flow

@@ -176,7 +176,7 @@ npm install <packages> --legacy-peer-deps
 After installing SDKs, verify an icon package is available. Some Shadcn presets bundle one, others don't:
 
 ```bash
-node -e "try{require.resolve('lucide-react');console.log('ICONS_OK')}catch{try{require.resolve('@phosphor-icons/react');console.log('ICONS_OK')}catch{console.log('NO_ICONS')}}"
+node -e "const p=['lucide-react','@phosphor-icons/react','@hugeicons/react'];console.log(p.some(m=>{try{require.resolve(m);return true}catch{return false}})?'ICONS_OK':'NO_ICONS')"
 ```
 
 If `NO_ICONS`, install `lucide-react`: `npm install lucide-react --legacy-peer-deps`. If an icon package is already present, use that one throughout the app - do not install a second.
@@ -237,6 +237,8 @@ End with:
 Some requests map to a **use-case recipe**: a drop-in build plan for a specific product (e.g. an AI support agent) that keeps this skill generic. Before Step 4, read [`references/use-cases/_use-cases.yaml`](references/use-cases/_use-cases.yaml). If the request matches a recipe's `signals`, **load that recipe file and follow it as the build plan** - the recipe declares the Stream products to scaffold, the product references to `load_with`, and the decisions to ask. If nothing matches, use the generic product blueprints above.
 
 Adding a use-case is a new file under `references/use-cases/` plus an entry in `_use-cases.yaml` - never a change to this SKILL.md.
+
+**Video apps - decide the `video_primary_use_case` here too.** When the Use Case Matching table (or a recipe) selects Video, also decide the app's persistent `video_primary_use_case` value **now**, while you are already reasoning about the video flavor, using the table + precedence in [`references/VIDEO.md`](references/VIDEO.md) > Primary use case. **Record it and carry it to Video setup (Task D), where it is written once via the CLI.** Deciding it at this step stops it from silently defaulting to the *call type* later - e.g. a Whatnot-style live-shopping app uses the `livestream` call type but sets `video_primary_use_case: live-shopping`, not `livestreaming`. This is a **label, not product selection**: it is backend onboarding/display metadata that does **not** change which products you build or which blueprints you load - the table and recipes still decide that.
 
 ---
 

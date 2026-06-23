@@ -209,7 +209,7 @@ npm install <packages> --legacy-peer-deps
 After installing SDKs, verify an icon package is available. Some Shadcn presets bundle one, others don't:
 
 ```bash
-node -e "try{require.resolve('lucide-react');console.log('ICONS_OK')}catch{try{require.resolve('@phosphor-icons/react');console.log('ICONS_OK')}catch{console.log('NO_ICONS')}}"
+node -e "const p=['lucide-react','@phosphor-icons/react','@hugeicons/react'];console.log(p.some(m=>{try{require.resolve(m);return true}catch{return false}})?'ICONS_OK':'NO_ICONS')"
 ```
 
 If `NO_ICONS`, install `lucide-react`: `npm install lucide-react --legacy-peer-deps`. If an icon package is already present, use that one throughout the app - do not install a second.
