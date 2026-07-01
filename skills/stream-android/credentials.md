@@ -106,7 +106,7 @@ Pick a small set of random realistic usernames (e.g. `alice`, `bob`, `carol`, `d
 
 ```bash
 getstream api GetOrCreateChannel --type messaging --id <channel-id> \
-  --request '{"data":{"name":"<display name>","created_by_id":"<token_user_id>","members":[{"user_id":"<token_user_id>"},{"user_id":"alice"},{"user_id":"bob"}]}}'
+  --request '{"data":{"created_by_id":"<token_user_id>","members":[{"user_id":"<token_user_id>"},{"user_id":"alice"},{"user_id":"bob"}],"custom":{"name":"<display name>"}}}'
 ```
 
 Generate short memorable channel IDs (e.g. `general`, `random`, `team-alpha`). Make sure the **token user id** appears in `data.members` for at least one channel — otherwise the channel list renders empty on first launch.
