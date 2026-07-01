@@ -1,21 +1,20 @@
 # Video - Setup & Integration
 
-Stream Video provides pre-built UI components via React, React Native, Flutter, Swift, and Kotlin SDKs. This file covers setup, server routes, client patterns, and gotchas. For full component structure and wiring, see [VIDEO-blueprints.md](VIDEO-blueprints.md).
+Stream Video provides pre-built UI components via React, React Native, Flutter, Swift, and Kotlin SDKs. This file covers setup, server routes, client patterns, and gotchas. For the prebuilt component path (provider tree + layouts/controls), see [VIDEO-blueprints.md](VIDEO-blueprints.md); for fully bespoke UI on the low-level client, see [custom-ui.md](custom-ui.md).
 
 Rules: [../RULES.md](../RULES.md) (login screen first, strict mode protection, reference authority) and the cross-cutting [../../stream/RULES.md](../../stream/RULES.md) (secrets, no auto-seeding).
 
-- **Blueprint** - HTML with BEM classes defining structure and conditional rendering
-- **Wiring** - API calls to read/write each element, exact property paths
-- **Requirements** - Dashboard settings, API params, and prerequisites
+- **Prebuilt path** ([VIDEO-blueprints.md](VIDEO-blueprints.md)) - the canonical provider tree, prebuilt layouts/controls, and the `useCallStateHooks()` customization surface. The common path for calls and livestreams.
+- **Bespoke path** ([custom-ui.md](custom-ui.md)) - custom layouts/controls on the low-level client; keep `ParticipantView` for track binding.
+- **Live docs** ([docs-map.md](docs-map.md)) - fetch the matching component / cookbook / advanced page before building any customization.
 
 ## Quick ref
 
 - **Packages:** `@stream-io/video-react-sdk`; import SDK CSS from package `dist/css/styles.css`.
 - **First:** **App Integration** -> **Setup** for call types / credentials.
-- **Per feature:** Lobby, Call Layout, Controls, ... - one section at a time.
-- **Below the next rule:** full blueprints - **do not load past it** until you implement that component.
+- **Per feature:** fetch the matching live page from [docs-map.md](docs-map.md) before implementing that screen; for fully hand-built UI on the low-level client, see [custom-ui.md](custom-ui.md).
 
-Full component blueprints: [VIDEO-blueprints.md](VIDEO-blueprints.md) - load only the section you are implementing.
+Prebuilt component path: [VIDEO-blueprints.md](VIDEO-blueprints.md) - the canonical provider tree + layouts/controls. Bespoke UI on the low-level client: [custom-ui.md](custom-ui.md).
 
 ---
 

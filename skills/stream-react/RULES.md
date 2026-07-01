@@ -70,9 +70,14 @@ docs/cookbooks are built around customizing them. Default to that path:
 
 **Customize via the documented hooks/props** (e.g. `<MessageList Message={Custom} />`,
 `useChannelStateContext()`, `useMessageContext()`, `useCallStateHooks()`, `<Channel>` theming) -
-fetch the matching docs page first (see Docs-first below). **Hand-build raw markup ONLY when the
-user explicitly asks for fully bespoke UI**; in that case use the `references/*-blueprints.md`
-"Fully custom UI" fallback section (raw element structure + wiring tables) - still docs-first.
+fetch the matching docs page first (see Docs-first below).
+
+**Writing your OWN component for a prebuilt region triggers [`references/custom-ui.md`](references/custom-ui.md) - load it BEFORE you build.** This is the predicate, and it is easy to get wrong:
+
+- **Passing props / theme** to a prebuilt component (a cookbook recipe's prop, `<Channel>` theme tokens) -> just fetch the page.
+- **Writing your own component/markup for a region** - a custom message row / `MessageUI`, a custom composer, a custom channel preview or header, a custom call layout - **load `custom-ui.md` first, then fetch the page.** This holds **even when you wire it via the documented `Message=` / `WithComponents` prop**, and it is **not** limited to a "fully bespoke app".
+
+Why: replacing a prebuilt region means you inherit every sub-feature it rendered. `custom-ui.md` carries the **completion contract** (reproduce-or-mark-`N/A`: attachments, reactions, quoted replies, receipts, threads, edited/deleted, grouping) that stops a custom row from silently dropping them. Still docs-first either way.
 
 **Reference files are the source of truth for the components they document** - which prebuilt
 component to use, its props, SDK wiring, and property paths. Do not generate Stream SDK code from
@@ -86,11 +91,11 @@ and memory - fetch it.
 
 ## Docs-first for cookbook / advanced features
 
-**Before implementing any feature that matches a UI component, UI Cookbook, or Advanced Guide topic, fetch the matching Stream docs page first.** [`references/DOCS.md`](references/DOCS.md) holds the keyword -> page map and the protocol. The bundled `references/*-blueprints.md` cover the common path; component-reference and cookbook/advanced topics - the prebuilt component props, typing indicator, custom message UI, message actions, reactions, message composer / input UI, channel header, emoji picker, autocomplete, link previews, AI integrations, advanced search, multiple lists, infinite scroll, channel read state, online status, location sharing, blocking users, message reminders, notifications, attachment previews, audio playback, date/time formatting, SDK state management, dialog management, TypeScript custom data types, chat + video integration, call layouts, PiP, network quality, livestream watching, recording, broadcasting - change often and **must** be built from the current page, not memory.
+**Before implementing any feature that matches a UI component, UI Cookbook, or Advanced Guide topic, fetch the matching Stream docs page first.** [`references/docs-map.md`](references/docs-map.md) holds the keyword -> page map and the protocol. The bundled `references/*-blueprints.md` cover the common path; component-reference and cookbook/advanced topics - the prebuilt component props, typing indicator, custom message UI, message actions, reactions, message composer / input UI, channel header, emoji picker, autocomplete, link previews, AI integrations, advanced search, multiple lists, infinite scroll, channel read state, online status, location sharing, blocking users, message reminders, notifications, attachment previews, audio playback, date/time formatting, SDK state management, dialog management, TypeScript custom data types, chat + video integration, call layouts, PiP, network quality, livestream watching, recording, broadcasting - change often and **must** be built from the current page, not memory.
 
-**This rule also governs migration (Track M).** Never apply an SDK upgrade from memory - fetch the matching release / upgrade guide from the index in [`references/DOCS.md`](references/DOCS.md) (or [`migrate.md`](migrate.md)) and apply *that*.
+**This rule also governs migration (Track M).** Never apply an SDK upgrade from memory - fetch the matching release / upgrade guide from the index in [`references/docs-map.md`](references/docs-map.md) (or [`migrate.md`](migrate.md)) and apply *that*.
 
-**Flow:** match a trigger -> `WebFetch` the `.md` URL from [`references/DOCS.md`](references/DOCS.md) -> read it this turn -> implement to match.
+**Flow:** match a trigger -> `WebFetch` the `.md` URL from [`references/docs-map.md`](references/docs-map.md) -> read it this turn -> implement to match.
 
 **Hard gate on fetch failure.** If the page does not load, hand the lookup to the `stream-docs` skill. If **neither** the page nor `stream-docs` resolves the API, **stop and tell the user** - report that you could not confirm the current API and ask how to proceed. **Do not implement the feature from memory.** A guess that happens to compile is still a guess.
 
@@ -126,7 +131,7 @@ The generic onboarding + phase-order discipline lives in [`../stream/RULES.md`](
 
 - Do not load `references/*.md` until the user names the product(s).
 - Do not load [`builder-ui.md`](builder-ui.md) before Step 4.
-- Shadcn/ui is always installed during Step 3 - never skip. Third-party **frontend skills** (`vercel-labs/*`, `anthropics/*`) require one explicit user confirmation per session before install - see [`SKILL.md`](SKILL.md) Task A.2.
+- Shadcn/ui is always installed during Step 3 - never skip. **stream-react does not install third-party frontend skills** (no install step). If such packs (`frontend-design`, `vercel-react-best-practices`, `web-design-guidelines`) are already present in the session, use them for generic UI polish only - Stream references stay authoritative for SDK wiring. (The consent-to-install rule in [`../stream/RULES.md`](../stream/RULES.md) > Builder phase order is for `stream-builder`, which retains that step; this file wins for React.)
 
 ## Moderation is Dashboard-only
 

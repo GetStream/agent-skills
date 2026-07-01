@@ -31,7 +31,7 @@ Before writing any code, understand what's already in place:
 
 1. **Token endpoint:** extend the existing token endpoint to return the new product's token alongside existing ones. On **Next.js** this is the `/api/token` route handler; on **other React stacks** it is the project's own server endpoint (Express/Fastify route, Remix loader/action, Vite server fn, etc.) - the server-side instantiation in [`sdk.md`](sdk.md) is identical, only the host differs. Tokens are always minted server-side ([`RULES.md`](RULES.md) > Env vars are server-side only).
 2. **API routes:** add the product-specific server routes from `references/<Product>.md` (App Integration -> API Routes) - as Next.js route handlers on Next.js, or equivalent endpoints in the app's backend otherwise. Feeds needs several (`/api/feed/get`, `/api/feed/post`, etc.); Chat and Video typically only need the token endpoint.
-3. **Components:** load the relevant `references/<Product>-blueprints.md` sections and build components using the existing project's patterns and styling conventions - not the [`builder-ui.md`](builder-ui.md) defaults.
+3. **Components:** load the prebuilt path in `references/<Product>-blueprints.md` (and [`references/custom-ui.md`](references/custom-ui.md) for fully bespoke UI), fetch the matching live page from [`references/docs-map.md`](references/docs-map.md) for any customization, and build using the existing project's patterns and styling conventions - not the [`builder-ui.md`](builder-ui.md) defaults.
 4. **State:** if the app already manages user state (auth context, session), wire Stream tokens into that - don't add a separate Login Screen unless the app has no auth.
 
 ## E4: Verify
@@ -49,7 +49,7 @@ Fix any errors. Use the project's existing package manager and `build` script - 
 
 ## Key constraints
 
-- Do **not** re-scaffold, re-initialize Shadcn, install frontend skills, or modify `globals.css` / `layout.tsx`.
+- Do **not** re-scaffold, re-initialize Shadcn, or modify `globals.css` / `layout.tsx`.
 - Do **not** overwrite or restructure existing files - add new files alongside them.
 - Do **not** change the existing auth flow. Adapt Stream's token generation to fit the app's existing auth, not the other way around.
 - If the project uses a different package manager (yarn, pnpm), match what it already uses - the npm-only rule applies to new scaffolds, not existing projects.

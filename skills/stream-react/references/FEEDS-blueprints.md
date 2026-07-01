@@ -76,7 +76,7 @@ Individual activity card showing author, content, reactions, comments, and actio
 
   <!-- CONDITIONAL: has poll -->
   <div class="post-card__poll">
-    <!-- No bundled Poll blueprint - fetch the Polls page (DOCS.md > Feeds) before building -->
+    <!-- No bundled Poll blueprint - fetch the Polls page (docs-map.md > Feeds) before building -->
   </div>
 
   <div class="post-card__actions">
