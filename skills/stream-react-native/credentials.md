@@ -113,7 +113,7 @@ getstream api UpdateUsers --request '{"users":{"<token_user_id>":{"id":"<token_u
 Use `GetOrCreateChannel`. Prefix every channel id with `<demo_prefix>` and tag the channel with a `seeded_by_skill: true` marker in `data.custom` so later runs can detect this skill's own seeded data:
 
 ```bash
-getstream api GetOrCreateChannel --type messaging --id <demo_prefix>general --request '{"data":{"name":"General (demo)","created_by_id":"<token_user_id>","members":[{"user_id":"<token_user_id>"},{"user_id":"<demo_prefix>alice"},{"user_id":"<demo_prefix>bob"}],"custom":{"seeded_by_skill":true,"demo_prefix":"<demo_prefix>"}}}'
+getstream api GetOrCreateChannel --type messaging --id <demo_prefix>general --request '{"data":{"created_by_id":"<token_user_id>","members":[{"user_id":"<token_user_id>"},{"user_id":"<demo_prefix>alice"},{"user_id":"<demo_prefix>bob"}],"custom":{"name":"General (demo)","seeded_by_skill":true,"demo_prefix":"<demo_prefix>"}}}'
 ```
 
 Use namespaced channel ids such as `<demo_prefix>general`, `<demo_prefix>random`, `<demo_prefix>team-alpha`. Make sure the token user appears in `data.members`. `GetOrCreateChannel` is idempotent on the `(type, id)` pair - re-running with the same prefix returns the existing channel rather than duplicating it.

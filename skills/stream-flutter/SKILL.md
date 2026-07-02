@@ -179,7 +179,7 @@ getstream api UpdateUsers --request '{
 
 ```bash
 getstream api GetOrCreateChannel --type messaging --id <channel-id> \
-  --request '{"data": {"name": "<Channel Name>"}}'
+  --request '{"data": {"custom": {"name": "<Channel Name>"}}}'
 ```
 
 Repeat for each channel (e.g. `general`, `random`, `team-alpha`).
