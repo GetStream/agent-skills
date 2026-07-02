@@ -28,9 +28,9 @@ Establish **from version -> to version** for each package the user wants to move
 
 **Match the upgrade to its guide and `WebFetch` it this turn.** Known entry point:
 
-- **Chat React v13 -> v14:** https://getstream.io/chat/docs/sdk/react/release-guides/upgrade-to-v14.md (also in [`references/DOCS.md`](references/DOCS.md) > Chat Advanced Guides).
+- **Chat React v13 -> v14:** https://getstream.io/chat/docs/sdk/react/release-guides/upgrade-to-v14.md (also in [`references/docs-map.md`](references/docs-map.md) > Chat Advanced Guides).
 
-For any other package/version, discover the guide from the product `llms.txt` index ([`references/DOCS.md`](references/DOCS.md) > Source indexes) - look for a `release-guides/` or `upgrade-*` page that matches the from/to versions. Read the guide in full before touching code; note every breaking change, rename, removed export, and codemod it lists.
+For any other package/version, discover the guide from the product index ([`references/docs-map.md`](references/docs-map.md) > The docs convention) - look for a `release-guides/` or `upgrade-*` page that matches the from/to versions. Read the guide in full before touching code; note every breaking change, rename, removed export, and codemod it lists.
 
 **Hard gate ([`RULES.md`](RULES.md)):** if no guide loads, hand the lookup to the `stream-docs` skill. If neither the guide nor `stream-docs` confirms the migration steps, **stop and tell the user** - report that you could not confirm the upgrade path and ask how to proceed. Do not migrate from memory; a guess that happens to compile is still a guess.
 

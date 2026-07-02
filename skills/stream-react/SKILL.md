@@ -31,7 +31,7 @@ This skill builds, enhances, audits, and migrates Stream Chat, Video, and Feeds 
 
 - **Track A - Scaffold a new app:** Steps 0-7 below. Use when the cwd is empty / new and the user said "build me a ... app".
 - **Track E - Enhance an existing app:** see [`enhance.md`](enhance.md). Skips scaffold + theme; reuses the same SDK wiring and component blueprints.
-- **Track F - Audit an existing integration (read-only):** for "audit/review my video integration", "check my app against best practices", "is my video app production-ready?", "what am I missing before launch?". **Video only:** load the **Integration best-practices audit** section in [`references/VIDEO.md`](references/VIDEO.md) and follow its protocol - it has a Video-specific checklist + output contract. **If the user asks to audit Chat or Feeds**, say up front there is no dedicated best-practices checklist for those yet, then do a general docs-based review (fetch the relevant pages from [`references/DOCS.md`](references/DOCS.md) and check the app against them) rather than applying the Video checklist. **Skip onboarding, auth, the CLI, and all build steps** - this track only reads the app and reports findings. Fix issues only if the user then asks.
+- **Track F - Audit an existing integration (read-only):** for "audit/review my video integration", "check my app against best practices", "is my video app production-ready?", "what am I missing before launch?". **Video only:** load the **Integration best-practices audit** section in [`references/VIDEO.md`](references/VIDEO.md) and follow its protocol - it has a Video-specific checklist + output contract. **If the user asks to audit Chat or Feeds**, say up front there is no dedicated best-practices checklist for those yet, then do a general docs-based review (fetch the relevant pages from [`references/docs-map.md`](references/docs-map.md) and check the app against them) rather than applying the Video checklist. **Skip onboarding, auth, the CLI, and all build steps** - this track only reads the app and reports findings. Fix issues only if the user then asks.
 - **Track M - Migrate / upgrade an SDK version:** see [`migrate.md`](migrate.md). For "upgrade stream-chat-react to v14", "migrate to the new SDK", "bump my Stream version". Docs-driven: detect the installed version, fetch the matching release guide, apply it. Never migrate from memory.
 
 ### Flow dispatch - choose exactly one
@@ -45,14 +45,14 @@ This skill builds, enhances, audits, and migrates Stream Chat, Video, and Feeds 
 
 ## Docs-first triggers (consult docs before building)
 
-**For any feature that matches a UI component, cookbook, or advanced-guide topic, fetch the matching Stream docs page BEFORE writing code.** The live docs are the source of truth for the current API and the recommended pattern; the bundled `references/*-blueprints.md` cover the common path only. Full keyword -> page map with exact URLs: [`references/DOCS.md`](references/DOCS.md). Enforced by [`RULES.md`](RULES.md) > Docs-first for cookbook / advanced features.
+**For any feature that matches a UI component, cookbook, or advanced-guide topic, fetch the matching Stream docs page BEFORE writing code.** The live docs are the source of truth for the current API and the recommended pattern; the bundled `references/*-blueprints.md` cover the prebuilt common path only. Full keyword -> page map with exact URLs: [`references/docs-map.md`](references/docs-map.md) - it opens with the **docs convention** (the `.md`-twin rule + per-product live index) so any unmapped page is still reachable: never guess a path, fetch the index. Enforced by [`RULES.md`](RULES.md) > Docs-first for cookbook / advanced features.
 
 This skill is **prebuilt-component-first**: build the common path with the SDK's prebuilt React components and customize via the documented hooks/props - see [`RULES.md`](RULES.md) > Reference authority. The docs-first protocol covers both the **component reference pages** and the **cookbook / advanced** recipes:
 
 - **UI Cookbook (customization / theming):** typing indicator, custom message UI, message actions, reactions customization, message composer / input UI, channel header, channel list preview, emoji picker, autocomplete / suggestion list, link previews, pin indicator, thread header, search, collapsible sidebar, system message / banner, mentions actions, attachment actions, hide channel history, localization / i18n; Video: replacing call controls, custom layouts, lobby preview, PiP, network quality, livestream watching, ringing.
 - **Advanced Guides:** AI integrations (LangChain, AI SDK), advanced search, multiple lists, infinite scroll, read state, online status, location sharing, blocking, message reminders, notifications / web push, attachment previews, audio playback, date formatting, SDK state management, dialog management, TypeScript custom data, chat + video integration, recording, broadcasting, video filters.
 
-When a request hits one of these: **match -> `WebFetch` the page's `.md` URL from [`references/DOCS.md`](references/DOCS.md) -> implement to match.** On fetch failure, hand to the `stream-docs` skill; if neither resolves the API, **stop and ask the user** - never build from memory.
+When a request hits one of these: **match -> `WebFetch` the page's `.md` URL from [`references/docs-map.md`](references/docs-map.md) -> implement to match.** On fetch failure, hand to the `stream-docs` skill; if neither resolves the API, **stop and ask the user** - never build from memory.
 
 ---
 
@@ -60,7 +60,7 @@ When a request hits one of these: **match -> `WebFetch` the page's `.md` URL fro
 
 > **Track A only.** Tracks E, F, and M branch in **Flow dispatch** above and never enter this section.
 
-Once `getstream init` has onboarded (authenticated + selected/created org + app + written credentials), announce the network plan once, then **immediately start executing Steps 0-7** - do not ask permission to begin (the user has authorized the build by asking for it). The only pauses for input are the theme + app pick (Step 1b) and the skill-pack consent (Task A.2).
+Once `getstream init` has onboarded (authenticated + selected/created org + app + written credentials), announce the network plan once, then **immediately start executing Steps 0-7** - do not ask permission to begin (the user has authorized the build by asking for it). The only pause for input is the theme + app pick (Step 1b).
 
 ### Trust readout (announce, then continue on the same turn - do not wait)
 
@@ -71,11 +71,11 @@ Before the first network command, print this verbatim to the user, then proceed 
 > - `npm install <stream-packages> --legacy-peer-deps` - Stream SDKs from npm (`stream-chat-react`, `@stream-io/video-react-sdk`, etc.).
 > - `getstream env` - local CLI, no network; writes `.env.local` (gitignored by the Next.js scaffold's default; Task B verifies).
 >
-> Interrupt me at any point if something looks wrong. I'll pause twice for your input: the theme + Stream-app pick (Step 1b) and the optional third-party skill packs (Task A.2).
+> Interrupt me at any point if something looks wrong. I'll pause once for your input: the theme + Stream-app pick (Step 1b).
 
 Full per-command audit (publisher, why unpinned, what each writes): section Install trust & integrity below. The user's continued silence after the readout is implicit consent for this scaffold; an objection or stop instruction aborts the run.
 
-Shadcn/ui is always installed during Step 3. Third-party **frontend skills** (`vercel-react-best-practices`, `web-design-guidelines`, `frontend-design`) are installed **only with explicit user consent** - see Task A.2 for the disclosure script. If the user declines, Step 4 proceeds using Stream references only. **Precedence (when the skills are present):** Stream references win for SDK wiring; frontend skills guide generic React / UI polish.
+Shadcn/ui is always installed during Step 3. **stream-react does not install third-party frontend skills** - the build uses Stream references + Shadcn. **If** frontend skill packs (`frontend-design`, `vercel-react-best-practices`, `web-design-guidelines`) are already available in the session, use them for generic React / UI polish only; Stream references remain authoritative for SDK wiring.
 
 ---
 
@@ -88,13 +88,11 @@ This builder runs three classes of network-touching commands. Each is listed her
 | `npx shadcn@latest init ...` (Task A) | Vercel - [`shadcn-ui/ui`](https://github.com/shadcn-ui/ui) | Scaffolder; `@latest` is the maintainer's documented usage. Pinning ships outdated scaffolds. | Project files in cwd. Next.js scaffold's `.gitignore` ignores `.env*` by default. |
 | `npx shadcn@latest add ...` (Task A.1) | Vercel - same source as above | Same scaffolder; component sync depends on registry parity. | Component files under `components/ui/`. |
 | `npm install <stream-packages> --legacy-peer-deps` (Task C) | GetStream (npm) for `@stream-io/*` and `stream-chat-react`; transitive deps via standard npm trust | Latest published versions of GetStream's own SDKs - same trust model as the CLI itself. | Modules under `node_modules/`. Runtime SDKs + transitive deps. |
-| `npx skills add <github>` (Task A.2) | `vercel-labs/agent-skills` and `anthropics/skills` | Optional. Markdown-only skill packs; `npx skills add` is the published install path. | Markdown files in the user's skills directory. **Gated by explicit user consent in Task A.2** - never runs without an affirmative answer. |
 | `getstream env` (Task B) | GetStream - install instructions in the root skill's "Stream CLI" section in [`../stream/SKILL.md`](../stream/SKILL.md) | n/a (local CLI, no network at this step) | `.env.local` in the project root with `NEXT_PUBLIC_STREAM_API_KEY` + `STREAM_API_SECRET`. Task B verifies `.gitignore` covers `.env*` before writing (Next.js scaffold's default already does). The agent never reads `.env.local` (RULES.md > Secrets). |
 
 **Reviewer checklist:**
 
 - All `npx` invocations resolve to the publishers listed above; substitute a different publisher and the install fails.
-- `npx skills add` runs **only after** the disclosure prompt in Task A.2 and an explicit user "yes."
 - `.env.local` is written by the Stream CLI directly, not by the agent, and is not transmitted into the conversation.
 - If the user wants to pin a specific shadcn version, replace `@latest` with `@<version>` in Tasks A and A.1.
 
@@ -139,8 +137,7 @@ Order:
 2. **Step 2:** Apply the org/app choice (select existing or create).
 3. **Task A:** Scaffold with Shadcn + Next.js using the chosen preset.
 4. **Task A.1:** Add base Shadcn components.
-5. **Task A.2:** Disclose + ask about third-party frontend skill installs; install only with user consent.
-6. Continue with Task B (.env), Task C (SDKs), Task D (CLI config).
+5. Continue with Task B (.env), Task C (SDKs), Task D (CLI config).
 
 **Task A: Scaffold** - scaffolds Next.js + Tailwind + Shadcn/ui (Base UI) into the current directory. Use the theme preset chosen in **Step 1b**.
 
@@ -157,24 +154,6 @@ npx shadcn@latest add button input textarea card avatar badge separator
 ```
 
 Add more components as the use case requires (e.g. `dialog`, `dropdown-menu`, `tabs`, `popover`).
-
-**Task A.2: Frontend skills** - third-party skill packs. **You must disclose and ask before installing.** Do NOT construct your own command variant.
-
-Print this disclosure verbatim, then stop and wait for the user's answer:
-
-> I'd like to install three third-party skill packs that improve generic UI quality:
-> - `vercel-react-best-practices` - from [`vercel-labs/agent-skills`](https://github.com/vercel-labs/agent-skills)
-> - `web-design-guidelines` - from [`vercel-labs/agent-skills`](https://github.com/vercel-labs/agent-skills)
-> - `frontend-design` - from [`anthropics/skills`](https://github.com/anthropics/skills)
->
-> The packs are markdown only - no scripts execute. If you say yes, I'll run `npx skills add ... -y` once per pack from those GitHub repos at their current `main` branch (`-y` skips the installer's own confirmation since you've consented here). These aren't required - Stream reference files cover SDK wiring either way. Install them?
-
-- **User agrees** -> run:
-  ```bash
-  npx skills add https://github.com/vercel-labs/agent-skills --skill vercel-react-best-practices -y && npx skills add https://github.com/vercel-labs/agent-skills --skill web-design-guidelines -y && npx skills add https://github.com/anthropics/skills --skill frontend-design -y
-  ```
-- **User declines** -> skip silently and continue to Task B. Do not retry, do not bring it up again this session.
-- **Install fails** -> continue with Stream reference files only; mention the failure briefly.
 
 Do **not** modify `layout.tsx` or `globals.css` after scaffold - use Shadcn's defaults as-is (RULES.md > Theme).
 
@@ -218,11 +197,11 @@ If `NO_ICONS`, install `lucide-react`: `npm install lucide-react --legacy-peer-d
 
 ### Step 4: Generate code and UI
 
-**Prebuilt-component-first.** Build the common path with the SDK's prebuilt React components and customize via the documented hooks/props ([`RULES.md`](RULES.md) > Reference authority). Hand-build markup only when the user explicitly wants fully bespoke UI.
+**Prebuilt-component-first.** Build the common path with the SDK's prebuilt React components and customize via the documented hooks/props ([`RULES.md`](RULES.md) > Reference authority). Writing your own component for a region (custom message row, composer, channel preview/header, call layout) - not just passing props - loads [`references/custom-ui.md`](references/custom-ui.md) (the completion contract) first; see [`RULES.md`](RULES.md) > Reference authority.
 
-**Docs-first:** before implementing any component, cookbook, or advanced feature (typing indicator, custom message UI, reactions, AI integrations, read state, notifications, call layouts, ...), follow the **Docs-first triggers** section above - `WebFetch` the matching [`references/DOCS.md`](references/DOCS.md) page first, then build to match.
+**Docs-first:** before implementing any component, cookbook, or advanced feature (typing indicator, custom message UI, reactions, AI integrations, read state, notifications, call layouts, ...), follow the **Docs-first triggers** section above - `WebFetch` the matching [`references/docs-map.md`](references/docs-map.md) page first, then build to match.
 
-**Load [`builder-ui.md`](builder-ui.md) and [`sdk.md`](sdk.md)** (cross-cutting SDK wiring: token route, instantiation, CSS imports), plus **only** the relevant [`references/<Product>.md`](references/) header + `references/<Product>-blueprints.md` for the sections you are implementing - not every reference file. Pull **Use Case Matching** and **Page Flow** from [`builder.md`](builder.md) to choose products and navigation structure. **For multi-product apps (Chat + Video, Chat + Feeds, Video + Feeds, etc.), also load [`references/CROSS-PRODUCT.md`](references/CROSS-PRODUCT.md) before writing AppShell** - it has the canonical multi-client provider hierarchy and an error -> cause -> fix table.
+**Load [`builder-ui.md`](builder-ui.md) and [`sdk.md`](sdk.md)** (cross-cutting SDK wiring: token route, instantiation, CSS imports), plus **only** the relevant [`references/<Product>.md`](references/) header + `references/<Product>-blueprints.md` (the prebuilt provider tree + props) for the product(s) you are implementing - not every reference file. For any customization, fetch the matching live page from [`references/docs-map.md`](references/docs-map.md) first; **writing your own component for a region (custom message row/composer/preview/header/call layout) -> load [`references/custom-ui.md`](references/custom-ui.md) (the completion contract) before building**, then fetch the page. Pull **Use Case Matching** and **Page Flow** from [`builder.md`](builder.md) to choose products and navigation structure. **For multi-product apps (Chat + Video, Chat + Feeds, Video + Feeds, etc.), also load [`references/CROSS-PRODUCT.md`](references/CROSS-PRODUCT.md) before writing AppShell** - it has the canonical multi-client provider hierarchy and an error -> cause -> fix table.
 
 ### Step 5: Verify
 

@@ -1,21 +1,20 @@
 # Chat - Setup & Integration
 
-Stream Chat provides pre-built UI components via React, React Native, Flutter, Swift, and Kotlin SDKs. This file covers setup, server routes, client patterns, and gotchas. For full component structure and wiring, see [CHAT-blueprints.md](CHAT-blueprints.md).
+Stream Chat provides pre-built UI components via React, React Native, Flutter, Swift, and Kotlin SDKs. This file covers setup, server routes, client patterns, and gotchas. For the prebuilt component path (provider tree + props), see [CHAT-blueprints.md](CHAT-blueprints.md); for fully bespoke UI on the low-level client, see [custom-ui.md](custom-ui.md).
 
 Rules: [../RULES.md](../RULES.md) (login screen first, strict mode protection, reference authority) and the cross-cutting [../../stream/RULES.md](../../stream/RULES.md) (secrets, no auto-seeding).
 
-- **Blueprint** - HTML with BEM classes defining structure and conditional rendering
-- **Wiring** - API calls to read/write each element, exact property paths
-- **Requirements** - Dashboard settings, API params, and prerequisites. The **Default** column in each Requirements table reflects server-side channel-type defaults (set in the Dashboard / via the API), not values enforced by the SDK.
+- **Prebuilt path** ([CHAT-blueprints.md](CHAT-blueprints.md)) - the canonical provider tree, the prebuilt component prop table, and the `WithComponents` customization mechanism. The common path for every messenger.
+- **Bespoke path** ([custom-ui.md](custom-ui.md)) - the prebuilt-vs-bespoke decision + the headless context-hook map for fully hand-built UI.
+- **Live docs** ([docs-map.md](docs-map.md)) - fetch the matching component / cookbook / advanced page before building any customization. Server-side channel-type **defaults** (permissions, features) are set in the Dashboard / via the API, not enforced by the SDK.
 
 ## Quick ref
 
 - **Packages:** `stream-chat`, `stream-chat-react`; import `stream-chat-react/css/index.css` (v14+ preferred alias; v13 used `dist/css/v2/index.css`).
 - **First:** **App Integration** -> **Setup** (CLI / channel types) before UI.
-- **Per feature:** Jump to section (Channel List, Message List, ...) when implementing that screen.
-- **Below the next rule:** full blueprints - **do not load past it** until you implement that component.
+- **Per feature:** fetch the matching live page from [docs-map.md](docs-map.md) before implementing that screen; for fully hand-built UI on the low-level client, see [custom-ui.md](custom-ui.md).
 
-Full component blueprints: [CHAT-blueprints.md](CHAT-blueprints.md) - load only the section you are implementing.
+Prebuilt component path: [CHAT-blueprints.md](CHAT-blueprints.md) - the canonical provider tree + props. Bespoke UI on the low-level client: [custom-ui.md](custom-ui.md).
 
 ---
 

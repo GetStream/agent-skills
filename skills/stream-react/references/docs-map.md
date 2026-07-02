@@ -1,26 +1,44 @@
-# Stream React (web) - docs-first manifest
+# Stream React (web) - docs routing map
 
-**Best practices live in the live docs, not in training data.** Before implementing any feature that matches a trigger row below, **fetch the matching docs page first**, read its current guidance, then build to match. Stream's React SDKs evolve quickly; the component reference, cookbook, and advanced-guide pages are the authority for the current API and the recommended pattern.
+Map a request to the exact React docs page, then fetch its `.md`. **Best practices live in the live docs, not in training data** - Stream's React SDKs evolve quickly, so the component-reference, cookbook, and advanced-guide pages are the authority for the current API and recommended pattern. The trigger tables below are the curated 80% (the high-frequency intents); **for anything not listed, fetch the live index and pick from it - never guess a path.**
 
-This skill is **prebuilt-component-first** ([`../RULES.md`](../RULES.md) > Reference authority): build the common path with the SDK's prebuilt components and customize via the documented hooks/props on the pages below.
+This skill is **prebuilt-component-first** ([`../RULES.md`](../RULES.md) > Reference authority): build the common path with the SDK's prebuilt components and customize via the documented hooks/props on the pages below. For fully bespoke UI on the low-level client, see [`custom-ui.md`](custom-ui.md).
+
+---
+
+## The docs convention (the core mechanism)
+
+Every Stream docs page has a Markdown twin a coding agent can read directly: **take the page URL, drop the trailing `/`, add `.md`.**
+
+```
+https://getstream.io/chat/docs/sdk/react/components/core-components/channel/   ->   https://getstream.io/chat/docs/sdk/react/components/core-components/channel.md
+```
+
+Always fetch the `.md` variant - it is clean Markdown with verbatim code, no page chrome.
+
+Each product has a **live index** that lists every page with its `.md` URL. Fetch the index to discover or confirm a page whenever a request does not match a trigger row below:
+
+| Product | Live index (always current) | Page URL shape |
+|---|---|---|
+| Chat React (SDK: UI components + hooks) | `https://getstream.io/cli/docs/chat-sdk-react.md` | `https://getstream.io/chat/docs/sdk/react/...md` |
+| Chat React (low-level client / API reference) | `https://getstream.io/cli/docs/chat-react.md` | `https://getstream.io/chat/docs/react/...md` |
+| Video React | `https://getstream.io/cli/docs/video-react.md` | `https://getstream.io/video/docs/react/...md` |
+| Feeds React | `https://getstream.io/cli/docs/activity-feeds-react.md` | `https://getstream.io/activity-feeds/docs/react/...md` |
+
+(The same manifests are also published as `llms.txt` in list form: Chat SDK `.../chat/docs/sdk/react/llms.txt`, Chat API `.../chat/docs/react/llms.txt`, Video `.../video/docs/react/llms.txt`, Feeds `.../activity-feeds/docs/react/llms.txt`.)
+
+**URL grounding (non-negotiable).** Only fetch a page URL you got from a trigger row below or from a live index fetch *in this conversation*. **Do not construct a doc path from memory or from a pattern** - many look guessable but are wrong (e.g. the Feeds React quick start is `https://getstream.io/activity-feeds/docs/react.md`, **not** `.../docs/react/quick-start.md`, which 404s). If a page is not in a table below, fetch the product index and pick the real URL from it; on fetch failure, escalate to the `stream-docs` skill, then stop and ask - never build from memory.
+
+**Version note.** The Chat React index is versioned (v14 latest, then v13, ...). When a project pins a specific major (check `package.json`), route to that version's pages - this matters most for Track M migrations ([`../migrate.md`](../migrate.md)).
 
 ## Docs-first protocol
 
 1. **Match** the user's request against a trigger row below (Chat / Video / Feeds; component, cookbook, or advanced guide), or against the relevant index when it does not match a row.
 2. **Fetch before coding** - `WebFetch` the page's `.md` URL (every row links the raw markdown). Read it this turn.
-3. **Implement to match** the fetched guidance - do not write the feature from memory or from the bundled blueprints alone. The blueprints in `*-blueprints.md` cover the common path; these pages cover the customization/advanced path and override memory.
+3. **Implement to match** the fetched guidance - do not write the feature from memory or from the bundled blueprints alone. The blueprints in `*-blueprints.md` cover the prebuilt common path; these pages cover the customization/advanced path and override memory.
 4. **On fetch failure** - hand the lookup to the `stream-docs` skill (live docs with citations) before coding. If neither the page nor `stream-docs` resolves it, **stop and ask the user** - do not implement from memory. Never guess the API.
 
 This protocol is a non-negotiable rule - see [`../RULES.md`](../RULES.md) > Docs-first for cookbook / advanced features. It also governs **migration** (Track M) - fetch the release/upgrade guide before applying an upgrade ([`../migrate.md`](../migrate.md)).
-
-## Source indexes (llms.txt)
-
-The full per-product page list lives in these manifests. Fetch the index when a request does not match a row below, or to discover newer pages:
-
-- **Chat React (SDK):** https://getstream.io/chat/docs/sdk/react/llms.txt
-- **Chat React (API):** https://getstream.io/chat/docs/react/llms.txt
-- **Video React:** https://getstream.io/video/docs/react/llms.txt
-- **Feeds React:** https://getstream.io/activity-feeds/docs/react/llms.txt
 
 ---
 
@@ -54,6 +72,8 @@ First-class prebuilt features the common-path blueprints don't cover. Most need 
 | message bounce, review bounced message, moderation prompt on own message | MessageBounceContext | https://getstream.io/chat/docs/sdk/react/components/contexts/message-bounce-context.md |
 
 ## Chat React - UI Cookbook (customization + theming recipes)
+
+> **Writing your OWN component for one of these regions** (custom message row, composer, channel preview/header) instead of passing props/theme? **Load [`custom-ui.md`](custom-ui.md) first** - its completion contract lists every sub-feature you must reproduce or mark `N/A` (attachments, reactions, quoted replies, receipts, threads, edited/deleted, grouping) - **then** fetch the page below for the current API. Just passing props/theme to the prebuilt component? Fetch the page and skip the contract.
 
 | Trigger keywords (in the user's request) | Topic | Fetch first |
 |---|---|---|
@@ -120,6 +140,8 @@ First-class prebuilt features the common-path blueprints don't cover. Most need 
 
 ## Video React - UI Cookbook (customization recipes)
 
+> **Writing your OWN call layout/controls component** instead of passing props? **Load [`custom-ui.md`](custom-ui.md) first** (completion contract: each participant via `ParticipantView`, screenshare, dominant-speaker, join/leave, device state), **then** fetch the page below. Passing props to a prebuilt component? Fetch the page.
+
 | Trigger keywords (in the user's request) | Topic | Fetch first |
 |---|---|---|
 | replace call controls, custom control bar, custom buttons | Replacing Call Controls | https://getstream.io/video/docs/react/ui-cookbook/replacing-call-controls.md |
@@ -149,7 +171,7 @@ Feeds has **no prebuilt UI components** - always build from its hooks (`useFeedA
 
 | Trigger keywords (in the user's request) | Topic | Fetch first |
 |---|---|---|
-| feeds setup, install, client, useCreateFeedsClient, quick start | Quick Start | https://getstream.io/activity-feeds/docs/react/react.md |
+| feeds setup, install, client, useCreateFeedsClient, quick start | Quick Start | https://getstream.io/activity-feeds/docs/react.md |
 | installation, packages | Installation | https://getstream.io/activity-feeds/docs/react/installation.md |
 | post, activity, addActivity, create post | Activities | https://getstream.io/activity-feeds/docs/react/activities.md |
 | read a feed, timeline, useFeedActivities, getOrCreate, pagination | Feeds | https://getstream.io/activity-feeds/docs/react/feeds.md |

@@ -3,7 +3,7 @@
 Load when executing **Step 4** (after scaffold). Rules: [`RULES.md`](RULES.md) (login screen first, theme, reference authority).
 
 ### Step 4: Generate ALL code files
-Write every file sequentially. Follow the UI Guidelines below for all visual styling. See **RULES.md > Reference authority** - reference files are the only source of truth for SDK wiring. Before writing each component, load the relevant `references/<Product>-blueprints.md` section.
+Write every file sequentially. Follow the UI Guidelines below for all visual styling. See **RULES.md > Reference authority** - reference files are the only source of truth for SDK wiring. Before writing each component, load the prebuilt path in the relevant `references/<Product>-blueprints.md`; fetch the matching live page from [`references/docs-map.md`](references/docs-map.md) for any customization, and see [`references/custom-ui.md`](references/custom-ui.md) for fully bespoke UI.
 
 #### Login Screen (required for every app - RULES.md > Login Screen first)
 
@@ -52,7 +52,7 @@ Use whatever `globals.css` Shadcn generates. Do not add custom variables, custom
 
 ### Design
 
-Use Shadcn components, Tailwind utilities, and - if the user approved them in Step 3 Task A.2 - the frontend skills to build a polished UI. No further opinions; use your best judgement. Stream references provide structure and wiring; frontend skills (when present) provide generic design guidance.
+Use Shadcn components, Tailwind utilities, and - if frontend skill packs are already available in the session - the frontend skills to build a polished UI. No further opinions; use your best judgement. Stream references provide structure and wiring; frontend skills (when present) provide generic design guidance.
 
 ### Button labels
 
@@ -72,6 +72,6 @@ Use Shadcn components, Tailwind utilities, and - if the user approved them in St
 
 ### Reference Blueprints
 
-See RULES.md > Reference authority. Load `references/<Product>.md` (header) for setup + gotchas, and `references/<Product>-blueprints.md` for structure and wiring of each component. Load only the product(s) relevant to the current use case.
+See RULES.md > Reference authority. Load `references/<Product>.md` (header) for setup + gotchas, and `references/<Product>-blueprints.md` for the prebuilt provider tree + props. For fully bespoke UI on the low-level client, see [`references/custom-ui.md`](references/custom-ui.md). Load only the product(s) relevant to the current use case.
 
-**Prebuilt-first default (Chat + Video).** Build the common path with the SDK's prebuilt React components - Chat: `<Chat>` / `<ChannelList>` / `<Channel>` / `<Window>` / `<MessageList>` / `<MessageComposer>` / `<Thread>` (v14 uses `MessageComposer`, not `MessageInput`); Video: `<StreamVideo>` / `<StreamCall>` / `SpeakerLayout` / `PaginatedGridLayout` / `ParticipantView` / `CallControls`. Customize via the documented hooks/props - register custom UI through `<WithComponents overrides={{...}}>` or pass a per-list `<MessageList Message={Custom} />`; read state with `useChannelStateContext()` / `useCallStateHooks()`) - fetch the matching cookbook page first (RULES.md > Docs-first). Drop to fully hand-built markup **only** when the user explicitly wants bespoke UI; the `*-blueprints.md` "Fully custom UI" fallback section has the raw element + wiring tables for that case. Feeds is headless (no prebuilt UI) - always build from its hooks.
+**Prebuilt-first default (Chat + Video).** Build the common path with the SDK's prebuilt React components - Chat: `<Chat>` / `<ChannelList>` / `<Channel>` / `<Window>` / `<MessageList>` / `<MessageComposer>` / `<Thread>` (v14 uses `MessageComposer`, not `MessageInput`); Video: `<StreamVideo>` / `<StreamCall>` / `SpeakerLayout` / `PaginatedGridLayout` / `ParticipantView` / `CallControls`. Customize via the documented hooks/props - register custom UI through `<WithComponents overrides={{...}}>` or pass a per-list `<MessageList Message={Custom} />`; read state with `useChannelStateContext()` / `useCallStateHooks()`) - fetch the matching cookbook page first (RULES.md > Docs-first). Drop to fully hand-built markup **only** when the user explicitly wants bespoke UI; [`references/custom-ui.md`](references/custom-ui.md) carries the prebuilt-vs-bespoke decision + the headless context-hook map for that case. Feeds is headless (no prebuilt UI) - always build from its hooks.
