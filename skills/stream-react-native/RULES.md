@@ -55,6 +55,8 @@ Before changing an existing Chat, Video, or Feeds UI, fetch the manifest-selecte
 
 **This rule also governs migration (Track M).** Never apply an SDK version upgrade from memory - fetch the matching upgrade / migration guide from the product manifest (or the known entry points in [`migrate.md`](migrate.md)) and apply *that*. Migrations are exactly where APIs move, native requirements change (e.g. the New Architecture becomes mandatory), and peer dependencies are added. Bump only the packages being upgraded, each to its own resolved version - Stream packages version independently. See [`migrate.md`](migrate.md).
 
+**Matching a provided design is a decompose-and-plan-first task, not a theming afterthought.** When a Chat request carries a target appearance (screenshot, Figma, "look like \<app\>"), run [`references/design-matching.md`](references/design-matching.md) **before** writing UI code: decompose the reference region by region and plan every difference as theming / layout / functional, then verify region-by-region against the reference. Implement **every** region, the composer included; a region left at the SDK default is a FAIL, not a "known cosmetic gap." Report a region as unmatched only when it is genuinely impossible (say what + why), never because it is risky or more effort.
+
 ---
 
 ## Required peer setup

@@ -48,6 +48,8 @@ npx create-expo-app@latest MyApp
 cd MyApp
 ```
 
+If react-native-reanimated@4.5 + react-native-worklets@0.10 is installed, update those libraries to a minimum version of react-native-reanimated@4.5.1 + react-native-worklets@0.10.2.
+
 RN CLI lane (only when the user asks for RN CLI or requirements point there):
 
 ```bash
@@ -377,11 +379,13 @@ How to add one:
 
 After adding native optional packages, follow their platform permission steps. For Expo, keep the app in the dev-client/native-build lane and run `npx expo prebuild` when native config changes need to be regenerated.
 
+**Batch capability packages before the first native build.** Each native capability package forces a prebuild + native rebuild (minutes). Decide the *complete* set the app needs up front and install them together **before** the first `expo run:ios` / `pod install`, so you build once — adding one later (e.g. discovering the composer mic needs `expo-audio` only after the app runs) costs a second full rebuild, the most common avoidable simulator time sink. See [references/SIMULATOR-VERIFICATION.md](references/SIMULATOR-VERIFICATION.md).
+
 ---
 
 ## 5. Configure native/runtime requirements
 
-### Babel plugin (Chat only)
+### Babel plugin (Chat only, RN CLI only)
 
 If Chat is in scope, ensure the Reanimated or Worklets plugin is the last Babel plugin:
 
@@ -573,3 +577,11 @@ npx expo start
 ```
 
 Run only commands that exist in the project.
+
+**Running on the iOS simulator (Expo dev-client).** When you actually boot the app to screenshot and
+verify it (especially for a design match), follow the fast loop in
+[references/SIMULATOR-VERIFICATION.md](references/SIMULATOR-VERIFICATION.md): batch all capability
+packages before the first native build, start Metro **not** in CI mode (`npx expo start --dev-client
+--clear`) so edits aren't served stale, start Metro separately from `expo run:ios` (which exits and
+can take the bundler down), reach non-initial screens with temporary in-code navigation (`simctl`
+can't tap), and wait for the client to reconnect before trusting a screenshot.
