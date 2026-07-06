@@ -1,40 +1,49 @@
-# Stream React (web) - custom / bespoke UI on the low-level client
+# Stream React (web) - custom components + bespoke UI on the Stream client
 
-Read this **only** when the user explicitly wants fully hand-built UI - a bespoke surface that the
-prebuilt components can't be customized into. The default is the opposite: **prebuilt-component-first**
-([`../RULES.md`](../RULES.md) > Reference authority). This file is the *decision* (prebuilt vs bespoke)
-plus the *headless path* (how to build on the low-level client + the SDK's context hooks). It does
-**not** mirror element markup - for every region you build, fetch the matching live page from
-[`docs-map.md`](docs-map.md) first.
+**Read this whenever you write your OWN component or markup for a region a prebuilt component
+normally renders - even a single region, and even when you wire it via the documented `Message=` /
+`<WithComponents overrides={...}>` prop - OR when you go fully hand-built (the low-level client for a
+non-messenger surface).** Passing props or theme tokens to a prebuilt component is NOT this file; just
+fetch the page. (Exact predicate: [`../RULES.md`](../RULES.md) > Reference authority.)
+
+The default is still **prebuilt-component-first**. This file carries two things: the *decision* (is
+going custom even warranted? - Step 0) and, once you are writing a custom component, the **completion
+contract** below (the sub-features you must reproduce so a custom region doesn't silently drop
+attachments, reactions, receipts, threads). It does **not** mirror element markup - for every region
+you build, fetch the matching live page from [`docs-map.md`](docs-map.md) first.
 
 ---
 
-## Step 0: prebuilt vs bespoke - lean hard toward prebuilt
+## Step 0: which level - and does the completion contract apply?
 
-Stream's React SDKs ship rich prebuilt components built to be *customized*. Choosing to hand-build
-instead is an architecture decision that usually costs a day and throws away typing indicators, read
-receipts, reactions, threads, attachments, uploads, presence, optimistic send, and i18n - all of
-which the prebuilt path gives you for free. So decide deliberately, and **default to prebuilt.**
+Stream's React SDKs ship rich prebuilt components built to be *customized*. There are **three
+levels** - use the cheapest that reaches the design:
 
-There are **three levels of customization** - exhaust the cheaper ones before going bespoke:
-
-| Level | Mechanism | Changes |
+| Level | Mechanism | Completion contract? |
 |---|---|---|
-| **Theming** | CSS variables + the theme class (`str-chat__theme-light/dark`), `<Channel>` theming, Tailwind around the components | Colors, fonts, spacing, radius - *within the existing layout* |
-| **Component injection** | `<WithComponents overrides={{ MessageUI, MessageComposerUI, Avatar, ... }}>` (writes `ComponentContext`), or a per-list `<MessageList Message={Custom} />` | Swap *one* region's UI while the SDK still drives data, events, and the rest of the tree |
-| **Bespoke (this file)** | Your own React tree consuming the SDK's context hooks (or the raw `stream-chat` client) | Everything - but you own every dropped sub-feature |
+| **Theming** | CSS variables + the theme class (`str-chat__theme-light/dark`), `<Channel>` theming, Tailwind around the components | **No** - you replace no region. Fetch the page, pass props/tokens, done. |
+| **Component injection** | Your OWN component for one region via `<WithComponents overrides={{ MessageUI, MessageComposerUI, Avatar, ... }}>` or `<MessageList Message={Custom} />` | **YES** - you render the region yourself, so you inherit its sub-features. Fill the contract below. |
+| **Bespoke (headless)** | Your own React tree consuming the SDK's context hooks (or the raw `stream-chat` client) | **YES** - you own every region and every dropped sub-feature. |
 
-**Litmus test:** if theming + a few `WithComponents` overrides + hooks could reach the design, it's a
-**prebuilt** job - even a strong reskin (WhatsApp/Slack/Linear). Pick **bespoke only** when you'd be
-replacing the message row, composer, channel list, **and** header all at once - i.e. using the SDK
-purely as a data source for a non-messenger surface (a flat ticker, an overlay, a livestream chat
-rail). Over-choosing bespoke is the common, expensive mistake. **When unsure, build the prebuilt
-version first** - it's faster to confirm-or-reject than to rebuild a worse messenger by hand.
+**The gate is one question: are you writing your own component/markup for a region?** If **no**
+(props + theme only) -> Theming row; you can stop reading here. If **yes** -> the **completion
+contract** applies, whether it is one region via `WithComponents` or a whole bespoke tree. Do **not**
+talk yourself out of it because "it's only one component" or "it's still basically the prebuilt app":
+a single custom `MessageUI` is exactly the case that silently drops attachments / receipts / threads.
 
-If it's genuinely unclear, ask one question:
+**Injection vs. fully-headless is an architecture choice, NOT a contract escape.** Prefer **component
+injection** - keep the prebuilt tree, swap only the regions you must - over a fully-headless rebuild.
+Go **fully headless** only when you'd be replacing the message row, composer, channel list, **and**
+header at once, i.e. using the SDK purely as a data source for a non-messenger surface (a flat
+ticker, an overlay, a livestream chat rail). Over-choosing headless is the common, expensive mistake
+(you throw away typing indicators, receipts, reactions, threads, uploads, presence, optimistic send,
+i18n). **When unsure, injection first** - and the contract still applies.
 
-> Is this a standard messenger (channel list + message list + composer) we can customize, or a
-> bespoke surface where you want fully hand-built UI on the Stream client?
+If it is genuinely unclear whether the user wants a custom component at all (vs. just a restyle), ask
+one question:
+
+> Do you want your own custom component(s) for specific regions, or just to restyle the prebuilt UI
+> (colors / fonts / spacing) via theming?
 
 ---
 

@@ -185,7 +185,9 @@ getstream env
 npm install <packages> --legacy-peer-deps
 ```
 
-After installing SDKs, verify an icon package is available. Some Shadcn presets bundle one, others don't:
+After installing SDKs, note the resolved **Stream Chat React major**: the bundled blueprints assume **v14** (`MessageComposer`, `stream-chat-react/css/index.css`). `@latest` is v14 today; if a future install resolves a **newer major**, fetch that major's component reference from [`references/docs-map.md`](references/docs-map.md) (Version note) before writing the provider tree - don't apply v14 names from memory.
+
+Also verify an icon package is available. Some Shadcn presets bundle one, others don't:
 
 ```bash
 node -e "const p=['lucide-react','@phosphor-icons/react','@hugeicons/react'];console.log(p.some(m=>{try{require.resolve(m);return true}catch{return false}})?'ICONS_OK':'NO_ICONS')"
@@ -201,7 +203,7 @@ If `NO_ICONS`, install `lucide-react`: `npm install lucide-react --legacy-peer-d
 
 **Docs-first:** before implementing any component, cookbook, or advanced feature (typing indicator, custom message UI, reactions, AI integrations, read state, notifications, call layouts, ...), follow the **Docs-first triggers** section above - `WebFetch` the matching [`references/docs-map.md`](references/docs-map.md) page first, then build to match.
 
-**Load [`builder-ui.md`](builder-ui.md) and [`sdk.md`](sdk.md)** (cross-cutting SDK wiring: token route, instantiation, CSS imports), plus **only** the relevant [`references/<Product>.md`](references/) header + `references/<Product>-blueprints.md` (the prebuilt provider tree + props) for the product(s) you are implementing - not every reference file. For any customization, fetch the matching live page from [`references/docs-map.md`](references/docs-map.md) first; **writing your own component for a region (custom message row/composer/preview/header/call layout) -> load [`references/custom-ui.md`](references/custom-ui.md) (the completion contract) before building**, then fetch the page. Pull **Use Case Matching** and **Page Flow** from [`builder.md`](builder.md) to choose products and navigation structure. **For multi-product apps (Chat + Video, Chat + Feeds, Video + Feeds, etc.), also load [`references/CROSS-PRODUCT.md`](references/CROSS-PRODUCT.md) before writing AppShell** - it has the canonical multi-client provider hierarchy and an error -> cause -> fix table.
+**Load [`builder-ui.md`](builder-ui.md) and [`sdk.md`](sdk.md)** (cross-cutting SDK wiring: token route, instantiation, CSS imports), plus **only** the relevant [`references/<Product>.md`](references/) header + `references/<Product>-blueprints.md` (the prebuilt provider tree + props) for the product(s) you are implementing - not every reference file. For any customization, fetch the matching live page from [`references/docs-map.md`](references/docs-map.md) first (and if you are writing your own component for a region, load [`references/custom-ui.md`](references/custom-ui.md) first per Step 4's rule above / [`RULES.md`](RULES.md) > Reference authority). Pull **Use Case Matching** and **Page Flow** from [`builder.md`](builder.md) to choose products and navigation structure. **For multi-product apps (Chat + Video, Chat + Feeds, Video + Feeds, etc.), also load [`references/CROSS-PRODUCT.md`](references/CROSS-PRODUCT.md) before writing AppShell** - it has the canonical multi-client provider hierarchy and an error -> cause -> fix table.
 
 ### Step 5: Verify
 

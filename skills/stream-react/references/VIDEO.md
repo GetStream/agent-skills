@@ -1,6 +1,6 @@
 # Video - Setup & Integration
 
-Stream Video provides pre-built UI components via React, React Native, Flutter, Swift, and Kotlin SDKs. This file covers setup, server routes, client patterns, and gotchas. For the prebuilt component path (provider tree + layouts/controls), see [VIDEO-blueprints.md](VIDEO-blueprints.md); for fully bespoke UI on the low-level client, see [custom-ui.md](custom-ui.md).
+Stream Video provides pre-built UI components via React, React Native, Flutter, Swift, and Kotlin SDKs. This file covers setup, server routes, client patterns, and gotchas. For the prebuilt component path (provider tree + layouts/controls), see [VIDEO-blueprints.md](VIDEO-blueprints.md); when you write your own component for a region (custom call layout, participant tile, controls, lobby) or go fully hand-built, see [custom-ui.md](custom-ui.md) (the completion contract).
 
 Rules: [../RULES.md](../RULES.md) (login screen first, strict mode protection, reference authority) and the cross-cutting [../../stream/RULES.md](../../stream/RULES.md) (secrets, no auto-seeding).
 

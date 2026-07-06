@@ -3,7 +3,7 @@
 Load when executing **Step 4** (after scaffold). Rules: [`RULES.md`](RULES.md) (login screen first, theme, reference authority).
 
 ### Step 4: Generate ALL code files
-Write every file sequentially. Follow the UI Guidelines below for all visual styling. See **RULES.md > Reference authority** - reference files are the only source of truth for SDK wiring. Before writing each component, load the prebuilt path in the relevant `references/<Product>-blueprints.md`; fetch the matching live page from [`references/docs-map.md`](references/docs-map.md) for any customization, and see [`references/custom-ui.md`](references/custom-ui.md) for fully bespoke UI.
+Write every file sequentially. Follow the UI Guidelines below for all visual styling. See **RULES.md > Reference authority** - reference files are the only source of truth for SDK wiring. Before writing each component, load the prebuilt path in the relevant `references/<Product>-blueprints.md`; fetch the matching live page from [`references/docs-map.md`](references/docs-map.md) for any customization, and load [`references/custom-ui.md`](references/custom-ui.md) (the completion contract) first when you write your own component for a region - even one, even via `Message=` / `WithComponents`.
 
 #### Login Screen (required for every app - RULES.md > Login Screen first)
 

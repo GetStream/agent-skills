@@ -1,6 +1,6 @@
 # Chat - Setup & Integration
 
-Stream Chat provides pre-built UI components via React, React Native, Flutter, Swift, and Kotlin SDKs. This file covers setup, server routes, client patterns, and gotchas. For the prebuilt component path (provider tree + props), see [CHAT-blueprints.md](CHAT-blueprints.md); for fully bespoke UI on the low-level client, see [custom-ui.md](custom-ui.md).
+Stream Chat provides pre-built UI components via React, React Native, Flutter, Swift, and Kotlin SDKs. This file covers setup, server routes, client patterns, and gotchas. For the prebuilt component path (provider tree + props), see [CHAT-blueprints.md](CHAT-blueprints.md); when you write your own component for a region (even one, even via `Message=` / `WithComponents`) or go fully hand-built, see [custom-ui.md](custom-ui.md) (the completion contract).
 
 Rules: [../RULES.md](../RULES.md) (login screen first, strict mode protection, reference authority) and the cross-cutting [../../stream/RULES.md](../../stream/RULES.md) (secrets, no auto-seeding).
 
