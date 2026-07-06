@@ -41,6 +41,8 @@ This skill builds, enhances, audits, and migrates Stream Chat, Video, and Feeds 
 - **Track F:** skip onboarding and go directly to the audit in [`references/VIDEO.md`](references/VIDEO.md). **Do not enter Start or any build step.**
 - **Track M:** skip onboarding and Read [`migrate.md`](migrate.md) first; it fetches the live release guide before any edit. **Do not enter Start or any scaffold task.**
 
+**Styling-depth flag (orthogonal to the track).** If the request carries a **target appearance** - an attached screenshot, a Figma frame, or "make it look like WhatsApp / Slack / <app>" - route through [`references/design-matching.md`](references/design-matching.md): a reference design is a **checklist of regions, not a color tweak**. It decomposes the image into a written spec, routes each region to a component + mechanism (theming / injection -> the [`references/custom-ui.md`](references/custom-ui.md) completion contract / bespoke), and closes with a render-and-compare verify loop. This composes with the track: **Track A** scaffolds first, then matches before Step 4's build; **Track E** matches within E3. Load it **before** writing UI.
+
 ---
 
 ## Docs-first triggers (consult docs before building)
@@ -115,12 +117,13 @@ Run the **Provisioning > Step 1: Auth** flow in [`builder.md`](builder.md) (auth
 Ask both setup questions in **one message** before doing anything else - a single pause, the same "ask exactly once, then act" pattern the other platform packs use for credentials. Build the app options from what is already in context: the configured org/app from `getstream init` and the org list from Step 1's `OrganizationRead` output.
 
 > **Quick setup - two questions:**
-> 1. **Theme:** I can use a random shadcn theme, or you can design your own at [ui.shadcn.com/create](https://ui.shadcn.com/create) and share the `--preset` value (e.g. `--preset b1Gdi7z7r`). Random, or do you have a preset?
+> 1. **Theme:** I can use a random shadcn theme, or you can design your own at [ui.shadcn.com/create](https://ui.shadcn.com/create) and share the `--preset` value (e.g. `--preset b1Gdi7z7r`). Random, or do you have a preset? *(If you already shared a screenshot or Figma, I'll match that instead - skip this.)*
 > 2. **Stream app:** *(an app is configured)* Use the currently configured app **`<name>`** (default), pick another existing org/app, or create a fresh one? / *(no app configured)* You have these orgs: `<list>`. Pick one to use - I'll list its apps - or create a fresh org + app?
 
 **STOP here and wait for the user's answer.** Do not continue with any other step until the user responds. Asking a question and continuing to work in parallel is confusing - the user misses the question as output scrolls past.
 
 - **Theme - preset provided** -> store it for Task A scaffold command. **Random / doesn't care** -> pick a random preset from `nova`, `vega`, `maia`, `lyra`, `mira`, `luma`.
+- **Theme - a reference design (screenshot / Figma) was provided** -> the design dictates the theme: **skip question 1**, pick the shadcn preset closest to the sampled palette, ask only question 2 (the Stream app), and match the design via [`references/design-matching.md`](references/design-matching.md).
 - **App - named choice, "default", or "don't care"** -> Step 2 applies it (the configured app wins whenever one exists). **Create new** -> Step 2 runs the create flow.
 - **Account has no orgs at all** -> drop question 2, announce that a fresh org + app will be created, and ask only the theme.
 

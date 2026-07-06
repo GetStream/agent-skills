@@ -59,6 +59,8 @@ Shadcn components use `@base-ui/react`, NOT `@radix-ui`. Key differences:
 
 Use whatever theme Shadcn generates. Do not modify `globals.css` after init - no dark mode overrides, no custom variable blocks. The scaffold includes `next-themes` with a `ThemeProvider` (system default, class-based toggle) - use it as-is.
 
+**Design-matching exception:** when a screenshot / Figma dictates the palette, match it through the sanctioned channels - the shadcn `--preset` and Stream's documented `str-chat` theming variables / `<Channel>` theming - not ad-hoc `globals.css` edits. See [`references/design-matching.md`](references/design-matching.md) > Step 3.
+
 ## Reference authority
 
 **Prebuilt-component-first.** Stream's React SDKs ship rich prebuilt components, and the React

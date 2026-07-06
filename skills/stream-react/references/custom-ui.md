@@ -12,6 +12,8 @@ contract** below (the sub-features you must reproduce so a custom region doesn't
 attachments, reactions, receipts, threads). It does **not** mirror element markup - for every region
 you build, fetch the matching live page from [`docs-map.md`](docs-map.md) first.
 
+**Matching a reference design (screenshot / Figma)?** Run [`design-matching.md`](design-matching.md) for the region-by-region decompose -> map -> verify procedure; it routes back here for the completion contract on each custom region.
+
 ---
 
 ## Step 0: which level - and does the completion contract apply?
