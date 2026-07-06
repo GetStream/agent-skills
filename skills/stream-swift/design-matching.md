@@ -491,8 +491,8 @@ Read the **default view** a slot returns (e.g. `LeadingComposerView`, `MessageRe
 
 ## Step 4: Build the factory
 
-Conform one class to `ViewFactory` (`@Injected(\.chatClient) var chatClient`; `var styles = …`), override every slot the decomposition flagged, and pass it to `ChatChannelListView(viewFactory:)` so it propagates to the pushed message screen. Wire all three axes:
-- **theming** -> build an `Appearance` (recent versions: `Appearance().colorPalette.<token>` from `StreamChatCommonUI`, re-exported by `StreamChatSwiftUI`) and pass it to `StreamChat(chatClient:appearance:)`.
+Conform one class to `ViewFactory` - it **must** declare **both** `@Injected(\.chatClient) var chatClient` **and** `var styles = …` (both are required members with no default for a custom conformer; only `DefaultViewFactory` gets `styles` for free, so omitting `var styles` fails to compile - use `RegularStyles()` for the stock look, or your own `Styles` / `LiquidGlassStyles()`). Override every slot the decomposition flagged, and pass it to `ChatChannelListView(viewFactory:)` so it propagates to the pushed message screen. Wire all three axes:
+- **theming** -> build an `Appearance` (recent versions: `Appearance().colorPalette.<token>` from `StreamChatCommonUI`, re-exported by `StreamChatSwiftUI`) and pass it to `StreamChat(chatClient:appearance:)`. (`Appearance` is `@MainActor` - build it at launch / on the main actor; configuring it off-main is a Swift 6 concurrency error - see [`RULES.md`](RULES.md).)
 - **`Styles`** -> if any region flagged a padding/inset/corner-radius/container-chrome difference, conform a class to `Styles` (you cannot subclass `RegularStyles` - it is not `open`), implement the relevant `make…ViewModifier`, **re-supply RegularStyles' non-defaulted chrome** (composer background, input/button/scroll/suggestions modifiers - see the ⚠️ box; skipping this is what leaves the composer white), and set `var styles = MyStyles()` on the factory.
 - **structure** -> the overridden `ViewFactory` slots.
 
