@@ -133,14 +133,53 @@ is the durable part, the *names* come from the fetch.
 | Same-author grouping | `firstOfGroup` / `groupedByUser` from `useMessageContext()` | [ ] |
 | Error / optimistic-send state | `message.status` / `message.error` | [ ] |
 
-**Custom composer:** text input; attachments + upload (and removal); mentions / slash-commands
-autocomplete; send (+ enter-to-send); voice recording (if enabled); edit-message mode.
+**Custom composer (`MessageComposerUI`):**
 
-**Custom call layout / controls:** each participant via `<ParticipantView/>` (don't hand-bind tracks);
-screenshare track; dominant-speaker / active state; camera + mic toggle (`useCameraState` /
-`useMicrophoneState`); join / leave; device selectors (if shown).
+| Sub-feature | Reuse (don't hand-roll) | Status |
+|---|---|---|
+| Text input + send (+ enter-to-send) | composer input + submit handler | [ ] |
+| Attachments: attach + upload + remove | upload handler + attachment previews | [ ] |
+| Mentions / slash-command autocomplete | the SDK suggestion list | [ ] |
+| Voice recording (if enabled) | the SDK voice-recording control | [ ] |
+| Edit-message mode | composer edit state | [ ] |
+| Typing events | `channel.keystroke()` / `channel.stopTyping()` | [ ] |
 
-Then **verify on seeded data** that triggers every ticked row (see Verify below) - a near-empty channel
+**Custom channel preview (`ChannelPreviewUI`):**
+
+| Sub-feature | Reuse (don't hand-roll) | Status |
+|---|---|---|
+| Display name | channel display-name helper | [ ] |
+| Last message: text + sender (attachment / deleted fallbacks) | latest of `channel.state.messages` / `lastMessage` | [ ] |
+| Last-message timestamp | latest message `created_at` | [ ] |
+| Unread count / badge | `unread` preview prop / `channel.countUnread()` | [ ] |
+| Active / selected state | compare to `channel` from `useChatContext()`; `setActiveChannel` | [ ] |
+| Avatar + online presence (DMs) | `<Avatar/>` + member `user.online` | [ ] |
+| Muted / pinned / archived indicator | `channel.muteStatus()` / channel state | [ ] |
+
+**Custom channel header:**
+
+| Sub-feature | Reuse (don't hand-roll) | Status |
+|---|---|---|
+| Channel name / title | channel display name | [ ] |
+| Member / online count or subtitle | `channel.state.members` / watcher count | [ ] |
+| Typing indicator | `useTypingContext()` | [ ] |
+| Avatar | `<Avatar/>` | [ ] |
+| Back / close nav (mobile) | your router + `setActiveChannel(undefined)` | [ ] |
+| Header actions (info / search / call) | as the design shows | [ ] |
+
+**Custom call layout / controls:**
+
+| Sub-feature | Reuse (don't hand-roll) | Status |
+|---|---|---|
+| Each participant | `<ParticipantView/>` - don't hand-bind tracks | [ ] |
+| Screenshare track | the screen-share participant / track type | [ ] |
+| Dominant-speaker / active state | participant state from `useCallStateHooks()` | [ ] |
+| Mute / camera-off indicator (per participant) | `hasAudio(p)` / `hasVideo(p)` from `@stream-io/video-react-sdk` | [ ] |
+| Camera + mic toggle | `useCameraState` / `useMicrophoneState` | [ ] |
+| Join / leave | `call.join()` / `call.leave()` | [ ] |
+| Device selectors (if shown) | `useCameraState().devices` (Observable-backed - subscribe, don't `.map` an array) | [ ] |
+
+Then **verify against local fixtures** that trigger every ticked row (see Verify below) - a near-empty channel
 hides every gap. Baseline testing showed that without this contract, agents drop attachments, quoted
 replies, threads, and receipts almost every time, and each run drops a *different* set - so fill the
 rows; don't trust recall.
@@ -163,7 +202,11 @@ rows; don't trust recall.
 
 ## Verify
 
-A bespoke surface isn't done until you run it and check it against the target. Seed data that triggers
-**every** region (incoming + outgoing, a run of same-author messages so grouping shows, an attachment,
-a reaction, a reply/thread, long text, a typing event), open the real screen on its actual navigation
-path, compare region-by-region, and iterate. Match the target, don't approximate it.
+A bespoke surface isn't done until you run it and check it against the target. **Populate every region
+with local mock / fixture data** (incoming + outgoing, a run of same-author messages so grouping shows,
+an attachment, a reaction, a reply/thread, long text, a typing event) - render your components against
+hand-authored message / channel objects, **not** by seeding the configured Stream app. The
+no-auto-seeding rule ([`../stream/RULES.md`](../stream/RULES.md)) still holds: backend seeding to verify
+needs the user's explicit confirmation **and** a disposable / dev app (see [`design-matching.md`](design-matching.md)
+Step 6). Open the real screen on its actual navigation path, compare region-by-region, and iterate.
+Match the target, don't approximate it.

@@ -50,7 +50,7 @@ Map every region to its Stream component, then to the cheapest mechanism that re
 | Conversation-list rail | `<ChannelList>` + channel preview | Preview differs structurally -> **injection** (`ChannelPreviewUI`) -> completion contract |
 | Message row / bubble | `<MessageList>` + message row | Almost always structural -> **injection** (`MessageUI` via `Message={...}` / `WithComponents`) -> completion contract |
 | Composer / input bar | `<MessageComposer>` | Button placement differs -> **injection** (`MessageComposerUI`) -> completion contract |
-| Top bar / channel header | `<Channel>` header slot | Injection (custom header) or props |
+| Top bar / channel header | `<Channel>` header slot | Injection (custom header) -> completion contract; or props (no contract) |
 | Colors / fonts / spacing only | any | **Theming** (shadcn preset + `str-chat` CSS variables) - no contract |
 | Call layout / participant tile / controls | `<StreamCall>` + layout | Injection -> completion contract (Video rows) |
 
@@ -94,14 +94,22 @@ Shadcn + Tailwind. Keep the providers mounted (injection over headless).
 
 ## Step 6: Verify against the reference (mandatory - render and compare)
 
-A match is not done until you run it and compare, region by region, against the target:
+A match is not done until you run it and compare, region by region, against the target. **Populate
+the regions with LOCAL fixtures, not backend writes** - the no-auto-seeding rule
+([`../stream/RULES.md`](../stream/RULES.md)) is **not** carved out here:
 
-1. **Seed the states the screenshot shows.** If it shows a populated conversation, create a
-   **throwaway** seed (messages incoming + outgoing, a same-author run for grouping, an attachment,
-   a reaction, a reply/thread, long text, a typing event) so every region is visible. This is a
-   **verification-only** carve-out to the no-auto-seeding rule
-   ([`../stream/RULES.md`](../stream/RULES.md)): seed to verify, then **delete it before delivery** -
-   never ship demo data the user did not ask for.
+1. **Populate with local mock data (default).** Render each custom component against hand-authored
+   message / channel objects that trigger every state the screenshot shows - incoming + outgoing, a
+   same-author run (grouping), an attachment, a reaction, a reply/thread, long text, a typing event,
+   read receipts. Mount the component in the SDK's context providers with mocked context values (a
+   dev-only preview route), or feed the fixtures as props. This writes **nothing** to the Stream
+   backend, triggers every state deterministically, and is the most precise way to check a component
+   covers its completion-contract rows. Data already in the app may also be used as-is.
+   - **Do NOT seed the configured Stream app to verify.** Backend seeding is allowed **only** if the
+     user explicitly asks to verify against their live app **and** confirms a **disposable / dev**
+     app (never a shared or production app). Even then: track every resource you create, tear it down
+     in a finally-style flow, verify the deletion, and warn that side effects (webhooks, push,
+     moderation events, unread state) may not be reversible. When in doubt, use fixtures.
 2. **Render and inspect.** If browser-preview tooling is available (e.g. the Preview MCP:
    `preview_start` / `preview_screenshot` / `preview_inspect` / `preview_resize`), start the dev
    server, screenshot the real screen on its actual navigation path, and **inspect computed `color`
