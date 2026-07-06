@@ -26,6 +26,19 @@ All page URLs end in `.md` (the Markdown twin - see [`SKILL.md`](SKILL.md)). Fet
 
 Install is shared by both layers: `https://getstream.io/chat/docs/sdk/ios/basics/integration.md`
 
+### Chat - v4 docs (legacy fallback - ONLY when the customer explicitly pins v4)
+
+Every path in this Chat map targets **v5** - the skill's default and minimum ([`setup.md`](setup.md) §3). Use v4 **only when the customer explicitly asks** (a locked older app). When they do, the *same* routing works against the v4 docs: **v4 lives at the identical path with `/v4/` inserted right after `ios/`**, and the `.md` twin behaves the same. So mechanically transform whatever v5 SDK page you'd have fetched:
+
+- v5: `https://getstream.io/chat/docs/sdk/ios/swiftui/getting-started.md`
+- v4 (insert `/v4/` after `ios`): `https://getstream.io/chat/docs/sdk/ios/v4/swiftui/getting-started.md`
+
+**Discover / confirm v4 pages** from the v4 index `https://getstream.io/chat/docs/sdk/ios/v4.md` (browsable landing: `https://getstream.io/chat/docs/sdk/ios/v4/`, which is labelled "no longer actively maintained"). Verified v4 pages: `.../v4/basics/integration.md` (install - SPM / CocoaPods `~> 4.0.0`), `.../v4/swiftui/getting-started.md`, `.../v4/uikit/getting-started.md`.
+
+Two cautions on v4:
+- **The API differs - fetch the v4 page, never carry a v5 signature onto v4.** The v4 tree predates the `Styles` protocol, the `StreamChatCommonUI` `Appearance`, `LiquidGlassStyles`, and much of the modern State Layer, so [`design-matching.md`](design-matching.md) / [`custom-ui.md`](custom-ui.md) (both v5-shaped) do **not** apply verbatim. Confirm every symbol against the v4 page and the pinned v4 source.
+- **Only the `sdk/ios` tree is versioned under `/v4/`.** The low-level client API reference (`.../ios-swift/...`), the best-practices pages, and the CLI live-indexes above are not - leave those paths unchanged.
+
 ### Chat - Pre-built UI (SwiftUI / UIKit)
 
 **Start here:**
