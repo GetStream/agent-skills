@@ -2,7 +2,7 @@
 
 When using two or more of Chat / Video / Feeds in the same app, mount all clients **once** at AppShell and provide them at the root. Per-screen components only render `<Channel>`, `<StreamCall>`, or `<StreamFeed>` from the existing providers - never re-instantiate the clients.
 
-Source of truth: `video/react/10-advanced/06-chat-with-video.md` from the Stream docs (the messenger-clone reference app).
+Source of truth: the **Chat Integration** guide (Video React > Advanced Guides in [`docs-map.md`](docs-map.md)) - `https://getstream.io/video/docs/react/advanced/chat-with-video.md`, the messenger-clone reference app. Fetch it via the map, don't guess a doc path ([`docs-map.md`](docs-map.md) > URL grounding).
 
 ## AppShell skeleton
 

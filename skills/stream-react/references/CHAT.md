@@ -10,7 +10,7 @@ Rules: [../RULES.md](../RULES.md) (login screen first, strict mode protection, r
 
 ## Quick ref
 
-- **Packages:** `stream-chat`, `stream-chat-react`; import `stream-chat-react/css/index.css` (v14+ preferred alias; v13 used `dist/css/v2/index.css`).
+- **Packages:** `stream-chat`, `stream-chat-react`; import `stream-chat-react/css/index.css` (paths + version variants + the `EmojiPicker` stylesheet: [`../sdk.md`](../sdk.md) > CSS imports).
 - **First:** **App Integration** -> **Setup** (CLI / channel types) before UI.
 - **Per feature:** fetch the matching live page from [docs-map.md](docs-map.md) before implementing that screen; for fully hand-built UI on the low-level client, see [custom-ui.md](custom-ui.md).
 
@@ -81,7 +81,7 @@ const client = StreamChat.getInstance(process.env.STREAM_API_KEY!, process.env.S
   }
   ```
 - Listen for `user.banned` event to show banned state in UI
-- Import `stream-chat-react/css/index.css` for default styles - the preferred aliased path (`dist/css/index.css` also resolves; v14+, the `/v2/` subpath was removed). If you use `EmojiPicker`, also import `stream-chat-react/css/emoji-picker.css`
+- Import the Chat CSS once - the path, version variants, and the separate `EmojiPicker` stylesheet all live in [`../sdk.md`](../sdk.md) > CSS imports (the canonical home).
 - `MessageInput` was renamed/removed in v14 - use `MessageComposer` from `stream-chat-react` instead. Note: the React `<MessageComposer />` UI component is distinct from the `MessageComposer` *state class* in `stream-chat` (same name, different thing)
 - Token endpoint as `GET /api/token?user_id=xxx`
 - `upsertUsers` takes an **array** of user objects: `client.upsertUsers([{ id, name, role }])` - NOT an object keyed by ID

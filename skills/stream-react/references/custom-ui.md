@@ -199,6 +199,17 @@ rows; don't trust recall.
   client lifecycle working.
 - **Still docs-first, still no guessing.** Fetch the page this turn; never wire a hook/prop from
   memory ([`docs-map.md`](docs-map.md) > URL grounding).
+- **Ground the symbol before wiring it (runnable check).** Export names move between majors, so
+  confirm the component / hook / prop actually exists in the *installed* package - not just in memory
+  or a docs page for another version:
+  ```bash
+  # does the export exist in the installed SDK? (v14 vs v13 differ)
+  node -e "console.log(Object.keys(require('stream-chat-react')).filter(k => /MessageComposer|MessageStatus|WithComponents/.test(k)))"
+  # or grep the shipped type defs:
+  grep -rl 'MessageComposer' node_modules/stream-chat-react/dist/*.d.ts
+  ```
+  If the name isn't there, you're on a different major - re-fetch the docs for the installed version
+  ([`docs-map.md`](docs-map.md) Version note) before wiring.
 
 ## Verify
 
