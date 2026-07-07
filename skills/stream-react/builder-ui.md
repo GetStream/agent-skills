@@ -2,6 +2,8 @@
 
 Load when executing **Step 4** (after scaffold). Rules: [`RULES.md`](RULES.md) (login screen first, theme, reference authority).
 
+> **Reference-design override.** If the request carries a screenshot / Figma / "make it look like X", the **reference's frame wins over the generic shell defined here** (App Header, sidebar, shell geometry). Reproduce the reference's frame per [`references/design-matching.md`](references/design-matching.md) - **remove in-app chrome the reference doesn't show** (a bare phone-chat reference has no app top-bar and no chat-list sidebar) and **fill the viewport** (no fixed-width chat strip beside empty background) - then apply the region + theming guidance here within it. The Login Screen stays as the auth gate unless the reference itself is the full app.
+
 ### Step 4: Generate ALL code files
 Write every file sequentially. Follow the UI Guidelines below for all visual styling. See **RULES.md > Reference authority** - reference files are the only source of truth for SDK wiring. Before writing each component, load the prebuilt path in the relevant `references/<Product>-blueprints.md`; fetch the matching live page from [`references/docs-map.md`](references/docs-map.md) for any customization, and load [`references/custom-ui.md`](references/custom-ui.md) (the completion contract) first when you write your own component for a region - even one, even via `Message=` / `WithComponents`.
 
@@ -22,9 +24,9 @@ Centered card on a neutral background. No sidebar, no nav - just the login form.
 - After successful token fetch, render the main app UI (state gate, not redirect)
 - App name / use-case label above the input
 
-#### App Header (required for every app)
+#### App Header (default shell - omit when a reference design doesn't show it)
 
-Once logged in, every app MUST show a persistent header bar:
+Once logged in, the default shell shows a persistent header bar (but see the **Reference-design override** above - a screenshot that has no app top-bar means you drop this):
 
 - **Left:** App name (derived from use case)
 - **Right:** Avatar circle (initial letter) + username + "Switch User" button

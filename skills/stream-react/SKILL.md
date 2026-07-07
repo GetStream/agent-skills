@@ -106,21 +106,21 @@ This builder runs three classes of network-touching commands. Each is listed her
 
 Execute phases **in order** (later steps depend on earlier ones). Do **not** run independent phases in parallel. Shell discipline (one `bash -c` per phase, no `bash -ce`, `getstream login` standalone) lives in [`../stream/RULES.md`](../stream/RULES.md) > Shell discipline.
 
-**Two-call exception:** If you must Read JSON (e.g. `OrganizationRead`) and then choose IDs, use one call for the read, one batched call for all creates.
+**Two-call exception:** If you must Read JSON from a `getstream api` call and then choose IDs, use one call for the read, one batched call for all creates.
 
 ### Step 0: Package manager
 Always use `npm`. Never use bun. ([`RULES.md`](RULES.md) > Package manager.)
 
 ### Step 1: Auth
-Run the **Provisioning > Step 1: Auth** flow in [`builder.md`](builder.md) (auth probe via `getstream api OrganizationRead`; `getstream login` as its own invocation on exit 2; hang recovery). On **exit 0**, continue to Step 1b.
+Authentication is handled by `getstream init` (Step 2) - it opens the browser as its **own invocation** if you're not signed in ([`builder.md`](builder.md) > Provisioning; [`../stream/RULES.md`](../stream/RULES.md) > Shell discipline). There is **no separate `getstream api` auth probe** - CLI v1.0.0 removed the pre-1.0 `OrganizationRead` probe, and `getstream api` subcommands are now product-namespaced (e.g. `getstream api chat ...`). Continue to Step 1b.
 
 ### Step 1b: Theme + app pick
 
-Ask both setup questions in **one message** before doing anything else - a single pause, the same "ask exactly once, then act" pattern the other platform packs use for credentials. Build the app options from what is already in context: the configured org/app from `getstream init` and the org list from Step 1's `OrganizationRead` output.
+Ask both setup questions in **one message** before doing anything else - a single pause, the same "ask exactly once, then act" pattern the other platform packs use for credentials. Build the app options from what is already in context: the org/app already configured in this project by a prior `getstream init`, if any. If none is configured yet, `getstream init` lists your orgs/apps interactively when it runs (Step 2) - don't try to enumerate them with a raw `getstream api` call.
 
 > **Quick setup - two questions:**
 > 1. **Theme:** I can use a random shadcn theme, or you can design your own at [ui.shadcn.com/create](https://ui.shadcn.com/create) and share the `--preset` value (e.g. `--preset b1Gdi7z7r`). Random, or do you have a preset? *(If you already shared a screenshot or Figma, I'll match that instead - skip this.)*
-> 2. **Stream app:** *(an app is configured)* Use the currently configured app **`<name>`** (default), pick another existing org/app, or create a fresh one? / *(no app configured)* You have these orgs: `<list>`. Pick one to use - I'll list its apps - or create a fresh org + app?
+> 2. **Stream app:** *(an app is already configured)* Use the currently configured app **`<name>`** (default), or pick/create a different one? / *(no app configured yet)* `getstream init` will list your orgs and apps when it runs - use an existing one, or create a fresh org + app?
 
 **STOP here and wait for the user's answer.** Do not continue with any other step until the user responds. Asking a question and continuing to work in parallel is confusing - the user misses the question as output scrolls past.
 
