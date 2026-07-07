@@ -66,6 +66,12 @@ Use Shadcn components, Tailwind utilities, and - if frontend skill packs are alr
 
 **Provider hierarchy:** mount **all** Stream providers - `<Chat>`, `<StreamVideo>`, `<StreamFeeds>` - once at AppShell, in any order. Per-screen components render `<Channel>`, `<StreamCall>`, or `<StreamFeed>` from the existing root providers. **Never re-instantiate Stream clients per screen** - the cleanup of one screen's effect will disconnect a client another screen is still using. For multi-product apps, see [`references/CROSS-PRODUCT.md`](references/CROSS-PRODUCT.md) for the full skeleton.
 
+**Layout / sizing (Stream regions fill their parent).** The prebuilt regions must **grow to fill the container you put them in** - the SDK's default `str-chat` CSS can otherwise cap the **channel list at a fixed width** (you may see ~30% / ~288px) and leave the message list or header not filling. Own the sizing with your wrapper:
+- A **flex row**: the channel-list column gets the width you want (a fixed sidebar width, or `flex-1` to fill); the `<Channel>` / `<Window>` column is `flex-1 min-w-0` (the `min-w-0` defeats flexbox `min-width: auto`, which otherwise blocks `<MessageList>` from growing/shrinking to its column).
+- A **height chain**: root the height at the AppShell (`h-dvh` / `h-full`) so `<ChannelList>` and `<MessageList>` fill vertically instead of collapsing.
+- Each region `w-full h-full` inside its column - the **wrapper decides the width**, not the component's own default; `<ChannelHeader>` (or a custom header) spans the full width of the main pane.
+- If the SDK default still caps the channel-list width, override it through the documented `str-chat` sizing variable (confirm the current name on the Theming page - do not guess it) or a wrapper width utility. Do not ship the ~288px default when full width is wanted.
+
 ### Moderation
 
 **Never build moderation review UI in the app** (RULES.md > Moderation is Dashboard-only). All review happens in the [Stream Dashboard](https://beta.dashboard.getstream.io). The app's role is **CLI setup only** (blocklists, automod config in Step 3).

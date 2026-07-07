@@ -79,6 +79,26 @@ Build custom layouts from `useCallStateHooks()` (`useParticipants`, `useCameraSt
 **Keep `ParticipantView` even in a bespoke layout** - it binds the media track for you; only hand-bind
 `participant.videoStream` / `audioStream` when you must. Keep `<StreamVideo>` / `<StreamCall>` mounted.
 
+## The headless path - Feeds
+
+Feeds is **always** headless - there are no prebuilt UI components, so **every** feeds region is a
+custom component and the completion contract **always** applies (there is no theming-only escape). Build
+from the SDK hooks; keep `<StreamFeeds>` / `<StreamFeed>` mounted and create the client with
+`useCreateFeedsClient()` ([`../RULES.md`](../RULES.md) > Strict mode protection). Entry-point hooks
+(confirm the current surface on the page before using - the API evolves):
+
+| Hook | Gives you |
+|---|---|
+| `useFeedActivities(feed)` | `activities`, `is_loading`, `has_next_page`, `loadNextPage` |
+| `useActivityComments({ feed, activity })` | `comments`, `has_next_page`, `is_loading_next_page`, `loadNextPage` |
+| `useAggregatedActivities(feed)` / `useNotificationStatus(feed)` | grouped notifications; `unread` / `unseen` counts |
+| `useOwnFollows(feed)` / `useFeedMetadata(feed)` | follow state; `follower_count` / `following_count` |
+
+Writes go through the feed / client instance - `feed.addActivity(...)`, `client.addComment(...)`,
+`client.addActivityReaction(...)`, `client.addBookmark(...)`, `feed.follow(...)`; confirm each on its
+[`docs-map.md`](docs-map.md) Feeds row before wiring. The initial `useActivityComments` fetch needs a
+one-shot `loadNextPage()` on mount (ref-guard carve-out - [`../RULES.md`](../RULES.md) > Strict mode).
+
 ---
 
 ## Route each region to its live page (do not mirror)
@@ -93,11 +113,17 @@ is then "consume the hook above + render your own markup to match the target."
 | Custom composer / input | Chat cookbook -> **Message Composer UI** |
 | Reactions set / selector | Chat cookbook -> **Reactions Customization** |
 | Channel list item / preview | Chat cookbook -> **Channel List UI** |
+| Empty / loading state (channel list, message list) | Chat cookbook -> **Channel List UI**; also the **MessageList** / **Channel** pages (`EmptyStateIndicator` / `LoadingIndicator`) |
 | Channel header | Chat cookbook -> **Channel Header** |
 | Message actions / context menu | Chat cookbook -> **Message Actions** |
 | Search | Chat cookbook -> **Search Customization** |
 | Custom call controls | Video cookbook -> **Replacing Call Controls** |
 | Custom call layout | Video index -> `ui-cookbook/<slug>.md` (fetch the index) |
+| Feed activity card | Feeds -> **Feeds**, **Activities** |
+| Comment row / list | Feeds -> **Comments** |
+| Feed composer / post box | Feeds -> **Activities** |
+| Reaction / bookmark controls | Feeds -> **Reactions**, **Bookmarks** |
+| Notification list | Feeds -> **Notification Feeds** |
 
 ---
 
@@ -179,6 +205,47 @@ is the durable part, the *names* come from the fetch.
 | Join / leave | `call.join()` / `call.leave()` | [ ] |
 | Device selectors (if shown) | `useCameraState().devices` (Observable-backed - subscribe, don't `.map` an array) | [ ] |
 
+**Feeds contracts** (Feeds is headless, so one of these applies to **every** feeds surface you build -
+same reproduce / `N/A` / `GAP` semantics; names come from the [`docs-map.md`](docs-map.md) Feeds rows):
+
+**Custom feed activity card:**
+
+| Sub-feature | Reuse (don't hand-roll) | Status |
+|---|---|---|
+| Author + avatar | `activity.user` (`.name ?? .id`, `.image`) | [ ] |
+| Relative timestamp | `activity.created_at` | [ ] |
+| Text + mentions / links | `activity.text` (docs User Mentions / URL Previews) | [ ] |
+| Attachments | `activity.attachments` (`.type`, `.image_url`, `.asset_url`) | [ ] |
+| Reaction count + own-state toggle | `activity.reaction_groups`, `activity.own_reactions`; `client.addActivityReaction` / `deleteActivityReaction` | [ ] |
+| Comment count + open comments | `activity.comment_count`; `useActivityComments` | [ ] |
+| Bookmark toggle | `activity.own_bookmarks`; `client.addBookmark` / `deleteBookmark` | [ ] |
+| Repost (if shown) | per docs Activities - confirm the API before wiring | [ ] |
+| Poll (if shown) | fetch docs Polls before building (no bundled blueprint) | [ ] |
+| Pagination | `has_next_page` + `loadNextPage()` (wrap for onClick) | [ ] |
+| Loading / empty state | `is_loading`; guard optional fields (`activities?`) | [ ] |
+
+**Custom comment row:**
+
+| Sub-feature | Reuse (don't hand-roll) | Status |
+|---|---|---|
+| Author / avatar / timestamp | `comment.user`, `comment.created_at` | [ ] |
+| Text | `comment.text` | [ ] |
+| Nested replies | `client.addComment({ parent_id })` (inherits `object_id` / `object_type`) | [ ] |
+| Comment reactions (if shown) | per docs Reactions - confirm the API | [ ] |
+| Initial fetch | `loadNextPage()` once on mount (ref-guard carve-out - [`../RULES.md`](../RULES.md) > Strict mode) | [ ] |
+| Post a comment | `client.addComment({ object_id: activity.id, object_type: 'activity', comment })` - field is `comment`, NOT `text` | [ ] |
+
+**Custom feed composer:**
+
+| Sub-feature | Reuse (don't hand-roll) | Status |
+|---|---|---|
+| Text input + submit | `feed.addActivity({ type: 'post', text })` - note `feed.`, not `client.` | [ ] |
+| Attachment upload / preview (if shown) | `client.uploadImage()` / `uploadFile()` -> URL in `attachments` | [ ] |
+| Mentions (if shown) | per docs User Mentions | [ ] |
+| Poll creation (if shown) | per docs Polls | [ ] |
+| Post appears without reload | watched feed (`getOrCreate({ watch: true })`) | [ ] |
+| Error / disabled state | `useFeedsClient` null-guard; disable submit when text empty | [ ] |
+
 Then **verify against local fixtures** that trigger every ticked row (see Verify below) - a near-empty channel
 hides every gap. Baseline testing showed that without this contract, agents drop attachments, quoted
 replies, threads, and receipts almost every time, and each run drops a *different* set - so fill the
@@ -197,6 +264,10 @@ rows; don't trust recall.
 - **Keep the providers** (`<Chat>`/`<Channel>`, `<StreamVideo>`/`<StreamCall>`) unless the surface is
   genuinely not a channel/call view - that's what keeps the WebSocket, pagination, read state, and
   client lifecycle working.
+- **Empty + loading states are their own regions.** `<ChannelList>` and `<MessageList>` / `<Channel>`
+  render an `EmptyStateIndicator` (no channels / no messages) and a `LoadingIndicator` (while fetching);
+  if the design shows a specific empty or loading screen, pass custom ones and reproduce them - a seeded
+  or near-full channel hides both, so trigger them with fixtures (Verify below).
 - **Still docs-first, still no guessing.** Fetch the page this turn; never wire a hook/prop from
   memory ([`docs-map.md`](docs-map.md) > URL grounding).
 - **Ground the symbol before wiring it (runnable check).** Export names move between majors, so
@@ -214,10 +285,12 @@ rows; don't trust recall.
 ## Verify
 
 A bespoke surface isn't done until you run it and check it against the target. **Populate every region
-with local mock / fixture data** (incoming + outgoing, a run of same-author messages so grouping shows,
-an attachment, a reaction, a reply/thread, long text, a typing event) - render your components against
-hand-authored message / channel objects, **not** by seeding the configured Stream app. The
-no-auto-seeding rule ([`../stream/RULES.md`](../stream/RULES.md)) still holds: backend seeding to verify
+with local mock / fixture data** (chat: incoming + outgoing, a run of same-author messages so grouping
+shows, an attachment, a reaction, a reply/thread, long text, a typing event, an empty channel list, an empty message list, a
+loading state; feeds: a card with
+reactions + comments + an image, long text, a notification entry) - render your components against
+hand-authored message / channel / activity objects, **not** by seeding the configured Stream app. The
+no-auto-seeding rule ([`../../stream/RULES.md`](../../stream/RULES.md)) still holds: backend seeding to verify
 needs the user's explicit confirmation **and** a disposable / dev app (see [`design-matching.md`](design-matching.md)
-Step 6). Open the real screen on its actual navigation path, compare region-by-region, and iterate.
-Match the target, don't approximate it.
+> The verify loop). Open the real screen on its actual navigation path, compare region-by-region, and
+iterate. Match the target, don't approximate it.

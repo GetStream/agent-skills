@@ -11,7 +11,7 @@ allowed-tools: >-
   Bash(getstream *),
   Bash(npx *), Bash(npm install *), Bash(npm run *),
   Bash(yarn *), Bash(pnpm *),
-  Bash(node -e *), Bash(node --version), Bash(openssl rand *),
+  Bash(node -e *), Bash(node --version), Bash(node .design-verify/*), Bash(openssl rand *),
   Bash(mv .scaffold*), Bash(rm -rf .scaffold),
   Bash(ls *), Bash(test *),
   Bash(grep *),
@@ -41,7 +41,7 @@ This skill builds, enhances, audits, and migrates Stream Chat, Video, and Feeds 
 - **Track F:** skip onboarding and go directly to the audit in [`references/VIDEO.md`](references/VIDEO.md). **Do not enter Start or any build step.**
 - **Track M:** skip onboarding and Read [`migrate.md`](migrate.md) first; it fetches the live release guide before any edit. **Do not enter Start or any scaffold task.**
 
-**Styling-depth flag (orthogonal to the track).** If the request carries a **target appearance** - an attached screenshot, a Figma frame, or "make it look like WhatsApp / Slack / <app>" - route through [`references/design-matching.md`](references/design-matching.md): a reference design is a **checklist of regions, not a color tweak**. It decomposes the image into a written spec, routes each region to a component + mechanism (theming / injection -> the [`references/custom-ui.md`](references/custom-ui.md) completion contract / bespoke), and closes with a render-and-compare verify loop. This composes with the track: **Track A** scaffolds first, then matches before Step 4's build; **Track E** matches within E3. Load it **before** writing UI.
+**Styling-depth flag (orthogonal to the track).** If the request carries a **target appearance** - an attached screenshot, a Figma frame, or "make it look like WhatsApp / Slack / <app>" - route through [`references/design-matching.md`](references/design-matching.md): a reference design is a **checklist of regions, not a color tweak**. Its pipeline is **Classify -> Spec -> Route -> Ground -> Build -> Verify**: classify the fidelity tier + viewport, write a per-screen spec that **names the Stream concept behind every visual signal** via per-product identification checklists (chat / video / feeds), route each region to a component + mechanism (theming / injection -> the [`references/custom-ui.md`](references/custom-ui.md) completion contract / bespoke), ground the names against the live docs, build batched, and close with **an empirical verify loop - screenshot + computed-style checks via session browser tooling or a Playwright fallback - iterated until the spec table passes**. This composes with the track: **Track A** scaffolds first, then matches before Step 4's build; **Track E** matches within E3. Load it **before** writing UI.
 
 ---
 
@@ -91,12 +91,14 @@ This builder runs three classes of network-touching commands. Each is listed her
 | `npx shadcn@latest add ...` (Task A.1) | Vercel - same source as above | Same scaffolder; component sync depends on registry parity. | Component files under `components/ui/`. |
 | `npm install <stream-packages> --legacy-peer-deps` (Task C) | GetStream (npm) for `@stream-io/*` and `stream-chat-react`; transitive deps via standard npm trust | Latest published versions of GetStream's own SDKs - same trust model as the CLI itself. | Modules under `node_modules/`. Runtime SDKs + transitive deps. |
 | `getstream env` (Task B) | GetStream - install instructions in the root skill's "Stream CLI" section in [`../stream/SKILL.md`](../stream/SKILL.md) | n/a (local CLI, no network at this step) | `.env.local` in the project root with `NEXT_PUBLIC_STREAM_API_KEY` + `STREAM_API_SECRET`. Task B verifies `.gitignore` covers `.env*` before writing (Next.js scaffold's default already does). The agent never reads `.env.local` (RULES.md > Secrets). |
+| Playwright into a self-contained `.design-verify/` harness (`npm install --prefix .design-verify -D playwright` + browser install) - design-matching verify-loop fallback only | Microsoft - [`microsoft/playwright`](https://github.com/microsoft/playwright) | Latest published; runs **only** when a design match needs a capture and no in-session browser tooling exists (may never run), announced inline at point of use. | Everything under `.design-verify/` (its own `package.json` + `node_modules`, gitignored) - **the app's `package.json` / lockfile are untouched** - plus ~120MB Chromium in the shared Playwright cache. Deleted wholesale at loop exit; nothing lands in the app manifest. |
 
 **Reviewer checklist:**
 
 - All `npx` invocations resolve to the publishers listed above; substitute a different publisher and the install fails.
 - `.env.local` is written by the Stream CLI directly, not by the agent, and is not transmitted into the conversation.
 - If the user wants to pin a specific shadcn version, replace `@latest` with `@<version>` in Tasks A and A.1.
+- The Playwright row is a **design-matching verify-loop fallback**, not part of the scaffold: it is announced inline if and when it runs (it may never run), installs only into a self-contained `.design-verify/` harness (never the app root), and does **not** appear in the Start trust readout above.
 
 ---
 
