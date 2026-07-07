@@ -362,10 +362,16 @@ structural change truly needs it.
   within it (e.g. wrap each icon cluster in a `Box(Modifier.height(rowHeight), contentAlignment =
   Center)` and give the input the same height) so their centers line up; keep icon sizes and inter-icon
   spacing consistent. Verify the row looks level in the screenshot.
-  **The input field's SHAPE/border is structure, not a token.** The SDK's `MessageComposerInput` wraps
-  the text field in `MessageInput`, which bakes in a border + `RoundedCornerShape` background (a pill) -
-  there is no radius/shape token to flip (same as bubbles). So if the reference's field is **flat /
-  borderless** (Telegram), a **different radius**, or a different fill, do NOT try to theme it away:
+  **The input field's SHAPE/border is structure, not a token - and the SDK ALWAYS draws a border
+  stroke.** The SDK's `MessageComposerInput` wraps the text field in `MessageInput`, which bakes in a
+  `.border(borderCoreDefault, RoundedCornerShape)` **plus** a background fill (a pill) - there is no
+  radius/shape token to flip (same as bubbles). **Check for the border STROKE specifically, separate from
+  shape/fill:** many designs have a composer with a subtle *fill* but **no stroke at all** (Slack), or a
+  fully flat field (Telegram) - the SDK's stroke then reads as an extra outline the reference does not
+  have. This is **easiest to miss in dark mode**, where the light-gray stroke is the only thing wrong on
+  an otherwise-close screen and an agent glances past it as "there's a field, looks fine." If the
+  reference field is **flat / borderless / stroke-less**, a **different radius**, or a different fill, do
+  NOT try to theme it away:
   **override `MessageComposerInput`** and render the SDK's borderless center content directly
   (`MessageComposerInputCenterContent(MessageComposerInputCenterContentParams(state, onInputChanged))`)
   in your own flat container - this keeps the real text field + placeholder while dropping the pill. When
@@ -516,8 +522,10 @@ Presence-and-color is not enough; verify **size, position, and proportion** too.
    and correct bubble **content padding** on a **short** message; (e) **composer matches the reference AND
    looks level on its own** - row count correct (multi-row -> rebuilt as a Column, not the default single
    row); every element **vertically centered** (no icon sitting low against the input - the bottom-align
-   trap); and the input field **shape** matches (if the reference field is flat/borderless, the SDK pill is
-   gone); (f) **message header trailing** shows the reference's action icons
+   trap); and the input field **shape AND border** match (if the reference field has no stroke, the SDK's
+   baked-in border/pill is gone - check this explicitly in **dark mode**, where a stray light stroke is
+   the classic last mismatch on an otherwise-close screen); (f) **message header trailing** shows the
+   reference's action icons
    (or nothing), NOT the default channel avatar/facepile - and the center matches (pill/container if the
    reference has one); (g) **channel-list rows fully decomposed** - preview/trailing/read-state present
    per the reference, and **DMs show a member avatar (not a `#`)** while channels show `#`/lock. Check on
