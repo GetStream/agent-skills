@@ -618,6 +618,23 @@ Full reference: <https://getstream.io/chat/docs/flutter-dart/chat-permission-pol
 
 ---
 
+## Attachments — rendering & customization
+
+> **Docs:** [Attachments](https://getstream.io/chat/docs/sdk/flutter/stream-chat-flutter/message-composer/attachments/)
+
+The pre-built message widget renders all attachment types through an ordered builder pipeline. Reuse it and override only the type you're restyling — the pipeline handles the rest, including a fallback for unknown types, so every message renders.
+
+- `StreamAttachmentWidgetBuilder.defaultBuilders(message:, onAttachmentTap:, customAttachmentBuilders:)` returns the ordered list: poll · mixed · gallery · file · giphy · image · video · voice-recording · link-preview · unsupported · fallback — covering every type.
+- Pass your override(s) as `customAttachmentBuilders`; they are **prepended** (checked first). A custom builder is `class X extends StreamAttachmentWidgetBuilder` with `canHandle(message, groupedByType)` + `build(context, message, groupedByType)`. Scope `canHandle` tightly (e.g. url-preview-only: `attachments.length == 1 && attachments.containsKey(AttachmentType.urlPreview)`) so it takes over only that one type and mixed messages keep the default (which renders their media).
+- Attachments are grouped by `attachment.type` into a `Map<String, List<Attachment>>`; the first builder whose `canHandle` returns true wins. **Polls live on `message.poll`, not `message.attachments`** — `PollAttachmentBuilder` triggers on `message.poll != null`, so run this whenever `message.attachments.isNotEmpty || message.poll != null`.
+- To restyle a rendered type without replacing it, use `StreamTheme.messageItemTheme.attachment` (`StreamMessageAttachmentStyle`); for a global per-type swap in the pre-built row, use the `streamChatComponentBuilders(imageAttachment:/videoAttachment:/fileAttachment:/…)` slots.
+
+**Inside a fully custom message row**, render attachments with the same pipeline: build `defaultBuilders(...)`, group `message.attachments` by `type` into a `Map<String, List<Attachment>>`, and return the first builder whose `canHandle` is true (give it an `onAttachmentTap` that opens the URL/file via `launchURL`). See the copy-pasteable snippet in [`design-matching.md`](../design-matching.md) → Attachments. Use `StreamMessageItem.fromProps` / the `attachmentBuilders:` prop when you keep the default (bubble) row; use this pipeline when you build the row yourself.
+
+**Link previews** come from a URL in the message **text** — the server enriches it into a `url_preview` attachment; you don't send links as attachments. **Channel mentions** render when the message is sent with `mentionedChannel: true` (`StreamMessageText` handles `StreamMentionType.channel`).
+
+---
+
 ## Reactions
 
 > **Docs:** [Message Reactions](https://getstream.io/chat/docs/sdk/flutter/stream-chat-flutter/reactions.md)
