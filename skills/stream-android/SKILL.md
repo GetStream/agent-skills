@@ -45,6 +45,7 @@ Before any tool call, decide the **track** from the user's input alone - no prob
 | "Build me a new Android app", "create a Compose app", "new Android app" + Stream product | **A - New app** |
 | "Add/integrate Stream into this app", "wire Chat/Video/Feeds into my Android project" | **B - Existing app** |
 | "Install Stream packages", "set up Stream in Android Studio", "wire auth/token flow" with no broader feature request | **D - Bootstrap / setup** |
+| Request carries a **target appearance** - a screenshot, a Figma frame, or "make the chat look like WhatsApp / Telegram / Slack / \<app\>" | **B (or A)** + the **styling-depth flag** below -> [`design-matching.md`](design-matching.md) |
 | Bare `/stream-android` with no args | List the tracks briefly and wait |
 
 ### Disambiguation flow
@@ -57,6 +58,10 @@ If the request is ambiguous between **build/integrate** and **reference lookup**
 
 - **Tracks A, B, D** -> run **Step 0.5 (credentials)** first, **then Project signals** once per session, then continue in [`builder.md`](builder.md) and [`sdk.md`](sdk.md). Do not probe the project before credentials.
 - **Track C** -> skip both steps if the product + UI layer are explicit. Only run Project signals on demand if the SDK or UI layer is ambiguous.
+
+### Styling-depth flag (orthogonal to the track)
+
+If the request carries a **target appearance** - an attached screenshot, a Figma frame, or "make the chat look like WhatsApp / Telegram / Slack / \<app\>" - run [`design-matching.md`](design-matching.md) **before** writing UI code. It sits on top of the Track A/B work (it is *how* you build the requested UI), not instead of it. A reference is a **checklist of regions** (header, composer, where the timestamp + read receipts sit, bubble shape/tail, channel-list rows, date separators, attachments...), and most differ from Stream's Compose defaults **structurally**, not just by color - setting the accent + wallpaper and stopping is the known failure. Classify each screenshot to its screen (channel list vs message vs thread - Step 0), decompose every region capturing **dimensions** not just colors, then route each difference to one of the **two axes**: a theming token (`StreamDesign.Colors`/`Typography`) or a `ChatComponentFactory` slot (structure - padding / corner-radius / bubble-shape / composer layout live here; Android has **no `Styles` axis**, so those are structure, not theming). Recurring traps the doc guards against: overriding a **composite slot** (`MessageContainer`, the header, `MessageComposer`) silently drops the sub-features the default drew (incoming avatar, grouping, reactions, replies, status, send/voice) unless you reproduce them; the **message-header trailing slot defaults to a channel avatar** (override it for action icons); the **composer** differs by row count / field shape / alignment far more than by icon set; **DMs must not be prefixed with `#`** in the list or titled "Channel" in the header. The match is **not done** until you build, seed data that triggers every region, compare region-by-region on the real navigation path, and iterate - implement **every** region, the composer included; a region left at the SDK default is a FAIL, not a footnote.
 
 ---
 
@@ -106,7 +111,10 @@ Use the result to produce a **one-line status**, for example:
 
 ## Reference layout
 
-Shared Android/Kotlin patterns live in **[`sdk.md`](sdk.md)**.
+Shared Android/Kotlin patterns live in **[`sdk.md`](sdk.md)**. The curated procedure for reproducing a
+**reference design** with the pre-built Compose components (the region -> `ChatComponentFactory`-slot map
+and the build/verify loop) lives in **[`design-matching.md`](design-matching.md)** - loaded via the
+styling-depth flag above, on top of whichever track applies.
 
 Product and UI-layer specifics live under **`references/`** using a flat naming scheme that can grow with the full Stream Android surface:
 
