@@ -232,6 +232,12 @@ npx next dev -p $PORT
 
 **Important:** The dev server is a long-running process. When run in the background it will eventually emit a "completed" notification - this does **not** mean the server stopped. The server is still running and serving requests. **Do not** respond to the background-task completion notification by telling the user the server has stopped. If you receive that notification after Step 7, ignore it silently - do not output anything.
 
+### Step 6b: Smoke-check the render (required)
+
+A green `tsc` + `next build` (Step 5) says nothing about what the user sees - it compiles, it does not render. Before the summary, **capture at least one screenshot of the logged-in main screen and actually look at it**, using the tool ladder in [`references/design-matching.md`](references/design-matching.md) > 6b (in-session browser tooling first, else the Playwright fallback; the `networkidle` and capture gotchas in 6c apply). You are checking for gross breakage the build cannot catch: a blank / splash-stuck screen, unstyled or collapsed layout, a region not filling its pane, or console errors. Fix what you see and re-capture.
+
+**If the request carried any target appearance** - an attached screenshot, a Figma frame, or "make it look like <app>" - this smoke check is **not** enough: you must run the full [`references/design-matching.md`](references/design-matching.md) Step 6 verify loop (a per-region spec table diffed against a this-round capture). A referenced build that skipped that loop is unfinished, not merely unpolished - catching it here is the backstop if the styling-depth flag was missed at Start.
+
 ### Step 7: Summary
 Show the org/app used (created or selected), plus resources and files created. Include the local URL. Do NOT say "you can now start the dev server" - it's already running.
 

@@ -65,6 +65,15 @@ and diffs each screen separately.
 measure off the image by `scale` before it enters the spec (a 132px avatar on a 3x mobile shot is
 44 CSS px). Do not enter raw image pixels as CSS pixels.
 
+**Mobile reference, web deliverable - decide the framing up front.** The reference is almost always a
+mobile-app screenshot, but you are shipping a web app - the single highest-leverage decision in these
+builds. Settle it with the user before building: either **(a) reproduce the mobile layout at phone
+width** (often inside a phone-frame element on the page), or **(b) adapt to the app's desktop-web
+layout** (e.g. WhatsApp Web's two-pane shell). Pick per the request; when it is genuinely ambiguous,
+ask. If you choose the phone-frame approach, also decide **modal containment**: Stream's fullscreen
+image / gallery viewer renders to the document root and will **escape a phone frame** (fill the whole
+browser window) unless you scope it - a common web-porting artifact.
+
 ---
 
 ## Step 2: Write the spec
@@ -87,6 +96,11 @@ centerpiece.
 - **Dimensions - measure, do not eyeball:** rail width, avatar size, bubble radius + padding, row
   gap, header height. Read pixels off the image and divide by `scale`; never invent round numbers
   (16 / 24 / 32).
+- **Exact text & glyphs (not just layout):** transcribe verbatim the text the design shows - the
+  composer **placeholder string** (e.g. `Message`, not the SDK default `Send a message`), button
+  labels, empty-state copy - and match the **exact glyph** for each control (a paperclip attach vs a
+  `+`, camera, mic) and its **left/right order** in the row. These are the cheapest, highest-visibility
+  fidelity wins and, across builds, the most commonly dropped - the composer especially.
 - **State + population:** every visible state (incoming + outgoing, reactions, attachments, threads,
   typing, receipts, empty). You must be able to reproduce each with a local fixture (Step 6).
 - **Viewport + scale:** carried from Step 1.
@@ -322,7 +336,10 @@ and do not substitute a static read for it.
 2. Log in through the standard Login Screen and open the env-guarded fixtures view (or, on the opt-in
    real-data path, navigate to the seeded screen).
 3. Set the **Step 1 viewport** and `deviceScaleFactor: 2`.
-4. Wait for network-idle, then ~500ms for images / animations to settle.
+4. **Do not wait for `networkidle`** - Stream holds a WebSocket open for the whole session, so the
+   network never goes idle and a `networkidle` wait blocks until timeout. Wait for `domcontentloaded`,
+   then wait for a rendered Stream selector to actually appear (e.g. `.str-chat__message-list`
+   containing at least one message row / `.str-chat__li`), then ~500ms for images / animations to settle.
 5. Produce, per screen: **(a)** a full-screen screenshot; **(b)** **element crops** of the high-detail
    regions (the composer, one message row, one tile / card) - detail is lost in a full-page shot;
    **(c)** a **probe pass** that, for each selector in your probe list, returns its
@@ -330,6 +347,13 @@ and do not substitute a static read for it.
    selector matches nothing (that flag IS the structural-presence check in 6d); **(d)** optionally,
    sample the reference image for the color rows (`magick` / PIL, or a canvas `getImageData` over a
    `file://` load).
+
+**Two capture gotchas that waste a round if missed:**
+- **Capture with a real Chromium build, not the OS headless binary.** A bare system `chrome --headless`
+  frequently screenshots only the app splash / loading state; use Playwright's bundled Chromium (rung 2
+  installs it) or launch with `--channel=chrome`.
+- **Disable the Next.js dev indicator first** (`devIndicators: false` in `next.config`, or dismiss the
+  overlay). It parks in a screen corner and can occlude the composer or a bottom message row in the shot.
 
 With in-session tooling, use its screenshot + computed-style calls directly. With the Playwright
 harness, write your own small runner **in `.design-verify/`** (its own `package.json` means CommonJS
@@ -363,9 +387,13 @@ authored but not executed produces no Rendered values. Probe shape:
    available viewport (viewport minus any sidebar). A region collapsed to a narrow/default size when it
    should fill - the message list stuck at a "mobile" width, a channel list at the ~288px default - is a
    FAIL, even when every color/type/radius value passes. This is the check that catches a sizing bug the
-   eyeball misses when the content happens to be short; it is not optional. Example probe: emit
-   `{ selector, rect, parentWidth }` for `.str-chat__channel`, `.str-chat__main-panel(-inner)`, and the
-   message list, and assert `width >= parentWidth - scrollbar`.
+   eyeball misses when the content happens to be short; it is not optional. **Vertical counts too:** the message list must fill its pane height and
+   **bottom-anchor** short content (a conversation pins to the composer; it must not float at the top with
+   a blank band below), and any wallpaper / background must cover the **full pane height** - a background
+   that stops where the messages stop is a FAIL even when every width passes. Example probe: emit
+   `{ selector, rect, parentWidth, parentHeight }` for `.str-chat__channel`, `.str-chat__main-panel(-inner)`,
+   the message list, and the background element, and assert both `width >= parentWidth - scrollbar` and
+   `height >= parentHeight - scrollbar`.
 4. **Structural presence** via the probe `missing` flags: every Step 2 taxonomy signal must exist in
    the DOM. A `missing:true` is a dropped region.
 

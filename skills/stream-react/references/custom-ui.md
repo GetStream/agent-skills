@@ -164,7 +164,7 @@ is the durable part, the *names* come from the fetch.
 
 | Sub-feature | Reuse (don't hand-roll) | Status |
 |---|---|---|
-| Text input + send (+ enter-to-send) | composer input + submit handler | [ ] |
+| Text input + send (+ enter-to-send) | composer input + submit handler; when matching a reference, use its **exact placeholder string** (e.g. `Message`, not the SDK default `Send a message`) | [ ] |
 | Attachments: attach + upload + remove | upload handler + attachment previews | [ ] |
 | Mentions / slash-command autocomplete | the SDK suggestion list | [ ] |
 | Voice recording (if enabled) | enable `<MessageComposer audioRecordingEnabled/>`; a custom `MessageComposerUI` must render the swap itself - `recordingController.recordingState ? <AudioRecorder/> : <normal composer>` (from `useMessageComposerContext()`), start recording via `recordingController.recorder?.start()`. Optional mp3: `@breezystack/lamejs` + `encodeToMp3` from `stream-chat-react/mp3-encoder` | [ ] |
