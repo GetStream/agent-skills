@@ -301,6 +301,14 @@ needs the user's explicit confirmation **and** a disposable / dev app (see [`des
 > The verify loop). Open the real screen on its actual navigation path, compare region-by-region, and
 iterate. Match the target, don't approximate it.
 
+**Drive the open / interaction states too** - the hover toolbar, the **thread panel opened** (its own
+layout), the reaction selector, the actions menu, the composer with a staged attachment / in edit
+mode. These don't render at rest; `hover()` / `click()` to reach them, and check the message bubble
+doesn't move when its hover toolbar appears. Caveat: the **thread's own reply composer needs a real
+channel context**, so a neutralized fixture channel throws when the thread opens - verify thread-open
+against a real channel, or with a stand-in element carrying the real thread-container class for the
+container-layout check.
+
 **Chat fixture-channel recipe (local, no backend writes).** `client.channel(type, id)` returns a
 client-side instance; populate its state and stub its network methods, then pass it to the *shipped*
 layout (mount the real `AppShell` / shell layout - not a hand-rolled wrapper - see

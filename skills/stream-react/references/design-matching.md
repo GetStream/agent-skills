@@ -262,9 +262,14 @@ not a match; it is a guess that happened to compile.
 Every state the reference shows must be **visibly present in the capture**. Default to **local
 fixtures** (no backend writes - the no-seeding invariant, [`../../stream/RULES.md`](../../stream/RULES.md)
 > No auto-seeding, holds). Enumerate them by product:
-- **Chat:** incoming + outgoing, a same-author run (grouping), an attachment, a reaction, a
-  reply/thread, long text, a typing event, read receipts, **an empty channel list, an empty message
-  list, and (if the design shows one) a loading skeleton**.
+- **Chat — content states:** incoming + outgoing, a same-author run (grouping), an attachment, a
+  reaction, a quoted reply, long text, a typing event, read receipts, **an empty channel list, an
+  empty message list, and (if the design shows one) a loading skeleton**.
+- **Chat — interaction / open states (drive them; they do NOT appear at rest):** the hover message
+  toolbar (does it shift the bubble?), the **thread panel OPEN** — its own layout, sidebar vs
+  full-pane, not just the "N replies" entry point — the reaction selector open, the message-actions
+  menu open, the composer with a staged attachment and in edit mode, and the details / right pane
+  open. Each has a distinct layout and is a common regression site a resting capture never reaches.
 - **Video:** multiple tiles, a muted participant, a screenshare, a dominant speaker.
 - **Feeds:** a card with reactions + comments + an image, long text, a notification entry.
 
@@ -347,6 +352,12 @@ and do not substitute a static read for it.
    selector matches nothing (that flag IS the structural-presence check in 6d); **(d)** optionally,
    sample the reference image for the color rows (`magick` / PIL, or a canvas `getImageData` over a
    `file://` load).
+6. **Then drive and re-capture the interaction / open states (6a).** They don't render at rest, so
+   after the resting capture: `hover()` a message row and assert its bubble `getBoundingClientRect`
+   is unchanged (a shift means an in-flow hover toolbar — move it out of flow); `click()` a "N
+   replies" button to open the thread and capture the open panel (sidebar vs full-pane is decided
+   here); open the reaction selector, actions menu, and details pane the same way. Each opened state
+   is its own screenshot + probe. A capture with zero driven states is incomplete.
 
 **Two capture gotchas that waste a round if missed:**
 - **Capture with a real Chromium build, not the OS headless binary.** A bare system `chrome --headless`
@@ -459,6 +470,7 @@ Matching a design under time pressure breeds excuses. The discrepancy table deci
 | "The computed styles all match" | The side-by-side Read is mandatory every round - numbers miss font fallback, seams, weight. |
 | "Colors/type all match, so the region's fine" | Run the region-fills-container check (6d.3). A region collapsed to a mobile/default width passes every color/type row and is still a FAIL. |
 | "I built a quick wrapper for the fixtures view" | Verify in the SHIPPED layout component, not a hand-rolled wrapper. A flex-column stand-in hides a width-collapse that only appears in the shipped flex-row - you verified a different screen than you ship. |
+| "I rendered every state in the fixtures" | Rendering isn't driving. Hover/open states (thread panel, hover toolbar, reaction picker, actions menu) only exist after you `hover()`/`click()` - a resting capture misses them (6a/6c). |
 | "`next build` passed" | Compiling is not matching. A green build says nothing about the pixels. |
 | "The user can just check it" | That is rung 3 only, and only after rungs 1-2 fail - and it ships labeled UNVERIFIED. |
 | "I'll curl the HTML / read the served CSS instead" | Static markup is not a render - no layout, no computed styles, no resolved fonts. Use a browser rung (1 or 2). |
