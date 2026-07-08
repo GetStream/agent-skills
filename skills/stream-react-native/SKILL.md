@@ -1,6 +1,6 @@
 ---
 name: stream-react-native
-description: "Use when creating, building, or integrating Stream Chat, Stream Video, or Stream Feeds in React Native Community CLI or Expo apps - new RN/Expo Chat / Video / Feeds apps from scratch, existing-app integration, stream-chat-react-native, stream-chat-expo, @stream-io/video-react-native-sdk, @stream-io/feeds-react-native-sdk, useCreateFeedsClient, StreamFeeds, StreamFeed, activity feed, timeline feed, notification feed, for-you feed, useFeedActivities, useActivityComments, reactions, comments, follows, migration/setup, channel list, message list, MessageComposer, attachment picker, image/file attachments, media picker, audio messages, threads, thread list, video call, livestream, audio room, ringing, CallContent, ParticipantView, React Navigation, Expo Router, theming, offline support, push notifications, and Chat / Video / Feeds UI customization. Not for Moderation review UI."
+description: "Use when creating, building, or integrating Stream Chat, Stream Video, or Stream Feeds in React Native Community CLI or Expo apps - new RN/Expo Chat / Video / Feeds apps from scratch, existing-app integration, stream-chat-react-native, stream-chat-expo, @stream-io/video-react-native-sdk, @stream-io/feeds-react-native-sdk, useCreateFeedsClient, StreamFeeds, StreamFeed, activity feed, timeline feed, notification feed, for-you feed, useFeedActivities, useActivityComments, reactions, comments, follows, migration/setup, migrate or upgrade an SDK version, upgrade stream-chat-react-native to v9, v8 to v9, bump Stream version, channel list, message list, MessageComposer, attachment picker, image/file attachments, media picker, audio messages, threads, thread list, video call, livestream, audio room, ringing, CallContent, ParticipantView, React Navigation, Expo Router, theming, offline support, push notifications, and Chat / Video / Feeds UI customization. Not for Moderation review UI."
 license: See LICENSE in repository root
 compatibility: Supports new or existing React Native CLI and Expo apps running Stream Chat RN or Stream Video RN with React Native New Architecture. The `getstream` CLI is the default credentials and requested demo-data path; pasted API key and token are accepted as fallback.
 metadata:
@@ -8,6 +8,7 @@ metadata:
 allowed-tools: >-
   Read, Write, Edit, Glob, Grep,
   WebFetch(domain:getstream.io),
+  WebFetch(domain:raw.githubusercontent.com),
   Bash(ls *), Bash(find . *), Bash(grep *),
   Bash(cat package.json), Bash(cat app.json), Bash(cat app.config.js), Bash(cat app.config.ts),
   Bash(cat babel.config.js), Bash(cat metro.config.js),
@@ -41,6 +42,7 @@ Before any tool call, decide the track from the user's input alone. Do not probe
 | Signal in user input | Track |
 |---|---|
 | "Build/create/scaffold a new React Native app", "create an Expo app", "new Stream Chat RN app", "new Stream Video RN app", "new Stream Feeds RN app", empty directory + React Native/Expo Chat / Video / Feeds | **A - New app** |
+| "Upgrade/migrate/bump a Stream SDK version", "upgrade stream-chat-react-native to v9", "migrate Chat RN to the new SDK", "v8 to v9", "bump Stream Video/Feeds", "Feeds v2 -> v3" | **M - Migrate / upgrade** |
 | "Add/integrate Stream Chat into this app", "wire Chat RN", "set up stream-chat-expo", "add a video call", "wire Stream Video", "set up @stream-io/video-react-native-sdk", "add an activity feed", "wire Stream Feeds", "set up @stream-io/feeds-react-native-sdk", "change/customize this Chat / Video / Feeds UI" | **B - Existing app** |
 | `React Native`, `Expo`, `Expo Router`, `stream-chat-react-native`, `stream-chat-expo`, `@stream-io/video-react-native-sdk`, `@stream-io/feeds-react-native-sdk`, `Stream Chat RN`, `Stream Video RN`, `Stream Feeds RN`, `Chat React Native`, `Video React Native`, `Feeds React Native`, migration | **C - Reference lookup** if the user only asks how/docs; otherwise **B - Existing app** |
 | Explicit product/runtime token: `Chat React Native`, `Chat Expo`, `Video React Native`, `Video Expo`, `Feeds React Native`, `Feeds Expo` | **C - Reference lookup** |
@@ -85,6 +87,7 @@ Do not invent missing React Native Moderation API details from memory.
 ### After classification
 
 - **Tracks A, B, D** -> run Project signals, then continue in [`builder.md`](builder.md) and [`sdk.md`](sdk.md). Run [`credentials.md`](credentials.md) before writing Chat, Video, or Feeds connection code or creating requested demo data.
+- **Track M** -> Read [`migrate.md`](migrate.md) first; it fetches the live upgrade guide before any edit. Run Project signals for lane / package-manager / New-Architecture detection, but **skip credentials, provisioning, and the scaffold path** - it edits an existing project.
 - **Track C** -> skip credentials and project probes if the product + runtime are explicit. Only run a read-only probe if RN CLI vs Expo is ambiguous and the answer affects the guidance.
 
 ---
@@ -138,6 +141,7 @@ If there is no RN/Expo project and Track A applies, scaffold one through [`build
 | B - Existing app | [`builder.md`](builder.md) + [`sdk.md`](sdk.md) + `llms.txt` docs lookup + product references (Chat / Video / Feeds) |
 | C - Reference lookup | [`sdk.md`](sdk.md) + [`references/DOCS.md`](references/DOCS.md) + relevant product reference files |
 | D - Bootstrap / setup | [`builder.md`](builder.md) + [`sdk.md`](sdk.md) + `llms.txt` docs lookup |
+| M - Migrate / upgrade | [`migrate.md`](migrate.md) + [`references/DOCS.md`](references/DOCS.md) (live upgrade guide) + product reference for the migrated SDK |
 
 ---
 
@@ -180,7 +184,7 @@ If the requested product file is not bundled yet, say so plainly and only switch
 | Phase | Name | What you do |
 |---|---|---|
 | **B1** | Detect | Run Project signals and inspect existing app structure before editing. Note any existing Chat / Video / Feeds packages. |
-| **B2** | Preserve | Keep Expo/RN CLI lane, package manager, navigation stack, and auth architecture unless asked to migrate. |
+| **B2** | Preserve | Keep Expo/RN CLI lane, package manager, navigation stack, and auth architecture. If the user asks to **upgrade/migrate an SDK version**, that is **Track M** -> [`migrate.md`](migrate.md), not a Track B edit. |
 | **B3** | Integrate | Use `llms.txt` lookup for the requested area, then load only the Chat / Video / Feeds reference/blueprint sections needed. |
 | **B4** | Verify | Confirm the requested Stream Chat / Video / Feeds flow builds and renders in the existing app. |
 
@@ -215,3 +219,18 @@ Use when the user wants package install and shared wiring more than a full featu
 - Video-specific wiring: declare camera/mic permissions, add Expo config plugins where applicable, create `StreamVideoClient` and mount `StreamVideo`
 - Feeds-specific wiring: call `useCreateFeedsClient` (returns `undefined` while connecting), mount `<StreamFeeds client={client}>` once near the app root, and (typically) wrap an `OwnFeedsContextProvider` that creates the user + timeline feeds and the self-follow
 - stop before product-specific UI if the user only asked for setup
+
+---
+
+## Track M - Migrate / upgrade a version
+
+**Full detail:** [`migrate.md`](migrate.md) - Read it first; it fetches the live upgrade guide before any edit. Docs-driven and read-only until the guide is fetched - **never migrate from memory** ([`RULES.md`](RULES.md) > Package version and docs discipline). Skip credentials, provisioning, and scaffold; preserve the project's runtime lane, package manager, and lockfile.
+
+| Phase | Name | What you do |
+|---|---|---|
+| **M1** | Detect | Run Project signals + read `package.json`/lockfile: which Stream packages, their from -> to versions, runtime lane, package manager, and RN/Expo New-Architecture status. |
+| **M2** | Fetch the guide | From the product manifest ([`references/DOCS.md`](references/DOCS.md)) fetch the matching upgrade guide (known entry point: Chat RN **v8 -> v9**). Hard gate on failure -> `stream-docs` -> stop and ask. |
+| **M2.5** | Prerequisites | Clear RN-specific blockers first: New Architecture requirement, new native/peer deps (e.g. `react-native-teleport` for Chat v9), native rebuild. |
+| **M3** | Apply | Bump only the targeted packages (each at its own target; bump the lane's Chat wrapper), apply every documented breaking change, ground each symbol in installed `node_modules/stream-chat-react-native-core` source, grep for renamed symbols, do native config + keyboard cleanup. |
+| **M4** | Verify | `tsc --noEmit` -> Metro bundle -> native build -> simulator/device smoke of the core flow. No `next build`; a green `tsc` is not a render. |
+| **M5** | Summarize | Packages bumped, breaking changes applied, native/New-Arch changes, files touched, manual follow-ups. Offer (don't auto-run) the next step. |

@@ -53,6 +53,8 @@ Before installing Stream Chat, Video, or Feeds RN packages:
 
 Before changing an existing Chat, Video, or Feeds UI, fetch the manifest-selected markdown page that matches the requested change. Choose the implementation path from the docs and the existing app: theme for style-only changes (Chat / Video; Feeds is headless and changes are made directly in the components you wrote), component overrides for UI slots (Chat / Video only), documented props/hooks for behavior, and optional native packages only for requested native capabilities.
 
+**This rule also governs migration (Track M).** Never apply an SDK version upgrade from memory - fetch the matching upgrade / migration guide from the product manifest (or the known entry points in [`migrate.md`](migrate.md)) and apply *that*. Migrations are exactly where APIs move, native requirements change (e.g. the New Architecture becomes mandatory), and peer dependencies are added. Bump only the packages being upgraded, each to its own resolved version - Stream packages version independently. See [`migrate.md`](migrate.md).
+
 ---
 
 ## Required peer setup
