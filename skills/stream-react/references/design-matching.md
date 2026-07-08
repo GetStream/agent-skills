@@ -109,8 +109,12 @@ centerpiece.
 sampling: `getComputedStyle` returns the exact `color` / `font` / `padding` / `border-radius` - trust
 it over any eyeball. Only the *reference* side needs sampling. Sample it with `magick` or Python+PIL
 if present; if neither is available, load the reference image into the capture browser (`file://`) and
-read pixels with a canvas `getImageData` (the `--sample` mode of the capture script in Step 6). Lo-fi
-tier: skip sampling entirely, palette comes from the preset / brand.
+read pixels with a canvas `getImageData` (the `--sample` mode of the capture script in Step 6). **That
+same reference pass measures DIMENSIONS, not just color - do not eyeball glyph and control sizes:**
+threshold the cropped region (dark glyphs on a light bar), project the dark mask onto columns, cluster
+contiguous runs into glyphs, and read each bounding box in image px, then divide by `scale`. Controls
+(composer icons, avatars, badges) almost always measure **smaller** than you would guess - match the
+measured value, never a round number. Lo-fi tier: skip sampling entirely, palette comes from the preset / brand.
 
 ### Name the Stream concept behind every signal
 
@@ -183,7 +187,7 @@ region -> its docs page (no duplication).
 |---|---|---|
 | Channel-list rail | `<ChannelList>` + preview | Structural preview -> injection (`ChannelPreviewUI`) -> contract |
 | Message row / bubble | `<MessageList>` + row | Almost always structural -> injection (`MessageUI` via `Message=` / `WithComponents`) -> contract |
-| Composer / input bar | `<MessageComposer>` | Button placement differs -> injection (`MessageComposerUI`) -> contract |
+| Composer / input bar | `<MessageComposer>` | injection (`MessageComposerUI`); **1 row = rearrange, 2+ rows = rebuild as a flex column** -> contract |
 | Channel header | `<Channel>` header slot | Injection -> contract; or props only (no contract) |
 | Participant tile / call layout | `<StreamCall>` + layout | Prebuilt layout, or injection -> contract |
 | Call-controls bar | `CallControls` | Prebuilt, or injection (custom controls) -> contract |
@@ -199,6 +203,13 @@ Rules:
 - **Feeds has no prebuilt UI: every feeds region is bespoke by definition, so the contract always
   applies** - there is no theming-only escape for any feeds region (card, composer, comment row, or
   notification list).
+- **Composer row-count test.** Count the rows in the reference composer. Stream's `MessageComposer`
+  renders as **one row** (leading buttons | input | trailing buttons); a 1-row reference is matched by
+  customizing *within* that row (glyphs, placement, the input pill). A **2+ row** composer (an input row
+  with a separate toolbar / actions row below - the Slack / Discord shape) cannot come from restyling the
+  one-row default: your injected `MessageComposerUI` must be built as a flex **column** (input row +
+  actions row), reusing the SDK's textarea / send / attachment pieces. Match row count AND per-row
+  placement, not just the icon set.
 
 ---
 
@@ -236,6 +247,13 @@ Match the reference's colors **without** hand-editing `globals.css` (which [`../
   `str-chat__theme-light/dark` class, the SDK's documented CSS custom properties, and `<Channel>`
   theming. **Confirm the current variable names on the Theming page** ([`docs-map.md`](docs-map.md)) -
   do not hard-code variable names from memory.
+- **Pinned vs adaptive - the reference is almost always a *light* screenshot.** Sampled **brand /
+  content** colors that read identically in both themes (bubble fills, accent, presence dot, unread
+  badge) may be pinned literals. But **chrome surfaces** (app shell, channel-list bg, composer bar,
+  header) must ride the adaptive channels - the shadcn preset's light/dark tokens, the
+  `str-chat__theme-dark` variables, and Tailwind `dark:` - never a hard-coded `#fff`. A surface pinned to
+  a sampled light value looks right in light mode and **breaks in dark**. When the app supports dark mode
+  this is a verify requirement, not a nicety (Step 6c captures both themes).
 - **Lo-fi tier:** palette from the preset / brand, never sampled from a pencil sketch.
 
 ### The reference frame wins over the generic shell
@@ -263,8 +281,12 @@ Every state the reference shows must be **visibly present in the capture**. Defa
 fixtures** (no backend writes - the no-seeding invariant, [`../../stream/RULES.md`](../../stream/RULES.md)
 > No auto-seeding, holds). Enumerate them by product:
 - **Chat — content states:** incoming + outgoing, a same-author run (grouping), an attachment, a
-  reaction, a quoted reply, long text, a typing event, read receipts, **an empty channel list, an
-  empty message list, and (if the design shows one) a loading skeleton**.
+  reaction, a quoted reply, long text, **a one-word message and a message whose last line is nearly
+  full-width**, a typing event, read receipts, **an empty channel list, an empty message list, and (if
+  the design shows one) a loading skeleton**. *(The two extreme-width messages are the check for
+  **in-bubble metadata**: if the timestamp + receipts are **overlaid** (`position: absolute`) instead of
+  **laid out in flow**, they overlap the text on the wide last line and overflow / half-empty the bubble
+  on the one-word message. Lay them out so the bubble sizes to `max(text, metadata)`.)*
 - **Chat — interaction / open states (drive them; they do NOT appear at rest):** the hover message
   toolbar (does it shift the bubble?), the **thread panel OPEN** — its own layout, sidebar vs
   full-pane, not just the "N replies" entry point — the reaction selector open, the message-actions
@@ -358,6 +380,12 @@ and do not substitute a static read for it.
    replies" button to open the thread and capture the open panel (sidebar vs full-pane is decided
    here); open the reaction selector, actions menu, and details pane the same way. Each opened state
    is its own screenshot + probe. A capture with zero driven states is incomplete.
+7. **If the app supports light/dark, capture BOTH themes.** Toggle the theme the way the app does (the
+   `str-chat__theme-dark` class, the app's theme switch, or emulate `prefers-color-scheme` in the capture
+   browser) and re-capture. Probe the **chrome surfaces** (app shell, channel-list bg, composer bar,
+   header) in each theme: a surface still showing the same **light** hex in dark mode is a FAIL (it should
+   have flipped to the adaptive dark token); brand / content colors (bubble fills, accent) should hold
+   across both. No rebuild needed - it is one extra capture, not another round.
 
 **Two capture gotchas that waste a round if missed:**
 - **Capture with a real Chromium build, not the OS headless binary.** A bare system `chrome --headless`
@@ -425,13 +453,33 @@ high-detail row. A short table is an incomplete spec, not an early finish.
 ### 6e. Iterate and exit honestly
 
 Fix **all** failing rows, **then** recapture **once** (work in batches - not one recapture per row).
-**Loop cap: 5 rounds.**
+
+**Loop until the target is met - every spec row PASS with this-round evidence - not until a fixed round
+count expires.** There is no 5-round cap; the termination rule is **convergence, not a counter**. After
+each recapture, compute the set of failing rows and require it to **strictly shrink** round over round
+(≥1 FAIL flips to PASS and nothing regresses). A monotonically shrinking finite set is guaranteed to
+terminate, so full PASS is reachable without an arbitrary ceiling - and a stuck loop ends *sooner* than
+a fixed count would, not later. Stop **before** full PASS only when:
+- **Plateau** - a round does not shrink the failing set (same rows fail with the same measured values):
+  you have spent the fixes you know. A new, specific fix is still progress - take it; otherwise stop.
+- **Oscillation** - a fix **regresses** a row that was passing (the set changed but did not shrink). The
+  two regions are coupled: fix **both in one batched edit** this round instead of alternating; if they
+  keep trading failures, stop and report both.
+- **Genuine impossibility** - the SDK / platform cannot express the row at all (see below).
+- **Runaway backstop** - a hard ceiling of **8 rounds** (or a token / wall-clock budget set up front)
+  exists ONLY to catch a misjudged "still converging". Hitting it is exceptional: flag it, and if you
+  were genuinely still converging, hand the remaining rows to the user rather than GAP-ing matchable work.
 
 Exit only when every spec row is **PASS with this-round evidence**: the final claim cites the last
 capture. "This round" = the capture taken after your most recent edit to any file affecting the
 previewed regions (components, CSS / theme, fixtures, preset). *Any* such edit - however small -
 invalidates the prior capture; if `git status` shows changes to those paths since the cited capture, it
 is stale and you re-capture before claiming PASS.
+
+**Dropping the round count RAISES the evidence bar, it does not lower it.** PASS is now the loop's exit
+ticket, so the temptation is to *declare* one to get out. Resist it: every PASS still needs this-round
+measured evidence in the 6d table; a row you cannot measure to PASS stays FAIL / GAP, never a "close
+enough" invented to end the loop.
 
 **If no capture happened this round on any rung** (tooling absent, install failed, app unreachable),
 the deliverable says **UNVERIFIED** and lists which regions are implemented-but-unseen. Do not describe
@@ -441,12 +489,13 @@ view to be **built** and its states populated - "unseen" means the capture tooli
 skipped the fixtures work; an UNVERIFIED deliverable with no fixtures view built is an unfinished task,
 not an honest exit.
 
-At the cap, report each unresolved row as **`GAP - not matched`** (the [`custom-ui.md`](custom-ui.md)
-vocabulary), with **both measured values** (spec vs rendered) and the honest reason. "Deferred",
-"minor", "close enough", and "cosmetic" are banned relabels of a GAP.
+At any exit short of full PASS - plateau, oscillation, impossibility, or the runaway backstop - report
+each unresolved row as **`GAP - not matched`** (the [`custom-ui.md`](custom-ui.md) vocabulary), with
+**both measured values** (spec vs rendered) and the honest reason. "Deferred", "minor", "close enough",
+and "cosmetic" are banned relabels of a GAP.
 
-**"Genuine impossibility"** (the only pre-cap reason to skip a region) means the SDK or platform cannot
-express it at all - cite the specific limitation, not "hard to fixture", "fiddly", or "low on time". A
+**"Genuine impossibility"** (the only reason to drop a row from the PASS target while the loop
+continues) means the SDK or platform cannot express it at all - cite the specific limitation, not "hard to fixture", "fiddly", or "low on time". A
 region you skip for *any* reason is still a row in the discrepancy table marked `GAP - not matched` with
 the reason (impossible regions included), never a prose footnote. Time pressure is never impossibility.
 
@@ -466,7 +515,8 @@ Matching a design under time pressure breeds excuses. The discrepancy table deci
 | "It's close enough / basically there" | The table decides with measured values, not an adjective. |
 | "I verified it by reading the code" | Code is not a render. Capture this round or it is UNVERIFIED. |
 | "There's no browser tooling here" | The ladder has three rungs. Rung 2 (Playwright) installs; rung 3 is labeled UNVERIFIED. |
-| "Screenshots are too slow to loop" | The loop is batched: decompose/build all, ~5 captures total, not one per tweak. |
+| "Screenshots are too slow to loop" | The loop is batched: decompose/build all, one capture per round, and it stops when a round stops shrinking the failing set - not one capture per tweak. |
+| "No cap now, so I'll loop until it's perfect" | The loop is convergence-gated, not infinite: it ends when a round fails to shrink the failing set (plateau / oscillation) or at the 8-round runaway backstop. Then GAP the rest with measured values - looping past convergence just burns the run. |
 | "The computed styles all match" | The side-by-side Read is mandatory every round - numbers miss font fallback, seams, weight. |
 | "Colors/type all match, so the region's fine" | Run the region-fills-container check (6d.3). A region collapsed to a mobile/default width passes every color/type row and is still a FAIL. |
 | "I built a quick wrapper for the fixtures view" | Verify in the SHIPPED layout component, not a hand-rolled wrapper. A flex-column stand-in hides a width-collapse that only appears in the shipped flex-row - you verified a different screen than you ship. |
