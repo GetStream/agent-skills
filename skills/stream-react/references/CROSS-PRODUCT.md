@@ -120,6 +120,15 @@ function WatchScreen({ callId }: { callId: string }) {
 - Call: `call.leave()` (NEVER `videoClient.disconnectUser()`).
 - Feed: usually no cleanup needed; the `<StreamFeeds>` provider keeps state alive.
 
+## Ringing / calling from chat (Chat + Video)
+
+To let a chat member "call the group" with an incoming-call screen for everyone plus a join affordance in the conversation:
+
+- **Global overlay, mounted once under `<StreamVideo>`** (sibling to the chat layout, not per-channel): it reads `useCalls()`, wraps each call in `<StreamCall>`, and switches on `useCallStateHooks().useCallCallingState()` - `RINGING` → incoming/outgoing screen (by `call.isCreatedByMe`), joined → active call UI. One overlay handles every ring the client sees.
+- **Start a call** from the channel header: `videoClient.call("default", crypto.randomUUID()).getOrCreate({ ring: true, video: true, data: { members, custom: { channelCid } } })` with `members` = the channel members (caller included). The full ringing lifecycle (caller auto-joins on first accept, accept/reject/cancel) is in [VIDEO.md](VIDEO.md) > Ringing calls.
+- **Join from chat:** the same click also posts a chat message with a custom `call` attachment (call id + type). Render it in your `MessageUI` as a "Join" card whose button calls `videoClient.call("default", id).join()`; the overlay then renders it via `useCalls()`. This covers members who missed or dismissed the ring.
+- Same API key for both clients - no separate app.
+
 ## Common error -> cause -> fix
 
 | Symptom | Cause | Fix |

@@ -47,6 +47,17 @@ Fix any errors. Use the project's existing package manager and `build` script - 
 
 ---
 
+## Debugging an existing integration
+
+When a Stream feature "does nothing" or renders wrong, isolate the layer before touching UI code - guessing at the component wastes cycles. Two techniques that reliably find the real cause:
+
+- **Grep the compiled SDK bundle for the actual behavior.** Export names, hook semantics, and silent gates live in `node_modules/stream-chat-react/dist/cjs/index.js` (and `stream-chat/dist/cjs/...`). Grepping for the hook/handler shows what it *really* does - e.g. `useReactionHandler` early-returns unless `channelCapabilities["send-reaction"]`; `useCanCreatePoll` returns "poll form valid to submit", not "channel allows polls"; `AttachmentSelector` filters actions by capability + channel config. This is the fastest way to confirm a gate you'd otherwise misread. (Same discipline as [`references/custom-ui.md`](references/custom-ui.md) > ground the symbol.)
+- **Reproduce with a throwaway client to split send-vs-display.** A tiny node script - `new StreamChat(apiKey, { allowServerSideConnect: true })`, a token from `/api/token`, `connectUser`, then `queryChannels` / `sendReaction` / read `channel.data.own_capabilities` - proves whether the data round-trips (backend/capability issue) or arrives but doesn't render (client display issue). Use a disposable channel and clean up; this respects [`../stream/RULES.md`](../stream/RULES.md) > No auto-seeding. Note: server-side `queryChannels` returns an admin-context `own_capabilities` (inflated) - read the capability from a *connected user* client to see what the SDK actually gates on.
+
+Chat feature gates (channel-type flags + capabilities that no-op silently) are catalogued in [`references/CHAT.md`](references/CHAT.md) > Feature enablement.
+
+---
+
 ## Key constraints
 
 - Do **not** re-scaffold, re-initialize Shadcn, or modify `globals.css` / `layout.tsx`.

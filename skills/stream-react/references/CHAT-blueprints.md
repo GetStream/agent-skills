@@ -77,6 +77,21 @@ import { WithComponents } from 'stream-chat-react';
 
 **Docs-first:** for any customization (custom message UI, theming, reactions, composer UI, channel header, search, AI, ...) fetch the matching page from [`docs-map.md`](docs-map.md) before writing - the prebuilt props and customization API evolve. Component reference pages live at `https://getstream.io/chat/docs/sdk/react/components/{category}/{component}.md`.
 
+### v14 renamed / moved exports (confirm against the installed package, don't trust memory)
+
+These moved between majors and are the common grounding-time surprises. Still run the runnable export check ([`custom-ui.md`](custom-ui.md) > Ground the symbol) - this table is a head start, not a substitute.
+
+| You may reach for | v14 reality |
+|---|---|
+| `MessageInput` | Renamed -> `MessageComposer` (the React component; distinct from the `MessageComposer` state class in `stream-chat`). |
+| `ChannelPreview` + `Preview=` prop | Renamed -> `ChannelListItem`; custom preview is registered via `WithComponents` key **`ChannelListItemUI`** (props: `channel`, `active`, `displayTitle`, `displayImage`, `latestMessagePreview`, `lastMessage`, `unread`, `muted`, `pinned`, `messageDeliveryStatus`, `setActiveChannel`). |
+| Custom message component key | `WithComponents` key **`MessageUI`** (`Message` still works as a deprecated alias). |
+| `MessageOptions` (hover toolbar) | Removed / not exported - use **`MessageActions`** (renders react + reply + dropdown; reads `MessageContext`). |
+| `EmojiPicker` from `stream-chat-react` | Moved to the **`stream-chat-react/emojis`** submodule; needs the `emoji-mart` + `@emoji-mart/data` + `@emoji-mart/react` peer deps. Register via `WithComponents` `{ EmojiPicker }` and import `stream-chat-react/css/emoji-picker.css`. |
+| Voice-message MP3 encoding | `encodeToMp3` from **`stream-chat-react/mp3-encoder`** (needs `@breezystack/lamejs`); pass via `<MessageComposer audioRecordingConfig={{ transcoderConfig: { encoder: encodeToMp3 } }} audioRecordingEnabled />`. Recording works without it (wav); the encoder just shrinks files. |
+| Poll instance for a custom row | `message.poll` is response data, not a `Poll` instance - get the instance with `client.polls.fromState(message.poll_id)` and render `<Poll poll={...} />`. |
+| `firstOfGroup` / `endOfGroup` | Set by the **virtualized** list only; `undefined` in the regular `<MessageList>` (see [`custom-ui.md`](custom-ui.md) grouping row). |
+
 ---
 
 ## Fully custom UI (fallback)

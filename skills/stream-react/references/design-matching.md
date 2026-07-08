@@ -262,6 +262,16 @@ early-returns / 404s when the flag is unset), so a missed cleanup can never ship
 bare route that skips login renders components in a fake context and passes while production differs -
 do not use one.
 
+**Reuse the SHIPPED layout - do not hand-roll a wrapper for the fixtures view.** The fixtures view must
+render the *same* layout component the app ships (import your real `AppShell` / shell layout and inject
+the fixture channel as the active channel); it must **not** re-create its own `<main>` / column
+structure. Layout bugs live in the wrapper geometry (flex direction, which node carries `flex-1`,
+`min-width:0`, intermediate `str-chat` nodes) - a hand-rolled fixtures wrapper reproduces *different*
+geometry and passes while production is broken. The classic trap: a fixtures wrapper that is a flex
+**column** (children stretch to full width automatically) hides a width-collapse that only appears in the
+shipped flex **row**. If injecting a fixture channel into the real shell is awkward, that awkwardness is
+a signal the shell isn't structured for testability - fix the shell, don't fork the layout.
+
 **Opt-in real-data check.** If the user prefers a real-backend pass over fixtures, seed the states into
 a **throwaway app provisioned solely for this check and deleted after** - **not** the app the project
 connects to (its `.env.local` key), and **not** any app holding other users' data - with explicit
@@ -333,7 +343,7 @@ authored but not executed produces no Rendered values. Probe shape:
 // each probe -> { selector, rect, styles: { ... } }   OR   { selector, missing: true }
 ```
 
-### 6d. Compare protocol (three checks per round, in order)
+### 6d. Compare protocol (four checks per round, in order)
 
 1. **Read both images side by side.** Numbers can pass while the screen reads wrong (font fallback,
    seams, weight). Name the specific things you checked (seams, font shape, weight, alignment, overall
@@ -348,7 +358,15 @@ authored but not executed produces no Rendered values. Probe shape:
    `+/-3` per 8-bit channel, to absorb anti-aliasing - a visible hue / shade change is a FAIL), stating
    both hex values on every color row; **`font-family` must resolve to the intended family - a fallback
    to serif/sans is a FAIL, not a rounding error.**
-3. **Structural presence** via the probe `missing` flags: every Step 2 taxonomy signal must exist in
+3. **Region-fills-container check (mandatory).** For every Stream region, probe its
+   `getBoundingClientRect().width`/`height` against its parent's, and the main message list against the
+   available viewport (viewport minus any sidebar). A region collapsed to a narrow/default size when it
+   should fill - the message list stuck at a "mobile" width, a channel list at the ~288px default - is a
+   FAIL, even when every color/type/radius value passes. This is the check that catches a sizing bug the
+   eyeball misses when the content happens to be short; it is not optional. Example probe: emit
+   `{ selector, rect, parentWidth }` for `.str-chat__channel`, `.str-chat__main-panel(-inner)`, and the
+   message list, and assert `width >= parentWidth - scrollbar`.
+4. **Structural presence** via the probe `missing` flags: every Step 2 taxonomy signal must exist in
    the DOM. A `missing:true` is a dropped region.
 
 Output a per-region discrepancy table. Every "Rendered" value is copied from this round's probe output
@@ -411,6 +429,8 @@ Matching a design under time pressure breeds excuses. The discrepancy table deci
 | "There's no browser tooling here" | The ladder has three rungs. Rung 2 (Playwright) installs; rung 3 is labeled UNVERIFIED. |
 | "Screenshots are too slow to loop" | The loop is batched: decompose/build all, ~5 captures total, not one per tweak. |
 | "The computed styles all match" | The side-by-side Read is mandatory every round - numbers miss font fallback, seams, weight. |
+| "Colors/type all match, so the region's fine" | Run the region-fills-container check (6d.3). A region collapsed to a mobile/default width passes every color/type row and is still a FAIL. |
+| "I built a quick wrapper for the fixtures view" | Verify in the SHIPPED layout component, not a hand-rolled wrapper. A flex-column stand-in hides a width-collapse that only appears in the shipped flex-row - you verified a different screen than you ship. |
 | "`next build` passed" | Compiling is not matching. A green build says nothing about the pixels. |
 | "The user can just check it" | That is rung 3 only, and only after rungs 1-2 fail - and it ships labeled UNVERIFIED. |
 | "I'll curl the HTML / read the served CSS instead" | Static markup is not a render - no layout, no computed styles, no resolved fonts. Use a browser rung (1 or 2). |

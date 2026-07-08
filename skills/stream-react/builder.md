@@ -13,6 +13,8 @@ Run `getstream init`. It authenticates (opening a browser as its own invocation)
 
 `getstream init` is the single onboarding step - it replaces any manual auth / org-create / app-create / config-set sequence. Don't provision orgs or apps with raw `getstream api` calls; let `init` drive the selection (interactively, or via its command file in non-interactive runs).
 
+**Command-file flow (what actually happens in an agent / non-interactive run).** When there's no TTY, `getstream init` does **not** prompt - it writes a template to `.stream/init-*.yaml` listing every org/app (commented out) and prints `Uncomment one option, then run: getstream init --command .stream/init-<id>.yaml`. So the real sequence is: run `getstream init` (once, to generate the template) -> `Read` the YAML -> pick the app with the user (an existing `app_id`, `new_app` in an existing org, or `new_org` + `new_app`) -> uncomment exactly that block with `Edit` -> run `getstream init --command .stream/init-<id>.yaml`. It writes credentials to `.stream/creds.yaml` (add `/.stream/` to `.gitignore` - it holds secrets). Then `getstream env` writes `.env.local`. The bundled skill assumes the interactive prompt; in headless runs, drive the command file instead.
+
 ---
 
 ## Use Case Matching

@@ -26,7 +26,24 @@ Everything needed to wire the UI components above into a working Next.js applica
 
 **Packages:** `stream-chat` + `stream-chat-react` (client), `stream-chat` (server via `StreamChat.getInstance`)
 
-No CLI commands needed - built-in channel types (`messaging`, `team`, `livestream`) work out of the box.
+No CLI commands are needed for basic messaging - built-in channel types (`messaging`, `team`, `livestream`) work out of the box. **But several composer / message features are gated by a channel-type config flag AND a role capability, and the React layer no-ops silently when either is missing** (no thrown error, no console warning) - see Feature enablement below.
+
+### Feature enablement (channel-type flags + capabilities)
+
+This is the single biggest source of "the feature does nothing" bugs. Several Chat features are **off by default** on the built-in `messaging` type, or grant only owner-scoped permissions to the base `user` role. When a composer button is filtered out or a handler silently no-ops, the cause is almost always a missing channel-type flag or a missing `own_capability` - **not** the UI code, and the live docs describe the API without surfacing that the default type ships these off. Confirm with `getstream api chat GetChannelType --name messaging` and enable via `UpdateChannelType`.
+
+| Feature | Channel-type flag | Capability the React layer checks | Enable (CLI) |
+|---|---|---|---|
+| Polls (composer poll action + `AttachmentSelector` filter) | `polls` (default **false** on `messaging`) | `send-poll` | `getstream api chat UpdateChannelType --name messaging --request '{"polls": true}'` |
+| Reactions - add | (on by default) | `send-reaction` (from the `create-reaction` grant) | granted to `channel_member` by default |
+| Reactions - remove (tap to un-react) | - | `delete-reaction` | grant `create-reaction` + `delete-reaction` to the `user` role (grants note below) |
+| File / image uploads | `uploads` (default true) | `upload-file` | `UpdateChannelType --request '{"uploads": true}'` if disabled |
+
+Other features follow the same shape - check `GetChannelType` before assuming the UI is wrong. The React gates that no-op silently: `AttachmentSelector` filters `createPoll` on `channelCapabilities["send-poll"] && channelConfig?.polls`; `useReactionHandler` early-returns unless `channelCapabilities["send-reaction"]`.
+
+**Diagnose first:** read the *connected user's* `own_capabilities` on the channel (`channel.data?.own_capabilities`) - not the server-side query, which runs with admin context and shows an inflated set. A quick throwaway `StreamChat` client (`new StreamChat(apiKey, { allowServerSideConnect: true })` + a token from `/api/token` + `connectUser`) prints the real client capabilities.
+
+**Editing grants safely:** to add a capability to a role, read the full grants first (`GetChannelType --jq '.grants'`), then resubmit the **entire** grants object with only the target role's array changed - a partial `{"grants":{"user":[...]}}` risks dropping the other roles. Take the exact capability strings from the existing grants (e.g. `create-reaction`, `delete-reaction`); never guess them.
 
 ### Server Routes
 
@@ -86,3 +103,6 @@ const client = StreamChat.getInstance(process.env.STREAM_API_KEY!, process.env.S
 - Token endpoint as `GET /api/token?user_id=xxx`
 - `upsertUsers` takes an **array** of user objects: `client.upsertUsers([{ id, name, role }])` - NOT an object keyed by ID
 - `<Chat>` lives at app root; `<Channel>` is what swaps per conversation. Don't construct/destruct `StreamChat` per screen.
+- **`useCanCreatePoll()` is NOT "can this channel create polls".** It returns whether the *in-progress poll form* is valid to submit (has a name, ≥1 option, no errors) - i.e. it drives the poll dialog's submit button, and is `false` on an empty form. Do **not** gate poll menu-item visibility on it (the row will never appear). The `AttachmentSelector` already filters the `createPoll` action by capability + config; let it.
+- **Reaction `type` must match `[A-Za-z0-9_.-]`.** Stream rejects emoji characters as a reaction type (`"reaction.type is not valid. Only alphanumeric, underscore, dash and dot characters are allowed"`). A custom reaction set uses slug types (`heart_eyes`, `tada`) mapped to emojis for display - never the emoji char as the `type`.
+- **Reaction display filters by supported type.** `useProcessReactions` only renders reactions whose `type` is a key in `reactionOptions.quick`/`.extended`. A custom reaction set must register every type it can send, or valid reactions silently won't display. (If the prebuilt `<MessageReactions>` doesn't appear inside a heavily-custom message layout, rendering pills directly from `message.reaction_groups` + a `type → emoji` map is a reliable fallback.)

@@ -150,13 +150,14 @@ is the durable part, the *names* come from the fetch.
 |---|---|---|
 | Text: markdown, links, mentions, emoji | `<MessageText/>` - never raw `{message.text}` | [ ] |
 | Attachments: image / file / video / voice / giphy | `<Attachment attachments={message.attachments}/>` | [ ] |
-| Reactions: display + add | `<MessageReactions/>` + `handleReaction` | [ ] |
+| Poll message | `message.poll_id` → `client.polls.fromState(message.poll_id)` + `<Poll poll={poll}/>` - a custom row drops polls silently otherwise | [ ] |
+| Reactions: display + add | `<MessageReactions/>` + `handleReaction`; if the prebuilt list doesn't render inside your layout, render pills from `message.reaction_groups` + a `type→emoji` map. Custom reaction types must be slugs (`[A-Za-z0-9_.-]`, **not** emoji chars) and registered in `reactionOptions` | [ ] |
 | Quoted / replied-to parent | render `message.quoted_message` preview | [ ] |
 | Thread reply indicator | `<MessageRepliesCountButton/>` + `handleOpenThread` | [ ] |
 | Read / delivery receipts (own messages) | `<MessageStatus/>` | [ ] |
 | Edited / deleted state | `message.message_text_updated_at` / `message.deleted_at` | [ ] |
 | Actions menu: reply / edit / delete / pin / flag | `<MessageActions/>` - not a dead `...` button | [ ] |
-| Same-author grouping | `firstOfGroup` / `groupedByUser` from `useMessageContext()` | [ ] |
+| Same-author grouping | `groupStyles` from `useMessageContext()` (regular `<MessageList>`); `firstOfGroup` / `endOfGroup` / `groupedByUser` are set by the **virtualized list only** and are `undefined` in the regular list - don't gate avatars/radii on them there. When neither is populated, compute grouping from the adjacent messages in `useChannelStateContext().messages` (same `user.id` within a short time window). | [ ] |
 | Error / optimistic-send state | `message.status` / `message.error` | [ ] |
 
 **Custom composer (`MessageComposerUI`):**
@@ -166,7 +167,7 @@ is the durable part, the *names* come from the fetch.
 | Text input + send (+ enter-to-send) | composer input + submit handler | [ ] |
 | Attachments: attach + upload + remove | upload handler + attachment previews | [ ] |
 | Mentions / slash-command autocomplete | the SDK suggestion list | [ ] |
-| Voice recording (if enabled) | the SDK voice-recording control | [ ] |
+| Voice recording (if enabled) | enable `<MessageComposer audioRecordingEnabled/>`; a custom `MessageComposerUI` must render the swap itself - `recordingController.recordingState ? <AudioRecorder/> : <normal composer>` (from `useMessageComposerContext()`), start recording via `recordingController.recorder?.start()`. Optional mp3: `@breezystack/lamejs` + `encodeToMp3` from `stream-chat-react/mp3-encoder` | [ ] |
 | Edit-message mode | composer edit state | [ ] |
 | Typing events | `channel.keystroke()` / `channel.stopTyping()` | [ ] |
 
@@ -261,6 +262,11 @@ rows; don't trust recall.
   hand-written CSS.
 - **Reuse SDK pieces inside bespoke UI** (`Attachment`, `Avatar`, `ParticipantView`) instead of
   rebuilding them.
+- **Don't wrap the message bubble in a `<button>` or `<a>`.** The pieces you render inside it
+  (`<Attachment/>` image gallery, link previews, poll actions) render their **own** interactive
+  elements, so an outer button/anchor produces nested-interactive invalid HTML that breaks hydration
+  and can stop attachments from rendering. Use a `<div>`; if the bubble itself needs a click (e.g.
+  retry on a failed send), attach `onClick` to the div.
 - **Keep the providers** (`<Chat>`/`<Channel>`, `<StreamVideo>`/`<StreamCall>`) unless the surface is
   genuinely not a channel/call view - that's what keeps the WebSocket, pagination, read state, and
   client lifecycle working.
@@ -294,3 +300,31 @@ no-auto-seeding rule ([`../../stream/RULES.md`](../../stream/RULES.md)) still ho
 needs the user's explicit confirmation **and** a disposable / dev app (see [`design-matching.md`](design-matching.md)
 > The verify loop). Open the real screen on its actual navigation path, compare region-by-region, and
 iterate. Match the target, don't approximate it.
+
+**Chat fixture-channel recipe (local, no backend writes).** `client.channel(type, id)` returns a
+client-side instance; populate its state and stub its network methods, then pass it to the *shipped*
+layout (mount the real `AppShell` / shell layout - not a hand-rolled wrapper - see
+[`design-matching.md`](design-matching.md) > Reuse the SHIPPED layout):
+
+```ts
+function neutralize(channel) { // stop it from hitting the backend
+  const noop = async () => ({});
+  Object.assign(channel, {
+    watch: noop, query: noop, markRead: noop, keystroke: noop, stopTyping: noop,
+    sendReaction: noop, sendMessage: async (m) => ({ message: m }), initialized: true,
+  });
+}
+const ch = client.channel("messaging", "fixtures-dm");
+ch.data = { ...ch.data, own_capabilities: ["send-message","upload-file","send-reaction","send-reply","read-events","typing-events"] };
+ch.state.members = { [me]: { user: meUser }, sarah: { user: sarahUser } };
+if (ch.state.messages.length === 0)                  // idempotency guard (see below)
+  ch.state.addMessagesSorted([ /* incoming, outgoing, run-of-same-author, attachment, reaction, quoted, voice, long text */ ]);
+neutralize(ch);
+```
+
+Two traps this recipe avoids:
+- **Duplicate messages.** `client.channel(type, id)` is **cached by cid**, and React StrictMode
+  double-invokes render/`useMemo`, so `addMessagesSorted` can run twice on the same instance -> every
+  message renders twice. Guard with `if (ch.state.messages.length === 0)` (or build outside `useMemo`);
+  don't rely on the factory running once.
+- **Nested interactive elements** (see gotchas above) - don't wrap a fixture bubble in a `<button>`.

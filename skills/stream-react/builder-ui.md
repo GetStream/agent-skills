@@ -73,6 +73,8 @@ Use Shadcn components, Tailwind utilities, and - if frontend skill packs are alr
 - A **height chain**: root the height at the AppShell (`h-dvh` / `h-full`) so `<ChannelList>` and `<MessageList>` fill vertically instead of collapsing.
 - Each region `w-full h-full` inside its column - the **wrapper decides the width**, not the component's own default; `<ChannelHeader>` (or a custom header) spans the full width of the main pane.
 - If the SDK default still caps the channel-list width, override it through the documented `str-chat` sizing variable (confirm the current name on the Theming page - do not guess it) or a wrapper width utility. Do not ship the ~288px default when full width is wanted.
+- **`<Channel>` / `<Window>` render intermediate DOM nodes you cannot `className`** (`.str-chat__channel`, `.str-chat__main-panel`). Putting `flex-1 min-w-0` on *your* wrapper `<div>` and on the inner column is not enough if a Stream node sits between them and doesn't grow - size those nodes with a `str-chat` CSS override, not just your wrapper divs.
+- **Multi-pane (conversation + details/thread) case:** when `<Channel>` wraps *both* a conversation column **and** a details or thread sibling inside a flex **row**, `.str-chat__channel` is itself the flex-row child that must fill `<main>` - give it `display:flex; flex:1 1 0%; min-width:0` in CSS (it won't grow on its own). A flex-**column** parent hides this bug (column children stretch to full width automatically), so verifying in a column layout while shipping a row layout passes falsely - **verify in the row layout you ship** (see [`references/design-matching.md`](references/design-matching.md) > verify against the shipped layout).
 
 ### Moderation
 

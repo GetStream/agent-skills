@@ -162,6 +162,16 @@ import { LivestreamPlayer } from "@stream-io/video-react-sdk";
 
 Do NOT roll your own host detection via `participants.find(p => p.roles.includes("host"))` - the streamer's video-level role may be `user`/`call_member`, not `host`. `LivestreamPlayer` and `LivestreamLayout` resolve this correctly.
 
+### Ringing calls (1:1 / group)
+
+Docs-first: fetch the **Ringing Call** cookbook (`ui-cookbook/ringing-call.md`) and, for calling from a chat, the **Chat Integration** advanced guide - both are in [docs-map.md](docs-map.md). The lifecycle is subtle; the durable points:
+
+- **Create + ring:** `client.call("default", crypto.randomUUID()).getOrCreate({ ring: true, video: true, data: { members } })`. Use a **fresh unique id per call** - ringing fires only once per call id. **Include the caller in `members`.**
+- **The caller does NOT join up front.** They stay in outgoing `RINGING` and **auto-join when the first callee accepts**. The call ends if every callee rejects.
+- **Detect incoming** with `useCalls()`: incoming = `!call.isCreatedByMe && call.state.callingState === CallingState.RINGING`; outgoing = `isCreatedByMe && RINGING`. Wrap each in `<StreamCall>` and switch on `useCallStateHooks().useCallCallingState()`.
+- **Accept** = `call.join()`. **Reject** = `call.leave({ reject: true, reason: "decline" })`. **Cancel outgoing** = `call.leave({ reject: true, reason: "cancel" })` (the `reject: true` is required to stop signaling before joining).
+- **Join-from-chat pattern** (Chat + Video): when ringing, also post a chat message carrying a custom `call` attachment (call id + type); a "Join" button in that message calls `client.call("default", id).join()`, and a global overlay mounted under `<StreamVideo>` renders it via `useCalls()`. See [CROSS-PRODUCT.md](CROSS-PRODUCT.md).
+
 ### Gotchas
 
 - Backstage mode is on by default for `livestream` call type - disable it via CLI setup
