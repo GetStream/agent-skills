@@ -139,9 +139,9 @@ If there is no RN/Expo project and Track A applies, scaffold one through [`build
 |---|---|
 | A - New app | [`builder.md`](builder.md) + [`sdk.md`](sdk.md) + `llms.txt` docs lookup + product references (Chat / Video / Feeds) |
 | B - Existing app | [`builder.md`](builder.md) + [`sdk.md`](sdk.md) + `llms.txt` docs lookup + product references (Chat / Video / Feeds) |
-| M - Migrate / upgrade | [`migrate.md`](migrate.md) + [`references/DOCS.md`](references/DOCS.md) (live upgrade guide) + product reference for the migrated SDK |
 | C - Reference lookup | [`sdk.md`](sdk.md) + [`references/DOCS.md`](references/DOCS.md) + relevant product reference files |
 | D - Bootstrap / setup | [`builder.md`](builder.md) + [`sdk.md`](sdk.md) + `llms.txt` docs lookup |
+| M - Migrate / upgrade | [`migrate.md`](migrate.md) + [`references/DOCS.md`](references/DOCS.md) (live upgrade guide) + product reference for the migrated SDK |
 
 ---
 
@@ -190,21 +190,6 @@ If the requested product file is not bundled yet, say so plainly and only switch
 
 ---
 
-## Track M - Migrate / upgrade a version
-
-**Full detail:** [`migrate.md`](migrate.md) - Read it first; it fetches the live upgrade guide before any edit. Docs-driven and read-only until the guide is fetched - **never migrate from memory** ([`RULES.md`](RULES.md) > Package version and docs discipline). Skip credentials, provisioning, and scaffold; preserve the project's runtime lane, package manager, and lockfile.
-
-| Phase | Name | What you do |
-|---|---|---|
-| **M1** | Detect | Run Project signals + read `package.json`/lockfile: which Stream packages, their from -> to versions, runtime lane, package manager, and RN/Expo New-Architecture status. |
-| **M2** | Fetch the guide | From the product manifest ([`references/DOCS.md`](references/DOCS.md)) fetch the matching upgrade guide (known entry point: Chat RN **v8 -> v9**). Hard gate on failure -> `stream-docs` -> stop and ask. |
-| **M2.5** | Prerequisites | Clear RN-specific blockers first: New Architecture requirement, new native/peer deps (e.g. `react-native-teleport` for Chat v9), native rebuild. |
-| **M3** | Apply | Bump only the targeted packages (each at its own target; bump the lane's Chat wrapper), apply every documented breaking change, ground each symbol in installed `node_modules/stream-chat-react-native-core` source, grep for renamed symbols, do native config + keyboard cleanup. |
-| **M4** | Verify | `tsc --noEmit` -> Metro bundle -> native build -> simulator/device smoke of the core flow. No `next build`; a green `tsc` is not a render. |
-| **M5** | Summarize | Packages bumped, breaking changes applied, native/New-Arch changes, files touched, manual follow-ups. Offer (don't auto-run) the next step. |
-
----
-
 ## Track C - Reference lookup
 
 Load only the relevant files for the requested product:
@@ -234,3 +219,18 @@ Use when the user wants package install and shared wiring more than a full featu
 - Video-specific wiring: declare camera/mic permissions, add Expo config plugins where applicable, create `StreamVideoClient` and mount `StreamVideo`
 - Feeds-specific wiring: call `useCreateFeedsClient` (returns `undefined` while connecting), mount `<StreamFeeds client={client}>` once near the app root, and (typically) wrap an `OwnFeedsContextProvider` that creates the user + timeline feeds and the self-follow
 - stop before product-specific UI if the user only asked for setup
+
+---
+
+## Track M - Migrate / upgrade a version
+
+**Full detail:** [`migrate.md`](migrate.md) - Read it first; it fetches the live upgrade guide before any edit. Docs-driven and read-only until the guide is fetched - **never migrate from memory** ([`RULES.md`](RULES.md) > Package version and docs discipline). Skip credentials, provisioning, and scaffold; preserve the project's runtime lane, package manager, and lockfile.
+
+| Phase | Name | What you do |
+|---|---|---|
+| **M1** | Detect | Run Project signals + read `package.json`/lockfile: which Stream packages, their from -> to versions, runtime lane, package manager, and RN/Expo New-Architecture status. |
+| **M2** | Fetch the guide | From the product manifest ([`references/DOCS.md`](references/DOCS.md)) fetch the matching upgrade guide (known entry point: Chat RN **v8 -> v9**). Hard gate on failure -> `stream-docs` -> stop and ask. |
+| **M2.5** | Prerequisites | Clear RN-specific blockers first: New Architecture requirement, new native/peer deps (e.g. `react-native-teleport` for Chat v9), native rebuild. |
+| **M3** | Apply | Bump only the targeted packages (each at its own target; bump the lane's Chat wrapper), apply every documented breaking change, ground each symbol in installed `node_modules/stream-chat-react-native-core` source, grep for renamed symbols, do native config + keyboard cleanup. |
+| **M4** | Verify | `tsc --noEmit` -> Metro bundle -> native build -> simulator/device smoke of the core flow. No `next build`; a green `tsc` is not a render. |
+| **M5** | Summarize | Packages bumped, breaking changes applied, native/New-Arch changes, files touched, manual follow-ups. Offer (don't auto-run) the next step. |
