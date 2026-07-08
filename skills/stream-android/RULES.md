@@ -38,6 +38,39 @@ Default token model:
 
 ---
 
+## Matching a reference design
+
+When the request carries a **target appearance** (a screenshot, a Figma frame, or "make it look like
+\<app\>"), run [`design-matching.md`](design-matching.md) and decompose **every** region before writing
+code - setting the accent color and the wallpaper and stopping is the known failure.
+
+- **There are TWO axes on Android, not three.** **Theming** (`StreamDesign.Colors` / `Typography`:
+  colors and fonts) and **Structure** (`ChatComponentFactory` slots: which Composables render and how
+  they are arranged). There is **no `Styles` axis** and no public shapes/dimens - **padding,
+  corner-radius, bubble shape, and composer layout are STRUCTURE** (override the slot), never a theme
+  token. Routing a structural difference to a color (or vice versa) is the core failure mode.
+- **The chat bubble colors are DERIVED, not settable.** `chatBgOutgoing` / `chatTextOutgoing` /
+  `chatBorder*` are computed `internal val`s on `StreamDesign.Colors` (from `brand` / `accentPrimary` /
+  `chrome`) - not constructor params. Recolor a bubble via the full `brand` `ColorScale` (cascades to all
+  accent surfaces) or by overriding `MessageBubble` + `MessageContent`. Sample the accent **exactly** and
+  set the full `brand` scale, not just `accentPrimary`, or the theme reads washed-out.
+- **Overriding a composite slot drops every sub-feature it drew.** `MessageContainer`, `ChannelHeader`,
+  and `MessageComposer` render many children; reproduce them (read the default `@Composable` body first)
+  or consciously drop and say so. Prefer the **narrowest** slot.
+- **The three most-missed regions** (decompose each as carefully as the message bubble): the
+  **message-header trailing slot defaults to a channel avatar/facepile** - override it for action icons;
+  the **composer** differs by row count, input-field shape, and vertical alignment more than by icon set
+  (the default row is bottom-aligned; the field is a bordered pill baked into `MessageInput`); and
+  **channel-list rows** carry type-dependent leading (public `#`, private lock, DM = member avatar -
+  never `#` a DM), read-state weight, previews, and trailing badges.
+- **A match is unverified until you build, seed data that triggers every region, open the real message
+  screen on the real navigation path, compare region-by-region, and iterate.** Implement every region,
+  the composer included; a region left at the SDK default is a FAIL, not a "known cosmetic gap." A region
+  the seed data cannot populate is **data-limited / unverified**, not a pass. Full procedure + the region
+  -> slot map are in [`design-matching.md`](design-matching.md).
+
+---
+
 ## Project ownership
 
 Preserve the app's existing architecture:
