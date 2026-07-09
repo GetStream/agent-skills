@@ -1,21 +1,20 @@
 # Chat - Setup & Integration
 
-Stream Chat provides pre-built UI components via React, React Native, Flutter, Swift, and Kotlin SDKs. This file covers setup, server routes, client patterns, and gotchas. For full component structure and wiring, see [CHAT-blueprints.md](CHAT-blueprints.md).
+Stream Chat provides pre-built UI components via React, React Native, Flutter, Swift, and Kotlin SDKs. This file covers setup, server routes, client patterns, and gotchas. For the prebuilt component path (provider tree + props), see [CHAT-blueprints.md](CHAT-blueprints.md); when you write your own component for a region (even one, even via `Message=` / `WithComponents`) or go fully hand-built, see [custom-ui.md](custom-ui.md) (the completion contract).
 
 Rules: [../RULES.md](../RULES.md) (login screen first, strict mode protection, reference authority) and the cross-cutting [../../stream/RULES.md](../../stream/RULES.md) (secrets, no auto-seeding).
 
-- **Blueprint** - HTML with BEM classes defining structure and conditional rendering
-- **Wiring** - API calls to read/write each element, exact property paths
-- **Requirements** - Dashboard settings, API params, and prerequisites. The **Default** column in each Requirements table reflects server-side channel-type defaults (set in the Dashboard / via the API), not values enforced by the SDK.
+- **Prebuilt path** ([CHAT-blueprints.md](CHAT-blueprints.md)) - the canonical provider tree, the prebuilt component prop table, and the `WithComponents` customization mechanism. The common path for every messenger.
+- **Bespoke path** ([custom-ui.md](custom-ui.md)) - the prebuilt-vs-bespoke decision + the headless context-hook map for fully hand-built UI.
+- **Live docs** ([docs-map.md](docs-map.md)) - fetch the matching component / cookbook / advanced page before building any customization. Server-side channel-type **defaults** (permissions, features) are set in the Dashboard / via the API, not enforced by the SDK.
 
 ## Quick ref
 
-- **Packages:** `stream-chat`, `stream-chat-react`; import `stream-chat-react/css/index.css` (v14+ preferred alias; v13 used `dist/css/v2/index.css`).
+- **Packages:** `stream-chat`, `stream-chat-react`; import `stream-chat-react/css/index.css` (paths + version variants + the `EmojiPicker` stylesheet: [`../sdk.md`](../sdk.md) > CSS imports).
 - **First:** **App Integration** -> **Setup** (CLI / channel types) before UI.
-- **Per feature:** Jump to section (Channel List, Message List, ...) when implementing that screen.
-- **Below the next rule:** full blueprints - **do not load past it** until you implement that component.
+- **Per feature:** fetch the matching live page from [docs-map.md](docs-map.md) before implementing that screen; for fully hand-built UI on the low-level client, see [custom-ui.md](custom-ui.md).
 
-Full component blueprints: [CHAT-blueprints.md](CHAT-blueprints.md) - load only the section you are implementing.
+Prebuilt component path: [CHAT-blueprints.md](CHAT-blueprints.md) - the canonical provider tree + props. Bespoke UI on the low-level client: [custom-ui.md](custom-ui.md).
 
 ---
 
@@ -27,7 +26,24 @@ Everything needed to wire the UI components above into a working Next.js applica
 
 **Packages:** `stream-chat` + `stream-chat-react` (client), `stream-chat` (server via `StreamChat.getInstance`)
 
-No CLI commands needed - built-in channel types (`messaging`, `team`, `livestream`) work out of the box.
+No CLI commands are needed for basic messaging - built-in channel types (`messaging`, `team`, `livestream`) work out of the box. **But several composer / message features are gated by a channel-type config flag AND a role capability, and the React layer no-ops silently when either is missing** (no thrown error, no console warning) - see Feature enablement below.
+
+### Feature enablement (channel-type flags + capabilities)
+
+This is the single biggest source of "the feature does nothing" bugs. Several Chat features are **off by default** on the built-in `messaging` type, or grant only owner-scoped permissions to the base `user` role. When a composer button is filtered out or a handler silently no-ops, the cause is almost always a missing channel-type flag or a missing `own_capability` - **not** the UI code, and the live docs describe the API without surfacing that the default type ships these off. Confirm with `getstream api chat GetChannelType --name messaging` and enable via `UpdateChannelType`.
+
+| Feature | Channel-type flag | Capability the React layer checks | Enable (CLI) |
+|---|---|---|---|
+| Polls (composer poll action + `AttachmentSelector` filter) | `polls` (default **false** on `messaging`) | `send-poll` | `getstream api chat UpdateChannelType --name messaging --request '{"polls": true}'` |
+| Reactions - add | (on by default) | `send-reaction` (from the `create-reaction` grant) | granted to `channel_member` by default |
+| Reactions - remove (tap to un-react) | - | `delete-reaction` | grant `create-reaction` + `delete-reaction` to the `user` role (grants note below) |
+| File / image uploads | `uploads` (default true) | `upload-file` | `UpdateChannelType --request '{"uploads": true}'` if disabled |
+
+Other features follow the same shape - check `GetChannelType` before assuming the UI is wrong. The React gates that no-op silently: `AttachmentSelector` filters `createPoll` on `channelCapabilities["send-poll"] && channelConfig?.polls`; `useReactionHandler` early-returns unless `channelCapabilities["send-reaction"]`.
+
+**Diagnose first:** read the *connected user's* `own_capabilities` on the channel (`channel.data?.own_capabilities`) - not the server-side query, which runs with admin context and shows an inflated set. A quick throwaway `StreamChat` client (`new StreamChat(apiKey, { allowServerSideConnect: true })` + a token from `/api/token` + `connectUser`) prints the real client capabilities.
+
+**Editing grants safely:** to add a capability to a role, read the full grants first (`GetChannelType --jq '.grants'`), then resubmit the **entire** grants object with only the target role's array changed - a partial `{"grants":{"user":[...]}}` risks dropping the other roles. Take the exact capability strings from the existing grants (e.g. `create-reaction`, `delete-reaction`); never guess them.
 
 ### Server Routes
 
@@ -82,8 +98,11 @@ const client = StreamChat.getInstance(process.env.STREAM_API_KEY!, process.env.S
   }
   ```
 - Listen for `user.banned` event to show banned state in UI
-- Import `stream-chat-react/css/index.css` for default styles - the preferred aliased path (`dist/css/index.css` also resolves; v14+, the `/v2/` subpath was removed). If you use `EmojiPicker`, also import `stream-chat-react/css/emoji-picker.css`
+- Import the Chat CSS once - the path, version variants, and the separate `EmojiPicker` stylesheet all live in [`../sdk.md`](../sdk.md) > CSS imports (the canonical home).
 - `MessageInput` was renamed/removed in v14 - use `MessageComposer` from `stream-chat-react` instead. Note: the React `<MessageComposer />` UI component is distinct from the `MessageComposer` *state class* in `stream-chat` (same name, different thing)
 - Token endpoint as `GET /api/token?user_id=xxx`
 - `upsertUsers` takes an **array** of user objects: `client.upsertUsers([{ id, name, role }])` - NOT an object keyed by ID
 - `<Chat>` lives at app root; `<Channel>` is what swaps per conversation. Don't construct/destruct `StreamChat` per screen.
+- **`useCanCreatePoll()` is NOT "can this channel create polls".** It returns whether the *in-progress poll form* is valid to submit (has a name, ≥1 option, no errors) - i.e. it drives the poll dialog's submit button, and is `false` on an empty form. Do **not** gate poll menu-item visibility on it (the row will never appear). The `AttachmentSelector` already filters the `createPoll` action by capability + config; let it.
+- **Reaction `type` must match `[A-Za-z0-9_.-]`.** Stream rejects emoji characters as a reaction type (`"reaction.type is not valid. Only alphanumeric, underscore, dash and dot characters are allowed"`). A custom reaction set uses slug types (`heart_eyes`, `tada`) mapped to emojis for display - never the emoji char as the `type`.
+- **Reaction display filters by supported type.** `useProcessReactions` only renders reactions whose `type` is a key in `reactionOptions.quick`/`.extended`. A custom reaction set must register every type it can send, or valid reactions silently won't display. (If the prebuilt `<MessageReactions>` doesn't appear inside a heavily-custom message layout, rendering pills directly from `message.reaction_groups` + a `type → emoji` map is a reliable fallback.)

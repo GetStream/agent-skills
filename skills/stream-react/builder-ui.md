@@ -2,8 +2,10 @@
 
 Load when executing **Step 4** (after scaffold). Rules: [`RULES.md`](RULES.md) (login screen first, theme, reference authority).
 
+> **Reference-design override.** If the request carries a screenshot / Figma / "make it look like X", the **reference's frame wins over the generic shell defined here** (App Header, sidebar, shell geometry). Reproduce the reference's frame per [`references/design-matching.md`](references/design-matching.md) - **remove in-app chrome the reference doesn't show** (a bare phone-chat reference has no app top-bar and no chat-list sidebar) and **fill the viewport** (no fixed-width chat strip beside empty background) - then apply the region + theming guidance here within it. The Login Screen stays as the auth gate unless the reference itself is the full app.
+
 ### Step 4: Generate ALL code files
-Write every file sequentially. Follow the UI Guidelines below for all visual styling. See **RULES.md > Reference authority** - reference files are the only source of truth for SDK wiring. Before writing each component, load the relevant `references/<Product>-blueprints.md` section.
+Write every file sequentially. Follow the UI Guidelines below for all visual styling. See **RULES.md > Reference authority** - reference files are the only source of truth for SDK wiring. Before writing each component, load the prebuilt path in the relevant `references/<Product>-blueprints.md`; fetch the matching live page from [`references/docs-map.md`](references/docs-map.md) for any customization, and load [`references/custom-ui.md`](references/custom-ui.md) (the completion contract) first when you write your own component for a region - even one, even via `Message=` / `WithComponents`.
 
 #### Login Screen (required for every app - RULES.md > Login Screen first)
 
@@ -22,9 +24,9 @@ Centered card on a neutral background. No sidebar, no nav - just the login form.
 - After successful token fetch, render the main app UI (state gate, not redirect)
 - App name / use-case label above the input
 
-#### App Header (required for every app)
+#### App Header (default shell - omit when a reference design doesn't show it)
 
-Once logged in, every app MUST show a persistent header bar:
+Once logged in, the default shell shows a persistent header bar (but see the **Reference-design override** above - a screenshot that has no app top-bar means you drop this):
 
 - **Left:** App name (derived from use case)
 - **Right:** Avatar circle (initial letter) + username + "Switch User" button
@@ -52,7 +54,7 @@ Use whatever `globals.css` Shadcn generates. Do not add custom variables, custom
 
 ### Design
 
-Use Shadcn components, Tailwind utilities, and - if the user approved them in Step 3 Task A.2 - the frontend skills to build a polished UI. No further opinions; use your best judgement. Stream references provide structure and wiring; frontend skills (when present) provide generic design guidance.
+Use Shadcn components, Tailwind utilities, and - if frontend skill packs are already available in the session - the frontend skills to build a polished UI. No further opinions; use your best judgement. Stream references provide structure and wiring; frontend skills (when present) provide generic design guidance.
 
 ### Button labels
 
@@ -60,11 +62,21 @@ Use Shadcn components, Tailwind utilities, and - if the user approved them in St
 
 ### Stream SDK CSS & Providers
 
-- **Chat:** Import `stream-chat-react/css/index.css` (v14+ preferred alias; v13 used `dist/css/v2/index.css`). Use `useCreateChatClient` from `stream-chat-react` to instantiate. Match theme: `useTheme()` -> `str-chat__theme-dark` or `str-chat__theme-light` to `<Chat>`.
+- **Chat:** Import the Chat CSS ([`sdk.md`](sdk.md) > CSS imports for the path + version variants). Use `useCreateChatClient` from `stream-chat-react` to instantiate. Match theme: `useTheme()` -> `str-chat__theme-dark` or `str-chat__theme-light` to `<Chat>`.
 - **Video:** Import `@stream-io/video-react-sdk/dist/css/styles.css`. Instantiate `StreamVideoClient` with the canonical `useState` + `useEffect` pattern (NOT `useMemo` - see `references/VIDEO.md`).
 - **Feeds:** No CSS import - headless SDK. Wrap app in `<StreamFeeds client={client}>`, then per-feed in `<StreamFeed feed={feed}>`. Use `useCreateFeedsClient()` for client creation - **gate rendering on `client !== null`** (returns `null` until connected). Call `feed.getOrCreate({ watch: true })` inside `setTimeout(50ms)` + `mounted` guard (strict mode protection) before passing to `<StreamFeed>`. See `references/FEEDS.md` for complete patterns.
 
 **Provider hierarchy:** mount **all** Stream providers - `<Chat>`, `<StreamVideo>`, `<StreamFeeds>` - once at AppShell, in any order. Per-screen components render `<Channel>`, `<StreamCall>`, or `<StreamFeed>` from the existing root providers. **Never re-instantiate Stream clients per screen** - the cleanup of one screen's effect will disconnect a client another screen is still using. For multi-product apps, see [`references/CROSS-PRODUCT.md`](references/CROSS-PRODUCT.md) for the full skeleton.
+
+**Layout / sizing (Stream regions fill their parent).** The prebuilt regions must **grow to fill the container you put them in** - the SDK's default `str-chat` CSS can otherwise cap the **channel list at a fixed width** (you may see ~30% / ~288px) and leave the message list or header not filling. Own the sizing with your wrapper:
+- A **flex row**: the channel-list column gets the width you want (a fixed sidebar width, or `flex-1` to fill); the `<Channel>` / `<Window>` column is `flex-1 min-w-0` (the `min-w-0` defeats flexbox `min-width: auto`, which otherwise blocks `<MessageList>` from growing/shrinking to its column).
+- A **height chain**: root the height at the AppShell (`h-dvh` / `h-full`) so `<ChannelList>` and `<MessageList>` fill vertically instead of collapsing.
+- **Bottom-anchor + full-height background.** A chat conversation bottom-anchors: with few messages the list pins content to the bottom (against the composer), it does not top-anchor and leave a gap. And any **wallpaper / background** (doodle pattern, tint) must be painted on the **full-height scroll container**, not the content wrapper - otherwise it stops where the messages stop and leaves a blank band above the composer. The prebuilt `<MessageList>` already bottom-fills; a custom message-list wrapper must not break it.
+- Each region `w-full h-full` inside its column - the **wrapper decides the width**, not the component's own default; `<ChannelHeader>` (or a custom header) spans the full width of the main pane.
+- If the SDK default still caps the channel-list width, override it through the documented `str-chat` sizing variable (confirm the current name on the Theming page - do not guess it) or a wrapper width utility. Do not ship the ~288px default when full width is wanted.
+- **`<Channel>` / `<Window>` render intermediate DOM nodes you cannot `className`** (`.str-chat__channel`, `.str-chat__main-panel`). Putting `flex-1 min-w-0` on *your* wrapper `<div>` and on the inner column is not enough if a Stream node sits between them and doesn't grow - size those nodes with a `str-chat` CSS override, not just your wrapper divs.
+- **Multi-pane (conversation + details/thread) case:** when `<Channel>` wraps *both* a conversation column **and** a details or thread sibling inside a flex **row**, `.str-chat__channel` is itself the flex-row child that must fill `<main>` - give it `display:flex; flex:1 1 0%; min-width:0` in CSS (it won't grow on its own). A flex-**column** parent hides this bug (column children stretch to full width automatically), so verifying in a column layout while shipping a row layout passes falsely - **verify in the row layout you ship** (see [`references/design-matching.md`](references/design-matching.md) > verify against the shipped layout).
+- **Thread panel defaults to `width: 100%`** (`.str-chat__thread-container` / `.str-chat__thread`), so an open thread *takes over the pane* instead of sitting beside the conversation. For a right-sidebar thread (desktop), constrain it in CSS (`flex: 0 0 <width>; width: <width>`) and keep the conversation column `flex-1` - the same "an SDK region fills/collapses unless you own the sizing" gotcha as the channel-list ~288px cap. Letting it fall back to full-pane below your desktop breakpoint is a reasonable mobile/tablet pattern. **Its open layout is only visible once the thread is opened - drive it in the verify loop** ([`references/design-matching.md`](references/design-matching.md) 6a/6c).
 
 ### Moderation
 
@@ -72,6 +84,6 @@ Use Shadcn components, Tailwind utilities, and - if the user approved them in St
 
 ### Reference Blueprints
 
-See RULES.md > Reference authority. Load `references/<Product>.md` (header) for setup + gotchas, and `references/<Product>-blueprints.md` for structure and wiring of each component. Load only the product(s) relevant to the current use case.
+See RULES.md > Reference authority. Load `references/<Product>.md` (header) for setup + gotchas, and `references/<Product>-blueprints.md` for the prebuilt provider tree + props. For fully bespoke UI on the low-level client, see [`references/custom-ui.md`](references/custom-ui.md). Load only the product(s) relevant to the current use case.
 
-**Prebuilt-first default (Chat + Video).** Build the common path with the SDK's prebuilt React components - Chat: `<Chat>` / `<ChannelList>` / `<Channel>` / `<Window>` / `<MessageList>` / `<MessageComposer>` / `<Thread>` (v14 uses `MessageComposer`, not `MessageInput`); Video: `<StreamVideo>` / `<StreamCall>` / `SpeakerLayout` / `PaginatedGridLayout` / `ParticipantView` / `CallControls`. Customize via the documented hooks/props - register custom UI through `<WithComponents overrides={{...}}>` or pass a per-list `<MessageList Message={Custom} />`; read state with `useChannelStateContext()` / `useCallStateHooks()`) - fetch the matching cookbook page first (RULES.md > Docs-first). Drop to fully hand-built markup **only** when the user explicitly wants bespoke UI; the `*-blueprints.md` "Fully custom UI" fallback section has the raw element + wiring tables for that case. Feeds is headless (no prebuilt UI) - always build from its hooks.
+**Prebuilt-first default (Chat + Video).** Build the common path with the SDK's prebuilt React components - Chat: `<Chat>` / `<ChannelList>` / `<Channel>` / `<Window>` / `<MessageList>` / `<MessageComposer>` / `<Thread>` (v14 uses `MessageComposer`, not `MessageInput`); Video: `<StreamVideo>` / `<StreamCall>` / `SpeakerLayout` / `PaginatedGridLayout` / `ParticipantView` / `CallControls`. Customize via the documented hooks/props - register custom UI through `<WithComponents overrides={{...}}>` or pass a per-list `<MessageList Message={Custom} />`; read state with `useChannelStateContext()` / `useCallStateHooks()`) - fetch the matching cookbook page first (RULES.md > Docs-first). Drop to fully hand-built markup **only** when the user explicitly wants bespoke UI; [`references/custom-ui.md`](references/custom-ui.md) carries the prebuilt-vs-bespoke decision + the headless context-hook map for that case. Feeds is headless (no prebuilt UI) - always build from its hooks.

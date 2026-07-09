@@ -34,9 +34,13 @@ Product-specific SDK wiring, gotchas, and client patterns: see [`references/*.md
 
 ## CSS imports
 
+**Canonical home for Stream CSS import paths** - other files point here instead of restating the variants.
+
 ```ts
-// Chat (v14+ preferred alias; v13 used dist/css/v2/index.css)
+// Chat: the v14+ preferred alias. (v13 used 'dist/css/v2/index.css'; 'dist/css/index.css' also resolves.)
 import 'stream-chat-react/css/index.css';
+// Chat: ONLY if you render <EmojiPicker /> - its stylesheet is separate:
+import 'stream-chat-react/css/emoji-picker.css';
 // Video
 import '@stream-io/video-react-sdk/dist/css/styles.css';
 ```

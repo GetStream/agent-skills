@@ -113,10 +113,10 @@ Order:
 
 **Task A: Scaffold** - scaffolds Next.js + Tailwind + Shadcn/ui (Base UI) into the current directory. Use the theme preset chosen in **Step 2**.
 
-The scaffold command creates a new directory, so we scaffold into a temporary `.scaffold` subdirectory and move everything up:
+The scaffold command creates a new directory, so we scaffold into a temporary `.scaffold` subdirectory and move everything up. The `-n .scaffold` flag also lands in the generated `package.json` as `"name": ".scaffold"`, which npm/pnpm/yarn reject (a package name can't start with `.`), so the final step rewrites `name` to a valid slug derived from the project directory:
 
 ```bash
-npx shadcn@latest init -t next -b base -n .scaffold --no-monorepo -p <random-preset> && mv .scaffold/* .scaffold/.* . 2>/dev/null; rm -rf .scaffold
+npx shadcn@latest init -t next -b base -n .scaffold --no-monorepo -p <random-preset> && mv .scaffold/* .scaffold/.* . 2>/dev/null; rm -rf .scaffold && node -e "const fs=require('fs'),path=require('path'),j=require('./package.json');j.name=path.basename(process.cwd()).toLowerCase().replace(/[^a-z0-9._-]+/g,'-').replace(/^[._-]+/,'')||'app';fs.writeFileSync('package.json',JSON.stringify(j,null,2)+'\n')"
 ```
 
 **Task A.1: Add base Shadcn components:**
