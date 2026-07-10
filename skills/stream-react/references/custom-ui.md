@@ -72,6 +72,17 @@ Provider-less fallback (non-channel surfaces only): drive the client directly - 
 Strict mode protection) - never `getInstance()` on the client. Any `channel.on(...)` subscription in
 an effect must be torn down in cleanup.
 
+### Custom channel rail: real-time contract
+
+**Keep `<ChannelList>` as the state/event owner whenever component injection can reach the design.** It
+already reconciles new membership, unloaded-message, removal, channel-update, and reconnect events.
+If a bespoke rail is genuinely required (for example, product-grouped conversations), fetch the live
+**ChannelList** page first and own that behavior explicitly: reconcile `notification.added_to_channel`,
+`notification.message_new`, `message.new`, relevant channel add/remove/update events, and
+`connection.recovered`; clean up the listener. **Do not wait for `message.new` to discover a new
+channel**—a user can be added when a channel is created before anyone sends a message. Do not re-query
+the full rail for read receipts alone.
+
 ## The headless path - Video
 
 Build custom layouts from `useCallStateHooks()` (`useParticipants`, `useCameraState`,
