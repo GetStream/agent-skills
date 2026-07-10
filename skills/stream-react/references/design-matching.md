@@ -246,7 +246,9 @@ Match the reference's colors **without** hand-editing `globals.css` (which [`../
 - **Stream chat surface** (bubbles, list, composer): Stream's **`str-chat` theming** - the
   `str-chat__theme-light/dark` class, the SDK's documented CSS custom properties, and `<Channel>`
   theming. **Confirm the current variable names on the Theming page** ([`docs-map.md`](docs-map.md)) -
-  do not hard-code variable names from memory.
+  do not hard-code variable names from memory. A v14 starting map for the common chat regions
+  (bubble scoping, poll containment, composer, theme classes) is in the **Appendix: Chat React v14
+  reskin cheat-sheet** below - the installed CSS still outranks it.
 - **Pinned vs adaptive - the reference is almost always a *light* screenshot.** Sampled **brand /
   content** colors that read identically in both themes (bubble fills, accent, presence dot, unread
   badge) may be pinned literals. But **chrome surfaces** (app shell, channel-list bg, composer bar,
@@ -533,3 +535,67 @@ Matching a design under time pressure breeds excuses. The discrepancy table deci
 - Ending with failing rows left unlabeled, or a GAP relabeled "deferred" / "minor" / "cosmetic".
 - Skipping the composer or the receipts rows because they are fiddly.
 - Downgrading a measured FAIL to a soft word to close the task.
+
+---
+
+## Appendix: Chat React v14 reskin cheat-sheet
+
+Concrete starting points for the most common chat regions, so a reskin isn't reverse-engineered
+from compiled CSS every time. Scope: `stream-chat-react` **v14**. The authority order of Step 4
+still applies: the installed `node_modules/stream-chat-react/dist/css/index.css` and the `.d.ts`
+under `dist/types/` outrank this table and the docs page - grep them to confirm any selector or
+variable before relying on it, and every value here still gets measured in the Step 6 loop.
+
+**Global accent + sizing** - set once on `.str-chat` (or your app root):
+```css
+.str-chat {
+  --str-chat__accent-primary: #0084ff;          /* buttons, links, read ticks, poll fills, checkboxes */
+  --str-chat__message-max-width: 480px;          /* text bubbles */
+  --str-chat__message-with-attachment-max-width: 340px;  /* attachments + POLLS */
+  --str-chat__attachment-max-width: 340px;
+}
+```
+
+**Message bubbles - scope the colour to the TEXT, not the container.** The single most common
+mistake: styling `.str-chat__message-bubble` paints the whole message container, so **polls,
+images, and other attachments inherit your bubble background/gradient**. Style the text element:
+```css
+/* ✅ own text bubble only */
+.str-chat__message--me .str-chat__message-text-inner { background: <brand>; color: #fff; }
+/* ❌ NOT this - bleeds onto polls/attachments */
+/* .str-chat__message--me .str-chat__message-bubble { background: <brand>; } */
+```
+
+**Poll** (`.str-chat__poll`) - the native Poll is **large and full-width** and renders *inside* a
+message bubble. To make it a compact card: constrain via the attachment-width vars above, make the
+bubble transparent when it holds a poll, and give the poll its own background:
+```css
+.str-chat__message-bubble:has(.str-chat__poll) { background: transparent; padding: 0; }
+.str-chat__poll { max-width: 300px; border-radius: 18px; padding: 12px 14px; background: <card>; }
+.str-chat__message--me .str-chat__poll { background: <brand>; color: #fff; }
+```
+Sub-parts: `.str-chat__poll-title`, `.str-chat__poll-option`, `.str-chat__poll-option__votes-bar`,
+`.str-chat__poll-actions .str-chat__poll-action`. The control *type* (radio selectors) and the
+action labels ("End Vote") are **structural, not themable** - if the reference shows something
+else, that region routes to injection (`PollOptionSelector` / `PollActions` via `WithComponents`,
+Step 3); an unrouted mismatch is a `GAP - not matched` row, never a silent ship.
+
+**Composer** (`<MessageComposer>`):
+- Placeholder: `additionalTextareaProps={{ placeholder: 'Enter message' }}` (default is "Send a
+  message"). For a full string sweep use a `Streami18n` instance on `<Chat i18nInstance>`.
+- Send button `.str-chat__send-button`; attachment button lives under `.str-chat__attachment-selector`.
+  The attach button sits on the **left** by default - moving it is a layout override.
+- Round the input via `.str-chat__message-textarea-container` / `-with-emoji-picker`.
+
+**Avatars** - Stream renders a single initial/image. **Stacked group avatars are not built-in** -
+render them yourself in your custom channel-preview / header component from `channel.state.members`
+(that component then owes its [`custom-ui.md`](custom-ui.md) contract rows as usual).
+
+**Theme (light/dark)** - pass `theme="str-chat__theme-light|dark"` to `<Chat>`; Stream's variables
+are scoped under those classes. Keep your own app-chrome tokens on the adaptive channels (Step 5 >
+Palette through the sanctioned channels).
+
+**Finding a selector you don't know:** grep the installed stylesheet -
+`node_modules/stream-chat-react/dist/css/index.css` - for the feature name (`poll`, `message-bubble`,
+`send-button`, `avatar`); it's the authority for the exact installed version. Confirm class props
+from the `.d.ts` under `dist/types/`.
