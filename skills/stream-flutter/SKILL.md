@@ -1,6 +1,6 @@
 ---
 name: stream-flutter
-description: "Build and integrate Stream Chat, Video, and Feeds in Flutter apps. Use for Flutter/Dart project work with Stream package setup, auth wiring, and widget blueprints. Supports stream_chat_flutter (pre-built Chat UI), stream_chat_flutter_core (custom Chat UI), stream_video_flutter (Video calling and livestreaming), and stream_feed / stream_feed_flutter_core (Activity Feeds, no pre-built UI)."
+description: "Build and integrate Stream Chat, Video, and Feeds in Flutter apps. Use for Flutter/Dart project work with Stream package setup, auth wiring, and widget blueprints. Supports stream_chat_flutter (pre-built Chat UI), stream_chat_flutter_core (custom Chat UI), stream_video_flutter (Video calling and livestreaming), and stream_feed / stream_feed_flutter_core (Activity Feeds, no pre-built UI). Also migrates Flutter apps from the Sendbird Chat SDK (sendbird_chat_sdk / sendbird_uikit) to Stream Chat."
 license: See LICENSE in repository root
 compatibility: Requires a Flutter project (pubspec.yaml). No Stream CLI required.
 metadata:
@@ -49,6 +49,7 @@ Before any tool call, decide the **track** from the user's input alone - no prob
 | "Add video calling to my Flutter app", "integrate Stream Video into my existing app"                                                                          | **B - Existing app** (load `VIDEO-FLUTTER.md` + `VIDEO-FLUTTER-blueprints.md`)                                                                      |
 | "Add a feed to my Flutter app", "integrate Stream Feeds into my existing app", "add activity feed"                                                            | **B - Existing app** (load `FEEDS-FLUTTER.md` + `FEEDS-FLUTTER-blueprints.md`; use Twitter-style UI unless the user explicitly specifies otherwise) |
 | "Install Stream packages", "set up Stream in Flutter", "wire auth/token" with no broader feature request                                                      | **D - Bootstrap / setup**                                                                                                                           |
+| "Migrate my Flutter app from Sendbird", "replace `sendbird_chat_sdk` / `sendbird_uikit` with Stream", "switch off Sendbird / SendbirdUIKit"                    | **M - Migrate from Sendbird** ([`sendbird-migration.md`](sendbird-migration.md))                                                                    |
 | Bare `/stream-flutter` with no args                                                                                                                           | List the tracks briefly and wait                                                                                                                    |
 
 ### Styling-depth flag (orthogonal to Tracks A/B/C/D)
@@ -84,6 +85,7 @@ If the request is ambiguous between **build/integrate** and **reference lookup**
 
 - **Tracks A, B, D** -> run **Project signals** once per session, then continue in [`builder.md`](builder.md) and [`sdk.md`](sdk.md). If the styling-depth flag was raised, run the design-match phase alongside per the UI-strategy decision — [`design-matching.md`](design-matching.md) for the pre-built components (the common case) or [`custom-ui.md`](custom-ui.md) for a bespoke `stream_chat_flutter_core` surface (design-match rigor is a mandatory phase, not an optional add-on).
 - **Track C** -> skip the probe if the product + package are explicit. Only run it on demand if the SDK layer is ambiguous.
+- **Track M** -> run [`sendbird-migration.md`](sendbird-migration.md): detect the existing Sendbird integration shape, swap packages/init/views/channels/messages, re-apply theming via the two axes, and verify design + functional fidelity per screen against the Sendbird original. Reuses Step 0.5 credentials and [`design-matching.md`](design-matching.md)/[`custom-ui.md`](custom-ui.md) rigor; hands off to the shared data-migration runbook when the code migration is done.
 
 ---
 
@@ -294,6 +296,7 @@ Only proceed with Chat work once the project resolves a v10 (`^10.0.0`) dependen
 | B - Existing app                                  | [`builder.md`](builder.md) + [`sdk.md`](sdk.md) + relevant reference files                                            |
 | C - Reference lookup                              | [`sdk.md`](sdk.md) + relevant reference files                                                                         |
 | D - Bootstrap / setup                             | [`builder.md`](builder.md) + [`sdk.md`](sdk.md)                                                                       |
+| M - Migrate from Sendbird                         | [`sendbird-migration.md`](sendbird-migration.md) (+ [`design-matching.md`](design-matching.md)/[`custom-ui.md`](custom-ui.md), [`sdk.md`](sdk.md), [`../stream/sendbird-data-migration.md`](../stream/sendbird-data-migration.md)) |
 | Styling-depth flag (screenshot/Figma/"look like") | Pick the UI strategy first (Step 0). Components → [`design-matching.md`](design-matching.md); bespoke/livestream/overlay → [`custom-ui.md`](custom-ui.md). Run **before** feature work on Track A/B; region-by-region rigor + verification loop either way |
 
 > **Feeds note (Track A/B):** Use Twitter-style UI by default. Only deviate if the user explicitly requests a different style (e.g., "Instagram grid", "Reddit-style votes").
@@ -384,3 +387,18 @@ Use when the user wants the install and wiring path more than a feature build:
 - wire `StreamChatClient` and the `StreamChat` widget via [`sdk.md`](sdk.md)
 - complete platform setup (Android permissions, iOS Info.plist keys) for the chosen packages
 - stop before product-specific UI if the user only asked for setup
+
+---
+
+## Track M - Migrate from Sendbird
+
+**Full detail:** [`sendbird-migration.md`](sendbird-migration.md). Migration is integration-shaped
+(preserve the existing app), so it behaves like Track B with a Sendbird-specific runbook.
+
+| Phase  | Name          | What you do                                                                                                                                                                                                 |
+| ------ | ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **M1** | Detect        | Run **Project signals**; grep the Sendbird footprint and classify each touchpoint's shape ([`sendbird-migration.md`](sendbird-migration.md) §0).                                                            |
+| **M2** | Swap + wire   | Remove `sendbird_chat_sdk`/`sendbird_uikit`, add Stream packages; get credentials (Step 0.5); wire one `StreamChatClient` + `StreamChat` provider, repointing existing bootstraps without changing their public API (§1–§2). |
+| **M3** | Re-implement  | Migrate each touchpoint per its pattern — views + navigation (§3), channels (§4), messages/custom attachments (§5); re-apply theming via the two axes (§6, [`design-matching.md`](design-matching.md)).      |
+| **M4** | Verify        | **Functional parity is the floor, not "done."** Produce the **parity account** (§0.5): every source screen/control/interaction marked matched, deferred-and-surfaced, or not-reproducible-and-surfaced — a capability in none of those is a silent drop. That account, not a green build, is the exit criterion. Confirm Sendbird deps are fully removed.     |
+| **M5** | Offer data    | Once the code migration builds, connects, and matches, **ask** whether to also migrate the Sendbird **data** and hand off to [`../stream/sendbird-data-migration.md`](../stream/sendbird-data-migration.md) (§10). |
