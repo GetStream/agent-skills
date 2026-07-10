@@ -262,7 +262,8 @@ component for a prebuilt region, [`RULES.md`](../RULES.md) > Reference authority
 ## 15. Feature gaps - no Stream equivalent, decision required
 
 Each of these needs an explicit user decision (substitute / rebuild app-side / drop) recorded in
-the parity ledger (runbook > Detect & inventory). Never leave one as a silent TODO.
+the parity ledger and routed through the plan checkpoint (runbook > Plan & checkpoint - or its
+non-interactive `provisional` fallback). Never leave one as a silent TODO.
 
 | Sendbird feature | Status | Closest substitute |
 |---|---|---|

@@ -70,7 +70,8 @@ README, and the UIKit config props (`enableOgtag`, `enableSuggestedReplies`,
 |---|---|---|---|
 
 This ledger is the migration's backbone: every row must end as **Ported**, **Rewritten**,
-**`N/A - <real reason>`**, or **`GAP - <user's decision>`** (the same no-silent-blanks discipline
+**`N/A - <real reason>`**, or **`GAP - <decision>`** - the user's decision where one was
+obtainable, else a `provisional` default per section 2 (the same no-silent-blanks discipline
 as [`references/custom-ui.md`](references/custom-ui.md)'s completion contract - "deferred" and
 "later" are not valid statuses). Silent feature drops in real migrations
 happened exactly where no ledger existed - UIKit one-liner toggles vanished and the README kept
@@ -116,15 +117,46 @@ one against the app; the full catalog is in
 
 ---
 
-## 2. Plan the cut & surface the gaps
+## 2. Plan & checkpoint - involve the user before the first edit
 
-From the ledger and [`references/sendbird-mapping.md`](references/sendbird-mapping.md) section 15,
-collect every feature with **no Stream equivalent** (scheduled messages, channel-level report,
-report categories, `copyMessage`, `FeedChannel`, offline cache, DND quiet hours, suggested
-replies, ...). **Before migrating, tell the user what won't survive 1:1 and get a decision per
-gap**: substitute (the table names the closest one), rebuild app-side, or drop. Record decisions
-in the ledger. A gap discovered mid-migration becomes a silent TODO; a gap decided up front
-becomes a scoped task.
+Assemble the migration plan from section 0's outputs. It is **not a new document** - it is the
+parity ledger plus four strategy lines:
+
+| Plan field | Source | Example |
+|---|---|---|
+| Integration shape(s) | section 0 classification | "UIKit drop-in + custom hooks" |
+| Credentials & token path | section 4's precedence, resolved on paper | "user-provided key; pre-signed CLI tokens (no backend)" |
+| Design bar + baseline tier | section 0 baseline rung | "pixel (user screenshots)" or "structural + exact palette (code-derived)" |
+| Gaps + proposed resolutions | ledger GAP rows + [`references/sendbird-mapping.md`](references/sendbird-mapping.md) section 15 | "scheduled messages -> drafts (substitute)" |
+
+For the gaps row: collect every feature with **no Stream equivalent** (scheduled messages,
+channel-level report, report categories, `copyMessage`, `FeedChannel`, offline cache, DND quiet
+hours, suggested replies, ...) - each needs a decision: **substitute** (the mapping table names
+the closest one), **rebuild app-side**, or **drop**.
+
+**Checkpoint - pause and present the plan to the user when any of these holds:**
+
+- the ledger has **>= 1 GAP row** (a product decision exists - it is the user's, not yours);
+- the **credentials/token path is unresolved** (no key provided or found, or no way for clients
+  to obtain tokens);
+- the **design bar is ambiguous** (pixel fidelity implied, but no baseline screenshots exist and
+  the user hasn't said how close is close enough);
+- the **user asked** to review the plan first.
+
+Ask everything in **one batched round** - gap decisions, the credentials call, the design bar -
+never a drip of single questions. When no trigger holds (no gaps, credentials and design bar
+settled), don't interrupt: proceed, and include the plan in the final summary.
+
+**Non-interactive runs** (no user available to answer, or the user said "don't check in, use
+defaults"): do not stall. Take the mapping table's named substitute as the default for each gap,
+mark those ledger rows **`GAP - provisional: <default>`**, and surface every provisional decision
+prominently in the final report - a provisional decision the report doesn't call out is a silent
+feature drop with extra steps.
+
+The plan lives **in the ledger**, not beside it: a mid-migration deviation is a ledger edit (gate
+6 closes the ledger, so deviations surface at verification), never a silent change of course. A
+gap discovered mid-migration is a checkpoint-grade decision the moment it appears - decide it (or
+mark it provisional) then; parking it as a TODO is what this section exists to prevent.
 
 ---
 
@@ -296,6 +328,8 @@ Run all of these; each catches a failure a real migration shipped.
    tool ladder; if none works, say so and have the user run this check - do not skip it silently.
 5. **Design verify loop** (step 6) reaches its exit condition.
 6. **Ledger closure:** every parity-ledger row is Ported / Rewritten / N/A / GAP-with-decision.
+   A `GAP - provisional` row (section 2, non-interactive default) closes the gate only if the
+   final report calls it out explicitly as a decision the user still owes.
 7. **Docs match reality:** rewrite README/feature lists against what the migrated app actually
    does, including a "Known gaps vs. the Sendbird original" section from the GAP rows. A trial
    run left the old README advertising features the migration dropped.
@@ -307,6 +341,7 @@ Run all of these; each catches a failure a real migration shipped.
 | "The CSS was ported, it'll look the same" | Both real runs shipped unverified skins. A match is claimed from a capture, not from CSS diffs. |
 | "That feature was tiny, nobody will miss it" | Silent drops are how READMEs end up advertising ghosts. It's a ledger row: N/A or GAP, decided, in writing. |
 | "I'll port it faithfully and refactor later" | The mechanical port of hand-rolled machinery IS the bug (double-adds, stale state, dead timers). Golden rule 3. |
+| "The gaps were minor, I decided them myself and kept going" | Minor is the user's judgment, not yours. >= 1 GAP row = the section 2 checkpoint - or, non-interactive, a `provisional` default reported loudly. |
 
 ---
 
