@@ -46,6 +46,7 @@ Before any tool call, decide the **track** from the user's input alone - no prob
 | "Add/integrate Stream into this app", "wire Chat/Video/Feeds into my Android project" | **B - Existing app** |
 | "Install Stream packages", "set up Stream in Android Studio", "wire auth/token flow" with no broader feature request | **D - Bootstrap / setup** |
 | Request carries a **target appearance** - a screenshot, a Figma frame, or "make the chat look like WhatsApp / Telegram / Slack / \<app\>" | **B (or A)** + the **styling-depth flag** below -> [`design-matching.md`](design-matching.md) |
+| "Migrate from Sendbird", "replace the Sendbird Chat SDK with Stream", "we're switching off Sendbird / SendbirdUIKit / uikit-compose" | **B** + the **migration flag** below -> [`sendbird-migration.md`](sendbird-migration.md) |
 | Bare `/stream-android` with no args | List the tracks briefly and wait |
 
 ### Disambiguation flow
@@ -58,6 +59,10 @@ If the request is ambiguous between **build/integrate** and **reference lookup**
 
 - **Tracks A, B, D** -> run **Step 0.5 (credentials)** first, **then Project signals** once per session, then continue in [`builder.md`](builder.md) and [`sdk.md`](sdk.md). Do not probe the project before credentials.
 - **Track C** -> skip both steps if the product + UI layer are explicit. Only run Project signals on demand if the SDK or UI layer is ambiguous.
+
+### Migration flag (orthogonal to the track)
+
+If the user is **migrating an existing app off Sendbird**, run [`sendbird-migration.md`](sendbird-migration.md) — a repeatable Sendbird → Stream Chat procedure that sits on top of Track B. It **detects the integration shape** (Sendbird `uikit-compose` / XML `uikit` / custom UI on the low-level `sendbird-chat` SDK / spaghetti; MVVM/MVI; single- vs multi-activity; Compose-Nav vs fragments+Jetpack-Nav) and picks one of three paths: UIKit → Stream **Compose bundled screens**; custom-UI → **keep the app's UI, swap only the SDK/state layer** (surgical); XML UIKit → Stream **Compose hosted in the existing fragments** (cross-framework). It preserves the app's architecture and navigation, changing only SDK touchpoints. The load-bearing part is the **gap-handling protocol (§3.5)**: for every screen the Sendbird source exposed that a naive swap would drop (creation, settings, members, invitation), either **wire the bundled Stream equivalent** (`GroupChannelInfoScreen`/`DirectChannelInfoScreen`) or — for screens Stream doesn't bundle (channel **creation**) — tell the user it isn't out-of-the-box, **link the public cookbook** (`getstream.io/chat/docs/sdk/android/compose-cookbook/<slug>/`), and **offer to build it** from that cookbook. Never silently drop a screen and never invent one. It reuses Step 0.5's credential flow ([`credentials.md`](credentials.md)) and the region rigor of [`design-matching.md`](design-matching.md) for per-screen fidelity, and — once the code migration builds, connects, and matches the source — **offers the data migration** (the shared, language-agnostic runbook).
 
 ### Styling-depth flag (orthogonal to the track)
 
