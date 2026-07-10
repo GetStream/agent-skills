@@ -102,7 +102,7 @@ CLI tasks - querying data, configuring an app, onboarding, installing skills - a
 ## Sendbird data migration (shared, language-agnostic)
 
 A platform pack's Sendbird migration covers the **code/SDK** swap (e.g. `stream-swift`
-`sendbird-migration.md`). Moving the **data** (users, channels, message history, reactions)
+`sendbird-migration.md`, `stream-react` `sendbird-migration.md`). Moving the **data** (users, channels, message history, reactions)
 is server-side and SDK-independent, so it lives once, here, in
 [`sendbird-data-migration.md`](sendbird-data-migration.md) - **any** platform pack hands off
 to it. It picks a strategy (hard switch / uni-directional / bi-directional sync), exports from
