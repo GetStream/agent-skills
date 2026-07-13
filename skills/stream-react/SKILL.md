@@ -116,7 +116,7 @@ Authentication is handled by `getstream init` (Step 2) - it opens the browser as
 
 ### Step 1b: Theme + app pick
 
-Ask both setup questions in **one message** before doing anything else - a single pause, the same "ask exactly once, then act" pattern the other platform packs use for credentials. Build the app options from what is already in context: the org/app already configured in this project by a prior `getstream init`, if any. If none is configured yet, `getstream init` lists your orgs/apps interactively when it runs (Step 2) - don't try to enumerate them with a raw `getstream api` call.
+Ask both setup questions in **one message** before doing anything else - a single pause, the same "ask exactly once, then act" pattern the other platform packs use for credentials. Build the app options from what is already in context: the org/app already configured in this project by a prior `getstream init`, if any. If none is configured yet, `getstream init` lists your orgs/apps when it runs (Step 2) - interactively with a TTY; in a non-interactive shell it writes a `.stream/init-*.yaml` command file to uncomment instead ([`builder.md`](builder.md) > Provisioning documents the exact headless sequence). Don't try to enumerate them with a raw `getstream api` call.
 
 > **Quick setup - two questions:**
 > 1. **Theme:** I can use a random shadcn theme, or you can design your own at [ui.shadcn.com/create](https://ui.shadcn.com/create) and share the `--preset` value (e.g. `--preset b1Gdi7z7r`). Random, or do you have a preset? *(If you already shared a screenshot or Figma, I'll match that instead - skip this.)*

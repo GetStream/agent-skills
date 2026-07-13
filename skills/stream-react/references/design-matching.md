@@ -48,7 +48,7 @@ subagent with one goal, briefed from scratch:
 
 | Role | Count | Dispatched | Reads | Writes | Returns |
 |---|---|---|---|---|---|
-| **Coordinator** | 1 | - (is the session) | everything | shared files only: page wiring, app shell / layout, theme / preset, providers, `package.json`; appends §10-§12 to `design-analysis.md` | the final report + the honest exit claim |
+| **Coordinator** | 1 | - (is the session) | everything | shared files only: page wiring, app shell / layout, theme / preset, providers, `package.json`; appends §11-§13 to `design-analysis.md` | the final report + the honest exit claim |
 | **Design-analysis** | 1 - always, first | after Step 1, alongside Setup | `.design-verify/reference/*` + its Step 2 brief | `.design-verify/design-analysis.md` only | the filled Step 2 template |
 | **Setup** | 0-1 (Track A only) | after the coordinator runs Step 1b + `getstream init`, alongside Design-analysis | SKILL.md Tasks A / A.1 / B / C / D + `sdk.md` | scaffold, `.env.local` (via `getstream env`), SDK installs, `/api/token`, Login Screen | scaffold report: paths created, SDK majors resolved |
 | **Feature worker** | 1 per region | after the ownership manifest (Step 3), all in one batch, alongside Verify-infra | `design-analysis.md` (its named sections), its `custom-ui.md` contract rows, its self-fetched docs rows, the Appendix, installed SDK sources | ONLY its manifest-declared paths | report: files written, exports provided, contract rows (Reproduce / N/A / GAP), docs rows fetched verbatim, wiring instructions, blockers |
@@ -65,7 +65,7 @@ subagent with one goal, briefed from scratch:
   agents writing one path concurrently is the failure mode. The coordinator owns every shared file;
   a worker that needs a shared-file change reports it instead of making it. Two sanctioned handoffs,
   both sequential and declared - never a second concurrent writer: `design-analysis.md` is
-  section-partitioned (the design-analysis agent writes §0-§9; the coordinator appends §10-§12 and
+  section-partitioned (the design-analysis agent writes §0-§10; the coordinator appends §11-§13 and
   any post-gate gap fills), and a coupled-fix round transfers the affected paths to the coordinator
   (6e).
 - **Subagents never talk to the user.** Every stop-and-ask moment - Figma exports (Step 1), the
@@ -79,6 +79,19 @@ subagent with one goal, briefed from scratch:
   harness-dependent; a role that cannot fetch, install, or capture returns exactly what failed and
   the coordinator escalates. A subagent that substitutes memory for a failed docs fetch has broken
   [`../RULES.md`](../RULES.md) > Docs-first.
+- **Dispatch is unverified until proven - gate every return.** Subagent support has three states:
+  available, unavailable, and **available-but-broken** (agents that return in seconds with no tool
+  calls, echo their prompt back, or write nothing). Accept a return only if **(a)** the role's
+  declared output paths exist on disk with plausible content and **(b)** it returned its structured
+  report - check both before using anything. An instant / empty / prose-only return is a failed
+  dispatch: re-dispatch that role once, then run its brief inline yourself. Every brief states:
+  **"the written file is the deliverable; a prose-only reply is a failure."**
+- **Never kill a dispatched agent that has shown tool activity or file writes.** Check its declared
+  paths before assuming it failed like its siblings - three instant failures say nothing about a
+  fourth agent that is actually working, and killing it destroys live progress.
+- **Inline fallback is per-role, not all-or-nothing** - and correctness-equivalent (the capability
+  gate above). If dispatch proves unreliable in this harness, run the affected briefs inline without
+  second-guessing; only the wall-clock changes.
 - **Dispatch each stage's agents together in one batch**, not one at a time.
 
 **Never delegated** (decision points and shared-file writes stay with the coordinator): Classify
@@ -91,7 +104,9 @@ gate, and the honest exit claim.
 When the app doesn't exist yet, setup runs concurrently with design analysis - the biggest
 wall-clock overlap in the run. The coordinator does the interactive parts itself: the Step 1b app
 question (the theme question is already skipped when a reference exists - SKILL.md Step 1b) and
-`getstream init` (browser auth + org/app selection-or-creation). It then dispatches the setup agent
+`getstream init` (browser auth + org/app selection-or-creation; in a headless shell `init` emits a
+`.stream/init-*.yaml` command file to uncomment instead of prompting - `builder.md` > Provisioning).
+It then dispatches the setup agent
 with the mechanical remainder, citing SKILL.md by section name - Tasks A, A.1, B, C, D - plus the
 `/api/token` route and Login Screen per `sdk.md`. Nothing is restated here; the brief points at
 those sections. Track E: the app already exists - no setup agent.
@@ -270,6 +285,17 @@ cites [`custom-ui.md`](custom-ui.md) contract rows and [`docs-map.md`](docs-map.
 | A tab switcher over the feed | Multiple / For You feeds | docs For You Feed |
 | Horizontal bars in a post | Poll activity | docs Polls |
 
+### Derived designs - the reference never shows everything
+
+A real app renders states the reference does not define: an empty channel list, an empty message
+list, loading, errors, the hover message-actions surface, dialogs. Left unspecified they ship as SDK
+defaults - and an unthemed default inside a matched design reads as broken, not neutral. So the
+design-analysis agent **designs** them (§7): extrapolate from the §1 global tokens - the same
+palette roles, type scale, radius, spacing, and glyph style as the sampled regions - and write each
+as concretely as a measured region, so a judge can verdict it like any other row. Keep them quiet
+(an empty state is a muted icon + a title + a hint line in token colors, not a new design language).
+**The SDK default is never a design.**
+
 ### The design-analysis.md template
 
 The agent fills exactly this skeleton. Terseness is a feature - tables over prose; the file is every
@@ -283,7 +309,9 @@ other agent's input.
    bg, list bg, incoming / outgoing bubble bg + text, muted text,
    accent, unread badge, presence dot). Type: family; per text role
    (author / body / timestamp / unread): size, WEIGHT, line-height.
-   Spacing / radius scale; layout grid (rail widths, header height). -->
+   Spacing / radius scale; layout grid: rail widths recorded BOTH as
+   CSS px AND as a fraction of the viewport (containers are authored
+   fluid - Step 5), header height. -->
 ## 2. Screens <!-- one subsection per screenshot: region list + per-region bounds
    (image-px box - the verify loop cuts reference crops from these) -->
 ## 3. Chat regions <!-- every subsection MANDATORY: filled, or exactly "N/A - not in reference" -->
@@ -298,7 +326,8 @@ other agent's input.
 ### 3.4 Message composer <!-- position, style, send-button look, audio recording present?,
    attachment handling, emoji, polls; the placeholder string
    VERBATIM; each control's exact glyph + left/right order;
-   ROW COUNT (drives Step 3's composer row-count test) -->
+   ROW COUNT (drives Step 3's composer row-count test);
+   input growth: how a 3+ line draft behaves (grow to a max? scroll?) -->
 ### 3.5 Channel header <!-- what the title area holds: title, participants, channel avatar,
    options / extra controls -->
 ### 3.6 Channel list / ChannelPreview <!-- row shape: title (member name for 1:1 channels), last
@@ -309,31 +338,41 @@ other agent's input.
    vocabulary above -->
 ## 6. Taxonomy <!-- signal -> Stream concept -> routes-to, FILLED for this design:
    every visible glyph, badge, pill, and label has a row -->
-## 7. Fixture states <!-- the 6a enumeration this design needs: content states including
-   the extreme-width message pair, plus every driven / open state -->
-## 8. Probe-selector seeds <!-- per region: selector + the computed-style props to probe
+## 7. Derived designs <!-- MANDATORY. Every state / surface the app will render that the
+   reference does NOT define - empty channel list, empty message list, loading, error,
+   the hover message-actions surface, dialogs and menus - gets a DESIGNED spec here,
+   extrapolated from the §1 tokens and as concrete as a sampled region (colors, type,
+   layout, placement). The SDK default is never a design. -->
+## 8. Fixture states <!-- the 6a enumeration this design needs: content states including
+   the extreme-width message pair and a long multi-line composer draft, plus every
+   driven / open state -->
+## 9. Probe-selector seeds <!-- per region: selector + the computed-style props to probe
    (seeds verify-infra's probe list, 6c) -->
-## 9. Exact strings & glyphs  <!-- every verbatim string and glyph the design shows, beyond the composer -->
+## 10. Exact strings & glyphs <!-- every verbatim string and glyph the design shows, beyond the composer -->
 <!-- appended by the COORDINATOR as the run progresses: -->
-## 10. Routes + mechanisms (Step 3)
-## 11. File-ownership manifest (Step 3)
-## 12. Running discrepancy table (6d, per round)
+## 11. Routes + mechanisms (Step 3)
+## 12. File-ownership manifest (Step 3)
+## 13. Running discrepancy table (6d, per round)
 ```
 
 ### The completeness gate (coordinator - never delegated)
 
 Before anything is routed or built, check the returned file:
 
-1. Sections 0-9 all present; every §3 subsection filled or exactly `N/A - not in reference` (a
+1. Sections 0-10 all present; every §3 subsection filled or exactly `N/A - not in reference` (a
    missing subsection is a FAIL; an N/A is a decision).
 2. Every color is a sampled hex and every dimension is CSS px with the scale shown - no round-number
    guesses, no color names.
 3. Viewport + scale stated and consistent with Step 1.
-4. Every visible signal in every screen has a §6 taxonomy row, and every §6 row has at least one §8
+4. Every visible signal in every screen has a §6 taxonomy row, and every §6 row has at least one §9
    probe seed.
-5. §7 covers every state §3-§5 mention - including the extreme-width message pair and the driven /
-   open states (6a).
-6. The composer section has the verbatim placeholder, the glyph identities + order, and the row count.
+5. §8 covers every state §3-§5 and §7 mention - including the extreme-width message pair, the long
+   multi-line composer draft, and the driven / open states (6a).
+6. The composer section has the verbatim placeholder, the glyph identities + order, the row count,
+   and the input-growth behavior.
+7. **Every state / surface the app will render has a design** - a reference-anchored row (§3-§5) or
+   a §7 derived-design row. Empty channel list, empty message list, loading, and the message-actions
+   surface at minimum. The SDK default is never a design.
 
 On any failure: re-dispatch the design-analysis agent ONCE with the named gaps; residual gaps after
 that, the coordinator measures and fills itself. Only then proceed to Step 3.
@@ -346,7 +385,7 @@ For each region, name the Stream component, then the cheapest mechanism that rea
 three axes: **theming** (props + CSS vars, no custom component), **injection** (your own component for
 one region -> completion contract), **bespoke** (a headless tree -> completion contract). This table
 maps screenshot region -> component + mechanism; [`custom-ui.md`](custom-ui.md)'s table maps a bespoke
-region -> its docs page (no duplication). Record the routes in `design-analysis.md` §10.
+region -> its docs page (no duplication). Record the routes in `design-analysis.md` §11.
 
 | Region in the screenshot | Stream component | Cheapest mechanism |
 |---|---|---|
@@ -378,7 +417,7 @@ Rules:
 
 ### File-ownership manifest
 
-Append to `design-analysis.md` (§11) the ownership table for the whole run - it is the authority
+Append to `design-analysis.md` (§12) the ownership table for the whole run - it is the authority
 every brief quotes, and it never changes mid-run:
 
 | Region | Worker | Owned paths | Required exports (name + prop signature) |
@@ -423,11 +462,17 @@ if it may run: subagent output is not shown to the user, so the announcement is 
 **Each worker's brief contains:** its manifest row ("you own exactly these paths; create or edit
 nothing else; provide exactly these exports - a renamed export is a reported change, never a silent
 one"), the `design-analysis.md` sections to read by name (its region's §3/§4/§5 subsection + §1
-global tokens + its §6 taxonomy rows + §9 strings), its [`custom-ui.md`](custom-ui.md) contract
-rows, Step 4 (grounding), and these build rules:
+global tokens + its §7 derived-design rows + its §6 taxonomy rows + §10 strings), its
+[`custom-ui.md`](custom-ui.md) contract rows, Step 4 (grounding), and these build rules:
 
 - **Reuse SDK pieces inside your components** (`<MessageText/>`, `<Attachment/>`, `<Avatar/>`,
   `<ParticipantView/>`) rather than rebuilding them.
+- **Fluid sizing - no fixed container dimensions.** Your region fills its wrapper (`w-full h-full`)
+  and its background paints the full pane - the chat background, the channel-list background,
+  everything. A reference-measured container width (a rail, a pane) enters the CSS as a flex-basis /
+  percentage / `clamp()` on the wrapper, **never a bare `width: <n>px`**; bare px is only for
+  intrinsic details the spec measured (avatar, icon, radius, gap, padding). Full rule:
+  [`builder-ui.md`](builder-ui.md) > Layout / sizing.
 - **BEM / class names on a docs page are a structural spec, not shippable CSS** - implement with
   Shadcn + Tailwind.
 - **Deep-dive into the installed sources when the docs run out:** `node_modules/stream-chat-react`
@@ -497,14 +542,18 @@ match claimed any other way is not a match; it is a guess that happened to compi
 Roles in this step: **verify-infra** builds everything under 6a-6c (the fixtures, the fixtures view,
 the tool ladder, the capture runner) the moment the Step 3 manifest declares the component paths;
 **the coordinator** runs the loop itself - triggers each round's single capture, dispatches the
-**region-judges** (6d), merges their verdict rows into `design-analysis.md` §12, coordinates the
+**region-judges** (6d), merges their verdict rows into `design-analysis.md` §13, coordinates the
 fixes (6e), and owns the exit.
+
+**Verify-vs-ship, said once:** you verify the populated design through the dev-only fixtures view;
+the shipped app starts empty and fills through real use. Both are correct - state this in the final
+summary so the user does not read an empty first-run screen as a defect.
 
 ### 6a. Populate every state - fixtures by default (verify-infra)
 
 Every state the reference shows must be **visibly present in the capture**. Default to **local
 fixtures** (no backend writes - the no-seeding invariant, [`../../stream/RULES.md`](../../stream/RULES.md)
-> No auto-seeding, holds). `design-analysis.md` §7 enumerates the states this design needs; the full
+> No auto-seeding, holds). `design-analysis.md` §8 enumerates the states this design needs; the full
 menu by product:
 - **Chat — content states:** incoming + outgoing, a same-author run (grouping), an attachment, a
   reaction, a quoted reply, long text, **a one-word message and a message whose last line is nearly
@@ -514,10 +563,13 @@ menu by product:
   **laid out in flow**, they overlap the text on the wide last line and overflow / half-empty the bubble
   on the one-word message. Lay them out so the bubble sizes to `max(text, metadata)`.)*
 - **Chat — interaction / open states (drive them; they do NOT appear at rest):** the hover message
-  toolbar (does it shift the bubble?), the **thread panel OPEN** — its own layout, sidebar vs
-  full-pane, not just the "N replies" entry point — the reaction selector open, the message-actions
-  menu open, the composer with a staged attachment and in edit mode, and the details / right pane
-  open. Each has a distinct layout and is a common regression site a resting capture never reaches.
+  toolbar (does it shift the bubble? drive it on the **topmost visible message** too — a toolbar
+  placed above the bubble clips at the viewport top there), the **thread panel OPEN** — its own
+  layout, sidebar vs full-pane, not just the "N replies" entry point — the reaction selector open,
+  the message-actions menu open, the composer with a staged attachment, in edit mode, **and with a
+  long multi-line draft typed** (does the input keep filling its row and grow in height?), and the
+  details / right pane open. Each has a distinct layout and is a common regression site a resting
+  capture never reaches.
 - **Video:** multiple tiles, a muted participant, a screenshare, a dominant speaker.
 - **Feeds:** a card with reactions + comments + an image, long text, a notification entry.
 
@@ -539,6 +591,14 @@ geometry and passes while production is broken. The classic trap: a fixtures wra
 shipped flex **row**. If injecting a fixture channel into the real shell is awkward, that awkwardness is
 a signal the shell isn't structured for testability - report it to the coordinator to fix the shell,
 don't fork the layout.
+
+**Fixturing the channel list - the one sanctioned deviation.** The conversation pane fixtures
+cleanly: inject a fixture channel as the active channel of the real `<Channel>`. The channel-list
+rail does not: `<ChannelList>` is **query-driven** - it renders what the backend returns, so it
+cannot show fixture rows without seeding (forbidden). Render your `ChannelPreviewUI` component
+directly against fixture channel objects **inside the shipped rail geometry** - the same list-column
+wrapper the app ships, same widths and flex. The shipped-layout rule is satisfied by reusing the
+geometry; only the query is bypassed. Do not relax any other part of the rule for this.
 
 **Opt-in real-data check (coordinator decision, never verify-infra's).** If the user prefers a
 real-backend pass over fixtures, seed the states into a **throwaway app provisioned solely for this
@@ -598,10 +658,15 @@ and do not substitute a static read for it.
    network never goes idle and a `networkidle` wait blocks until timeout. Wait for `domcontentloaded`,
    then wait for a rendered Stream selector to actually appear (e.g. `.str-chat__message-list`
    containing at least one message row / `.str-chat__li`), then ~500ms for images / animations to settle.
+   Finally **force the scroll position** (`scrollTop = scrollHeight` on the message-list scroll
+   container, `.str-chat__message-list-scroll` in v14) - fixture-injected messages fire no events, so
+   the SDK's auto-scroll-to-bottom is unreliable and unforced captures land at random offsets
+   round-to-round.
 5. Produce, per screen: **(a)** a full-screen screenshot; **(b)** **element crops** of the high-detail
-   regions (the composer, one message row, one tile / card) - detail is lost in a full-page shot;
+   regions (the composer, one message row, one quoted-reply message, one tile / card) - detail is lost
+   in a full-page shot;
    **(c)** a **probe pass** that, for each selector in the probe list (seeded from
-   `design-analysis.md` §8), returns its `getBoundingClientRect` + the `getComputedStyle` values you
+   `design-analysis.md` §9), returns its `getBoundingClientRect` + the `getComputedStyle` values you
    need and a `missing: true` flag when the selector matches nothing (that flag IS the
    structural-presence check in 6d); **(d)** **reference crops**, cut once from
    `.design-verify/reference/` using the §2 region bounds - each judge gets its region's pair;
@@ -609,9 +674,13 @@ and do not substitute a static read for it.
    `getImageData` over a `file://` load).
 6. **Then drive and re-capture the interaction / open states (6a).** They don't render at rest, so
    after the resting capture: `hover()` a message row and assert its bubble `getBoundingClientRect`
-   is unchanged (a shift means an in-flow hover toolbar — move it out of flow); `click()` a "N
+   is unchanged (a shift means an in-flow hover toolbar — move it out of flow); repeat on the
+   **topmost visible message** and assert the opened toolbar / menu rect sits **fully inside the
+   viewport** and does not cover the hovered bubble's text; `click()` a "N
    replies" button to open the thread and capture the open panel (sidebar vs full-pane is decided
-   here); open the reaction selector, actions menu, and details pane the same way. Each opened state
+   here); open the reaction selector, actions menu, and details pane the same way; type a long
+   multi-line draft into the composer and probe the input's rect against its 1-line rect (it must
+   keep filling its row and grow in height). Each opened state
    is its own screenshot + probe. A capture with zero driven states is incomplete.
 7. **If the app supports light/dark, capture BOTH themes.** Toggle the theme the way the app does (the
    `str-chat__theme-dark` class, the app's theme switch, or emulate `prefers-color-scheme` in the capture
@@ -640,7 +709,7 @@ Rendered values. Probe shape:
 // each probe -> { selector, rect, styles: { ... } }   OR   { selector, missing: true }
 ```
 
-### 6d. Compare protocol (region-judge fan-out; four checks per region, in order)
+### 6d. Compare protocol (region-judge fan-out; every check per region, in order)
 
 Each round, after the round's **single** capture:
 
@@ -675,11 +744,23 @@ Each round, after the round's **single** capture:
      is a FAIL even when every width passes. Example probe: emit
      `{ selector, rect, parentWidth, parentHeight }` for `.str-chat__channel`,
      `.str-chat__main-panel(-inner)`, the message list, and the background element, and assert both
-     `width >= parentWidth - scrollbar` and `height >= parentHeight - scrollbar`.
+     `width >= parentWidth - scrollbar` and `height >= parentHeight - scrollbar`. The composer's
+     input is part of this check: it must fill its row width, and its multi-line-draft rect (6c)
+     must be taller than its 1-line rect - an unchanged height or a clipped, scrolling single row
+     is a FAIL when the reference or its §7 row shows an expanding input. **Resize robustness
+     (final round only):** re-capture once at a second viewport width (spec width +25%) and re-run
+     just these fills probes - a container authored at a bare fixed px passes at the spec viewport
+     and betrays itself here (a pane, list, or background that no longer tracks its parent is a
+     FAIL; layout containers are fluid, per Step 5 > Fluid sizing).
    - **Structural presence** via the probe `missing` flags: every taxonomy signal routed to this
      region must exist in the DOM. A `missing:true` is a dropped region.
+   - **Default-leak check.** States specced by a §7 derived-design row (empty states, loading, the
+     actions surface) are judged against that row like any other. A captured state showing
+     recognizably unthemed SDK-default chrome - Stream's stock accent, type, or spacing inside an
+     otherwise themed app - is a FAIL against its derived row; "the reference doesn't show it" does
+     not exempt it.
 3. **The coordinator merges the returned rows** into the discrepancy table (`design-analysis.md`
-   §12). Every "Rendered" value is copied from this round's probe output / capture, and the Source
+   §13). Every "Rendered" value is copied from this round's probe output / capture, and the Source
    cell names the file - a row with no Source is UNVERIFIED, not PASS:
 
 | Region | Spec | Rendered (this round) | Source (capture file + probe) | Verdict | Fix |
@@ -690,7 +771,8 @@ Each round, after the round's **single** capture:
    of the applicable [`custom-ui.md`](custom-ui.md) contract (collected from the worker reports) must
    have a probe selector, a judge, and a table row. Before exit, diff the probe list against the
    taxonomy - any taxonomy entry with no probe is an unverified region (treat as FAIL), never a
-   silent omission. Each high-detail region (composer, one message row, one tile / card) must also
+   silent omission. Each high-detail region (composer, one message row, one quoted-reply message,
+   one tile / card) must also
    have an element crop cited in its Source cell - a full-page shot alone does not satisfy a
    high-detail row. A short table is an incomplete spec, not an early finish.
 
@@ -698,7 +780,7 @@ Each round, after the round's **single** capture:
 
 Fix **all** failing rows, **then** recapture **once** (work in batches - not one recapture per row).
 
-**Fix dispatch preserves ownership:** group the failing rows by owning worker (manifest §11) and
+**Fix dispatch preserves ownership:** group the failing rows by owning worker (manifest §12) and
 dispatch the fix briefs **in parallel, one per owner** - each brief carries its rows with BOTH
 measured values (spec vs rendered), the crop paths, and the probe slice. Rows in shared files the
 coordinator fixes itself. **Coupled rows spanning two owners** (the oscillation case below - they
@@ -787,6 +869,8 @@ Matching a design under time pressure breeds excuses. The discrepancy table deci
 | "The font won't install, so I'll note it as minor" | An unresolved row is `GAP - not matched` with both measured values, never "minor". |
 | "I'll `pnpm add` / `yarn add` playwright instead" | Any add in the app root corrupts its lockfile. Install only into the `.design-verify/` harness (`npm install --prefix`), whatever the app uses. |
 | "I wrote the probe / capture script" | Writing it is not running it. Run it this round; its real stdout is the evidence - an authored-but-unrun script proves nothing. |
+| "The reference doesn't show an empty state, so the default is fine" | Every rendered state has a spec row - sampled or derived (§7). An unthemed SDK default inside a matched design is a FAIL against its derived row. |
+| "The rail measures 320px in the reference, so `width: 320px` is correct" | The measured value is the *proportion at the spec viewport*, not a CSS literal. Containers are fluid (flex-basis / % / `clamp()`); bare fixed px on a container fails the resize-robustness probe (6d). |
 
 **Red flags - stop:**
 - Claiming "matches" without a capture taken **this round**.
@@ -844,8 +928,35 @@ Step 3); an unrouted mismatch is a `GAP - not matched` row, never a silent ship.
 - Placeholder: `additionalTextareaProps={{ placeholder: 'Enter message' }}` (default is "Send a
   message"). For a full string sweep use a `Streami18n` instance on `<Chat i18nInstance>`.
 - Send button `.str-chat__send-button`; attachment button lives under `.str-chat__attachment-selector`.
-  The attach button sits on the **left** by default - moving it is a layout override.
-- Round the input via `.str-chat__message-textarea-container` / `-with-emoji-picker`.
+  The attach button sits on the **left** by default - moving it is a layout override. The attach
+  **glyph** swaps without rebuilding the selector: override
+  `AttachmentSelectorInitiationButtonContents` (a `ComponentContext` slot, via `WithComponents`).
+- Input sizing / rounding: the textarea wrapper is `.str-chat__textarea` (inner element:
+  `.str-chat__textarea textarea`); the emoji-picker variant is
+  `.str-chat__message-textarea-emoji-picker-container`. (`.str-chat__message-textarea-container`
+  does **not** exist in v14.8 - grep the installed CSS.) The SDK textarea **auto-grows**: pass
+  `minRows` / `maxRows` to `TextareaComposer` and let the wrapper flex to fill the row - a
+  fixed-height input that clips a 3-line draft fails the verify loop's growth probe (6c/6d).
+- Rebuilding `MessageComposerUI`? `useMessageComposerContext()` returns
+  `{ handleSubmit, onPaste, recordingController, textareaRef }` - submit and voice recording
+  (`recordingController`) without re-implementing either; the recorder swap pattern is in the
+  [`custom-ui.md`](custom-ui.md) composer contract.
+
+**Read receipts** - `readBy` from `useMessageContext()` is populated **only for the latest-read
+message** by default; per-message ticks (WhatsApp-style blue checks on every read row) need
+`returnAllReadData` on `<MessageList>` (or derive read state from `channel.state.read`).
+Gray-ticks-everywhere-but-one-row is this, not CSS.
+
+**Quoted reply** - renders *inside* the message bubble: `.str-chat__quoted-message-preview`
+(`--own` modifier on your side) and `.str-chat__quoted-message-indicator`, with the
+`--str-chat__quoted-message-bubble-background-color` variable for its fill. Style it as a compact
+inset card (background + left accent bar + truncated text) and verify it with the quoted-reply
+fixture + element crop (6c) - it is a repeat offender for stray CSS.
+
+**Wallpaper / message-list background** - v14 scrolls the list inside
+`.str-chat__message-list-scroll`; paint the wallpaper there (docs examples still target
+`.str-chat__list`) so it covers the full scrollable pane, and remember 6d's full-height background
+check - a wallpaper that stops where the messages stop is a FAIL.
 
 **Avatars** - Stream renders a single initial/image. **Stacked group avatars are not built-in** -
 render them yourself in your custom channel-preview / header component from `channel.state.members`
