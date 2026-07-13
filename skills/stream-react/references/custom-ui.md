@@ -74,14 +74,13 @@ an effect must be torn down in cleanup.
 
 ### Custom channel rail: real-time contract
 
-**Keep `<ChannelList>` as the state/event owner whenever component injection can reach the design.** It
-already reconciles new membership, unloaded-message, removal, channel-update, and reconnect events.
-If a bespoke rail is genuinely required (for example, product-grouped conversations), fetch the live
-**ChannelList** page first and own that behavior explicitly: reconcile `notification.added_to_channel`,
-`notification.message_new`, `message.new`, relevant channel add/remove/update events, and
-`connection.recovered`; clean up the listener. **Do not wait for `message.new` to discover a new
-channel**—a user can be added when a channel is created before anyone sends a message. Do not re-query
-the full rail for read receipts alone.
+**Keep `<ChannelList>` as the query, watch, state, and event owner for every channel-navigation
+surface.** It already reconciles new membership, unloaded-message, removal, channel-update, and
+reconnect events. A product-grouped or otherwise bespoke rail is still a `<ChannelList>`: use its
+documented `renderChannels` callback or `ChannelListUI` injection to group and render the SDK-owned
+channels. **Do not mirror the list in application state or re-run `client.queryChannels()` from an
+event listener.** A user can be added when a channel is created before anyone sends a message, so a
+message-only listener misses the conversation entirely.
 
 ## The headless path - Video
 

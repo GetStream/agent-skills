@@ -241,7 +241,10 @@ symbol mappings from
   inside `<Channel>` (kill-list #8). Writing your own component for a prebuilt region - including
   porting an existing `renderX` implementation - is gated by [`RULES.md`](RULES.md) > Reference
   authority: load [`references/custom-ui.md`](references/custom-ui.md) first and fill its
-  completion contract.
+  completion contract. **Keep `<ChannelList>` as the query, watch, and real-time state owner.** For
+  a product-grouped or bespoke rail, render the SDK-owned list with its documented
+  `renderChannels` callback or `ChannelListUI` injection; do not maintain a parallel
+  `client.queryChannels()` result and re-fetch it on events.
 - **Channels** (sections 2, 7): three classes -> one `Channel` + type string; `OpenChannel` ->
   `livestream` type; distinct channels -> member-set channels with no id; every query cursor ->
   a stateless call.
@@ -321,11 +324,13 @@ Run all of these; each catches a failure a real migration shipped.
    `grep -rlc "str-chat" dist/assets/*.js` or equivalent for the bundler) and sanity-check the
    main chunk grew accordingly. A trial migration shipped a "successful" build whose bundle
    contained **no Stream SDK at all** - a stale artifact that step 2 alone blessed.
-4. **Runtime smoke:** boot the app, log in as two users (two tabs), send a message each way.
-   Assert: it appears exactly **once** for the sender (kill-list #1), arrives live for the
-   receiver, unread badges and typing indicators move, and the console shows no errors. Use the
-   in-session browser tooling per [`references/design-matching.md`](references/design-matching.md)'s
-   tool ladder; if none works, say so and have the user run this check - do not skip it silently.
+4. **Runtime smoke:** boot the app, log in as two users (two tabs), and have the buyer create a
+   conversation **before sending its first message**. Assert the seller's channel rail gains it
+   live with no page refresh or `queryChannels()` re-fetch. Then send a message each way. Assert:
+   it appears exactly **once** for the sender (kill-list #1), arrives live for the receiver, unread
+   badges and typing indicators move, and the console shows no errors. Use the in-session browser
+   tooling per [`references/design-matching.md`](references/design-matching.md)'s tool ladder; if
+   none works, say so and have the user run this check - do not skip it silently.
 5. **Design verify loop** (step 6) reaches its exit condition.
 6. **Ledger closure:** every parity-ledger row is Ported / Rewritten / N/A / GAP-with-decision.
    A `GAP - provisional` row (section 2, non-interactive default) closes the gate only if the
