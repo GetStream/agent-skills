@@ -7,7 +7,7 @@ metadata:
   requires:
     bins: ["getstream", "node", "npm"]
 allowed-tools: >-
-  Read, Write, Edit, Glob, Grep,
+  Read, Write, Edit, Glob, Grep, Task,
   Bash(getstream *),
   Bash(npx *), Bash(npm install *), Bash(npm run *),
   Bash(yarn *), Bash(pnpm *),
@@ -41,7 +41,7 @@ This skill builds, enhances, audits, and migrates Stream Chat, Video, and Feeds 
 - **Track F:** skip onboarding and go directly to the audit in [`references/VIDEO.md`](references/VIDEO.md). **Do not enter Start or any build step.**
 - **Track M:** skip onboarding and Read [`migrate.md`](migrate.md) first; it fetches the live release guide before any edit. **Do not enter Start or any scaffold task.**
 
-**Styling-depth flag (orthogonal to the track).** If the request carries a **target appearance** - an attached screenshot, a Figma frame, or "make it look like WhatsApp / Slack / <app>" - route through [`references/design-matching.md`](references/design-matching.md): a reference design is a **checklist of regions, not a color tweak**. Its pipeline is **Classify -> Spec -> Route -> Ground -> Build -> Verify**: classify the fidelity tier + viewport, write a per-screen spec that **names the Stream concept behind every visual signal** via per-product identification checklists (chat / video / feeds), route each region to a component + mechanism (theming / injection -> the [`references/custom-ui.md`](references/custom-ui.md) completion contract / bespoke), ground the names against the live docs, build batched, and close with **an empirical verify loop - screenshot + computed-style checks via session browser tooling or a Playwright fallback - iterated until the spec table passes**. This composes with the track: **Track A** scaffolds first, then matches before Step 4's build; **Track E** matches within E3. Load it **before** writing UI.
+**Styling-depth flag (orthogonal to the track).** If the request carries a **target appearance** - an attached screenshot, a Figma frame, or "make it look like WhatsApp / Slack / <app>" - route through [`references/design-matching.md`](references/design-matching.md): a reference design is a **checklist of regions, not a color tweak**. Its pipeline is **Classify -> Design analysis -> Route -> Ground -> Build -> Verify**, run as a coordinator-agent orchestration (parallel subagents where the harness dispatches them; inline serially where not): classify the fidelity tier + viewport, produce a fine-grained design analysis at `.design-verify/design-analysis.md` that **names the Stream concept behind every visual signal** via per-product identification checklists (chat / video / feeds), route each region to a component + mechanism (theming / injection -> the [`references/custom-ui.md`](references/custom-ui.md) completion contract / bespoke), ground the names against the live docs, build batched, and close with **an empirical verify loop - screenshot + computed-style checks via session browser tooling or a Playwright fallback - iterated until the spec table passes**. This composes with the track: **Track A** scaffolds first, then matches before Step 4's build; **Track E** matches within E3. Load it **before** writing UI.
 
 ---
 
@@ -104,7 +104,7 @@ This builder runs three classes of network-touching commands. Each is listed her
 
 ## Builder Steps
 
-Execute phases **in order** (later steps depend on earlier ones). Do **not** run independent phases in parallel. Shell discipline (one `bash -c` per phase, no `bash -ce`, `getstream login` standalone) lives in [`../stream/RULES.md`](../stream/RULES.md) > Shell discipline.
+Execute phases **in order** (later steps depend on earlier ones). Do **not** run independent phases in parallel. **One exception:** when [`references/design-matching.md`](references/design-matching.md) is active, its Orchestration section governs scheduling - the design-analysis agent runs concurrently with the Steps 0-3 setup work, and builds / verifies fan out per its role table; everything else here stays sequential. Shell discipline (one `bash -c` per phase, no `bash -ce`, `getstream login` standalone) lives in [`../stream/RULES.md`](../stream/RULES.md) > Shell discipline.
 
 **Two-call exception:** If you must Read JSON from a `getstream api` call and then choose IDs, use one call for the read, one batched call for all creates.
 
@@ -116,7 +116,7 @@ Authentication is handled by `getstream init` (Step 2) - it opens the browser as
 
 ### Step 1b: Theme + app pick
 
-Ask both setup questions in **one message** before doing anything else - a single pause, the same "ask exactly once, then act" pattern the other platform packs use for credentials. Build the app options from what is already in context: the org/app already configured in this project by a prior `getstream init`, if any. If none is configured yet, `getstream init` lists your orgs/apps interactively when it runs (Step 2) - don't try to enumerate them with a raw `getstream api` call.
+Ask both setup questions in **one message** before doing anything else - a single pause, the same "ask exactly once, then act" pattern the other platform packs use for credentials. Build the app options from what is already in context: the org/app already configured in this project by a prior `getstream init`, if any. If none is configured yet, `getstream init` lists your orgs/apps when it runs (Step 2) - interactively with a TTY; in a non-interactive shell it writes a `.stream/init-*.yaml` command file to uncomment instead ([`builder.md`](builder.md) > Provisioning documents the exact headless sequence). Don't try to enumerate them with a raw `getstream api` call.
 
 > **Quick setup - two questions:**
 > 1. **Theme:** I can use a random shadcn theme, or you can design your own at [ui.shadcn.com/create](https://ui.shadcn.com/create) and share the `--preset` value (e.g. `--preset b1Gdi7z7r`). Random, or do you have a preset? *(If you already shared a screenshot or Figma, I'll match that instead - skip this.)*

@@ -72,6 +72,17 @@ Provider-less fallback (non-channel surfaces only): drive the client directly - 
 Strict mode protection) - never `getInstance()` on the client. Any `channel.on(...)` subscription in
 an effect must be torn down in cleanup.
 
+### Custom channel rail: real-time contract
+
+**Keep `<ChannelList>` as the state/event owner whenever component injection can reach the design.** It
+already reconciles new membership, unloaded-message, removal, channel-update, and reconnect events.
+If a bespoke rail is genuinely required (for example, product-grouped conversations), fetch the live
+**ChannelList** page first and own that behavior explicitly: reconcile `notification.added_to_channel`,
+`notification.message_new`, `message.new`, relevant channel add/remove/update events, and
+`connection.recovered`; clean up the listener. **Do not wait for `message.new` to discover a new
+channel**—a user can be added when a channel is created before anyone sends a message. Do not re-query
+the full rail for read receipts alone.
+
 ## The headless path - Video
 
 Build custom layouts from `useCallStateHooks()` (`useParticipants`, `useCameraState`,
@@ -154,7 +165,7 @@ is the durable part, the *names* come from the fetch.
 | Reactions: display + add | `<MessageReactions/>` + `handleReaction`; if the prebuilt list doesn't render inside your layout, render pills from `message.reaction_groups` + a `type→emoji` map. Custom reaction types must be slugs (`[A-Za-z0-9_.-]`, **not** emoji chars) and registered in `reactionOptions` | [ ] |
 | Quoted / replied-to parent | render `message.quoted_message` preview | [ ] |
 | Thread reply indicator | `<MessageRepliesCountButton/>` + `handleOpenThread` | [ ] |
-| Read / delivery receipts (own messages) | `<MessageStatus/>` | [ ] |
+| Read / delivery receipts (own messages) | `<MessageStatus/>`; per-message ticks (WhatsApp-style) need `returnAllReadData` on `<MessageList>` - the default populates `readBy` **only on the latest-read message**, so every earlier row renders "delivered". Gray-ticks-everywhere-but-one is this, not CSS | [ ] |
 | Edited / deleted state | `message.message_text_updated_at` / `message.deleted_at` | [ ] |
 | Actions menu: reply / edit / delete / pin / flag | `<MessageActions/>` - not a dead `...` button | [ ] |
 | Same-author grouping | `groupStyles` from `useMessageContext()` (regular `<MessageList>`); `firstOfGroup` / `endOfGroup` / `groupedByUser` are set by the **virtualized list only** and are `undefined` in the regular list - don't gate avatars/radii on them there. When neither is populated, compute grouping from the adjacent messages in `useChannelStateContext().messages` (same `user.id` within a short time window). | [ ] |
