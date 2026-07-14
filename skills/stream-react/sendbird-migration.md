@@ -306,8 +306,8 @@ Then hand the visual work to [`references/design-matching.md`](references/design
 with the **section 0 baseline as the reference design**: screenshots classify as Pixel tier; a
 code-derived spec classifies as Lo-fi (structural match) **with one override** - the `colorSet` /
 CSS hexes were read from code, not sampled from a sketch, so include them as exact, measured
-palette rows despite Lo-fi's no-sampling rule. Its pipeline (Classify -> Spec -> Route -> Ground
--> Build -> Verify)
+palette rows despite Lo-fi's no-sampling rule. Its pipeline (Classify -> Design analysis -> Route
+-> Ground -> Build -> Verify)
 owns the capture-and-compare loop - including screenshotting the **migrated** app, which is
 mandatory regardless of which baseline rung you had. Do not declare the design matched from code
 review; neither real trial run captured a single screenshot, and both shipped unverified skins.
