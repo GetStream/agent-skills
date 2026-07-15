@@ -89,17 +89,106 @@ paddings and gaps; and the **sampled colors** (bubble fills, accent, ticks, back
 roughly like it" is the failure mode - a region with the right color but the wrong size or spacing
 still fails the eye.
 
-**Getting sizes right (optional `sips` for scale).** Mobile screenshots are usually `@2x`/`@3x`, so
-raw pixel counts are not points. When an exact dimension matters, get the scale and convert:
+### Getting sizes right — MEASURE, do not eyeball round numbers
 
-```bash
-sips -g pixelWidth -g pixelHeight <reference.png>   # e.g. 1179 x 2556 -> ÷3 = 393x852 pt (@3x)
-```
+Picking `24`, `28`, `44` by eye is the recurring failure, and it shows most in the composer (wrong
+input height, oversized icons, wrong paddings). "Match by proportion" is not enough when an exact
+dimension matters. Extract the real numbers off the reference and land them in RN style values:
 
-Then `points = pixels / scale`. Otherwise match by **proportion and theme tokens** (reuse the SDK's
-spacing scale so custom pieces align with un-overridden parts) rather than eyeballed magic numbers.
-Match **font weight** as its own dimension - measure/estimate each text role separately (name vs.
-body vs. timestamp); a wrong weight reads "too bold / too thin" even at the right size.
+1. **Find the scale, then work in LOGICAL px.** Mobile screenshots are usually `@2x`/`@3x`, and RN
+   `StyleSheet` values are **logical px** (density-independent — the same unit iOS calls points). Get
+   the pixel size and divide:
+   ```bash
+   sips -g pixelWidth -g pixelHeight <reference.png>   # e.g. 1179 x 2556 → ÷3 = 393x852 (@3x)
+   ```
+   1179 ÷ 393 = 3 → the shot is **@3x**, so **1 logical px = 3 device px**. For every element you
+   measure off the image: `logical = pixels / scale`.
+2. **Extract element sizes AUTOMATICALLY — don't eye them off the image.** `magick`/Python+PIL/numpy
+   are available; threshold the cropped region and read real bounding boxes. Icons are **dark glyphs
+   on a light bar** → threshold dark, project onto columns, cluster into glyphs, measure each box. The
+   input field is the **wide near-white band** → its row-span is the field height, its white-column
+   span is the field width. This script (adapt the crop band + thresholds per design) prints logical
+   px directly:
+   ```python
+   from PIL import Image; import numpy as np
+   im = Image.open(REF).convert("RGB"); W,H = im.size; S = 3.0      # @3x → ÷3
+   g = np.asarray(im).astype(int).mean(2)
+   band = g[H-380:H, :]                                              # bottom = composer
+   def run(r,t=248):                                                 # longest near-white run in a row
+       b=c=0
+       for v in r:
+           c=c+1 if v>t else 0; b=max(b,c)
+       return b
+   wr = np.array([run(g[y]) for y in range(H-380,H)]); ys=np.where(wr>W*.45)[0]+(H-380)
+   ft,fb = ys.min(),ys.max(); print("field h", (fb-ft+1)/S)         # logical px
+   wc = np.where(g[(ft+fb)//2] > 246)[0]; print("field w", (wc.max()-wc.min())/S)
+   dark = (g[ft-6:fb+6,:] < 110); cols=np.where(dark.sum(0)>2)[0]    # icon glyphs
+   # cluster contiguous columns (gap>8) → each glyph's w/h in logical px
+   ```
+   Record each glyph's w/h and the field's h/w. **These exact numbers are your spec.**
+3. **Controls are almost always SMALLER than you guess — and often smaller than the SDK default.**
+   Measure, then match the measured size; don't fall back to the SDK's default input height or to
+   round numbers. Confirm the SDK's actual default dimensions from the **installed package**, not
+   memory, then decide whether the reference is smaller.
+4. **The field width is the LEFTOVER — oversized buttons steal it.** The input gets
+   `total − (leading cluster + trailing cluster + gaps)`. If your buttons are too big the field is too
+   narrow. Size buttons to the measured glyph sizes and keep gaps on the theme's spacing scale, and
+   the field reclaims its width.
+5. **Centering: verify by MEASUREMENT, not eye.** Find each glyph's center-Y and its container's
+   center-Y (from the field's white-band row span) and confirm the offset ≈ 0. A consistent offset
+   means your button frame height ≠ the field's rendered height (a bottom-sunk or floated control) —
+   frame side buttons to the measured field height and center within, rather than hand-tuning
+   one-sided padding.
+6. **Grow the input pill with PADDING, not a fixed height — or the text stops centering.** the composer input pill
+   (`messageComposer.inputBoxWrapper`) lays its content out **top-down** and does **not** vertically
+   center the text row. If you make the pill taller with a fixed `minHeight` / `height` on the
+   wrapper, the extra height all falls **below** the single line of text, which then hugs the top —
+   the classic "I increased the composer size and now the input isn't centered" bug. Size the pill
+   from **symmetric vertical padding on the input** instead (`messageComposer.inputBox`
+   `paddingTop` == `paddingBottom`): a single line is then centered by construction and it still
+   grows for multi-line. Corollary: don't zero the input's own vertical padding and then re-add the
+   height via `minHeight` — that guarantees the off-center result.
+7. **Land measured numbers in RN theme keys / style values, and reuse the SDK spacing scale** for
+   gaps/radius so custom pieces align with un-overridden parts — but tokens are for spacing/radius,
+   *not* a license to keep default control/field **sizes**; those come from measurement.
+
+### Weight is its own dimension — measure and match it (separately from color)
+
+Every glyph and text role has a **weight** as well as a size and color, and the eye is sensitive to it
+("feels too bold / too thin"). Match it from the reference; don't guess:
+- **Different text ROLES usually have different weights — measure each separately.** A sender name, the
+  message body, and a timestamp are typically distinct weights (name heavier, body regular/light). The
+  recurring miss is treating "text" as one weight.
+- **Map the stroke ÷ font-size ratio to an RN `fontWeight` string**: ≈0.05→`'300'`, ≈0.075→`'400'`, ≈0.09→`'500'`, ≈0.11→`'600'`, ≈0.13+→`'700'`.
+  Set each role independently in the theme's text keys. Note `'400'` often renders heavier than a
+  reference's light body — re-measure your own render and step down if so.
+- **Don't conflate color with weight — they are independent.** A glyph that looks "too light" may be a
+  wrong base **color** (or a sub-pixel stroke antialiasing to gray), not a too-thin weight; a glyph
+  that looks "too bold" has too heavy a weight. Fix the one that's actually wrong.
+- **Verify BOTH, by measurement:** the rendered role's **stroke width** ≈ the reference's, AND its
+  **dark-core color** ≈ the reference's. Two separate checks.
+
+### Follow EVERY color from the reference — sample it, don't guess (and sample each sub-part)
+
+Invented/guessed colors are a recurring miss. **Sample every color off the reference and apply the
+measured value** — background/wallpaper, bubble fills, composer bar, each glyph, borders, **and the
+read-receipt ticks**. Don't assume a "known" brand color; only measuring catches the real one.
+- **Multi-part elements have more than one color — sample each part separately.** A two-tone control
+  (e.g. a gray circle with a white arrow) is easy to invert if you guess; sample the circle and the
+  glyph independently.
+- **Sampling gotcha:** small colored UI elements get swamped by similar colors in **photo
+  attachments** (blue ticks vs. a blue sky/water — the photos can hold 200k blue pixels vs. ~800 tick
+  pixels). Isolate the element — restrict the search to its context (e.g. tick pixels sitting on the
+  bubble rows, not the photo rows) before averaging — and sample the saturated **core**, not the
+  antialiased edges.
+- **A background may be a TEXTURE, not a flat color.** Sample **many** points across the background:
+  uniform (low std-dev) → flat fill → a color key; varying (faint repeated marks, small std-dev,
+  darker mins) → a **pattern** → reproduce it as a tiled background component (don't flatten it — the
+  texture is often what separates the chat area from a plain composer). Bundle the actual asset or a
+  cropped patch and tile it; if unavailable, approximate a faint motif and tell the user it's an
+  approximation.
+- **Verify by re-sampling YOUR render and diffing against the reference** — run the same sampling on a
+  screenshot of what you built, per sub-part, and compare the measured values; don't eyeball it.
 
 **Light/dark carve-out - don't pin structural surfaces to a light-mode literal.** The reference is
 almost always a light screenshot. **Pin** the sampled **brand/content** colors (bubble fills,
@@ -120,6 +209,8 @@ The **Route to** column names the *mechanism*; **confirm the exact theme key / s
 the manifest-selected docs and the installed package, not from memory. For the rules behind each axis
 see the [Theming Blueprint](./CHAT-REACT-NATIVE-blueprints.md#theming-blueprint) and the
 [Component Override Blueprint](./CHAT-REACT-NATIVE-blueprints.md#component-override-blueprint).
+
+For every region note the followings: color, background color, border, border radius, padding / gap, typography (font, font weight, font and line size) - save findings to a file called `design-analisys.md`.
 
 #### Chat
 
@@ -148,7 +239,7 @@ see the [Theming Blueprint](./CHAT-REACT-NATIVE-blueprints.md#theming-blueprint)
 | Content layout | Message content order; typical variations: text first or last (default layout is text last) | Functional | `messageContentOrder` prop on `Channel` |
 | Bubble | fill color, border, corner radius, max width | Theming (+ Layout) | `chatBg*` and `chatBorder*` semantic variables, `messageItemView` theme keys |
 | Grouping | consecutive same-author messages, who shows an avatar | Layout | `useMessageContext()` group flags |
-| Sender name placement | shown at all (1:1 often hides it, groups show it)? **inside** the bubble as a first line vs. **above/outside** as a separate row? incoming only or own too? first-of-group or every message? | Layout | inside → `MessageContentTopView` / `MessageContentBottomView` - **reproduce the content body's `paddingHorizontal` (read the value from `MessageContent.tsx` in the installed package) or the name sits flush to the bubble edge while the text is inset — see the Spacing row's in-bubble slot padding trap**; ensure rounded border doesn't hide content; above → `MessageHeader` / `MessageFooter` (default `MessageFooter` - remove it if you add a custom one); `useMessageContext()` group flags |
+| Sender name placement | shown at all (1:1 often hides it, groups show it)? **inside** the bubble as a first line vs. **above/outside** as a separate row? incoming only or own too? first-of-group or every message? | Layout | inside → `MessageContentTopView` / `MessageContentBottomView` - **ensure proper padding is applied to custom sections too**; ensure rounded border doesn't hide content; above → `MessageHeader` / `MessageFooter` (default `MessageFooter` - remove it if you add a custom one); `useMessageContext()` group flags |
 | Timestamp + delivery/read receipts placement | **below/outside** the bubble (Stream default) vs. **inside it** (trailing corner, WhatsApp/iMessage) | Theming (+ Layout if repositioned) | default via `MessageFooter`; inside → `MessageContentBottomView` / `MessageContentTrailingView` (always set `alignSelf`; **reproduce the content body's `paddingHorizontal`/`paddingBottom` — these slots have no padding of their own, so the timestamp will otherwise touch/clip at the bubble's right & bottom edge; see the Spacing row**; remove `MessageFooter` if you add a custom one); outside → `MessageFooter` and `MessageHeader` |
 | Pinned / sent-to-channel / saved / reminder status | present? | Layout | default `MessageHeader` |
 | Read/delivery indicator glyphs | single/double tick, color | Theming (+ Layout if repositioned) | Theming for recoloring, `MessageStatus` if ticks/indicator need to be different |
@@ -190,6 +281,16 @@ Opened when the attach button is clicked
 | Region | What to check | Axis | Route to |
 |---|---|---|---|
 | Attachment bar + content | Layout (one row or multiple rows?) and position (above or under selected attachment type content) of the bar? Custom attachment bar icons (gallery, polls, files, etc.)?  Or fully custom layout (for example list)?  | Theming for recolor; Override for custom icons; `AttachmentPickerSelectionBar` for the bar; `AttachmentPicker` for a fully custom picker; logic in `useAttachmentPickerContext()`. **Don't just re-render the default picker buttons and call it customized** — reproduce the reference's item layout (icon + label), selected-tab tint, and bar background. Build labeled items as `Pressable`s that call the SAME context actions the SDK buttons use (`attachmentPickerStore.setSelectedPicker(...)`, `useMessageInputContext().pickFile()` / `openPollCreationDialog({ sendMessage })`), and read the active tab from `useAttachmentPickerState().selectedPicker`. **Bar position:** the default host renders `AttachmentPickerSelectionBar` at the TOP of the sheet (above the grid); a bottom bar requires replacing the whole `AttachmentPicker` host via `OverlayProvider`'s `AttachmentPickerComponent` (internal bottom-sheet wiring) — call that out if you keep it on top. Only show tabs the app backs (e.g. Gallery/File/Poll); drop unbacked ones (Location/Checklist) rather than shipping dead tabs. **Mixed camera+library picker:** if the reference shows a single combined picker (live camera preview inline with the photo grid, as in iOS's own sheet), RN Chat has no combined picker — split it into **separate library and camera tabs** (`MediaPickerButton` → `images` tab, `CameraPickerButton` → `camera-photo`/`camera-video`), don't try to fake one merged surface. Check if picker is open or not with `attachmentPickerStore.state.getLatestValue().selectedPicker` |
+
+> **Gap between the composer and the attachment picker → you forgot `topInset` on `Channel`.** When the picker opens, the docked composer shifts up by the picker's full reserved height (`attachmentPickerBottomSheetHeight`, default `333`), but the bottom sheet's snap position is computed from `Channel`'s **`topInset`**. If `topInset` is missing/too small, the sheet is clamped short and opens *low* while the composer has already shifted its full amount → a large empty band between them (looks like the picker "detached" from the input).
+>
+> **Rule:** set `topInset` on `Channel` to the **exact top offset the message list starts at**, and pass the **same value** as `keyboardVerticalOffset`. Compute it from whatever occupies the top:
+> - **Native nav header:** `useHeaderHeight()` (RN CLI / Expo Router ≤ 55) — this is the case the CHAT-REACT-NATIVE docs already cover.
+> - **Custom in-screen header** (`headerShown: false` + your own header `View`, common for a WhatsApp/Telegram-style floating header): there is *no* `useHeaderHeight()` to remind you — compute it yourself as `insets.top + <your header content height>` and pass it as **both** `topInset` and `keyboardVerticalOffset`. This is the easy-to-miss case: the composer looks fine until someone opens the picker.
+>
+> **Do NOT try to close the gap with `bottomInset`.** `bottomInset` shrinks the composer's upward shift (`attachmentPickerBottomSheetHeight - bottomInset`); dialing it up moves the input *down, under* the sheet and hides it. `bottomInset` is only for a bottom tab bar that owns the safe area — not a lever for picker spacing.
+>
+> **Verify with the picker OPEN, and wait for the image grid to load.** A picker screenshot taken before the device photo library / remote thumbnails finish loading shows a short, half-empty grid that *also* looks like a gap — re-screenshot after the grid settles before diagnosing (and open to the **Files** tab per SIMULATOR-VERIFICATION to avoid the un-dismissable photo-permission prompt).
 
 **Thread surfaces** (if in scope)
 
@@ -276,8 +377,8 @@ Applies across all products.
 | Region | What to check | Axis | Route to |
 |---|---|---|---|
 | Fonts, accent color | — | Theming | theme font / color keys |
-| Light/dark behavior | pin brand colors, keep structural surfaces semantic | Theming | see the light/dark carve-out above; verify both modes |
-| Spacing | component overrides | Theming | Ensure that overriden components have proper spacing; especially inside a rounded message bubble. **In-bubble slot padding trap:** `MessageContentTopView` / `MessageContentBottomView` / `MessageContentTrailingView` render inside `containerInner` (which has **no** horizontal padding — only `borderRadius` + `overflow:hidden`), as **siblings** of the SDK's padded content body (the `View` wrapping the text/quoted-reply). So a custom name/timestamp/status in these slots sits **flush against the bubble edge** while the message text stays inset. Reproduce the content body's `paddingHorizontal` — read the exact value the SDK applies from `MessageContent.tsx` (the `paddingHorizontal` on the content-body `View`, and the `primitives` spacing token it resolves to) in the installed `node_modules`, rather than hardcoding a number that can drift across versions — and add `paddingTop`/`paddingBottom` so the top row clears the rounded top corner and the bottom row clears the bubble bottom. Verify by checking the name's left edge and the timestamp's right edge line up with the text, not the bubble border. |
+| Light/dark behavior | pin brand colors, keep structural surfaces semantic | Theming | Build **two palettes** and select on `useColorScheme()` (from `react-native`); pin brand/content, keep surfaces semantic (light/dark carve-out above). **Verify by flipping the OS appearance** and re-screenshotting — see the dark-mode toggle in [SIMULATOR-VERIFICATION.md](SIMULATOR-VERIFICATION.md); confirm surfaces flip while pinned brand colors hold. |
+| Spacing | component overrides | Theming | Ensure that overriden components have proper spacing; especially inside a rounded message bubble. |
 
 ### When the reference is inconclusive - ask, don't guess
 
@@ -397,9 +498,20 @@ Presence-and-color is not enough; verify **size, position, and proportion** too.
    `simctl` can't tap, so reach non-initial screens with temporary in-code navigation and drive
    composer/picker states via SDK hooks - see the fast loop, stale-bundle trap, and cleanup steps in
    [SIMULATOR-VERIFICATION.md](SIMULATOR-VERIFICATION.md).
-3. **Build a comparison table.** For each region from Step 1: target attribute (size / position /
+3. **Build a comparison table.** For each region from `design-analisys.md` target attribute (size / position /
    color / presence) -> what rendered -> **PASS / FAIL**. Walk the whole checklist; don't stop at the
-   regions that happen to look right.
+   regions that happen to look right. **Numbers alone lie** — a glyph box can "match" (±1 logical px)
+   while the field is too tall, a stroke too heavy, or a control off-center. So for the high-detail
+   regions (the composer especially), screenshot on the **same device class** (same `@2x`/`@3x`), crop
+   **both** bars at **native resolution** (same scale → no resizing, so sizes compare 1:1), and stack
+   them to eyeball the real differences:
+   ```bash
+   magick "$REF"  -crop ${W}x210+0+${refY}  +repage ref.png    # reference region
+   magick "$MINE" -crop ${W}x210+0+${mineY} +repage mine.png   # your render (find Y via the field-band script)
+   magick ref.png mine.png -background black -append compare.png  # stack; view it
+   ```
+   On the stack, check what the numbers miss — field height/compactness, stroke weight, vertical
+   centering of each control, overall balance — then re-measure to confirm fixes.
 4. **Re-check the silently-lost ones explicitly, every time:** the **incoming-message avatar** and
    **grouping**; the **nav header** (height, title, back); the **composer in BOTH states** (at-rest
    vs. typing - the send/mic swap); **metadata placement**; reaction display; attachment rendering.
