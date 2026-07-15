@@ -124,7 +124,7 @@ After creating demo channels, summarize without secrets and **without printing u
 
 #### C3 - Send demo messages idempotently (only if the user asked for messages or more demo data) [Chat]
 
-Use `SendMessage` (confirm its body shape with `getstream api SendMessage -h`). Each message's `user_id` must belong to an existing user (so use the namespaced demo users from C1, or the token user). Tag every seeded message with a stable `custom.seed_key` so a re-run can detect and skip already-seeded messages.
+Use `SendMessage` (confirm its body shape with `getstream api SendMessage -h`). Each message's `user_id` must belong to an existing user (so use the namespaced demo users from C1, or the token user). Tag every seeded message with a stable `custom.seed_key` so a re-run can detect and skip already-seeded messages. Don't try to backdate messages.
 
 Before sending, check whether the channel already contains a message with the same `seed_key`:
 
@@ -205,6 +205,20 @@ After C6 + C7, summarize without printing tokens:
 > Configured `foryou` feed group with `popular` selector (`min_popularity: 1`, `cutoff_window: 7d`). Seeded 1 like per demo activity so they clear the popularity threshold. The connected user's `foryou` tab should render these on first launch.
 
 Do not run C4 through C7 when Feeds is not in scope, or when the user only asked for credentials. If only C4 + C5 ran (timeline-only demo, no Explore tab), `foryou` stays empty and that is fine - the Home tab still works.
+
+### Channel-type configuration - disable threads (optional) [Chat]
+
+<a id="disable-threads"></a>Some feature toggles live on the **channel type**, not on the client. Thread replies are one: whether the SDK surfaces a reply-in-thread affordance is governed by the `replies` setting on the `messaging` channel type (enabled by default). If a design has no threads (see the thread scope gate in [`references/design-matching.md`](references/design-matching.md)), turn them off at the source so the UI never offers a thread action the design lacks:
+
+```bash
+# Confirm the body shape first, then disable thread replies on the messaging type.
+getstream api UpdateChannelType -h
+getstream api UpdateChannelType --name messaging --request '{"replies":false}'
+```
+
+- This is a **mutating, app-wide** setting - it affects **every** channel of the `messaging` type, not just demo channels. Only run it on a fresh / scaffold app, or after the same non-empty-app confirmation gate as Step C0. Do not silently reconfigure a channel type in an app that already has real data.
+- Follow the CLI-safety rule (confirm the endpoint and body with `getstream api UpdateChannelType -h` before running; only mutate after the user confirms no threads).
+- Reversible and symmetric: re-enable with `--request '{"replies":true}'`.
 
 ### Step D - Proceed automatically
 
