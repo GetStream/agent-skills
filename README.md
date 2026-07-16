@@ -10,9 +10,9 @@ Install the [Stream CLI](https://getstream.io), then:
 getstream skills
 ```
 
-With no arguments, `getstream skills` installs the default set - the `stream` router (which includes the CLI layer), `stream-builder`, and `stream-docs`. Platform packs (`stream-swift`, `stream-android`, `stream-react-native`, `stream-flutter`) install on demand via `getstream skills <name>` the first time a task needs them. To set up a project at the same time (auth, org/app selection, credentials), run `getstream init` instead.
+With no arguments, `getstream skills` installs the default set - the `stream` router (which includes the CLI layer), `stream-builder`, and `stream-docs`. The web React pack (`stream-react`) and the platform packs (`stream-swift`, `stream-android`, `stream-react-native`, `stream-flutter`) install on demand via `getstream skills <name>` the first time a task needs them. To set up a project at the same time (auth, org/app selection, credentials), run `getstream init` instead.
 
-Use `/stream` for generic routing, or invoke a skill directly with `/stream-builder`, `/stream-docs`, `/stream-swift`, `/stream-android`, `/stream-react-native`, or `/stream-flutter`.
+Use `/stream` for generic routing, or invoke a skill directly with `/stream-builder`, `/stream-docs`, `/stream-swift`, `/stream-android`, `/stream-react-native`, `/stream-flutter`, or `/stream-react`.
 
 ## Skills
 
@@ -23,10 +23,11 @@ Use `/stream` for generic routing, or invoke a skill directly with `/stream-buil
 | `/stream-builder` | Scaffold a new web app, or add Chat/Video/Feeds/Moderation to an existing one | "build me a ... app", "scaffold", "add Chat to this app", "integrate Video" |
 | `/stream-swift` | Build or integrate Stream in Swift/SwiftUI/UIKit/iOS apps | Swift, SwiftUI, UIKit, iOS, Xcode |
 | `/stream-android` | Build or integrate Stream in Android/Jetpack Compose apps | Android, Jetpack Compose, Kotlin, Android Studio, Gradle |
+| `/stream-react` | **Default web pack** - scaffold, enhance, audit, migrate/upgrade, or migrate-from-Sendbird a React / Next.js app | "build me a ... app", "scaffold", "add Chat to this app", "integrate Video", "upgrade stream-chat-react", "migrate from Sendbird" |
 | `/stream-react-native` | Create, build, or integrate Stream Chat or Stream Video React Native in RN CLI or Expo apps | React Native, Expo, `stream-chat-react-native`, `stream-chat-expo`, `@stream-io/video-react-native-sdk`, video call, livestream, audio room, ringing |
 | `/stream-flutter` | Build or integrate Stream Chat in Flutter apps | Flutter, Dart, `stream_chat_flutter`, `stream_chat_flutter_core` |
 
-The router (`/stream`) owns routing, the CLI layer (queries, app config, onboarding), and the cross-cutting rules in [`skills/stream/RULES.md`](skills/stream/RULES.md). Platform sub-skills can add their own `RULES.md`.
+The router (`/stream`) owns routing, the CLI layer (queries, app config, onboarding), and the cross-cutting rules in [`skills/stream/RULES.md`](skills/stream/RULES.md). Platform sub-skills can add their own `RULES.md`. **Web React / Next.js work routes to `/stream-react` by default** - `/stream-builder` is picked only when named explicitly.
 
 ## What gets installed
 
@@ -51,14 +52,15 @@ Decline and the builder still runs - Stream reference files cover the SDK wiring
 
 ## What your agent can do
 
-- **Scaffold a full app** - Next.js + Tailwind + Stream SDKs, wired end-to-end in one shot (`/stream-builder`)
-- **Add products to existing apps** - drop Chat, Video, or Feeds into a project that's already running (`/stream-builder`)
+- **Scaffold a full web app** - Next.js + Tailwind + Stream SDKs, wired end-to-end in one shot (`/stream-react`)
+- **Add products to existing web apps** - drop Chat, Video, or Feeds into a React / Next.js project that's already running (`/stream-react`)
+- **Migrate a web app** - upgrade a Stream SDK version, or migrate an existing Sendbird app to Stream Chat React (`/stream-react`)
 - **Build and extend Swift apps** - wire Stream into SwiftUI or UIKit Xcode projects with iOS-specific setup patterns (`/stream-swift`)
 - **Build and extend Android apps** - wire Stream into Jetpack Compose Android Studio / Gradle projects with Android-specific setup patterns (`/stream-android`)
 - **Build and extend React Native apps** - wire Stream Chat or Stream Video into Expo or RN CLI projects (`/stream-react-native`)
 - **Query live data** - "any active calls?", "show flagged messages", "list my channels" - natural language to the `getstream` CLI (`/stream`)
 - **Configure apps and moderation** - channel types, roles, permissions, blocklists, automod - via the `getstream` CLI (`/stream`)
-- **Answer SDK questions** - token patterns, strict mode, client/server instantiation, theme wiring (`/stream-builder` or `/stream-docs`)
+- **Answer SDK questions** - token patterns, strict mode, client/server instantiation, theme wiring (`/stream-react` or `/stream-docs`)
 - **Search live SDK docs** - ask questions about any Stream SDK, framework, or version; answers come verbatim from getstream.io with citations (`/stream-docs`)
 
 ## How it works
@@ -77,7 +79,7 @@ The `/stream` router classifies intent, runs `getstream` CLI commands itself (qu
 | Build or integrate an Android app | `stream-android` + its `builder.md`, `sdk.md`, and `references/*.md` |
 | Build or integrate a Flutter app | `stream-flutter` + its `builder.md`, `sdk.md`, and `references/*.md` |
 
-> **Routing precedence:** when user input contains a platform signal (e.g. `react native`, `expo`, `stream video rn`, `swift`, `ios`, `flutter`), the matching platform peer wins over the web `stream-builder` rows. The web builder is the default only when no platform signal is present.
+> **Routing precedence:** when user input contains a platform signal (e.g. `react native`, `expo`, `stream video rn`, `swift`, `ios`, `flutter`), the matching platform peer wins. With no platform signal, web React / Next.js work defaults to `stream-react`; `stream-builder` is routed to only when named explicitly.
 
 Cross-cutting rules (secrets, login screen, strict mode, package manager, base UI, moderation Dashboard-only, ...) live once in [`skills/stream/RULES.md`](skills/stream/RULES.md) and apply to every sub-skill.
 
@@ -89,7 +91,16 @@ Cross-cutting rules (secrets, login screen, strict mode, package manager, base U
   - [`peers.yaml`](skills/stream/peers.yaml) - peer manifest (names, install commands, routing signals)
 - [`skills/stream-docs/`](skills/stream-docs/) - **Docs sub-skill**
   - [`SKILL.md`](skills/stream-docs/SKILL.md) - live documentation lookup with cited sources
-- [`skills/stream-builder/`](skills/stream-builder/) - **Builder sub-skill**
+- [`skills/stream-react/`](skills/stream-react/) - **Web React sub-skill (default web pack)**
+  - [`SKILL.md`](skills/stream-react/SKILL.md) - React/Next.js entrypoint: five-track dispatch (scaffold / enhance / audit / migrate / Sendbird), Steps 0-7, docs-first triggers
+  - [`RULES.md`](skills/stream-react/RULES.md) - React/Next.js non-negotiable rules (win over `stream/RULES.md` for React work)
+  - [`builder-ui.md`](skills/stream-react/builder-ui.md) - UI shell, login screen, theme, layout/sizing
+  - [`enhance.md`](skills/stream-react/enhance.md) - add Stream to an existing React app (Track E)
+  - [`migrate.md`](skills/stream-react/migrate.md) - upgrade an installed Stream SDK version (Track M)
+  - [`sendbird-migration.md`](skills/stream-react/sendbird-migration.md) - migrate a Sendbird app to Stream Chat React (Track S)
+  - [`sdk.md`](skills/stream-react/sdk.md) - cross-cutting SDK wiring patterns
+  - [`references/`](skills/stream-react/references/) - per-product setup + blueprints, `design-matching.md`, `custom-ui.md`, `docs-map.md`, Sendbird mapping tables
+- [`skills/stream-builder/`](skills/stream-builder/) - **Builder sub-skill** (framework-agnostic; explicit invocation)
   - [`SKILL.md`](skills/stream-builder/SKILL.md) - scaffold execution (Steps 0-7)
   - [`builder-ui.md`](skills/stream-builder/builder-ui.md) - UI shell, login screen, theme
   - [`enhance.md`](skills/stream-builder/enhance.md) - add Stream to an existing app

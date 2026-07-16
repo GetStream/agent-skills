@@ -135,11 +135,30 @@ standard.
 | Tier | Input looks like | Match standard | Verify standard |
 |---|---|---|---|
 | **Pixel** | An app screenshot or a Figma PNG export | Measured: sampled hex values, measured dimensions, exact type | Full verify loop (every spec row measured against a this-round capture) |
+| **Live** | A running web app (a migration's original) | Measured from the reference DOM: probed computed styles, exact colors + CSS px, driven states | Full verify loop; computed-vs-computed rows compare exactly (see Live reference below) |
 | **Lo-fi** | A sketch, wireframe, or whiteboard photo | Structural: the right regions, present, in the right hierarchy | Verify loop checks presence + layout rows only; palette comes from the sanctioned theme channels, never sampled from pencil |
 | **Figma link, no exports** | A `figma.com/...` URL with no attached images | **Stop and ask for PNG exports, one per frame** | n/a until you have images |
 
 **Figma links: stop and ask.** You cannot authenticate to Figma and you must never guess a design
 from a URL, a file name, or an app's name. Ask for a PNG export per frame, then classify as Pixel.
+
+**Live reference - the reference is a running web app (migrations, e.g. Track S).** Classify as
+**Live**: Pixel's match standard with measured (not sampled) values - the strongest reference
+there is, because the *reference* side can be probed like the rendered side. Everywhere else this
+file says "Pixel", Live qualifies, with the deltas below. While the reference app still runs: capture full
+screens **and element crops** into `.design-verify/reference/` per the 6c recipe, and run a probe
+pass (`getComputedStyle` + `getBoundingClientRect`) **against the reference DOM**, seeded from its
+own selectors (a Sendbird UIKit original exposes `sendbird-*` class names). No pixel sampling and
+no scale division: probes return CSS px and exact colors directly. Because both sides of the later
+6d comparison are then computed styles, color and dimension rows compare **exactly** - the
+sampling tolerances (±3 per channel, ±2 px) exist to absorb anti-aliasing and image measurement,
+which a probed reference doesn't have. **Drive the interaction states on the reference** (the 6a
+menu: hover toolbar, open reaction selector, thread open, long multi-line draft, staged
+attachment, both themes) - a resting capture under-specifies the design exactly where migrations
+ship it wrong. Capture at the Step 1 viewport the reference matches (usually desktop
+`1440 x 900`). Step 2 then runs over the captured artifacts as usual; when the caller (Track S
+section 0) did all this before its migration began, the pipeline **resumes at Step 3** - never
+re-derive the spec from memory after the original app is gone.
 
 **The capture requirement is identical for Pixel and Lo-fi** - Step 6 (a browser screenshot taken this
 round) is mandatory for both; only *what you measure* differs (Lo-fi drops color / type sampling, never

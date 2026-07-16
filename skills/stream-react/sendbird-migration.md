@@ -66,8 +66,14 @@ cat package.json   # note BOTH Sendbird versions and the package manager (lockfi
 README, and the UIKit config props (`enableOgtag`, `enableSuggestedReplies`,
 `enableMarkdownForUserMessage`, `replyType`, voice messages, ...). One row per feature:
 
-| Feature | Sendbird source | Plan (port / idiomatic rewrite / GAP) | Status |
-|---|---|---|---|
+| Feature | Sendbird source | Plan (port / idiomatic rewrite / GAP) | Spec rows | Status |
+|---|---|---|---|---|
+
+The **Spec rows** column is filled by the visual-baseline capture below: every feature with a
+visual surface names its `design-analysis.md` rows and the captured state(s) that show it (`-`
+for features with no visual surface). It is the bridge that verify gate 5 checks - a visual
+feature cannot close as Ported while its look was never specced or never judged. Reactions,
+receipts, typing, the composer: each is a ledger row, so each owes a spec row and a verdict.
 
 This ledger is the migration's backbone: every row must end as **Ported**, **Rewritten**,
 **`N/A - <real reason>`**, or **`GAP - <decision>`** - the user's decision where one was
@@ -77,18 +83,39 @@ as [`references/custom-ui.md`](references/custom-ui.md)'s completion contract - 
 happened exactly where no ledger existed - UIKit one-liner toggles vanished and the README kept
 advertising them.
 
-**Capture the visual baseline (best-effort ladder).** The migrated app must look like the
-original, so record what "the original" looks like before you delete it, using the first rung
-available:
+**Capture the visual baseline (ladder - the highest rung you can reach, not the first that's
+convenient).** The migrated app must look like the original, so record what "the original" looks
+like before you delete it. A migration briefly holds the best reference a design match can have:
+**a running web app whose DOM you can probe and whose states you can drive** - strictly better
+than any screenshot. That window closes the moment section 5 starts; spend real effort on rung 1
+(an `npm install` and an env file are worth resurrecting) before falling back.
 
-1. **User-provided screenshots** of the running app - ask if any exist; treat as the reference.
-2. **The app runs with what's already on disk** (deps installed, env present): start it, screenshot
-   the key screens/states in light + dark. Don't sink time into resurrecting a broken setup.
+1. **The original runs: execute [`references/design-matching.md`](references/design-matching.md)
+   Steps 1-2 against it now** (its Step 1 > Live reference). Concretely: create `.design-verify/`;
+   capture full screens **plus element crops** of the high-detail regions (composer, one message
+   row, a quoted reply, a reaction pill) into `.design-verify/reference/`; run a **probe pass
+   against the original's DOM** - `getComputedStyle` + `getBoundingClientRect` on the Sendbird
+   UIKit selectors (`sendbird-*` class names) - so bubble radius, colors, type roles, and composer
+   layout enter the spec as **measured CSS values, not pixel samples**. **Drive the states, don't
+   capture only rest:** every parity-ledger row with a visual surface gets its state captured -
+   reactions *and* the open reaction selector, the hover actions surface, a thread open, a long
+   multi-line draft, a staged attachment, receipts, typing - in both themes if the app has them
+   (design-matching 6a's menu is the checklist; if the dev data is empty, populate it through the
+   original's own UI first - Sendbird's client-side flows still work at this point). Then run
+   design-matching Step 2 (the design-analysis agent) over these artifacts so
+   **`.design-verify/design-analysis.md` is written before the first migration edit** - deleting
+   the original can no longer orphan the spec. Fill the ledger's Spec-rows column from it.
+2. **User-provided screenshots** of the running app - ask if any exist; treat as the reference
+   (Pixel tier).
 3. **Code-derived spec** (always available): extract the palette from the `colorSet` object /
    custom CSS, the strings from `stringSet`, fonts, bubble radii, and the layout structure
-   (panes, headers, which regions exist) into a written spec.
+   (panes, headers, which regions exist) into a written spec (Lo-fi tier). Say explicitly, in the
+   plan and the final report, that this rung **cannot certify** composer / bubble / reaction
+   fidelity - only structure.
 
-Whichever rung produced it, this baseline becomes the **reference design** for step 6.
+Whichever rung produced it, this baseline becomes the **reference design** for step 6. The
+`.design-verify/` directory is run scaffolding (never committed); it lives until design-matching's
+exit cleanup at gate 5, not until the end of this section.
 
 ---
 
@@ -126,7 +153,7 @@ parity ledger plus four strategy lines:
 |---|---|---|
 | Integration shape(s) | section 0 classification | "UIKit drop-in + custom hooks" |
 | Credentials & token path | section 4's precedence, resolved on paper | "user-provided key; pre-signed CLI tokens (no backend)" |
-| Design bar + baseline tier | section 0 baseline rung | "pixel (user screenshots)" or "structural + exact palette (code-derived)" |
+| Design bar + baseline tier | section 0 baseline rung | "measured (live capture)", "pixel (user screenshots)", or "structural + exact palette (code-derived)" |
 | Gaps + proposed resolutions | ledger GAP rows + [`references/sendbird-mapping.md`](references/sendbird-mapping.md) section 15 | "scheduled messages -> drafts (substitute)" |
 
 For the gaps row: collect every feature with **no Stream equivalent** (scheduled messages,
@@ -241,7 +268,10 @@ symbol mappings from
   inside `<Channel>` (kill-list #8). Writing your own component for a prebuilt region - including
   porting an existing `renderX` implementation - is gated by [`RULES.md`](RULES.md) > Reference
   authority: load [`references/custom-ui.md`](references/custom-ui.md) first and fill its
-  completion contract. **Keep `<ChannelList>` as the query, watch, and real-time state owner.** For
+  completion contract. **On a rung-1 baseline, any touchpoint that rebuilds a visual region
+  (composer, message row, channel preview, header) also carries its `design-analysis.md` §3 rows:
+  build to the original's measured look in this pass** - migrating to SDK defaults and deferring
+  the look to a step-6 reskin is a second, avoidable rebuild of the same region. **Keep `<ChannelList>` as the query, watch, and real-time state owner.** For
   a product-grouped or bespoke rail, render the SDK-owned list with its documented
   `renderChannels` callback or `ChannelListUI` injection; do not maintain a parallel
   `client.queryChannels()` result and re-fetch it on events.
@@ -303,11 +333,20 @@ numeric color ramps, `stringSet`) all die; their Stream replacements:
   strings ([`references/sendbird-mapping.md`](references/sendbird-mapping.md) section 14).
 
 Then hand the visual work to [`references/design-matching.md`](references/design-matching.md)
-with the **section 0 baseline as the reference design**: screenshots classify as Pixel tier; a
-code-derived spec classifies as Lo-fi (structural match) **with one override** - the `colorSet` /
-CSS hexes were read from code, not sampled from a sketch, so include them as exact, measured
-palette rows despite Lo-fi's no-sampling rule. Its pipeline (Classify -> Design analysis -> Route
--> Ground -> Build -> Verify)
+with the **section 0 baseline as the reference design** - the entry point depends on the rung:
+
+- **Rung 1 (live capture):** Steps 1-2 are already done - `.design-verify/design-analysis.md`
+  exists with measured values and reference crops. **Resume the pipeline at Step 3 (Route)**; do
+  not re-classify or re-analyze, and never re-derive the spec from memory of the original. The
+  verify loop then compares computed styles against computed styles, so color and dimension rows
+  compare **exactly** (design-matching Step 1 > Live reference) - the sampling tolerances exist
+  for anti-aliased pixels, which a measured reference doesn't have.
+- **Rung 2 (screenshots):** Pixel tier; run the full pipeline from Step 1.
+- **Rung 3 (code-derived):** Lo-fi (structural match) **with one override** - the `colorSet` /
+  CSS hexes were read from code, not sampled from a sketch, so include them as exact, measured
+  palette rows despite Lo-fi's no-sampling rule.
+
+Its pipeline (Classify -> Design analysis -> Route -> Ground -> Build -> Verify)
 owns the capture-and-compare loop - including screenshotting the **migrated** app, which is
 mandatory regardless of which baseline rung you had. Do not declare the design matched from code
 review; neither real trial run captured a single screenshot, and both shipped unverified skins.
@@ -331,7 +370,12 @@ Run all of these; each catches a failure a real migration shipped.
    badges and typing indicators move, and the console shows no errors. Use the in-session browser
    tooling per [`references/design-matching.md`](references/design-matching.md)'s tool ladder; if
    none works, say so and have the user run this check - do not skip it silently.
-5. **Design verify loop** (step 6) reaches its exit condition.
+5. **Design verify loop** (step 6) reaches its exit condition - and closes **against the
+   ledger**: every ledger row with a filled Spec-rows cell has a PASS verdict row citing a
+   this-round capture of the migrated app compared to its reference crop, **driven states
+   included** (the open reaction selector, hover actions, thread, long draft). A visual feature
+   whose ledger row says Ported but that has no verdict row is unverified - treat it as FAIL,
+   never as done.
 6. **Ledger closure:** every parity-ledger row is Ported / Rewritten / N/A / GAP-with-decision.
    A `GAP - provisional` row (section 2, non-interactive default) closes the gate only if the
    final report calls it out explicitly as a decision the user still owes.
@@ -344,6 +388,7 @@ Run all of these; each catches a failure a real migration shipped.
 | "tsc and the build pass, we're done" | A green build proved nothing about the bundle, the connection, or the pixels - gates 3-5 exist because each failed in a real run. |
 | "The token wiring is obviously right" | A real run shipped without ever connecting; another was rejected server-side on its first real connect. Gate: section 4. |
 | "The CSS was ported, it'll look the same" | Both real runs shipped unverified skins. A match is claimed from a capture, not from CSS diffs. |
+| "I screenshotted the original once - baseline done" | A resting full-page shot holds no composer, bubble, or reaction detail - exactly the regions real runs shipped wrong. Rung 1 is element crops + DOM probes + driven states (section 0); that is what step 6 judges against. |
 | "That feature was tiny, nobody will miss it" | Silent drops are how READMEs end up advertising ghosts. It's a ledger row: N/A or GAP, decided, in writing. |
 | "I'll port it faithfully and refactor later" | The mechanical port of hand-rolled machinery IS the bug (double-adds, stale state, dead timers). Golden rule 3. |
 | "The gaps were minor, I decided them myself and kept going" | Minor is the user's judgment, not yours. >= 1 GAP row = the section 2 checkpoint - or, non-interactive, a `provisional` default reported loudly. |
