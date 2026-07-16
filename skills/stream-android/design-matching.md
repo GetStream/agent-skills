@@ -84,8 +84,25 @@ Two real paths to recolor a bubble:
 2. **Override the `MessageBubble` slot** (fill/shape/border) and `MessageContent` / `MessageTextContent`
    (text) - the reliable path for a specific bubble color independent of the app accent.
 
-Set the **fill AND the text** color - a solid outgoing bubble needs its text set too, or the text stays
-the default (often dark/illegible on a colored fill).
+**Pin the text with the fill - to a fixed color chosen for the FILL, not a theme token.** Left to derive,
+the text uses `chatTextOutgoing` (`= brand.s900`), which **inverts with the theme** (`brand.inverted()` in
+`defaultDark`), so a fill you pinned to one color keeps flipping its text underneath it: a light pinned
+fill reads dark text in light (fine) but near-white in dark (~1.6:1, illegible); a dark/saturated fill
+fails the other way. Set the text in the `MessageContent` / `MessageTextContent` override to an explicit
+`Color(0xFF…)` with adequate contrast against the pinned fill - the **same value in both modes** (do NOT
+pin to white - that fails on a light fill). **Verify outgoing-text contrast in BOTH light and dark** - the
+regression only shows in the mode you didn't sample the fill from.
+
+**Recoloring a bubble does not touch its side inset - dropping the avatar does.** The bubble's margin from
+the screen edge is not in the color path (`MessageBubble` / `MessageContent` / `MessageTextContent` set only
+the fill and the text *inside* the bubble). In `MessageContainer` that margin comes solely from the
+`MessageAuthor` slot beside the content column - incoming = the avatar box (`padding(start=spacingMd,
+end=spacingXs)` + avatar ≈ 56dp), outgoing = `Spacer(width=spacingMd)` (16dp); `MessageSpacer` is empty by
+default. So if the reference shows **no avatar** and you override `MessageAuthor` to empty, you delete that
+inset too and every bubble goes **flush to the screen edge**. Emit a `Spacer` of the reference-measured
+margin there (branch on `isMine`) instead of nothing - do **not** re-add it as horizontal padding inside the
+bubble (that shifts the bubble's max-width and fights the row's Start/End alignment). Verify the
+bubble-to-edge gap on both sides.
 
 **Sample the brand/accent color EXACTLY, and set the full `brand` scale - not just `accentPrimary`.**
 The accent drives many derived tokens (bubbles, buttons, links, ticks), so a *guessed* or slightly-off
@@ -539,7 +556,10 @@ Presence-and-color is not enough; verify **size, position, and proportion** too.
    (or nothing), NOT the default channel avatar/facepile - and the center matches (pill/container if the
    reference has one); (g) **channel-list rows fully decomposed** - preview/trailing/read-state present
    per the reference, and **DMs show a member avatar (not a `#`)** while channels show `#`/lock. Check on
-   the seeded data, which mixes channels and people.
+   the seeded data, which mixes channels and people; (h) **outgoing-bubble text legible in BOTH modes** -
+   if the outgoing FILL is pinned, the TEXT must be pinned to a fixed color too (the derived
+   `chatTextOutgoing` inverts in dark), so a bubble that passes in light does not go near-white and
+   illegible in dark. Toggle dark mode and read the outgoing text.
 5. **Iterate until every region passes.** Fix, rebuild, re-screenshot. Do not declare done on the first
    screenshot.
 6. If you genuinely cannot build/run, say so plainly and list which regions are implemented-but-unverified
