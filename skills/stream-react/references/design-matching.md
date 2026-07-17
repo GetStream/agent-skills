@@ -135,11 +135,30 @@ standard.
 | Tier | Input looks like | Match standard | Verify standard |
 |---|---|---|---|
 | **Pixel** | An app screenshot or a Figma PNG export | Measured: sampled hex values, measured dimensions, exact type | Full verify loop (every spec row measured against a this-round capture) |
+| **Live** | A running web app (a migration's original) | Measured from the reference DOM: probed computed styles, exact colors + CSS px, driven states | Full verify loop; computed-vs-computed rows compare exactly (see Live reference below) |
 | **Lo-fi** | A sketch, wireframe, or whiteboard photo | Structural: the right regions, present, in the right hierarchy | Verify loop checks presence + layout rows only; palette comes from the sanctioned theme channels, never sampled from pencil |
 | **Figma link, no exports** | A `figma.com/...` URL with no attached images | **Stop and ask for PNG exports, one per frame** | n/a until you have images |
 
 **Figma links: stop and ask.** You cannot authenticate to Figma and you must never guess a design
 from a URL, a file name, or an app's name. Ask for a PNG export per frame, then classify as Pixel.
+
+**Live reference - the reference is a running web app (migrations, e.g. Track S).** Classify as
+**Live**: Pixel's match standard with measured (not sampled) values - the strongest reference
+there is, because the *reference* side can be probed like the rendered side. Everywhere else this
+file says "Pixel", Live qualifies, with the deltas below. While the reference app still runs: capture full
+screens **and element crops** into `.design-verify/reference/` per the 6c recipe, and run a probe
+pass (`getComputedStyle` + `getBoundingClientRect`) **against the reference DOM**, seeded from its
+own selectors (a Sendbird UIKit original exposes `sendbird-*` class names). No pixel sampling and
+no scale division: probes return CSS px and exact colors directly. Because both sides of the later
+6d comparison are then computed styles, color and dimension rows compare **exactly** - the
+sampling tolerances (±3 per channel, ±2 px) exist to absorb anti-aliasing and image measurement,
+which a probed reference doesn't have. **Drive the interaction states on the reference** (the 6a
+menu: hover toolbar, open reaction selector, thread open, long multi-line draft, staged
+attachment, both themes) - a resting capture under-specifies the design exactly where migrations
+ship it wrong. Capture at the Step 1 viewport the reference matches (usually desktop
+`1440 x 900`). Step 2 then runs over the captured artifacts as usual; when the caller (Track S
+section 0) did all this before its migration began, the pipeline **resumes at Step 3** - never
+re-derive the spec from memory after the original app is gone.
 
 **The capture requirement is identical for Pixel and Lo-fi** - Step 6 (a browser screenshot taken this
 round) is mandatory for both; only *what you measure* differs (Lo-fi drops color / type sampling, never
@@ -203,6 +222,18 @@ every visual signal). The taxonomy is where regions get silently dropped, so it 
   bubble, text, muted text, accent, unread badge, presence dot). A "weird line" between two regions is
   usually a **color seam** (two backgrounds meeting), not a divider element. A background may be a
   **texture / gradient / image**, not a flat fill.
+- **Fill TYPE per filled region - sample ≥2 points, never one (non-negotiable):** for **every** filled
+  region (bubble, card, pill, avatar, badge, chrome bar, button) sample at least the **top, center, and
+  bottom** of the fill (avoiding text/glyphs) and record the fill as **`flat #hex`** OR
+  **`gradient <stop→stop> <direction>`**. **A single sample cannot tell flat from gradient** - one
+  sample of a gradient returns roughly its *midpoint*, which reads as a plausible flat color and is the
+  single most common silent miss (a whole brand palette rendered flat when the design is gradient). If
+  the sampled points differ by more than the color tolerance (±3 per 8-bit channel), it **is** a
+  gradient: sample a third point to fix the direction and endpoints, and record the stops - do **not**
+  average them to a flat hex. The same rule flags **shadows** (a soft dark halo just outside the fill),
+  **inner borders/rings**, and **textures** (non-monotonic variation). Record `flat` only after ≥2
+  samples agree. Brand-accent surfaces (bubbles, avatars, primary buttons, active pills) are the usual
+  gradient carriers - if one of them is a gradient, assume the rest share it and verify each.
 - **Type - per text role:** family, size, **weight** (its own axis - match it separately), line
   height, for author / body / timestamp / unread each.
 - **Dimensions - measure, do not eyeball:** rail width, avatar size, bubble radius + padding, row
@@ -227,6 +258,14 @@ on a light bar), project the dark mask onto columns, cluster contiguous runs int
 each bounding box in image px, then divide by `scale`. Controls (composer icons, avatars, badges)
 almost always measure **smaller** than you would guess - record the measured value, never a round
 number. Lo-fi tier: skip sampling entirely, palette comes from the preset / brand.
+
+**Sampling for fill TYPE (the ≥2-point rule above), concretely:** for each filled region crop a small
+patch at the **top**, **center**, and **bottom** of the fill and read each - e.g. with `magick`:
+`magick ref.png -crop 8x8+X+Ytop +repage -format '%[pixel:p{0,0}]' info:-` then again at `Ycenter` and
+`Ybottom` (pick X,Y inside the fill, clear of text/glyphs). Equal within tolerance -> `flat #hex`;
+a monotonic shift top→bottom (or corner→corner) -> `gradient <lighter-stop>→<deeper-stop>
+<direction>`. This single extra sample per region is what separates a flat fill from a gradient - the
+whole point of Step 2's fill-type field.
 
 ### Name the Stream concept behind every signal
 
@@ -305,19 +344,25 @@ other agent's input.
 # Design analysis - <reference name>
 ## 0. Reference inventory <!-- per image: path under .design-verify/reference/, tier,
    viewport (CSS px), scale, framing decision - from Step 1 -->
-## 1. Global tokens <!-- ONE table for all screens. Palette: sampled hex per role (chrome
+## 1. Global tokens <!-- ONE table for all screens. Palette: per role (chrome
    bg, list bg, incoming / outgoing bubble bg + text, muted text,
-   accent, unread badge, presence dot). Type: family; per text role
-   (author / body / timestamp / unread): size, WEIGHT, line-height.
-   Spacing / radius scale; layout grid: rail widths recorded BOTH as
-   CSS px AND as a fraction of the viewport (containers are authored
-   fluid - Step 5), header height. -->
+   accent, unread badge, presence dot) record BOTH the sampled hex AND
+   the FILL TYPE from the >=2-point rule: `flat #hex` OR
+   `gradient #stop->#stop <direction>` (+ shadow / border / texture when
+   present). A lone midpoint hex for a gradient region is a gate FAIL.
+   Type: family; per text role (author / body / timestamp / unread):
+   size, WEIGHT, line-height. Spacing / radius scale; layout grid: rail
+   widths recorded BOTH as CSS px AND as a fraction of the viewport
+   (containers are authored fluid - Step 5), header height. -->
 ## 2. Screens <!-- one subsection per screenshot: region list + per-region bounds
    (image-px box - the verify loop cuts reference crops from these) -->
 ## 3. Chat regions <!-- every subsection MANDATORY: filled, or exactly "N/A - not in reference" -->
-### 3.1 MessageBubble <!-- shape (pill / rounded / flat), incoming vs outgoing bg + text
-   (sampled hex), radius (measured), sender name / avatar display,
-   grouping behavior -->
+### 3.1 MessageBubble <!-- shape (pill / rounded / flat), incoming vs outgoing bg + text:
+   FILL TYPE + hex from the >=2-point rule (`flat #hex` or
+   `gradient #stop->#stop <dir>`; note shadow / border if present),
+   radius (measured), sender name / avatar display, grouping behavior.
+   Sample the bubble fill at top AND bottom - a subtle gradient here is a
+   repeat silent miss. -->
 ### 3.2 Message actions <!-- reactions / reply / more-actions: positioning relative to the
    bubble (hover toolbar? beside? below?), reaction pills' position
    relative to the bubble, style -->
@@ -363,6 +408,11 @@ Before anything is routed or built, check the returned file:
    missing subsection is a FAIL; an N/A is a decision).
 2. Every color is a sampled hex and every dimension is CSS px with the scale shown - no round-number
    guesses, no color names.
+2b. **Every filled region states a fill TYPE** (`flat` / `gradient` / `image` / `texture`) backed by
+   the >=2-point sample (top + bottom, plus center) - not a single hex. A region recorded as a lone
+   flat hex without evidence it was sampled at >=2 points is a FAIL: re-sample it. Gradients on
+   brand-accent surfaces (bubbles, avatars, primary buttons, active pills) are the highest-frequency
+   miss - confirm each explicitly.
 3. Viewport + scale stated and consistent with Step 1.
 4. Every visible signal in every screen has a §6 taxonomy row, and every §6 row has at least one §9
    probe seed.
@@ -668,10 +718,17 @@ and do not substitute a static read for it.
    **(c)** a **probe pass** that, for each selector in the probe list (seeded from
    `design-analysis.md` §9), returns its `getBoundingClientRect` + the `getComputedStyle` values you
    need and a `missing: true` flag when the selector matches nothing (that flag IS the
-   structural-presence check in 6d); **(d)** **reference crops**, cut once from
+   structural-presence check in 6d). **For every filled region the probe MUST read `background-color`
+   AND `background-image` AND `box-shadow`** - a CSS gradient has an empty `background-color` and lives
+   entirely in `background-image`, so a color-only probe is blind to the flat-vs-gradient mismatch that
+   is the most common silent miss. **(d)** **reference crops**, cut once from
    `.design-verify/reference/` using the §2 region bounds - each judge gets its region's pair;
    **(e)** optionally, sample the reference image for the color rows (`magick` / PIL, or a canvas
-   `getImageData` over a `file://` load).
+   `getImageData` over a `file://` load);
+   **(f)** a **per-region perceptual diff score** between each rendered element crop (b) and its aligned
+   reference crop (d) - see 6c-diff below. This is the loop-closing artifact: it compares the render to
+   the *reference*, not to the recorded spec, so it catches spec-derivation errors (a gradient recorded
+   as flat, a dropped shadow, a wrong radius) that every spec-vs-render numeric check passes.
 6. **Then drive and re-capture the interaction / open states (6a).** They don't render at rest, so
    after the resting capture: `hover()` a message row and assert its bubble `getBoundingClientRect`
    is unchanged (a shift means an in-flow hover toolbar — move it out of flow); repeat on the
@@ -705,9 +762,22 @@ probe's actual stdout is the artifact cited in 6d. A runner authored but not exe
 Rendered values. Probe shape:
 
 ```
-// probe list: [{ selector: '.str-chat__message-text', props: ['color','font-size','font-weight'] }, ...]
+// probe list: [{ selector: '.str-chat__message-text', props: ['color','font-size','font-weight','background-color','background-image','box-shadow'] }, ...]
 // each probe -> { selector, rect, styles: { ... } }   OR   { selector, missing: true }
 ```
+
+**6c-diff. Per-region perceptual diff (the loop-closing check - verify-infra computes it in the runner).**
+For each high-detail region, take the rendered element crop (5b) and the reference crop (5d), **resize
+both to a common box** (the rendered rect's CSS size, so scale/DPR differences cancel), then compute a
+**perceptual similarity** - SSIM if a lib is available, else a downscaled (e.g. 32x32) per-channel RMS
+/ mean-ΔE. Emit per region `{ region, diffScore, renderedCrop, referenceCrop }` into the probe JSON.
+The metric only needs to be **monotonic and stable round-to-round**; exact calibration is not required.
+Recommended threshold: flag any region whose `diffScore` exceeds a small tolerance band (tune once at
+round 1 against a region you know matches). Anti-aliasing / sub-pixel text noise is why the tolerance
+is a band, not zero - but a **flat-vs-gradient fill, a missing shadow, or a wrong radius moves the
+score well past that band**, which is exactly the class this check exists to catch. If neither SSIM nor
+an image lib is available, downscaled RMS in a few lines of canvas / `magick compare -metric RMSE` is
+enough - do not skip the diff for lack of a fancy metric.
 
 ### 6d. Compare protocol (region-judge fan-out; every check per region, in order)
 
@@ -722,11 +792,23 @@ Each round, after the round's **single** capture:
    the tolerances below. Judges return **verdict rows only, never edits** - a judge that did not
    write the code has no reason to soften a FAIL. **Never overrule a judge's FAIL without a
    this-round measurement of your own.** Each judge runs, for its region:
+   - **Reference-crop perceptual diff (mandatory, FAIL-gating - run it FIRST).** Read the region's
+     `diffScore` from 6c-diff (rendered crop vs the aligned *reference* crop). A score past the
+     tolerance band is a **FAIL even when every numeric spec row below passes** - because those rows
+     compare the render to the recorded *spec*, and a wrong spec value (a gradient recorded as flat, a
+     missed shadow, a wrong radius) makes render and spec agree while both disagree with the reference.
+     This check compares against the reference itself, so it is the backstop for spec-derivation
+     errors. On a flagged region, look at the two crops and name the specific difference (fill type,
+     shadow, radius, seam) in the verdict row; do not pass it just because the numbers matched.
    - **Side-by-side crop read** (the check-1 discipline at region scale: seams, font shape, weight,
-     alignment).
+     alignment). Name the **fill type** explicitly - "flat or gradient? shadowed?" - not "looks the
+     same"; a subtle gradient survives "looks the same" but not "flat or gradient?".
    - **Computed-style diff**, mapping each spec field explicitly: color -> `color` /
-     `background-color`; type -> `font-family` / `font-size` / `font-weight` / `line-height`;
-     dimensions -> the rect + `border-radius` / `padding` / `gap`. Tolerances: dimensions within
+     `background-color` **AND `background-image` AND `box-shadow`** (a gradient fill has an empty
+     `background-color` - compare its stops in `background-image`; a `flat` render where the spec/
+     reference is a `gradient` is a FAIL, and vice-versa); type -> `font-family` / `font-size` /
+     `font-weight` / `line-height`; dimensions -> the rect + `border-radius` / `padding` / `gap`.
+     Tolerances: dimensions within
      `+/-2` CSS px; colors within a small band of the sampled value (about `+/-3` per 8-bit channel,
      to absorb anti-aliasing - a visible hue / shade change is a FAIL), stating both hex values on
      every color row; **`font-family` must resolve to the intended family - a fallback to serif/sans
@@ -773,8 +855,10 @@ Each round, after the round's **single** capture:
    taxonomy - any taxonomy entry with no probe is an unverified region (treat as FAIL), never a
    silent omission. Each high-detail region (composer, one message row, one quoted-reply message,
    one tile / card) must also
-   have an element crop cited in its Source cell - a full-page shot alone does not satisfy a
-   high-detail row. A short table is an incomplete spec, not an early finish.
+   have an element crop **and a 6c-diff `diffScore`** cited in its Source cell - a full-page shot
+   alone does not satisfy a high-detail row, and a numeric-only PASS with no reference-crop diff is
+   incomplete (that is the exact hole gradients/shadows slip through). A short table is an incomplete
+   spec, not an early finish.
 
 ### 6e. Iterate and exit honestly (coordinator)
 

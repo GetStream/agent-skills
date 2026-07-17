@@ -24,7 +24,7 @@ Each skill has a reference page on the docs site - the skill names below link to
 |---|---|---|
 | [`/stream`](https://getstream.io/agent-skills/docs/skills/stream/) | **Router + CLI** - classifies intent, dispatches, and runs `getstream` CLI commands | Start here; also handles data queries, app config, and onboarding |
 | [`/stream-docs`](https://getstream.io/agent-skills/docs/skills/stream-docs/) | Search live SDK documentation from getstream.io | Explicit SDK token (Chat React, Video iOS, ...), "docs", "how do I ... in <framework>" |
-| [`/stream-react`](https://getstream.io/agent-skills/docs/skills/stream-react/) | Build, enhance, audit, or migrate a React / Next.js web app - the default for all web React work | "build me a ... app", "add Chat to this app", "audit my video integration", "upgrade stream-chat-react", `stream-chat-react`, `@stream-io/video-react-sdk`, `@stream-io/feeds-react-sdk` |
+| [`/stream-react`](https://getstream.io/agent-skills/docs/skills/stream-react/) | Build, enhance, audit, migrate, or migrate-from-Sendbird a React / Next.js web app - the default for all web React work | "build me a ... app", "add Chat to this app", "audit my video integration", "upgrade stream-chat-react", "migrate from Sendbird", `stream-chat-react`, `@stream-io/video-react-sdk`, `@stream-io/feeds-react-sdk` |
 | [`/stream-builder`](https://getstream.io/agent-skills/docs/skills/stream-builder/) | Framework-agnostic builder - scaffold a new web app, or add Chat/Video/Feeds/Moderation to an existing one | Only when named explicitly ("use stream-builder"); web React work routes to `/stream-react` |
 | [`/stream-swift`](https://getstream.io/agent-skills/docs/skills/stream-swift/) | Build or integrate Stream in Swift/SwiftUI/UIKit/iOS apps | Swift, SwiftUI, UIKit, iOS, Xcode |
 | [`/stream-android`](https://getstream.io/agent-skills/docs/skills/stream-android/) | Build or integrate Stream in Android/Jetpack Compose apps | Android, Jetpack Compose, Kotlin, Android Studio, Gradle |
@@ -58,7 +58,7 @@ Decline and the builder still runs - Stream reference files cover the SDK wiring
 
 - **Scaffold a full app** - Next.js + Tailwind + Stream SDKs, wired end-to-end in one shot (`/stream-react`)
 - **Add products to existing apps** - drop Chat, Video, or Feeds into a project that's already running (`/stream-react`)
-- **Audit and migrate integrations** - review a Video integration against best practices, or upgrade an SDK version from the live release guide (`/stream-react`)
+- **Audit and migrate integrations** - review a Video integration against best practices, upgrade an SDK version from the live release guide, or migrate an existing Sendbird app to Stream Chat React (`/stream-react`)
 - **Build and extend Swift apps** - wire Stream into SwiftUI or UIKit Xcode projects with iOS-specific setup patterns (`/stream-swift`)
 - **Build and extend Android apps** - wire Stream into Jetpack Compose Android Studio / Gradle projects with Android-specific setup patterns (`/stream-android`)
 - **Build and extend React Native apps** - wire Stream Chat or Stream Video into Expo or RN CLI projects (`/stream-react-native`)
@@ -77,6 +77,7 @@ The `/stream` router classifies intent, runs `getstream` CLI commands itself (qu
 | Add a product to an existing app | `stream-react` (Track E) |
 | Audit an existing Video integration | `stream-react` (Track F) |
 | Migrate / upgrade an SDK version | `stream-react` (Track M) |
+| Migrate a web app from Sendbird | `stream-react` (Track S) |
 | Data queries, app config, and CLI operations | `stream` (CLI, built in) |
 | SDK wiring during scaffold/enhance | `stream-react` + its `sdk.md` and `references/*.md` |
 | Framework-agnostic builds, only when named explicitly | `stream-builder` |
@@ -99,14 +100,15 @@ Cross-cutting rules (secrets, login screen, strict mode, package manager, base U
 - [`skills/stream-docs/`](skills/stream-docs/) - **Docs sub-skill**
   - [`SKILL.md`](skills/stream-docs/SKILL.md) - live documentation lookup with cited sources
 - [`skills/stream-react/`](skills/stream-react/) - **React web sub-skill** (default for web React / Next.js work)
-  - [`SKILL.md`](skills/stream-react/SKILL.md) - four tracks: scaffold (Steps 0-7), enhance, Video audit, SDK migration
+  - [`SKILL.md`](skills/stream-react/SKILL.md) - five tracks: scaffold (Steps 0-7), enhance, Video audit, SDK migration, Sendbird migration
   - [`RULES.md`](skills/stream-react/RULES.md) - React/Next.js non-negotiable rules
   - [`builder.md`](skills/stream-react/builder.md) - provisioning, use-case matching, page flow
-  - [`builder-ui.md`](skills/stream-react/builder-ui.md) - UI shell, login screen, theme
+  - [`builder-ui.md`](skills/stream-react/builder-ui.md) - UI shell, login screen, theme, layout/sizing
   - [`enhance.md`](skills/stream-react/enhance.md) - add Stream to an existing React app
   - [`migrate.md`](skills/stream-react/migrate.md) - docs-driven SDK version migration (Track M)
+  - [`sendbird-migration.md`](skills/stream-react/sendbird-migration.md) - migrate a Sendbird app to Stream Chat React (Track S)
   - [`sdk.md`](skills/stream-react/sdk.md) - cross-cutting SDK wiring patterns
-  - [`references/`](skills/stream-react/references/) - per-product setup + blueprints, `docs-map.md`, design-matching, custom-ui
+  - [`references/`](skills/stream-react/references/) - per-product setup + blueprints, `docs-map.md`, design-matching, custom-ui, Sendbird mapping tables
 - [`skills/stream-builder/`](skills/stream-builder/) - **Builder sub-skill** (explicit invocation only)
   - [`SKILL.md`](skills/stream-builder/SKILL.md) - scaffold execution (Steps 0-7)
   - [`builder-ui.md`](skills/stream-builder/builder-ui.md) - UI shell, login screen, theme
