@@ -27,6 +27,7 @@ First path:
 6. Place `OverlayProvider` and `Chat` high in the tree.
 7. Use `useCreateChatClient` for normal auth.
 8. Render `ChannelList`, `Channel`, `MessageList`, `MessageComposer`, and optional `Thread`.
+9. If the user provided a target appearance (screenshot, Figma, or "look like \<app\>"), **before** building run [design-matching.md](design-matching.md): decompose the reference region by region, plan every theming/layout/functional difference, then apply the `Theming Blueprint` and `Component Override Blueprint` and verify region-by-region.
 
 Full screen blueprints: [CHAT-REACT-NATIVE-blueprints.md](CHAT-REACT-NATIVE-blueprints.md). Load only the section you are implementing.
 
@@ -60,10 +61,10 @@ Optional dependencies are opt-in native capability packages, not default Chat re
 
 Add optional dependencies with the runtime's normal install lane:
 
-- RN CLI: use the project's package manager, then run pods after native packages change.
+- RN CLI: use the project's package manager, then re-link the native app after native packages change — iOS: `npx pod-install`; **Android: rebuild with `npx react-native run-android`**. Autolinking runs at Gradle build time, so an already-installed Android app will **not** pick up a new native module (e.g. an attachment picker) until it is rebuilt.
 - Expo: use `npx expo install` so versions match the Expo SDK.
 - Expo Chat apps use a dev-client/native-build lane by default because the SDK includes native code. Do not target Expo Go.
-- If an Expo app does not already have native projects, run `npx expo prebuild`; run it again when native config changes need to be regenerated.
+- If an Expo app does not already have native projects, run `npx expo prebuild --clean`; run it again when native config changes need to be regenerated.
 - Add platform permissions and config plugins from the selected package docs.
 
 | Feature | Packages |

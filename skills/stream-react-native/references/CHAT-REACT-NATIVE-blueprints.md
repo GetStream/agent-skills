@@ -18,10 +18,13 @@ Expo lane: change imports from `"stream-chat-react-native"` to `"stream-chat-exp
 | thread navigation, replies, thread list | Thread Screen or Thread List Screen |
 | React Navigation or Expo Router shell | Navigation Shell |
 | theme, dark mode, colors, design tokens | Theming Blueprint |
+| screenshot / Figma / "match this design" / "make it look like \<app\>" | [design-matching.md](design-matching.md) first (decompose + plan every region), then Theming + Component Override Blueprints |
 | UI slot, component, behavior, or composer customization | DOCS.md -> primary manifest lookup, then Component Override Blueprint |
-| offline support or sign-out cleanup | Offline and Sign-out Blueprint |
+| cookbook / advanced feature (push, mentions, search, reactions UI, link previews, etc.) | DOCS.md -> primary manifest lookup, then implement to match |
+| offline support | Offline and Sign-out Blueprint |
+| sign-out cleanup | Offline and Sign-out Blueprint |
 
-If no row matches, read [DOCS.md](DOCS.md) and [CHAT-REACT-NATIVE.md](CHAT-REACT-NATIVE.md) first, then verify symbols in manifest-selected docs or the installed package before coding.
+If no row matches, run the [DOCS.md](DOCS.md) manifest lookup and `WebFetch` (or `curl -Ls`) the selected `.md` page before coding; also read [CHAT-REACT-NATIVE.md](CHAT-REACT-NATIVE.md) for setup/gotchas. Verify symbols in the manifest-selected docs or the installed package - never build customization or advanced features from memory.
 
 ---
 
@@ -408,6 +411,8 @@ Wiring:
 
 ---
 
+For custom header consult [DOCS.md](./DOCS.md)
+
 ## Thread Screen
 
 Use explicit thread state. The main channel should receive the active `thread` while the thread screen is open; the thread screen renders `Channel` with `threadList`.
@@ -488,6 +493,7 @@ Wiring:
 - `threadList` marks the screen as thread mode.
 - `onThreadDismount` should clear the active thread.
 - Offline mode does not support thread access in the referenced docs.
+- There is no built-in thread header component exposed by the SDK, it has to be a custom component
 
 ---
 
@@ -571,7 +577,7 @@ Wiring:
 
 ## Component Override Blueprint
 
-Use `WithComponents` for custom subcomponents. Keep custom message rows memoized and use SDK context hooks.
+Always consult [DOCS.md](./DOCS.md) to find a relevant guide/cookbook, if there is no match, read SDK context and hooks to reuse business logic. Aim for using SDK provided hooks and contexts, only use low-level client if there are no hooks. Use `WithComponents` for custom subcomponents. Keep custom message rows memoized and use SDK context hooks.
 
 ```tsx
 import React, { memo } from "react";
@@ -606,6 +612,8 @@ Wiring:
 - Prefer the smallest documented override that satisfies the requested customization.
 - Avoid replacing core message components unless required.
 - If replacing message row structure and still using the long-press overlay, preserve overlay anchor behavior by reading the manifest-selected context docs.
+- Consult the theme object to adjust spacing as necessary
+- Provide `WithComponents` at root level so overrides apply for all application screens
 
 ---
 

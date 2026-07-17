@@ -379,6 +379,14 @@ structural change truly needs it.
   previews (composite-slot rule): re-add a **send** affordance (the wrapper's `params` carries
   `state.inputValue` and `onSendClick` - show send when `inputValue` is non-blank), and reproduce or
   consciously drop the rest per the reference (Telegram's rest state shows no mic and no send).
+  **The center content already carries its own start inset, vertical inset, and min-height - your
+  container must not re-add them.** Give your flat container only border, shape, fill, and width; never
+  add a second start padding (the placeholder inset doubles), vertical padding, or height (the field
+  compounds tall). A compounded-tall input also overshoots a compact reference and, because the
+  composer's own integration row is padded and `Bottom`-aligned with no centerline hook (an SDK
+  constraint, not settable), drops a shorter leading control below the field's centerline - so size any
+  custom leading control to the input's height and center its glyph so their centers line up
+  (ragged-icon trap above).
 - `ChannelHeader` - use `ChannelHeaderLeading/Center/TrailingContent`. Drive the title from
   `channelNameFormatter` (set once; it feeds BOTH the header and the channel list - never hardcode the
   reference's literal channel name, or every channel shows that one name). **Resolve nameless DMs here
@@ -524,7 +532,9 @@ Presence-and-color is not enough; verify **size, position, and proportion** too.
    row); every element **vertically centered** (no icon sitting low against the input - the bottom-align
    trap); and the input field **shape AND border** match (if the reference field has no stroke, the SDK's
    baked-in border/pill is gone - check this explicitly in **dark mode**, where a stray light stroke is
-   the classic last mismatch on an otherwise-close screen); (f) **message header trailing** shows the
+   the classic last mismatch on an otherwise-close screen); and the composer is a **single controlled
+   height** with the placeholder's left inset matching the reference (the center content's insets/min-height
+   not doubled by the wrapper); (f) **message header trailing** shows the
    reference's action icons
    (or nothing), NOT the default channel avatar/facepile - and the center matches (pill/container if the
    reference has one); (g) **channel-list rows fully decomposed** - preview/trailing/read-state present

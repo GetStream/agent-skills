@@ -9,7 +9,7 @@ allowed-tools: >-
   Read, Write, Edit, Glob, Grep,
   WebFetch(domain:getstream.io),
   WebFetch(domain:raw.githubusercontent.com),
-  Bash(ls *), Bash(find . *), Bash(grep *),
+  Bash(ls *), Bash(find . *), Bash(grep *), Bash(sips *),
   Bash(cat package.json), Bash(cat app.json), Bash(cat app.config.js), Bash(cat app.config.ts),
   Bash(cat babel.config.js), Bash(cat metro.config.js),
   Bash(command -v getstream), Bash(getstream *),
@@ -158,8 +158,47 @@ Product-specific setup, docs lookup, gotchas, and UI blueprints live under **`re
 - **Video screen/component blueprints:** [`references/VIDEO-REACT-NATIVE-blueprints.md`](references/VIDEO-REACT-NATIVE-blueprints.md)
 - **Feeds setup/reference:** [`references/FEEDS-REACT-NATIVE.md`](references/FEEDS-REACT-NATIVE.md)
 - **Feeds screen/component blueprints:** [`references/FEEDS-REACT-NATIVE-blueprints.md`](references/FEEDS-REACT-NATIVE-blueprints.md)
+- **iOS simulator verification (fast run/screenshot loop):** [`references/SIMULATOR-VERIFICATION.md`](references/SIMULATOR-VERIFICATION.md)
 
 If the requested product file is not bundled yet, say so plainly and only switch to live docs if the user asks.
+
+---
+
+## Docs-first triggers (consult docs before building)
+
+The bundled blueprints cover the **common scaffold path only** - root providers, auth gate, fresh-app scaffold, channel list, channel/message screen, threads (and the Video/Feeds equivalents). For anything that **customizes or extends** that path, the live `llms.txt`-selected page is the source of truth for the current API and recommended pattern. Fetch it **before** writing code.
+
+Docs-first applies when the request hits any of these:
+
+- **UI customization / theming / component overrides** - themes, design tokens, replacing a slot (message bubble, composer, call controls, participant tile, activity row), custom render props.
+- **Cookbook recipes** - typing indicators, message actions, reactions UI, attachment handling, mentions, search, link previews, etc.
+- **Advanced guides** - push notifications, offline support, PiP, ringing, screenshare, broadcasting, video filters, Chat+Video interop, notification/For-You feeds, polls, moderation.
+- **Migration / version upgrades.**
+- **Any exact API, prop, hook, or component detail** not already in the bundled blueprints.
+
+Mechanism (mirrors the `stream-react` skill):
+
+**match -> run the [`references/DOCS.md`](references/DOCS.md) manifest lookup -> `WebFetch` (or `curl -Ls`) the selected `.md` page -> implement to match.** On fetch failure, hand to the `stream-docs` skill; if neither resolves the API, **stop and ask the user - never build customization, cookbook, or advanced features from memory.**
+
+Enforced by [`RULES.md`](RULES.md) > Package version and docs discipline.
+
+---
+
+## Styling-depth flag: matching a provided design
+
+Orthogonal to the track above: if a request carries a **target appearance** - an attached
+screenshot, a Figma frame, or "make it look like WhatsApp / iMessage / Slack / \<app\>" - do not
+treat it as a set-a-few-colors task. **Before** writing UI code, run
+[`references/design-matching.md`](references/design-matching.md):
+it decomposes the reference region by region and plans **every** difference as one of three axes -
+**theming** (the `Theme` object), **layout** (`WithComponents` slot overrides + props), or
+**functional** (props / config / SDK hooks) - then verifies region-by-region against the reference.
+Implement every region, the composer included; a region left at the SDK default is a FAIL, not a
+"known cosmetic gap."
+
+This runs in addition to (not instead of) the `DOCS.md` lookup: fetch the manifest-selected
+theming/customization pages to confirm exact theme paths and component names. A plain request
+with **no** target appearance does not trip this flag - build from the blueprints as usual.
 
 ---
 
