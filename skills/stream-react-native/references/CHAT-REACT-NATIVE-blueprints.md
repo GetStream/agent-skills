@@ -614,6 +614,7 @@ Wiring:
 - If replacing message row structure and still using the long-press overlay, preserve overlay anchor behavior by reading the manifest-selected context docs.
 - Consult the theme object to adjust spacing as necessary
 - Provide `WithComponents` at root level so overrides apply for all application screens
+- Use the `icons` key to override icons
 
 ---
 

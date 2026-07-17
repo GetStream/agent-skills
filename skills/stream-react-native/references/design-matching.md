@@ -148,7 +148,8 @@ dimension matters. Extract the real numbers off the reference and land them in R
    `paddingTop` == `paddingBottom`): a single line is then centered by construction and it still
    grows for multi-line. Corollary: don't zero the input's own vertical padding and then re-add the
    height via `minHeight` — that guarantees the off-center result.
-7. **Land measured numbers in RN theme keys / style values, and reuse the SDK spacing scale** for
+7. **Message bubble spacing** - it's your task to ensure proper spacing for message bubble should you change anything on it. Measure message bubble inside padding; gap between text - image etc. and apply necessary changes
+8. **Land measured numbers in RN theme keys / style values, and reuse the SDK spacing scale** for
    gaps/radius so custom pieces align with un-overridden parts — but tokens are for spacing/radius,
    *not* a license to keep default control/field **sizes**; those come from measurement.
 
@@ -210,7 +211,7 @@ the manifest-selected docs and the installed package, not from memory. For the r
 see the [Theming Blueprint](./CHAT-REACT-NATIVE-blueprints.md#theming-blueprint) and the
 [Component Override Blueprint](./CHAT-REACT-NATIVE-blueprints.md#component-override-blueprint).
 
-For every region note the followings: color, background color, border, border radius, padding / gap, typography (font, font weight, font and line size) - save findings to a file called `design-analisys.md`.
+For every region note the followings: color, background color, border, border radius, padding / gap, typography (font, font weight, font and line size) - save findings to a file called `design-analisys.md`. Unless asked otherwise, remove the `design-analisys.md` after the verification step.
 
 #### Chat
 
@@ -280,7 +281,9 @@ Opened when the attach button is clicked
 
 | Region | What to check | Axis | Route to |
 |---|---|---|---|
-| Attachment bar + content | Layout (one row or multiple rows?) and position (above or under selected attachment type content) of the bar? Custom attachment bar icons (gallery, polls, files, etc.)?  Or fully custom layout (for example list)?  | Theming for recolor; Override for custom icons; `AttachmentPickerSelectionBar` for the bar; `AttachmentPicker` for a fully custom picker; logic in `useAttachmentPickerContext()`. **Don't just re-render the default picker buttons and call it customized** — reproduce the reference's item layout (icon + label), selected-tab tint, and bar background. Build labeled items as `Pressable`s that call the SAME context actions the SDK buttons use (`attachmentPickerStore.setSelectedPicker(...)`, `useMessageInputContext().pickFile()` / `openPollCreationDialog({ sendMessage })`), and read the active tab from `useAttachmentPickerState().selectedPicker`. **Bar position:** the default host renders `AttachmentPickerSelectionBar` at the TOP of the sheet (above the grid); a bottom bar requires replacing the whole `AttachmentPicker` host via `OverlayProvider`'s `AttachmentPickerComponent` (internal bottom-sheet wiring) — call that out if you keep it on top. Only show tabs the app backs (e.g. Gallery/File/Poll); drop unbacked ones (Location/Checklist) rather than shipping dead tabs. **Mixed camera+library picker:** if the reference shows a single combined picker (live camera preview inline with the photo grid, as in iOS's own sheet), RN Chat has no combined picker — split it into **separate library and camera tabs** (`MediaPickerButton` → `images` tab, `CameraPickerButton` → `camera-photo`/`camera-video`), don't try to fake one merged surface. Check if picker is open or not with `attachmentPickerStore.state.getLatestValue().selectedPicker` |
+| Attachment bar | Layout (one row or multiple rows?) and position (above or under selected attachment type content) of the bar? Custom attachment bar icons (gallery, polls, files, etc.)?  Or fully custom layout (for example list)?  | Theming for recolor; Override for custom icons; `AttachmentPickerSelectionBar` for the bar; `AttachmentPicker` for a fully custom picker; verify from SDK source code default layout and behavior and decide the override scope; **Don't just re-render the default picker buttons and call it customized** — reproduce the reference's item layout (icon + label), selected-tab tint, and bar background. Build labeled items as `Pressable`s that call the SAME context actions the SDK buttons use (`attachmentPickerStore.setSelectedPicker(...)`, `useMessageInputContext().pickFile()` / `openPollCreationDialog({ sendMessage })`), and read the active tab from `useAttachmentPickerState().selectedPicker`. **Bar position:** the default host renders `AttachmentPickerSelectionBar` at the TOP of the sheet (above the grid); a bottom bar requires replacing the whole `AttachmentPicker` host via `OverlayProvider`'s `AttachmentPickerComponent` (internal bottom-sheet wiring) — call that out if you keep it on top. Only show tabs the app backs (e.g. Gallery/File/Poll); drop unbacked ones (Location/Checklist) rather than shipping dead tabs. |
+
+**Mixed camera+library picker:** if the reference shows a single combined picker (live camera preview inline with the photo grid, as in iOS's own sheet), RN Chat has no combined picker — split it into **separate library and camera tabs** (`MediaPickerButton` → `images` tab, `CameraPickerButton` → `camera-photo`/`camera-video`), don't try to fake one merged surface. Check if picker is open or not with `attachmentPickerStore.state.getLatestValue().selectedPicker`
 
 > **Gap between the composer and the attachment picker → you forgot `topInset` on `Channel`.** When the picker opens, the docked composer shifts up by the picker's full reserved height (`attachmentPickerBottomSheetHeight`, default `333`), but the bottom sheet's snap position is computed from `Channel`'s **`topInset`**. If `topInset` is missing/too small, the sheet is clamped short and opens *low* while the composer has already shifted its full amount → a large empty band between them (looks like the picker "detached" from the input).
 >
@@ -379,6 +382,7 @@ Applies across all products.
 | Fonts, accent color | — | Theming | theme font / color keys |
 | Light/dark behavior | pin brand colors, keep structural surfaces semantic | Theming | Build **two palettes** and select on `useColorScheme()` (from `react-native`); pin brand/content, keep surfaces semantic (light/dark carve-out above). **Verify by flipping the OS appearance** and re-screenshotting — see the dark-mode toggle in [SIMULATOR-VERIFICATION.md](SIMULATOR-VERIFICATION.md); confirm surfaces flip while pinned brand colors hold. |
 | Spacing | component overrides | Theming | Ensure that overriden components have proper spacing; especially inside a rounded message bubble. |
+| Icons | shape, color, size | Theming or structural | Only create custom icons if the shape is truly different (for example paperclip instead of plus); don't change a mic icon with another, slightly different mic icon |
 
 ### When the reference is inconclusive - ask, don't guess
 
