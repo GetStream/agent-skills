@@ -159,6 +159,7 @@ class _ChannelPageState extends State<ChannelPage> {
             ),
             threadBuilder: (_, parent) => ThreadPage(parent: parent!),
             onReplyTap: _reply,
+            onEditMessageTap: _edit,
           ),
         ),
         StreamMessageComposer(
@@ -176,6 +177,13 @@ class _ChannelPageState extends State<ChannelPage> {
       _focusNode.requestFocus();
     });
   }
+
+  void _edit(Message message) {
+    _composerController.editMessage(message);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _focusNode.requestFocus();
+    });
+  }
 }
 ```
 
@@ -186,6 +194,7 @@ class _ChannelPageState extends State<ChannelPage> {
 - `threadBuilder` (top-level) receives the parent message and returns the thread screen
 - `config.swipeToReply: true` enables the swipe-to-quote gesture
 - `onReplyTap` sets `quotedMessage` on the composer controller and focuses the input
+- `onEditMessageTap` is the edit-mode mirror of `_reply`: `_composerController.editMessage(message)` loads the message text into the composer, then focus the input
 - `StreamMessageComposer` is the composer widget; its controller parameter is `messageComposerController:`
 - Dispose both `_composerController` and `_focusNode` in `dispose()`
 
