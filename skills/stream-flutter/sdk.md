@@ -18,6 +18,36 @@ Three tiers with increasing control:
 
 Default to `stream_chat_flutter` unless the user explicitly needs custom UI or low-level control.
 
+**One import, several packages — and where symbols actually live (grounding method).** The chat
+stack is split across packages, but `stream_chat_flutter` **re-exports** the ones you use for UI +
+data, so a single `import 'package:stream_chat_flutter/stream_chat_flutter.dart'` transitively
+exposes all of them:
+
+- `stream_chat_flutter` (pre-built widgets) → re-exports `stream_chat_flutter_core` (headless
+  controllers: `StreamChannelListController`, `StreamUserListController`, `PagedValueListenableBuilder`,
+  the `StreamChannel` widget) → re-exports `stream_chat` (LLC: `StreamChatClient`, models, `Filter`).
+- `stream_chat_flutter` **also** re-exports `stream_core_flutter` (imported as `core` inside the SDK):
+  the **theming + low-level UI components** — `StreamTheme` (a `ThemeExtension`), `messageItemTheme`
+  / `StreamMessageItemThemeData` (`.bubble`, `.text`, …), the component factory
+  (`StreamComponentBuilders` / `StreamComponentFactory`), `StreamMessageLayout`, `StreamColorScheme`.
+
+**Imported separately (NOT re-exported):** `stream_chat_persistence` (offline) and
+`stream_chat_localizations` (localized strings) — add these imports explicitly.
+
+**Grounding method — don't declare an API missing from a scoped grep.** Because a symbol you use
+may be *defined* in any of these transitive packages (e.g. `StreamTheme` lives in
+`stream_core_flutter`, not `stream_chat_flutter/lib/src`), a `grep 'class X' stream_chat_flutter/lib`
+that comes back empty means **you looked in the wrong package, not that the API is gone**. To
+confirm a symbol exists/its signature: grep the **whole resolved set** (all `stream_chat*` **and**
+`stream_core_flutter` under `~/.pub-cache`), or just write the code against the documented symbol
+and let the analyzer/compiler confirm. The API surface these skills describe is real; find it before
+concluding it drifted.
+
+**Gate — a "missing API" claim requires cited evidence of absence.** Never report a symbol as
+missing / renamed / unsupported — to the user, or implicitly by hand-rolling a workaround — unless
+you can point to the check that failed: the whole-resolved-set grep above, or a compile error
+against the pinned version. A scoped grep is not evidence of absence.
+
 ### Feeds
 
 One package — no pre-built UI:

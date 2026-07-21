@@ -276,7 +276,7 @@ A custom UI is not done until it builds, runs against **real seeded data**, and 
    ```
 2. **Run on a pinned device/simulator with hot reload**, and **wait for connect + the initial fetch to finish** before screenshotting (a too-early shot catches the "connecting" state).
 3. **Measure the reference** (`sips`; divide by the scale factor to logical pixels) for the repeating elements — avatar diameter, row spacing, composer height, any app-chrome bar — and match them, don't eyeball (see [`design-matching.md`](design-matching.md) "How to actually get the dimensions right").
-4. **Compare every region** — header (back/title/badge/actions), the feed row layout, the composer, and the app chrome — PASS/FAIL, and iterate until each passes. Implement **every** region, the composer and app chrome included — no "known gaps" ([`RULES.md`](RULES.md) design-match rule applies to custom UIs too).
+4. **Compare every region** — header (back/title/badge/actions), the feed row layout, the composer, and the app chrome — PASS/FAIL, and iterate until each passes. Implement **every** region, the composer and app chrome included — no "known gaps" ([`design-matching.md`](design-matching.md) Step 5's "no known gaps" rule applies to custom UIs too).
 5. Delete any throwaway verification scaffolding before delivery.
 
 ---

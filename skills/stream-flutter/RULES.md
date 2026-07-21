@@ -106,3 +106,9 @@ Load only the product/package reference files that match the request.
 - `FEEDS-FLUTTER.md` + `FEEDS-FLUTTER-blueprints.md` for Activity Feeds (`stream_feed` / `stream_feed_flutter_core`)
 
 Do not invent missing API details. If a requested pattern is not bundled yet, say so plainly and fall back to guidance from [`sdk.md`](sdk.md) or live docs only when the user wants that.
+
+---
+
+## Never assume a default
+
+Never assume a widget's default behavior, what a callback does, what a theme token controls, or that two widgets auto-wire to each other (a message list and a composer do not). Ground the claim against the pinned SDK source, or drive it on the device and watch it happen. Unverified assumptions about defaults are where migrations and design-matches silently lose features.

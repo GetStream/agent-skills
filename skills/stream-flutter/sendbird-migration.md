@@ -11,6 +11,11 @@ Golden rule: **change as little application code as possible.** Preserve the app
 navigation, and state management (cross-ref [`RULES.md`](RULES.md) → "Project ownership"). Swap
 what's *inside* the SDK touchpoints, not the touchpoints themselves.
 
+Exit criterion — read before starting: **the migration is done when the fidelity matrix (§0.5) has
+zero `pending` rows** — every **Sendbird-backed** screen, region, and interaction (§0's touchpoints;
+not the app's unrelated screens) verified with named evidence. A green build that renders every screen
+is *not* done, and no prose summary substitutes for the matrix.
+
 ---
 
 ## 0. Detect the integration shape (do this first)
@@ -69,29 +74,132 @@ Swapping the SDK so the app *builds and connects* is the easy 80%. The migration
 in the channel **list** — they live **inside the chat** (bubbles, alignment, composer buttons, custom
 cards). A green build and a correct channel list are **not** "done".
 
-**"Done" means every source capability is accounted for — not that it builds.** Functional parity
-(builds, connects, renders) is the floor, not the finish. Before you may call a migration done, produce an
-explicit **parity account**: walk the source screen by screen and list every screen, control, and
-interaction it has, and mark each **matched**, **deferred (and told to the user)**, or **not reproducible
-(and told to the user, with what + why)**. A capability in none of those three states is a **silent drop**
-— the failure this gate exists to prevent; never silently omit anything the source did. If you cannot run
-the source to build this account (no backend, headless), you **cannot** claim fidelity — say the fidelity
-pass is unverified and list what is therefore unchecked. Enumerating forces the confrontation that scanning
-the source does not: real drops — a channel-row long-press, a dark theme, a simplified settings screen —
-are capabilities that were never *listed*, not ones that were judged and cut. This account is the
-checklist's exit criterion (§9).
+**"Done" is a filled fidelity matrix — not a green build, and not a prose account of completeness.**
+Functional parity (builds, connects, renders) is the floor, not the finish. The gate is a **fidelity
+matrix** you **create as a file when you capture the source baseline, before writing any Stream code**,
+and must finish before you may say "done":
+
+- **Enumerate first, from the source app — scoped to the screens the migration touches.** Rows come
+  from the **Sendbird-backed screens only** (§0's touchpoints): screens rendering Sendbird UI widgets,
+  the developer's own screens fed by Sendbird data, and the connect flow. An app screen with no
+  Sendbird involvement (a payments page, an unrelated profile editor) gets **no rows** — the migration
+  doesn't touch it, so there is nothing to verify; matrixing the whole app is overshoot, not rigor.
+  (The only app-wide check: a shared edit such as `MaterialApp.theme` didn't bleed into non-chat
+  screens — a spot-check, not rows.) Within that scope: one row per screen × region and per
+  interaction, next to your baseline screenshots (a file survives a long session; an intention
+  doesn't), every row starting `pending`. Enumerating up front is the point: real drops — a channel-row
+  long-press, a dark theme, a composer button — are capabilities that were never *listed*, not ones
+  judged and cut. An in-scope capability in no row is a **silent drop**, the failure this gate exists
+  to prevent. A matrix first written at the end just narrates whatever you happened to do — that is
+  self-attestation, not verification.
+- **Two kinds of row — `render` and `drive`.** `render` rows compare appearance; `drive` rows are
+  interactions performed on the device. Rendering is not behavior: a screen that paints can still be
+  behaviorally dead, so **a screenshot never closes a `drive` row**. Drive rows are enumerated **from
+  the source, not from a template** — an interaction the source doesn't have gets **no row**; never
+  add a feature to fill the matrix (golden rule). Hunt the source against this canonical list, because
+  when present these are the interactions that get silently dropped: **send text · send an attachment
+  via the picker · Reply → composer shows the quote → send → quoted message renders · Edit → composer
+  loads the text → save → edited message shows · long-press → actions menu · react from the picker ·
+  open a thread and reply · channel-row long-press · mark-read**.
+- **The composer is mandatory — no run ships it at the Stream default.** It is the region every run
+  misses, for three compounding reasons: §3's swap is one line, so it registers as "migrated" the
+  moment it mounts; the Sendbird composer is internal ("nothing to swap 1:1"), which gets misread as
+  "nothing to match"; and the Stream default *looks* plausibly right while its differences hide below
+  thumbnail scale. So: integrate `StreamMessageComposer` and **match it to the baseline like any
+  other region** — and it enters the matrix decomposed, never as one row: **leading control(s) ·
+  placeholder text · field container (fill/border/radius/height) · send/trailing control +
+  rest⇄typing swap · affordances the source does NOT have · edit + quote states**, each closed by a
+  native-scale before/after pair, not a glance. Check the added direction too: Stream's default ships
+  affordances most sources lack (the voice/mic button — `enableVoiceRecording: false`), and an added
+  control is a FAIL exactly like a dropped one. If an aspect genuinely cannot be reproduced, the
+  deferral names that **one aspect** (per the deferral rule below) — a deferral never covers the
+  composer wholesale.
+- **The message row enters the matrix decomposed the same way — per side (incoming and outgoing):
+  author name · timestamp · read/delivery indicator · avatar · bubble, plus every further element the
+  source row renders (reactions, reply/thread summary, edited label, pinned indicator, …).** The named
+  five are the floor, not the list — inventory the baseline row and give each element its own row, so
+  nothing the source shows goes unlisted. Each row records **position**, not presence: an element
+  present in both SDKs' default rows reads "matched" at a glance while sitting somewhere else, which
+  is why a placement row closes only on a native-scale crop pair, never a full-screen thumbnail.
+  Row-level *interactions* the source has (swipe-to-reply, long-press menu, tap a reaction) are
+  `drive` rows, per the drive-row rule above.
+- **Evidence is a column, not an adjective — and Mechanism is named at enumeration time:**
+
+  | Screen | Region / Interaction | Kind | Mechanism | Status | Evidence |
+  |---|---|---|---|---|---|
+  | Chat | outgoing bubble | render | `messageItemTheme.bubble` | matched | before-03 ↔ after-03 |
+  | Chat | author name above bubble | render | core `messageContent` slot | matched | before-05 ↔ after-05 |
+  | Chat | composer: no mic | render | `enableVoiceRecording: false` | matched | before-03 ↔ after-03 |
+  | Chat | Reply → composer | drive | `onReplyTap → controller.quotedMessage` | matched | tapped Reply on sim; quote preview above input (after-07) |
+  | Settings | promote to operator | drive | none — LLC/factory grep empty | not-reproducible | no client-side call in v10.1 (§3 moderation inventory); surfaced to user |
+
+  **Mechanism is filled when the row is created — before implementation, while there is no sunk cost
+  to defend**: the slot / theme token / wiring that reaches the region
+  ([`design-matching.md`](design-matching.md) Step 2). "No mechanism exists" may only be written next
+  to the failed check that proved it ([`sdk.md`](sdk.md) → evidence of absence), never next to an
+  argument. A `matched` render row names the before/after pair it was actually compared against; a
+  `matched` drive row names the action performed and the observed result. **A `matched` with empty or
+  vague evidence is still `pending`.** `deferred` / `not-reproducible` require a named, grounded
+  missing SDK API (the deferral rule below) *and* being surfaced to the user — never silently. On the
+  preserve path, `render` rows compare for **zero visual change**.
+- **Exit = zero `pending` rows, and the final matrix pasted into your completion report** — the user
+  sees exactly what was verified, how, and what was deferred. If you cannot run the source to
+  enumerate the matrix (no backend, headless), you **cannot** claim fidelity — say the pass is
+  unverified and list what is therefore unchecked. **"Cannot run" must name the failed route** — an
+  empty or logged-out source does not qualify: Sendbird auto-creates a user on `connect(userId)`
+  unless the app enforces access tokens, so a second connect-in-code session can send the cross-user
+  data the baseline needs (ask the user for a test user/token only when tokens are enforced).
+
+**The deferral rule — "risky", "more effort", or "it would lose sub-features" never justifies
+`deferred` / `not-reproducible`.** Before using either status, name the **specific missing SDK API**,
+grounded against the pinned source ([`sdk.md`](sdk.md) → a missing-API claim requires cited evidence of
+absence). On the **preserve path** the widgets are yours, so UI is never the blocker — a valid deferral
+there names a missing **data/API capability** (e.g. the §3 moderation gaps). If there is a low-risk
+path you haven't checked, the region is not deferrable — do the work. And on the **rebuild path** the
+low-risk path usually exists: Stream v10 exposes **fine-grained component sub-slots**
+(`messageHeader`, `messageFooter`, `messageContent`, `messageComposerLeading`,
+`messageComposerInputLeading`, `avatar`, the per-attachment builders, …) — overriding a sub-slot
+restructures **one region while the default composite keeps running**, so reactions, threads, status,
+grouping, quoted messages, and attachments all survive. "Custom row = lose the sub-features" is
+**false** — and it is the exact rationalization behind the most-skipped restructure: **re-ordering the
+message row's metadata** (author name, timestamp, avatar, receipts) to the source's positions. When
+the source places them differently from Stream's default row, re-order them: the migration replicates
+the **original's** layout and behavior, never Stream's default (unless the user explicitly asks for
+Stream defaults). Reach for a full row/widget rebuild only after confirming no sub-slot reaches the
+region ([`design-matching.md`](design-matching.md) Step 2).
+
+Two hard edges on top:
+- **Deferral evidence is a failed check, never an argument.** Valid: the whole-resolved-set grep, a
+  compile error against the pinned version, the diff of an attempt that failed. Not valid: risk
+  reasoning ("restructuring would drop reactions/threads/grouping") or equivalence reasoning ("the
+  same information is already shown elsewhere") — both are the rationalization this rule pre-refutes,
+  and writing either means the next action is the slot grep, not a sentence in the report.
+- **The status set is closed.** There is no "documented difference", "residual difference", or
+  "noted honestly": a row that is not `matched` and not evidence-backed `deferred` /
+  `not-reproducible` is `pending`, and a matrix with `pending` rows is not done.
 
 **The source app IS the benchmark — build it first if it's missing.** Never design a migrated screen
-from scratch or against Stream's defaults. Run the Sendbird app and screenshot every screen/variant
-(list **and** chat, an incoming **and** an outgoing message); those shots are the spec. If you're adding
+from scratch or against Stream's defaults. Run the Sendbird app and screenshot every **in-scope
+(Sendbird-backed)** screen/variant (list **and** chat, an incoming **and** an outgoing message); those
+shots are the spec. If you're adding
 a *new* use-case that has no Sendbird original yet, **build the Sendbird version first** (in the source
 SDK) and screenshot it — going straight to Stream invents a design with nothing to check against, and it
 will be wrong. A git worktree at the Sendbird baseline lets you build the reference without disturbing
 the Stream work.
 
+**To screenshot the source for the reference, you have to get past its login too.** The Sendbird app
+gates its SDK behind a connect call (`SendbirdChat.connect(userId, accessToken: token)`), usually fired
+from a login screen. Reach its real list/chat screens by whichever works: press the login with the
+platform automation tool (Android `adb shell input tap`, iOS `idb ui tap`), drive it with an
+integration-test harness, or connect the source in code at launch so it skips the login screen — same
+options and order as the migrated app's verification pass ([`design-matching.md`](design-matching.md)
+Step 5). The reference is only valid once you've reached the real screens, not the login.
+
 **When this pass applies.** Design fidelity is the default when migrating an existing app. If the user
-instead accepts Stream's defaults, this pass — and [`design-matching.md`](design-matching.md) — is out
-of scope; run the functional verification only.
+instead accepts Stream's defaults, the *look-matching* half of this pass — and
+[`design-matching.md`](design-matching.md) — is out of scope: drop the matrix's `render` rows. The
+**`drive` rows still gate "done"** — functional parity is never waived, so the matrix, its evidence
+rules, and the zero-`pending` exit stay in force for the interaction rows.
 
 **"Fidelity" means different things per the §0 fork:**
 - **Preserve path (own widgets kept):** you didn't touch the widgets, so *looks* is satisfied for free —
@@ -176,6 +284,20 @@ of scope; run the functional verification only.
   one to be sure of — it's where the bubble fill/text match shows. Delete any throwaway verification
   scaffold before delivery and re-verify on the real navigation path ([`RULES.md`](RULES.md) → "Project
   ownership"). Confirm Sendbird is fully removed (`grep -ri sendbird lib/` is empty).
+- **Run on a device you confirmed is booted** — `flutter devices` → `flutter run -d <deviceId>`; never
+  hardcode a device model or OS version you have not confirmed appears in `flutter devices` (a guessed
+  target makes the first build stall while the toolchain tries to create it). To reach a gated or nested
+  screen, drive the UI with the platform automation tool (Android `adb shell input tap`, iOS `idb ui
+  tap`); if none is available, fall back to an integration-test harness (taps in-engine — run observably,
+  never blind-`tail`-piped) or connect-in-code + a throwaway scaffold. Full platform notes:
+  [`design-matching.md`](design-matching.md) Step 5. If the device / app / run session **wedges
+  mid-pass** (baseline capture or verification), recover up the Step-5 ladder — hot restart → relaunch
+  `flutter run` → reboot the emulator/simulator → switch to another confirmed-booted device. Evidence
+  already captured stays valid; redo only the wedged step. A device **switch** changes scale:
+  re-shoot the affected baseline pairs on the new device (server-side seeding makes this cheap) or
+  compare proportionally. An environment failure is **never** a deferral: matrix rows you cannot
+  verify stay unverified, the migration is not done, and your report names them — they are never
+  quietly marked `matched` or `deferred`.
 
 ---
 
@@ -239,7 +361,7 @@ Use a CLI-minted token via `getstream token <id>` for local (see [`SKILL.md`](SK
 | `SBUGroupChannelListScreen` | `StreamChannelListView(controller:, onChannelTap:)` |
 | `SBUGroupChannelScreen` | compose it yourself: `StreamChannel` → `Scaffold(appBar: StreamChannelHeader(), body: Column([StreamMessageListView(), StreamMessageComposer()]))` |
 | `SBUGroupChannelCreateScreen` / `…SettingsScreen` / `…MembersScreen` | build with Stream controllers + widgets as needed |
-| composer — the input region inside `SBUGroupChannelScreen` (an internal component, not a public widget, so nothing to swap 1:1) | `StreamMessageComposer` |
+| composer — the input region inside `SBUGroupChannelScreen` (an internal component, not a public widget, so nothing to swap 1:1) | `StreamMessageComposer` — that the Sendbird composer is not a public component is **no waiver**: replicate its original **appearance and functionality** anyway. Do it with the Stream pieces first — `StreamMessageComposer` + its props / theme / sub-slot overrides ([`design-matching.md`](design-matching.md) → Composer) — and hand-build a composer on `StreamMessageComposerController` **only as a fallback** when those can't reach the original. Matched to the baseline via §0.5's composer row set, never shipped at the Stream default. |
 
 **Biggest structural difference: Stream Flutter has no built-in navigation.** Sendbird UIKit pushes
 its own screens; Stream widgets don't. Add a routing layer wired to the app's existing router
@@ -247,22 +369,40 @@ its own screens; Stream widgets don't. Add a routing layer wired to the app's ex
 in `StreamChannel(channel: channel, child: …)`. The `StreamChat` → `StreamChannel` →
 `StreamMessageListView` provider nesting is mandatory here (a hard runtime constraint — §8).
 
-**Composing the chat screen means you own its action wiring.** UIKit shipped these behaviors inside its
-screens; a composed screen connects them itself — reply/edit to the composer controller, `threadBuilder`
-for threads, `onChannelLongPress` for a channel action sheet. Follow the message-list action-wiring
-recipes in [`references/CHAT-FLUTTER.md`](references/CHAT-FLUTTER.md); keep the default row/tile and
-override only what differs so each keeps its built-in behavior.
+**Composing the chat screen means you own its action wiring — the defaults do NOT auto-wire.** A bare
+`StreamMessageListView` + `StreamMessageComposer` in the same `Column` are **not connected**: Reply /
+Edit / quote / thread silently do nothing until you share one `StreamMessageComposerController`
+(passed as `messageComposerController:`) and wire the list view's `onReplyTap:`
+(→ `controller.quotedMessage = message`), `onEditMessageTap:` (→ `controller.editMessage(message)`),
+and `threadBuilder:` — the canonical recipe is
+[`references/CHAT-FLUTTER-blueprints.md`](references/CHAT-FLUTTER-blueprints.md) → Channel Page
+Blueprint; follow it, don't re-derive it. Assuming a Stream widget "just handles it" is the #1 silent
+behavioral drop in a composed screen — these are `drive` rows in the fidelity matrix (§0.5): if you
+didn't drive it on the device, it doesn't work. UIKit also shipped channel-row actions inside its
+screens — wire `onChannelLongPress` for a channel action sheet where the source had one. Keep the
+default row/tile and override only what differs so each keeps its built-in behavior.
 
 **Stream ships composable widgets, not assembled screens.** Several Sendbird UIKit screens have **no
 pre-built Stream equivalent** — create-channel, settings, channel-info, and invite are rebuilt from Stream
 controllers + widgets (`StreamChannelListController` / `StreamUserListController` / `StreamMemberListView`),
-and **moderation** (operators / muted / banned) has no Stream UI at all, only low-level moderation calls
-— so build the screen or scope it out. Map a mute action to Stream's mute primitive (`channel.mute()`
-channel-scoped, `client.muteUser` user-scoped), not to a ban (a ban removes access — a different, heavier
-action); where the mute semantics don't line up 1:1 with the source, **state the difference explicitly**
-rather than silently substituting a near-match. **Rebuilding a screen does not license dropping
+and **moderation** (operators / muted / banned) has no Stream UI at all — and the client-side API covers
+only part of it, so build or scope out the screen per this capability inventory (verified against v10.1),
+not by assuming a call exists:
+- **Ban / unban / shadow-ban HAVE client-side calls:** `channel.banMember(userId, opts)` /
+  `channel.unbanMember(userId)` / `channel.shadowBan(userId, opts)`; list via
+  `channel.queryBannedUsers()` → `.bans` (a `List<BannedUser>`).
+- **Operator promotion has NO client-side call** — nothing maps to Sendbird's `addOperators`;
+  `Member.channelRole` / `Member.isModerator` are read-only, server-assigned. Surface it as a gap
+  (server-side role assignment), don't fake it with another call.
+- **Channel-scoped member mute (Sendbird's operator mute — the member is silenced for everyone) has NO
+  Stream equivalent.** Don't substitute the near-matches: `client.muteUser(id)` mutes that user *for the
+  current viewer only*, and `channel.mute()` mutes the *channel's notifications for the current user* —
+  both are viewer-side preferences, not moderation. A ban is the nearest enforcement primitive but is a
+  heavier action (removes access); where the source's mute semantics don't line up 1:1, **state the
+  difference explicitly** rather than silently substituting a near-match. **Rebuilding a screen does not license dropping
 its contents:** inventory every control and interaction the source screen has and reproduce each,
-matching the reference's look as well as its controls (§0.5) — a rebuild silently loses whatever you don't re-add (e.g. a settings toggle, a multi-select member picker, a
+matching the reference's look as well as its controls — every one of them a row in the fidelity matrix
+(§0.5) — a rebuild silently loses whatever you don't re-add (e.g. a settings toggle, a multi-select member picker, a
 channel-row long-press action sheet — illustrative, not a closed list). Anything you genuinely cannot
 reproduce must be **surfaced explicitly**, never silently omitted (§0.5).
 
@@ -284,7 +424,8 @@ Trap: a `Channel` from `client.channel(...)` is uninitialized until `.watch()` i
 `isDistinct` (id starts with `!members` — Stream's auto-generated distinct-channel id), and `isGroup`. Prefer
 `channel.isOneToOne` for DMs created the Stream-native way (no explicit id → distinct). **Migration gotcha:**
 if you preserved the Sendbird `channelUrl` as an explicit channel `id`, the channel is **not** distinct, so
-`isOneToOne`/`isDistinct` return `false` — fall back to `channel.memberCount <= 2`. (Don't key off an empty
+`isOneToOne`/`isDistinct` return `false` — fall back to `(channel.memberCount ?? 0) <= 2` (`memberCount`
+is `int?`, so the bare comparison doesn't compile). (Don't key off an empty
 `name`; Stream DM channels usually have one.)
 
 **Open channels → `livestream`.** Sendbird's Flutter UIKit is group-channel-only, so this applies when
@@ -333,6 +474,9 @@ is **final** (no setter) — to change a channel-list filter at runtime, constru
 | `channel.sendFileMessage(FileMessageCreateParams(...))` | `channel.sendMessage(Message(attachments: [Attachment(type: …, file: AttachmentFile(...))]))` — auto-uploads. Pick `type` by mime (`image`/`video`/`audio`/`file`) from `AttachmentFile.mediaType` so each renders with its proper UI. Low-level `client.sendImage/sendFile(...)` exist for an explicit upload step. |
 | `params.customType` (String) + `params.data` (**JSON string**) | `Message(extraData: {…})` (structured `Map`) **or** a typed custom `Attachment` |
 | read `message.customType` / `message.data` | read `message.extraData[...]` / `message.attachments` |
+| `channel.addReaction(message, key)` / `channel.deleteReaction(message, key)` | `channel.sendReaction(message, Reaction(type: key))` / `channel.deleteReaction(message, Reaction(type: key))` |
+| read `message.reactions` (each `Reaction` carries `.userIds`) | counts per type: `message.reactionGroups` (`Map<String, ReactionGroup>`); the current user's own: `message.ownReactions`; the most recent reactors (with `user`): `message.latestReactions`. There is no full per-type `userIds` list on the message — a "who reacted" sheet needs `latestReactions` or a server-side query. |
+| `AdminMessage` (announcements / system notices) | detect via `message.type == MessageType.system`; render via `StreamMessageListView`'s `builders.systemMessage`. Like Sendbird admin messages, these originate server-side — seed them via the CLI (§7), not the client. |
 
 **Custom cards / structured payloads** — one canonical path: define a custom `Attachment(type:
 'my_type', extraData: {...})`, send it in `Message.attachments`, and render it by subclassing
@@ -411,6 +555,10 @@ per-message math: the `readsOf(message:)` extension on the read list returns who
 message (reads whose `lastRead >= message.createdAt`, sender excluded) — "unread by member" is the
 remaining members.
 
+The **app-total badge** (Sendbird's `SendbirdChat.getTotalUnreadMessageCount()`) is
+`client.state.totalUnreadCount` (live: `client.state.totalUnreadCountStream`) — it lives on
+`ClientState`, not on the client itself.
+
 ### Timestamps are UTC
 
 Server-synced Stream `DateTime`s (`message.createdAt`, `channel.createdAt`) are **UTC** —
@@ -474,17 +622,25 @@ the client.
 ---
 
 ## 9. Procedure checklist
-1. **Detect** the integration shape (§0).
-2. **Swap packages** (§1).
-3. **Credentials**: API key + token via the CLI (§2, [`SKILL.md`](SKILL.md) Step 0.5).
-4. **Wire one client** + provider; repoint existing bootstraps without changing their public API (§2).
-5. **Migrate each touchpoint** — views + navigation (§3), channels (§4), messages/attachments (§5).
-6. **Re-apply theming/customization** via the two axes (§6, [`design-matching.md`](design-matching.md)).
-7. **Move seeding server-side** (§7).
-8. **Complete the parity account** (§0.5) — every source screen/control/interaction marked matched /
-   deferred-and-surfaced / not-reproducible-and-surfaced, backed by the source-vs-migrated screenshots
-   you compared. This account, not a green build, is the exit criterion.
-9. **Offer data migration** (§10).
+1. **Detect** the integration shape + the per-widget UI strategy (§0).
+2. **Capture the source baseline + create the fidelity matrix** (§0.5) — run the Sendbird app,
+   screenshot every **Sendbird-backed** screen/variant (§0's touchpoints — not the app's unrelated
+   screens), and enumerate every region + interaction **the source has** into the matrix file, all
+   rows `pending`, each structural `render` row with its **Mechanism** named (§0.5) and the composer
+   **and message row** decomposed into their mandatory row sets (§0.5). Migration coding starts only
+   after this file exists.
+3. **Swap packages** (§1).
+4. **Credentials**: API key + token via the CLI (§2, [`SKILL.md`](SKILL.md) Step 0.5).
+5. **Wire one client** + provider; repoint existing bootstraps without changing their public API (§2).
+6. **Migrate each touchpoint** — views + navigation + action wiring (§3), channels (§4),
+   messages/attachments (§5).
+7. **Re-apply theming/customization** via the two axes (§6, [`design-matching.md`](design-matching.md)).
+8. **Move seeding server-side** (§7).
+9. **Finish the fidelity matrix** (§0.5) — every `render` row compared against its baseline pair
+   (preserve path: zero visual change), every `drive` row performed on the device, **zero `pending`**,
+   every non-matched row surfaced to the user. **The filled matrix — not a green build, not this
+   checklist — is the exit criterion; paste it into your completion report.**
+10. **Offer data migration** (§10).
 
 ---
 
