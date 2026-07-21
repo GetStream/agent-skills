@@ -34,7 +34,7 @@ Note that "livestream" / "live-shopping" are **signals, not labels** — they ro
 If still ambiguous, ask one question (from [`SKILL.md`](SKILL.md)):
 > Does this chat look like a standard messenger (channel list + bubbles), or a bespoke surface like livestream/overlay chat? It decides whether we customize the pre-built components or build custom UI on `stream_chat_flutter_core`.
 
-State the decision and the signals that drove it before writing code. If the answer is **components**, stop here and go to [`design-matching.md`](design-matching.md). The rest of this page is the custom path.
+State the decision and the signals that drove it before writing code. If the answer is **components**, stop here and go to [`design-matching.md`](design-matching.md) (read its procedure half in full — it fits one Read; its Reference half is per-region lookup). The rest of this page is the custom path.
 
 ---
 
@@ -44,7 +44,7 @@ The custom path uses **`stream_chat_flutter_core`** (the headless controllers / 
 
 ```yaml
 dependencies:
-  stream_chat_flutter_core: ^10.1.0
+  stream_chat_flutter_core: ^10.0.0
 ```
 
 `stream_chat_flutter_core` re-exports the low-level client and models — `StreamChatClient`, `User`, `Message`, `Channel`, `Filter`, `PaginationParams` — so importing it is enough:

@@ -123,8 +123,8 @@ one is why a screen "looks migrated" but is still off:
   receipts) to the source's positions. Replicate the **original's** layout and behavior, never Stream's
   default (unless the user explicitly asks for Stream defaults). Overriding a **composite** slot drops
   the sub-features the default rendered — read its `build()` and reproduce them. Full procedure:
-  [`design-matching.md`](design-matching.md) (components) or [`custom-ui.md`](custom-ui.md)
-  (bespoke/livestream).
+  [`design-matching.md`](design-matching.md) (components — read its procedure half in full, one Read;
+  Grep its Reference half per region) or [`custom-ui.md`](custom-ui.md) (bespoke/livestream).
 
 **2. Inspect EVERY screen variant, and inside it walk this checklist** — each is a Sendbird→Stream
 *default* gap a green build and a list-only screenshot hide:
