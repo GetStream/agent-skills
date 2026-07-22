@@ -285,6 +285,12 @@ per the color-sampling method in [design-matching.md](design-matching.md).
 - The simulator has **no camera or microphone** — voice/video *capture* can only be verified on a
   real device (see the Video reference). The composer mic *button* still renders (with `expo-audio`
   installed); its recording just won't produce audio.
+- **Physical-scale sizing reads correctly only on a device, not on the roomy sim window.** A
+  keyboard-height–relative size — the attachment-picker sheet height (`attachmentPickerBottomSheetHeight`,
+  should ≈ keyboard height), a safe-area gap, a bottom-bar height — can look fine on the large
+  simulator window while being visibly oversized/undersized on a phone. Verify these against the thing
+  they represent (the SDK default, a measured value), not by eye on the sim (a *green launch ≠ correct*
+  case, [../RULES.md](../RULES.md)); when a size stands for the keyboard/safe area, confirm on a device.
 - **Dev-only overlays — ignore them in screenshots:** the **Expo** dev-client overlays a small
   floating **gear / dev-menu launcher**; the **RN CLI** shows a **LogBox "Open debugger to view
   warnings" toast** at the bottom. Both are dev-only (gone in a release build) and not part of the

@@ -48,7 +48,7 @@ npx create-expo-app@latest MyApp
 cd MyApp
 ```
 
-If react-native-reanimated@4.5 + react-native-worklets@0.10 is installed, update those libraries to a minimum version of react-native-reanimated@4.5.1 + react-native-worklets@0.10.2.
+**Mandatory reanimated/worklets floor (Expo SDK 57).** `create-expo-app` on SDK 57 pins `react-native-reanimated@4.5.0` + `react-native-worklets@0.10.0`, a **known-crash pair** (crash is on worklet/animation paths, not at boot — a clean launch does NOT prove it's fixed). The Chat-Expo install block below ends with an explicit bump past that pin; it is not optional. After install, assert the versions (see §9) — never rely on remembering to bump, because `npx expo install` re-pins the crash version.
 
 RN CLI lane (only when the user asks for RN CLI or requirements point there):
 
@@ -67,6 +67,9 @@ Pick the product(s) confirmed in Step 0 of [`SKILL.md`](SKILL.md). Install one b
 npm view stream-chat-expo version dist-tags --json
 npx expo install stream-chat-expo@latest @react-native-community/netinfo expo-dev-client expo-image-manipulator react-native-gesture-handler react-native-reanimated react-native-svg react-native-teleport
 npx expo install react-native-safe-area-context
+# MANDATORY on Expo SDK 57: bump past the crash-prone bundled pin (4.5.0/0.10.0).
+# expo install re-pins the bad version above, so this override must come AFTER it.
+npx expo install react-native-reanimated@4.5.2 react-native-worklets@0.10.2
 npx expo prebuild
 ```
 
@@ -217,6 +220,8 @@ npx pod-install
 ```bash
 npm view stream-chat-expo version dist-tags --json
 npx expo install stream-chat-expo@latest @react-native-community/netinfo expo-dev-client expo-image-manipulator react-native-gesture-handler react-native-reanimated react-native-svg react-native-teleport
+# MANDATORY on Expo SDK 57: bump past the crash-prone bundled pin (4.5.0/0.10.0), AFTER the line above re-pins it.
+npx expo install react-native-reanimated@4.5.2 react-native-worklets@0.10.2
 ```
 
 Expo Chat apps use a dev-client/native-build lane by default because the SDK includes native code. If the app does not already have native projects, generate them:
@@ -534,6 +539,7 @@ Use the project's existing verification commands. Prefer the smallest checks tha
 
 **Chat:**
 
+- **On Expo SDK 57: assert `react-native-reanimated` ≥ 4.5.1 and `react-native-worklets` ≥ 0.10.2** (the SDK pins a crash-prone 4.5.0/0.10.0; verify by version number, not by "it launched" — the crash is on worklet paths, not at boot). Rebuild native after bumping.
 - Babel Reanimated/Worklets plugin is present and last
 - `OverlayProvider` and `Chat` are stable near the root
 - `ChannelList` renders for the connected user

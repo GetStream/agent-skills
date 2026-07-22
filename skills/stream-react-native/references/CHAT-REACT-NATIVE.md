@@ -220,6 +220,16 @@ Use [DOCS.md](DOCS.md) to fetch the manifest-selected theming/customization page
 
 `WithComponents` can wrap any subtree. Inner overrides merge over outer overrides.
 
+### Composer, attach button, and message-metadata facts
+
+Reference facts the composer/message customizations lean on (verified against **stream-chat-expo 9.7.0**; confirm against the installed package — the full design-match procedure is in [design-matching.md](design-matching.md#composer-deep-dive--the-render-tree-the-surfaces-and-the-two-facet-buttons)):
+
+- **Composer surface vs inner rows.** `messageComposer.wrapper` (and `floatingWrapper`) is the **full-bleed bar surface** (default: padding only, no background). `messageComposer.container` / `contentContainer` are inner `flexDirection: 'row'` layout rows sized to their children — theming `container` colours only a band around the controls, not the bar. The input pill is `inputBoxWrapper`; grow it via symmetric `inputBox` `paddingTop`/`paddingBottom`, not a fixed wrapper height (the pill doesn't vertically-centre a single line).
+- **Send/mic** is the SDK's `OutputButtons`, rendered **inside** the input pill (`MessageInputTrailingView`) and **stateful** (mic/audio at rest → send when the input has text). Reuse `OutputButtons` / `AudioRecordingButton`; don't hand-roll. Move it outside the pill via `MessageComposerTrailingView`.
+- **`toggleAttachmentPicker` is a private helper *inside* the SDK `AttachButton`** — composed from `openAttachmentPicker` / `closeAttachmentPicker` / `focusInputOnPickerClose` / `inputBoxRef` + `attachmentPickerStore`. It is **not on any context or hook**. A custom attach button must **replicate it, including the refocus-input-on-close branch** — not just call open/close. The SDK `AttachButton` also renders as a bordered `Button variant="secondary" type="outline"` with `icons.Plus` and swaps `+`→keyboard while the picker is open; a custom borderless `+` must reproduce that open-state swap.
+- **The messenger attach sheet (tiles on top + gallery below) is Stream's `AttachmentPicker`** — override `AttachmentPickerSelectionBar` via `WithComponents`; don't build a standalone modal.
+- **Metadata inside the bubble** (timestamp/ticks bottom-trailing) is structural — render in `MessageContentBottomView`/`MessageContentTrailingView` (inside the bubble), set `alignSelf`, reproduce the body padding, and set the default outside `MessageFooter` to `() => null`. Reuse `MessageStatus` for ticks.
+
 ---
 
 ## Offline support
@@ -273,6 +283,7 @@ When in doubt, run the probe and check the `EXPO_SDK` line before applying any b
 ## Gotchas
 
 - The bundled references assume React Native New Architecture.
+- **Expo SDK 57 pins a crash-prone `react-native-reanimated@4.5.0` + `react-native-worklets@0.10.0`.** Require ≥`4.5.1`/≥`0.10.2` (good pairing: `4.5.2`/`0.10.2`) and rebuild native — the crash is on worklet/animation paths, not at boot, so a clean launch does not clear it. `npx expo install react-native-reanimated` re-pins the bad version; the safe versions are baked into the [builder.md](../builder.md) install blocks. See [../RULES.md](../RULES.md) > Required peer setup.
 - `react-native-teleport` is required for overlays.
 - `useCreateChatClient` returns `null` while connecting.
 - Never pass `null` to `Chat`.

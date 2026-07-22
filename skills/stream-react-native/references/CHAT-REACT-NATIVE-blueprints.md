@@ -183,6 +183,8 @@ cd MyChatApp
 npm view stream-chat-expo version dist-tags --json
 npx expo install stream-chat-expo@latest @react-native-community/netinfo expo-dev-client expo-image-manipulator react-native-gesture-handler react-native-reanimated react-native-svg react-native-teleport
 npx expo install react-native-safe-area-context
+# MANDATORY on Expo SDK 57: bump past the crash-prone bundled pin (4.5.0/0.10.0), AFTER the line above re-pins it.
+npx expo install react-native-reanimated@4.5.2 react-native-worklets@0.10.2
 npx expo prebuild
 ```
 
@@ -579,22 +581,36 @@ Wiring:
 
 Always consult [DOCS.md](./DOCS.md) to find a relevant guide/cookbook, if there is no match, read SDK context and hooks to reuse business logic. Aim for using SDK provided hooks and contexts, only use low-level client if there are no hooks. Use `WithComponents` for custom subcomponents. Keep custom message rows memoized and use SDK context hooks.
 
+The two examples below are the **shape** to imitate for the most-missed design-match slots — the message-metadata-inside-the-bubble case and a custom attach button. **Confirm the exact hook, prop, and slot names against the installed package** (`node_modules/stream-chat-react-native-core`) for the pinned version before shipping — verified against **stream-chat-expo 9.7.0**; the pattern (which slot, which context hook, what to reproduce) is what generalizes, not the verbatim signatures. Full routing is in [design-matching.md](design-matching.md).
+
+**Example A — timestamp + read receipts INSIDE the bubble (WhatsApp/iMessage).** Render metadata in the in-bubble slot, reuse `MessageStatus` for the ticks, reproduce the bubble's padding, and suppress the default outside footer so it isn't duplicated:
+
 ```tsx
 import React, { memo } from "react";
+import { View } from "react-native";
 import {
-  Channel,
-  MessageComposer,
-  MessageList,
-  WithComponents,
-} from "stream-chat-react-native";
+  Channel, MessageComposer, MessageList, MessageStatus,
+  useMessageContext, WithComponents,
+} from "stream-chat-react-native"; // stream-chat-expo on the Expo lane
 
-const CustomSlotComponent = memo(() => {
-  // Use the context hook documented for the selected slot.
-  return null;
+// Inside the bubble background (MessageContentBottomView / …TrailingView are in-bubble slots;
+// MessageFooter / MessageHeader render OUTSIDE it).
+const InBubbleMetadata = memo(() => {
+  const { message } = useMessageContext();
+  const time = new Date(message.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  return (
+    // These slots have NO padding of their own — reproduce the content body's paddingHorizontal/Bottom,
+    // and alignSelf:'flex-end' to hug the trailing corner. Recolour ticks via theme, not a hand-rolled glyph.
+    <View style={{ flexDirection: "row", alignItems: "center", gap: 4, alignSelf: "flex-end", paddingHorizontal: 8, paddingBottom: 4 }}>
+      {/* timestamp Text here */}
+      <MessageStatus />
+    </View>
+  );
 });
 
 const overrides = {
-  DocumentedSlotName: CustomSlotComponent,
+  MessageContentBottomView: InBubbleMetadata,
+  MessageFooter: () => null, // suppress the default OUTSIDE footer so metadata isn't duplicated below the bubble
 };
 
 export const CustomChannel = ({ channel }) => (
@@ -607,12 +623,38 @@ export const CustomChannel = ({ channel }) => (
 );
 ```
 
+**Example B — a borderless custom attach button that behaves like the SDK's.** Do NOT drop in the raw SDK `AttachButton` (it is a bordered `type="outline"` button) — but DO reuse its behaviour: the `+`↔keyboard swap and the `toggleAttachmentPicker` logic (open/close **+ refocus the input on close**), which is a private helper inside `AttachButton`, not on any hook, so it must be replicated:
+
+```tsx
+import { Pressable } from "react-native";
+import { useAttachmentPickerContext, useMessageInputContext } from "stream-chat-react-native";
+
+const CustomAttachButton = () => {
+  const { openAttachmentPicker, closeAttachmentPicker, /* inputBoxRef, focusInputOnPickerClose */ } = useMessageInputContext();
+  const { selectedPicker } = useAttachmentPickerContext(); // truthy ≈ picker open
+  const isOpen = !!selectedPicker;
+  return (
+    <Pressable
+      onPress={() => {
+        // Replica of the SDK's toggleAttachmentPicker — replicate ALL of it, incl. refocus-on-close.
+        if (isOpen) { closeAttachmentPicker(); /* focusInputOnPickerClose?.() */ }
+        else { closeKeyboardAndOpen(); }
+      }}
+    >
+      {/* borderless glyph: '+' when closed, keyboard icon when open (the "return to keyboard" affordance) */}
+    </Pressable>
+  );
+};
+// overrides = { MessageComposerLeadingView: CustomAttachButton }  // '+' lives in the leading slot
+// Reuse OutputButtons / AudioRecordingButton for send/mic — don't hand-roll the at-rest↔typing swap.
+```
+
 Wiring:
 
 - Prefer the smallest documented override that satisfies the requested customization.
-- Avoid replacing core message components unless required.
+- Avoid replacing core message components unless required. When you DO replace a composite slot, reproduce every sub-feature the default drew (avatar, grouping, reactions, replies, receipts, edited/deleted state) — see [design-matching.md](design-matching.md#step-25-overriding-a-slot-inherits-all-of-its-sub-features).
 - If replacing message row structure and still using the long-press overlay, preserve overlay anchor behavior by reading the manifest-selected context docs.
-- Consult the theme object to adjust spacing as necessary
+- Consult the theme object to adjust spacing as necessary. The composer *bar* surface is `messageComposer.wrapper` (not `container` — see [CHAT-REACT-NATIVE.md](CHAT-REACT-NATIVE.md#composer-attach-button-and-message-metadata-facts)).
 - Provide `WithComponents` at root level so overrides apply for all application screens
 - Use the `icons` key to override icons
 

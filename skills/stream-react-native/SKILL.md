@@ -124,6 +124,7 @@ Use the result to produce a one-line status, for example:
 - `Empty workspace detected - defaulting to Expo new app unless the user asked for RN CLI`
 - `Expo app detected - stream-chat-expo absent - Expo Router present - ready for Chat setup`
 - `Expo app detected - Expo SDK 56+ - apply RULES.md > Expo Router SDK 56+ rule (no @react-navigation/*)`
+- `⚠️ react-native-reanimated 4.5.0 + react-native-worklets 0.10.0 detected — known crash pair (Expo SDK 57 pin); bump to ≥4.5.1/≥0.10.2 and rebuild native (RULES.md > Required peer setup)`
 - `Expo app detected - @stream-io/video-react-native-sdk absent - ready for Video setup`
 - `Expo app detected - @stream-io/feeds-react-native-sdk absent - ready for Feeds setup`
 - `RN CLI app detected - ios/android present - stream-chat-react-native installed - checking provider placement`
@@ -202,6 +203,15 @@ Implement every region, the composer included; a region left at the SDK default 
 This runs in addition to (not instead of) the `DOCS.md` lookup: fetch the manifest-selected
 theming/customization pages to confirm exact theme paths and component names. A plain request
 with **no** target appearance does not trip this flag - build from the blueprints as usual.
+
+**Front-loaded traps (the recurring RN design-match failures — internalize before you start; full detail + recipes in [`references/design-matching.md`](references/design-matching.md)):**
+- **Composer is first-class and structural, not a colour.** The composer *bar* surface is `messageComposer.wrapper` (`container` is only an inner row — colouring it paints a band around the buttons). Send/mic lives **inside** the input pill and **swaps** at-rest↔typing (reuse `OutputButtons`, don't hand-roll). The attach `+` is **two things** — a trigger *and* a `+`↔keyboard stateful icon wired to `toggleAttachmentPicker` (don't drop in the bordered SDK `AttachButton` and assume it matches).
+- **Timestamp/receipts *inside* the bubble is a structural relayout** (`MessageContent*` slots), not a theme key — the WhatsApp/iMessage look every reskin needs.
+- **The messenger attach sheet IS Stream's `AttachmentPicker`** (tiles on top + gallery below) — override `AttachmentPickerSelectionBar`, don't build a parallel modal.
+- **`Channel` `keyboardVerticalOffset`/`topInset` default to `0`** — set them only for a **native** header (or a header rendered as a sibling *above* `<Channel>`); a custom header rendered *inside* `<Channel>` needs `0`.
+- **Overriding a composite slot drops every sub-feature the default drew** unless you reproduce it (avatar, grouping, reactions, replies, receipts, edited/deleted state).
+
+The cross-cutting reasoning rules that catch these (partial-styling → inner container, regression adjacency, name-isn't-the-node, reinvention red flag, no magic numbers, green-launch ≠ correct) live in [`RULES.md`](RULES.md) > Design-matching discipline — read them for any design-match request.
 
 ---
 
