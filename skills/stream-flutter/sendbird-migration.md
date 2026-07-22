@@ -136,7 +136,7 @@ one is why a screen "looks migrated" but is still off:
 | **Row layout** | A restructured row (author-on-top, flat rows, no bubble) treated as a recolor — it's a **widget replacement** (the Restructured axis above), not a theme token. |
 | **Metadata placement** | Author name / timestamp / receipts / avatar sitting at **Stream's default positions** instead of the source's — re-order via the core `messageContent` slot (+ `messageHeader` / `messageFooter` extensions); a placement miss reads "matched" at a glance, so compare native-scale crops, never thumbnails. |
 | **Header trailing** | `StreamChannelHeader` defaults its trailing edge to the channel avatar; the source header's actual actions not reproduced. |
-| **Composer inventory** | Stream's default set (leading attachment button, picker/command affordances, mic) shipped as-is instead of matched 1:1 — inventory the source composer left→right and match every control, the placeholder, and the field container (§6 *Composer parity*). No source mic → `enableVoiceRecording: false`; an **added** affordance is a fail exactly like a dropped one. |
+| **Composer inventory** | Stream's default set shipped as-is instead of matched 1:1. Inventory the source composer left→right in **both** states and match every control, the placeholder, and the field container (§6 *Composer parity*) — **including the send button**: its accent **tint** (not Stream's default **blue**) and its **rest⇄typing presence** (Sendbird hides send on an empty field; Stream shows a persistent send). No source mic → `enableVoiceRecording: false`; an **added** affordance is a fail exactly like a dropped one. The signature of a skipped pass — **blue send, filled-circle `+`, outlined/transparent field** — is a FAIL even when sending works. |
 | **Composer states** | The rest⇄typing swap, and the **edit** and **quote/reply** states, never compared against the source. |
 | **Avatars** | Stream's circular avatar left as-is; source shape/size not matched, or an avatar shown where the source hides it (1:1 / bot chat). |
 | **Custom cards** | Rendered as plain text or nested in a default bubble instead of via a custom `Attachment` builder (§5). |
@@ -272,6 +272,14 @@ Use a CLI-minted token via `getstream token <id>` for local (see [`SKILL.md`](SK
 | `SBUGroupChannelCreateScreen` / `…SettingsScreen` / `…MembersScreen` | build with Stream controllers + widgets as needed |
 | composer — the input region inside `SBUGroupChannelScreen` (an internal component, not a public widget, so nothing to swap 1:1) | `StreamMessageComposer` — that the Sendbird composer is not a public component is **no waiver**: replicate its original **appearance and functionality** anyway. Do it with the Stream pieces first — `StreamMessageComposer` + its props / theme / sub-slot overrides ([`design-matching.md`](design-matching.md) → Composer) — and hand-build a composer on `StreamMessageComposerController` **only as a fallback** when those can't reach the original. Matched to the baseline via §0.5's composer row set, never shipped at the Stream default. |
 
+**Match the channel-list row, not just the list.** The default `StreamChannelListTile` differs from
+Sendbird's group-channel row in two ways that read as "unmigrated": it **drops the member-count** the
+source shows next to a group name, and its subtitle **prefixes the sender** ("Alex: …") where Sendbird
+shows the bare last message. Match both via `StreamChannelListView(itemBuilder:)` →
+`StreamChannelListTile(title:` (append `channel.memberCount`)`, subtitle:` (last-message text, no sender
+prefix)`)`. This is one of the rare fidelity gaps that DOES surface on the list — the habit-0 note that
+"gaps live inside the chat" is the common case, not a guarantee, so still crop the list row.
+
 **Biggest structural difference: Stream Flutter has no built-in navigation.** Sendbird UIKit pushes
 its own screens; Stream widgets don't. Add a routing layer wired to the app's existing router
 (Navigator / GoRouter / auto_route) — e.g. `onChannelTap` pushes a route that wraps the chat screen
@@ -336,6 +344,16 @@ if you preserved the Sendbird `channelUrl` as an explicit channel `id`, the chan
 `isOneToOne`/`isDistinct` return `false` — fall back to `(channel.memberCount ?? 0) <= 2` (`memberCount`
 is `int?`, so the bare comparison doesn't compile). (Don't key off an empty
 `name`; Stream DM channels usually have one.)
+
+**Detecting a DM is only half of it — render it like one.** Stream's channel **avatar**
+(`StreamChannelAvatar`, used by the default `StreamChannelListTile` leading and by the chat header)
+builds a **member cluster** from `channel.state.members`, so a migrated 1:1 — 2 members, explicit id,
+not distinct — draws a **two-avatar cluster (including the current user)** where the source showed the
+single other person. For `memberCount <= 2`, override the avatar to the **other member's** single one:
+`StreamUserAvatar(user: m.user)` for the `channel.state.members` entry whose `user.id != currentUser.id`
+— pass it as `StreamChannelListView(itemBuilder:)` → `StreamChannelListTile(leading:)` and as the chat
+header's leading. Do the same for the DM **title** (the other member's name, not the channel name, which
+is usually blank for a DM).
 
 **Open channels → `livestream`.** Sendbird's Flutter UIKit is group-channel-only, so this applies when
 the source used the core SDK's `OpenChannel` directly — the UI is the developer's own, so it's a
