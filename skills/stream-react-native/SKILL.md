@@ -191,7 +191,7 @@ Enforced by [`RULES.md`](RULES.md) > Package version and docs discipline.
 ## Styling-depth flag: matching a provided design
 
 Orthogonal to the track above: if a request carries a **target appearance** - an attached
-screenshot, a Figma frame, or "make it look like WhatsApp / iMessage / Slack / \<app\>" - do not
+screenshot, a Figma frame, or "make it look like \<app\>" - do not
 treat it as a set-a-few-colors task. **Before** writing UI code, run
 [`references/design-matching.md`](references/design-matching.md):
 it decomposes the reference region by region and plans **every** difference as one of three axes -
@@ -205,9 +205,10 @@ theming/customization pages to confirm exact theme paths and component names. A 
 with **no** target appearance does not trip this flag - build from the blueprints as usual.
 
 **Front-loaded traps (the recurring RN design-match failures — internalize before you start; full detail + recipes in [`references/design-matching.md`](references/design-matching.md)):**
-- **Composer is first-class and structural, not a colour.** The composer *bar* surface is `messageComposer.wrapper` (`container` is only an inner row — colouring it paints a band around the buttons). Send/mic lives **inside** the input pill and **swaps** at-rest↔typing (reuse `OutputButtons`, don't hand-roll). The attach `+` is **two things** — a trigger *and* a `+`↔keyboard stateful icon wired to `toggleAttachmentPicker` (don't drop in the bordered SDK `AttachButton` and assume it matches).
-- **Timestamp/receipts *inside* the bubble is a structural relayout** (`MessageContent*` slots), not a theme key — the WhatsApp/iMessage look every reskin needs.
-- **The messenger attach sheet IS Stream's `AttachmentPicker`** (tiles on top + gallery below) — override `AttachmentPickerSelectionBar`, don't build a parallel modal.
+- **Composer is first-class and structural, not a colour.** If it floats (inset pill, rounded, shadow, content behind), set **`messageInputFloating` on `<Channel>`** — never fake a floating pill with a translucent background fill. The composer *bar* surface is `messageComposer.wrapper` (`container` is only an inner row — colouring it paints a band around the buttons). Send/mic lives **inside** the input pill and **swaps** at-rest↔typing (reuse `OutputButtons`, don't hand-roll). The attach `+` is **two things** — a trigger *and* a `+`↔keyboard stateful icon wired to `toggleAttachmentPicker` (don't drop in the bordered SDK `AttachButton` and assume it matches).
+- **Never fake a structure with a background fill; resolve the structural mechanism (prop/flag/slot) before cosmetic polish** (glass, exact colours).
+- **Timestamp/receipts *inside* the bubble is a structural relayout** (`MessageContent*` slots), not a theme key — the inside-the-bubble metadata look many reskins need.
+- **A chat app's attach sheet IS Stream's `AttachmentPicker`** (tiles on top + gallery below) — override `AttachmentPickerSelectionBar`, don't build a parallel modal. A **bottom** bar is also overridable (both `AttachmentPickerSelectionBar` and `AttachmentPickerContent` are context slots) — null the bar + override the content with an absolute-overlay bar; the host being a direct import does NOT lock the layout.
 - **`Channel` `keyboardVerticalOffset`/`topInset`: pass an explicit `0` for an inside-`Channel` header** — omitting `keyboardVerticalOffset` passes `undefined` (it has no SDK default), not `0`. Set a non-zero value only for a **native** header (or a sibling header *above* `<Channel>`). Verify keyboard-avoidance by **focusing the input to raise the real keyboard** — `setText` doesn't raise it.
 - **Overriding a composite slot drops every sub-feature the default drew** unless you reproduce it (avatar, grouping, reactions, replies, receipts, edited/deleted state).
 - **Verify every STATE, not every screen** — composer at-rest/typing/**keyboard-up**/**voice-recording**/edit each render differently; a state you don't drive hides its defects. When you override a brand/accent colour, override **every** cascading token (recorder/waveform included), because an un-rendered state hides a stray default.

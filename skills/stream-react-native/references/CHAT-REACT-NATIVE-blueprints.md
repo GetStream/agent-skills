@@ -583,7 +583,7 @@ Always consult [DOCS.md](./DOCS.md) to find a relevant guide/cookbook, if there 
 
 The two examples below are the **shape** to imitate for the most-missed design-match slots — the message-metadata-inside-the-bubble case and a custom attach button. **Confirm the exact hook, prop, and slot names against the installed package** (`node_modules/stream-chat-react-native-core`) for the pinned version before shipping — verified against **stream-chat-expo 9.7.0**; the pattern (which slot, which context hook, what to reproduce) is what generalizes, not the verbatim signatures. Full routing is in [design-matching.md](design-matching.md).
 
-**Example A — timestamp + read receipts INSIDE the bubble (WhatsApp/iMessage).** Render metadata in the in-bubble slot, reuse `MessageStatus` for the ticks, reproduce the bubble's padding, and suppress the default outside footer so it isn't duplicated:
+**Example A — timestamp + read receipts INSIDE the bubble (bottom-trailing corner).** Render metadata in the in-bubble slot, reuse `MessageStatus` for the ticks, reproduce the bubble's padding, and suppress the default outside footer so it isn't duplicated:
 
 ```tsx
 import React, { memo } from "react";
