@@ -222,8 +222,27 @@ one people most often get wrong. `simctl` can't type, so drive each state from a
   useMessageComposer().textComposer.setText('hello');   // → triggers the mic→send swap
   ```
   then screenshot and inspect the send button (shape, glyph, color, position).
+- **Keyboard UP (this is a SEPARATE state — `setText` does NOT raise the keyboard).** Programmatic
+  `setText` fills the input but never opens the software keyboard, so it does **not** exercise
+  keyboard-avoidance (`keyboardVerticalOffset` / `topInset` on `<Channel>`). To verify that, **focus
+  the input** so the real keyboard rises (focus the composer's input, e.g. via the input ref in
+  context or a temp `autoFocus`). On the iOS simulator the software keyboard is **hidden while a
+  hardware keyboard is connected** — enable it (Simulator ▸ I/O ▸ Keyboard ▸ *Connect Hardware
+  Keyboard* off, or ⌘K) or the keyboard won't appear and you'll wrongly conclude it's fine. Then
+  confirm the composer sits above the keyboard with no gap/overlap.
+- **Voice-recording in progress:** start a recording via the SDK's audio-recording context/controller
+  (confirm the hook in the installed package). The sim has no mic so no audio is captured, but the
+  **in-progress recorder UI still renders** — screenshot it and sample its tint (waveform / mic /
+  timer): it draws from `accentPrimary` / `chatWaveformBar`, a common place a stray SDK-default colour
+  survives a theme pass.
+- **Edit mode:** put the composer into edit state (trigger the edit action on an own message) and
+  screenshot the edit banner + confirm button.
 - **Attachment picker open:** `useMessageInputContext().openAttachmentPicker()` (open to the Files
   tab, or pre-grant photos — see §1). Verify the composer↔picker spacing here too.
+
+Verify **every** state above, not just the ones that render by default — a state you never drive
+hides its defects (a stray default colour in the recorder, a keyboard-avoidance gap). "Looks right in
+the states I screenshotted" ≠ correct.
 
 ---
 

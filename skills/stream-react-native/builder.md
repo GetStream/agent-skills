@@ -408,6 +408,16 @@ Use `react-native-reanimated/plugin` if the project is still on Reanimated 3. Us
 
 Reanimated/Worklets are optional for Video - the SDK falls back to the RN `Animated` API when they are absent. But Stream's sample apps (including the video-only ones) install `react-native-reanimated` + `react-native-worklets` + `react-native-gesture-handler` for the smoother animated floating-participant tile. If they are installed (or Chat is also in scope), add the Reanimated/Worklets plugin as the last Babel plugin.
 
+### Reanimated static feature flag (Chat + Reanimated 4 — both lanes)
+
+On Reanimated 4 with Stream Chat, set `FORCE_REACT_RENDER_FOR_SETTLED_ANIMATIONS` to `false` in the **app-root `package.json`** — its default (`true`) is a known regression source for bottom sheets, the message overlay, and context-menu animations. It is read at **pod-install time**, so add it *before* the native build (or re-run pod install + rebuild after adding):
+
+```json
+"reanimated": { "staticFeatureFlags": { "FORCE_REACT_RENDER_FOR_SETTLED_ANIMATIONS": false } }
+```
+
+See [`RULES.md`](RULES.md) > Required peer setup.
+
 ### Entry point
 
 Wrap the app entry point with `GestureHandlerRootView` (required for Chat; recommended for Video apps that use any gesture handling).
@@ -540,6 +550,7 @@ Use the project's existing verification commands. Prefer the smallest checks tha
 **Chat:**
 
 - **On Expo SDK 57: assert `react-native-reanimated` ≥ 4.5.1 and `react-native-worklets` ≥ 0.10.2** (the SDK pins a crash-prone 4.5.0/0.10.0; verify by version number, not by "it launched" — the crash is on worklet paths, not at boot). Rebuild native after bumping.
+- **On Reanimated 4: assert `reanimated.staticFeatureFlags.FORCE_REACT_RENDER_FOR_SETTLED_ANIMATIONS` is `false` in the root `package.json`** (default `true` regresses bottom sheets / overlay / context-menu animations; read at pod-install time, so confirm a native rebuild ran after adding it).
 - Babel Reanimated/Worklets plugin is present and last
 - `OverlayProvider` and `Chat` are stable near the root
 - `ChannelList` renders for the connected user
