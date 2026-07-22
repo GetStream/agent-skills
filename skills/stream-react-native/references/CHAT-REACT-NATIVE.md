@@ -220,6 +220,12 @@ Use [DOCS.md](DOCS.md) to fetch the manifest-selected theming/customization page
 
 `WithComponents` can wrap any subtree. Inner overrides merge over outer overrides.
 
+### Component override model (v9+) — `WithComponents` only
+
+- **ALL component overrides go through one `WithComponents overrides={{ … }}` provider** placed above navigation so they apply on every screen. **Passing a component as a `<Channel>` prop is silently ignored** — no error, no effect; it reads exactly like a stale bundle during verification. If an override "isn't taking," first confirm it's in `WithComponents`, not a `<Channel>` prop.
+- **The full overridable slot set is the compiled `components` map** in the installed package (`node_modules/stream-chat-react-native-core/.../contexts/componentsContext/defaultComponents.js`) — grep that for real slot names, don't work from memory.
+- **Nullable extension slots live in `OptionalComponentOverrides`, not `DEFAULT_COMPONENTS`.** The in-bubble content slots (`MessageContentTopView` / `MessageContentBottomView` / `MessageContentLeading` / `MessageContentTrailing`, `MessageText`, `Input`, …) are in `OptionalComponentOverrides`, so they **won't appear if you only grep the `DEFAULT_COMPONENTS` keys** — "that slot doesn't exist" is usually "I grepped the wrong map." Check both.
+
 ### Composer, attach button, and message-metadata facts
 
 Reference facts the composer/message customizations lean on (verified against **stream-chat-expo 9.7.0**; confirm against the installed package — the full design-match procedure is in [design-matching.md](design-matching.md#composer-deep-dive--the-render-tree-the-surfaces-and-the-two-facet-buttons)):
@@ -228,7 +234,8 @@ Reference facts the composer/message customizations lean on (verified against **
 - **Send/mic** is the SDK's `OutputButtons`, rendered **inside** the input pill (`MessageInputTrailingView`) and **stateful** (mic/audio at rest → send when the input has text). Reuse `OutputButtons` / `AudioRecordingButton`; don't hand-roll. Move it outside the pill via `MessageComposerTrailingView`.
 - **`toggleAttachmentPicker` is a private helper *inside* the SDK `AttachButton`** — composed from `openAttachmentPicker` / `closeAttachmentPicker` / `focusInputOnPickerClose` / `inputBoxRef` + `attachmentPickerStore`. It is **not on any context or hook**. A custom attach button must **replicate it, including the refocus-input-on-close branch** — not just call open/close. The SDK `AttachButton` also renders as a bordered `Button variant="secondary" type="outline"` with `icons.Plus` and swaps `+`→keyboard while the picker is open; a custom borderless `+` must reproduce that open-state swap.
 - **A chat app's attach sheet (tiles on top + gallery below) is Stream's `AttachmentPicker`** — override `AttachmentPickerSelectionBar` via `WithComponents`; don't build a standalone modal.
-- **Metadata inside the bubble** (timestamp/ticks bottom-trailing) is structural — render in `MessageContentBottomView`/`MessageContentTrailingView` (inside the bubble), set `alignSelf`, reproduce the body padding, and set the default outside `MessageFooter` to `() => null`. Reuse `MessageStatus` for ticks.
+- **Metadata inside the bubble** (timestamp/ticks bottom-trailing) is structural — render in `MessageContentBottomView`/`MessageContentTrailingView` (inside the bubble), set `alignSelf`, reproduce the body padding, and set the default outside `MessageFooter` to `() => null`. Reuse `MessageStatus` for ticks (recolour via the check-icon `stroke`).
+- **Composer placeholder text** (e.g. changing "Send a message" to something shorter) is a **translation, not a prop:** build a `Streami18n` from **`stream-chat-expo`** (the RN SDK's own — not `stream-chat`) with `translationsForLanguage: { 'Send a message': '<your text>' }` and pass it as `<Chat i18nInstance={…}>`.
 
 ---
 

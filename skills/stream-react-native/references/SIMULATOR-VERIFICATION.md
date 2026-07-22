@@ -171,6 +171,11 @@ background Metro above has no TTY to receive it (true for both lanes).
 
 ---
 
+### Two "looks-like-a-crash" issues that are really Metro/port problems
+
+- **`EXPO_PUBLIC_*` env vars are inlined at Metro BUNDLE time, not runtime.** After writing `.env` (e.g. the API key + a token), the running bundle keeps the OLD/empty values until you **restart Metro with `--clear`**. Symptom: the app shows its "credentials missing" gate even though `.env` is correct. Confirm the value actually reached the served bundle: `curl -s "http://localhost:<port>/node_modules/expo-router/entry.bundle?platform=ios&dev=true" | grep -c "<value-prefix>"`.
+- **Wrong-Metro → `PlatformConstants could not be found` (`TurboModuleRegistry.getEnforcing('PlatformConstants')`).** This reads like a native/build failure but is a **JS-bundle ↔ native mismatch from loading the wrong Metro** — e.g. another dev server is already on `8081`, so the freshly built app loads *that* project's bundle. Fix: run your Metro on a **free port** (`--port 8082`) and **cold-launch** onto it (`xcrun simctl launch <udid> <bundle> --initialUrl "http://localhost:8082"`); a relaunch over a running app keeps the stale server, so terminate first. **Don't kill the user's other server** — just use a different port.
+
 ## 3. Reaching non-initial screens without taps
 
 `xcrun simctl` **cannot tap or scroll**, and GUI automation (AppleScript / System Events) is

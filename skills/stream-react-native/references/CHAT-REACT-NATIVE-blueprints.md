@@ -657,6 +657,7 @@ Wiring:
 - Consult the theme object to adjust spacing as necessary. The composer *bar* surface is `messageComposer.wrapper` (not `container` — see [CHAT-REACT-NATIVE.md](CHAT-REACT-NATIVE.md#composer-attach-button-and-message-metadata-facts)).
 - Provide `WithComponents` at root level so overrides apply for all application screens
 - Use the `icons` key to override icons
+- Overrides go through `WithComponents` **only** — a component passed as a `<Channel>` prop is silently ignored. The full slot set is the compiled `components` map, and nullable in-bubble slots (`MessageContent*`, `MessageText`, `Input`) live in `OptionalComponentOverrides` — grep both, not just `DEFAULT_COMPONENTS` (see [CHAT-REACT-NATIVE.md](CHAT-REACT-NATIVE.md#component-override-model-v9--withcomponents-only)).
 
 ---
 
