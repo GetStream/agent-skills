@@ -34,18 +34,19 @@ Note that "livestream" / "live-shopping" are **signals, not labels** — they ro
 If still ambiguous, ask one question (from [`SKILL.md`](SKILL.md)):
 > Does this chat look like a standard messenger (channel list + bubbles), or a bespoke surface like livestream/overlay chat? It decides whether we customize the pre-built components or build custom UI on `stream_chat_flutter_core`.
 
-State the decision and the signals that drove it before writing code. If the answer is **components**, stop here and go to [`design-matching.md`](design-matching.md) (read its procedure half in full — it fits one Read; its Reference half is per-region lookup). The rest of this page is the custom path.
+State the decision and the signals that drove it before writing code. If the answer is **components**, stop here and go to [`design-matching.md`](design-matching.md) (read its procedure half in full — everything above the `# Reference` divider, which may span two Reads; its Reference half is per-region lookup). The rest of this page is the custom path.
 
 ---
 
 ## Step 1: Depend on the right packages (custom ≠ `stream_chat_flutter`)
 
-The custom path uses **`stream_chat_flutter_core`** (the headless controllers / `*Core` builder widgets) on top of the low-level **`stream_chat`** client (`StreamChatClient`). Add the one package to `pubspec.yaml`:
+The custom path uses **`stream_chat_flutter_core`** (the headless controllers / `*Core` builder widgets) on top of the low-level **`stream_chat`** client (`StreamChatClient`). Add the one package with `flutter pub add` so the version is **resolved from pub.dev**, not transcribed — bounded to the **v10** major these instructions target:
 
-```yaml
-dependencies:
-  stream_chat_flutter_core: ^10.0.0
+```bash
+flutter pub add stream_chat_flutter_core:^10.0.0
 ```
+
+This writes the current latest **10.x** release into `pubspec.yaml`. Keep the `^10.0.0` bound — these instructions target the v10 API; moving off v10 is a version migration, not this path (see [`references/CHAT-CORE.md`](references/CHAT-CORE.md) → v10 prerequisite).
 
 `stream_chat_flutter_core` re-exports the low-level client and models — `StreamChatClient`, `User`, `Message`, `Channel`, `Filter`, `PaginationParams` — so importing it is enough:
 
@@ -249,7 +250,7 @@ Reach for `stream_chat_flutter`'s theme tokens / `StreamUserAvatar` when you spe
   Measure the title font from the reference too (usually a modest ~16–17 lp).
 - **The app's own chrome is not Stream.** A betting bar, product cards, a video player, reactions — those are your app's widgets sitting above/below the chat. Build them as normal Flutter; only the message feed + composer talk to the SDK. Keep the SDK out of those files.
 - **Resolve the channel title from the model, not the screenshot.** Use `channel.name`, then `channel.extraData['name']`, then a sensible fallback (many Stream apps store the name under `extraData['name']` because top-level `channel.name` is disabled). Reuse the shared `resolveChannelName(...)` helper from [`design-matching.md`](design-matching.md) "Model-driven title trap".
-- **Own the client + channel lifetime; create them once, not in a `build()`.** Create the `StreamChatClient` and the `Channel` once in the owned service/provider, so a rebuild reuses the same references rather than re-watching each frame ([`RULES.md`](RULES.md) client-lifetime / no-rendering-loops).
+- **Own the client + channel lifetime; create them once, not in a `build()`.** Create the `StreamChatClient` and the `Channel` once in the owned service/provider, so a rebuild reuses the same references rather than re-watching each frame ([`RULES.md`](RULES.md) → "Client lifetime").
 - **Keep the feed live with `watch()`.** The `StreamChannel` widget watches the channel on init; if you hold the `Channel` yourself outside that widget, call `channel.watch()` once in your service so new messages stream into state. (A one-shot `query` without `watch` shows a static snapshot.)
 - **Observe the channel state directly.** Render straight from `MessageListCore` (or `channel.state!.messagesStream`) so a hot feed stays fast — one source of truth, no extra copy of the message list per update.
 - **Mind the message `type`.** `livestream` feeds contain `system` / `deleted` / `ephemeral` messages; render or filter them deliberately by `message.type` rather than drawing them as normal lines.
