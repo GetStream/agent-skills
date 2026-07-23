@@ -97,6 +97,20 @@ cat package.json   # note ALL THREE Sendbird packages (chat, uikit-react-native,
 | **Direct / inline SDK calls** | Swap in place; keep surrounding layout/navigation. |
 | **Spaghetti** | Migrate file-by-file; introduce a thin boundary only where it cuts churn. |
 
+**Headless-core branch (`@sendbird/chat` core, no UIKit, 100% custom UI).** When the app is built
+directly on the Sendbird **core SDK** with hand-rolled screens and **no `@sendbird/uikit-react-native`**,
+the idiomatic target is the **headless `stream-chat` core client**, keeping the custom components — **not**
+`stream-chat-react-native` / `stream-chat-expo`. Do **not** install the Stream RN UI package or its native
+peers (`react-native-reanimated` / `-gesture-handler` / `-teleport` / `-svg`, `OverlayProvider`): mounting
+Stream UI would replace the custom design, and the peers are dead weight. Migrate the SDK layer only:
+`SendbirdChat.init` -> `StreamChat.getInstance(apiKey)`; `MessageCollection` + handlers -> `channel.watch()`
++ read `channel.state.messages` + `channel.on(...)` -> local `setState` (the reactive replacement for the
+collection lifecycle). **Optimistic sends are manual here:** `channel.sendMessage` on the client is not
+optimistic (kill-list #1) and there is no `MessageComposer` to insert the pending copy, so add it yourself
+with a client-generated id via `channel.state.addMessageSorted({ id, text, user, status: 'sending', … })`
+before the send, and let the echoed `message.new` dedupe by id. Everything else follows the mapping tables
+as usual; the UIKit-fragment rows (sections 12-13) simply don't apply.
+
 **Classify every `@sendbird/*` symbol into three tiers** (the anti-hallucination discipline -
 nothing is invisible):
 
@@ -173,7 +187,7 @@ against the app; the full catalog with workarounds is in
 | 1 | **Only the UI-context send produces an optimistic message.** `channel.sendMessage()` on the client inserts **no** pending/optimistic message; only `MessageComposer` / `useMessageInputContext().sendMessage()` does | A port that calls `channel.sendMessage` from a custom composer loses optimistic UI (message appears only after the server acks). Send through the UI path, or override `<Channel doSendMessageRequest>` to keep optimistic state. |
 | 2 | **One stable message id, no `reqId` reconciliation.** Sendbird tracks pending sends by `reqId` (messageId `0` until acked); Stream keeps one id across the lifecycle | A port that swaps ids on success double-keys the list / breaks retry. Delete `reqId` bookkeeping; use the one id for keys, retry, edit, delete. |
 | 3 | **`StreamChat.getInstance(apiKey)` is a process-wide, first-call-wins singleton** - NOT keyed by apiKey | A second `getInstance` with a different key silently returns the first client. Use `useCreateChatClient` ([`RULES.md`](RULES.md) > Client lifetime and providers); use `new StreamChat(apiKey)` only if multiple keys must coexist. |
-| 4 | **A token is always required.** Sendbird's `connect(userId)` with no token has no Stream equivalent | The userId-only auto-create path is gone. Dev: `client.devToken(id)` **only while dev tokens are enabled** on the app; prod: a `tokenProvider`. See section 4. |
+| 4 | **A token is always required.** Sendbird's `connect(userId)` with no token has no Stream equivalent | The userId-only auto-create path is gone. Dev: `client.devToken(id)` **only while dev tokens are enabled** on the app (**check this first — if disabled, connect as one of a fixed set of test users with tokens pre-minted via the `getstream` CLI/backend**, don't auto-create arbitrary users); prod: a `tokenProvider`. See section 4. |
 | 5 | **`muteUser` is a personal, caller-scoped mute**, not Sendbird's operator silencing | "Muted" users keep posting for everyone. Operator mute -> timed `channel.banUser(id, { timeout, reason })`. Reserve `client.muteUser` for an "I don't want to hear from X" feature. |
 | 6 | **Ban duration units differ.** Sendbird durations are seconds/ms; Stream `timeout` is **minutes** | A 1:1 duration port makes bans wildly wrong. Convert (`timeout = Math.round(sendbirdDurationMs / 60000)`); confirm the source unit against the installed Sendbird API. |
 | 7 | **Blocking is DM-only in Stream**, global in Sendbird | `client.blockUser` stops direct messages only; blocked users still post in shared group channels. Filter client-side or ban/moderate for group hiding. |
@@ -185,6 +199,7 @@ against the app; the full catalog with workarounds is in
 | 13 | **Distinct/DM channels are created by omitting the id**, not a flag | Porting `isDistinct: true` as a data field breaks dedup. `client.channel('messaging', { members })` with **no id** dedups by member set; passing an id disables it. |
 | 14 | **Read receipts are a dashboard toggle + auto-marked.** Per-member read state lives on `channel.state.read`, not `getReadStatus()` | `markRead()` is a no-op unless "Read Events" is enabled on the channel type; `<Channel>` marks read automatically. Delete manual `markAsRead` timers and per-member read queries. |
 | 15 | **Reconnection is automatic.** Sendbird's `ConnectionHandler` / manual `reconnect()` has no equivalent | Delete the reconnect state machine. Read `isOnline` / `connectionRecovering` from `useChatContext` (or `useIsOnline`); pass a `tokenProvider` so re-auth is silent. |
+| 16 | **SDK mutations echo back as events and update `channel.state` on their own — don't parse-and-cache a mutation's return value in a parallel store.** `translateMessage` / reactions / pins / edits are broadcast back as `message.updated` (etc.) to the channel's watchers — **including the caller** — so the SDK merges the change into `channel.state.messages` and re-renders with no extra work; Sendbird UIKit's handler-driven model nudges you to capture each call's result and stash it in your own `{[msgId]: value}` store | A parallel cache duplicates state, drifts from the live message, and couples you to the response's **exact shape — which the SDK's TS type can misdescribe** (e.g. `translateMessage` nests the message under `.message`, so reading top-level `res.i18n` type-checks but is always `undefined` → the UI silently shows nothing). You don't need the response at all: just read the live `message.i18n` / `channel.state` and let the echoed event drive the re-render. **Do NOT hand-dispatch the event yourself** (`client.dispatchEvent({ type: 'message.updated', … })`) — it already arrives over the socket; dispatching it too just double-applies. Source of truth = channel state, not your cache. |
 
 ---
 
@@ -283,9 +298,13 @@ a fully migrated app that had never once connected:
    **The backend must derive the user id from its own authenticated session, never from a
    client-supplied parameter** ([`RULES.md`](RULES.md) > Secrets and auth).
 3. For local/dev parity with Sendbird's tokenless connect, `client.devToken(userId)` works **only
-   while dev tokens are enabled** on the Stream app - otherwise it is rejected server-side. Gate any
-   pasted-credential/dev-token path behind `__DEV__` or a feature flag so it cannot ship. Never use
-   `devToken()` for production.
+   while dev tokens are enabled** on the Stream app - otherwise it is rejected server-side.
+   **First check whether dev tokens are enabled** (Dashboard > app > Authentication, or treat a
+   server-side rejection on the first `devToken` connect as the signal). **If they are disabled,
+   do NOT try to reproduce Sendbird's connect-any-userId behaviour - fall back to a fixed set of
+   test users whose tokens are pre-minted via the `getstream` CLI / backend** (`getstream token
+   <id>`), and connect as one of those. Gate any pasted-credential/dev-token path behind `__DEV__`
+   or a feature flag so it cannot ship. Never use `devToken()` for production.
 4. Connect as a real user and confirm the WebSocket is healthy before proceeding. The Sendbird tree
    is still intact (section 3), so mount the proof in a small dev-only screen rather than the main
    flow - it exists to fail fast on auth, not to migrate UI. It is scaffolding, not migration:

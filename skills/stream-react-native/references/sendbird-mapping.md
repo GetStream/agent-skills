@@ -51,6 +51,15 @@ are hard gaps (`- (gap)`). Three rules follow:
 | `LogLevel` (init enum) | `LogLevel` string-union + `{ logger }` option | agent-guided | No init-time enum flag; filter levels inside a `logger` callback passed in `StreamChat` options. |
 | Anonymous / guest connect | `client.connectAnonymousUser()` / `client.setGuestUser({ id, name })` | agent-guided | **Capability gain, not a rename** - Sendbird had no anonymous connect. Use for read-only watchers (livestream) or temporary guests; both are auth-scoped server-side (no secret on device). |
 
+**No-backend / demo auth = a fixed roster of known users, each with a single pre-minted token.** Stream
+always requires a signed token (Sendbird's tokenless `connect(userId)` has no equivalent). For a
+migration/demo, use a **fixed set of user ids**, each with one token minted by `getstream token <id>`,
+held in app config — the same shape as the Swift runbook's `Config.userId` / `Config.userToken`. This
+needs **no app-wide config change**. Production swaps the static token for a `tokenProvider` hitting a
+backend that derives the user id from the authenticated session ([`RULES.md`](../RULES.md) > Secrets and
+auth). Because the roster is fixed, seed those user records server-side once (`getstream api UpdateUsers`)
+so they also satisfy channel membership (see section 8 — Stream does not auto-create member users).
+
 ## 2. Channels: model & queries
 
 Sendbird has three channel **classes**; Stream has **one** `Channel` class whose behavior comes from
@@ -64,14 +73,14 @@ a server-configured **type string** passed to `client.channel(type, id?)`. Built
 | `FeedChannel` / `NotificationMessage` | - (gap) | manual | No equivalent in stream-chat. Approximate with an admin-post-only `messaging` channel (loses templates/categories/impression analytics), or adopt the separate Stream Feeds product. Section 15. |
 | `isDistinct: true` (dedupe by member set) | `client.channel('messaging', { members: [...] })` with **no id** | agent-guided | Stream derives a deterministic id from the member set. Passing an explicit id disables dedupe. Members of a distinct channel cannot later change. |
 | `isSuper` / `isBroadcast` / `isPublic` / `isDiscoverable` flags | - (gap) | manual | Not per-channel flags: scale/broadcast/discoverability are the channel **type's** server-side config + permission grants. The client picks a type name; it cannot define one. |
-| `GroupChannelModule.createChannel(params)` / `createChannelWithUserIds` | `client.channel(type, id?, { members, ...custom })` then `await channel.create()` | agent-guided | `invitedUserIds`/`operatorUserIds` -> one `members` array (+ `assignRoles`). A client-chosen id makes `create()` idempotent. Omit id + pass members for distinct/DM. |
+| `GroupChannelModule.createChannel(params)` / `createChannelWithUserIds` | `client.channel(type, id?, { members, ...custom })` then `await channel.create()` | agent-guided | `invitedUserIds`/`operatorUserIds` -> one `members` array (operators are a **server-side** role change, not a create param — see the operators row). A client-chosen id makes `create()` idempotent. Omit id + pass members for distinct/DM. **Set `name` on team channels; leave DMs nameless and derive their title from members — `name` is optional, so its presence *is* the DM-vs-channel discriminator. No custom `kind`/`slack_kind` field needed.** |
 | `GroupChannelModule.getChannel(url)` / `OpenChannelModule.getChannel` | `client.channel(type, id)` then `await channel.watch()` | agent-guided | Synchronous handle; `watch()` loads state. **Carry the type alongside the id** - you can't resolve a channel from an id alone (`cid` = `type:id`). |
-| `GroupChannel.updateChannel(params)` | `channel.updatePartial({ set: { name, image, ... } })` | agent-guided | Prefer `updatePartial` over `channel.update` (full replace wipes unlisted custom fields). `coverUrl` -> `image`. |
+| `GroupChannel.updateChannel(params)` | `channel.updatePartial({ set: { name, image, ... } })` | agent-guided | Prefer `updatePartial` over `channel.update` (full replace wipes unlisted custom fields). `coverUrl` -> `image`. **Trap (permissions):** the default `messaging` type allows `update-channel` for the channel **owner** (creator) only. A **non-owner member** calling `updatePartial`/`update` on channel data fails — even though Sendbird lets members update channel info by default. Know which party owns each channel-data write and design around it; this is a behavioral difference to be aware of. |
 | `GroupChannel.delete()` | `channel.delete()` (soft) | agent-guided | **Stream soft-deletes by default; Sendbird's delete is permanent** - a 1:1 port silently changes retention. |
 | `GroupChannel.hide()` / `.unhide()` | `channel.hide(userId?, clearHistory?)` / `channel.show()` | agent-guided | No `isHidden()` getter; read the `hidden` boolean off the query response. |
 | `GroupChannel.markAsRead()` | `channel.markRead()` | agent-guided | Near-rename. `<Channel>` auto-marks read; delete manual timers (kill-list #14). Requires "Read Events" enabled on the channel type. |
 | `GroupChannelListOrder` enum | `ChannelSort` object, e.g. `{ last_message_at: -1 }` | agent-guided | `LATEST_LAST_MESSAGE` -> `{ last_message_at: -1 }`, etc. |
-| `GroupChannelFilter` (setter methods) | `ChannelFilters` object literal | agent-guided | e.g. `{ type: 'messaging', members: { $in: [uid] } }`. Search fields -> `{ name: { $autocomplete: q } }`. Memoize `filters`/`sort` so `<ChannelList>` re-queries. |
+| `GroupChannelFilter` (setter methods) | `ChannelFilters` object literal | agent-guided | e.g. `{ type: 'messaging', members: { $in: [uid] } }`. **Search both fields** (Sendbird `channelNameContainsFilter` + `nicknameContainsFilter`): **channel name** -> `{ name: { $autocomplete: q } }`, **member name** -> `{ 'member.user.name': { $autocomplete: q } }` — both are first-class `ChannelFilters` keys (confirm in the installed `stream-chat` types). A 1:1/DM channel usually has **no `name`**, so a name-only filter misses it — the `member.user.name` filter is what finds DMs. Reproduce Sendbird's name+nickname search with a single `$or`: `{ ...base, $or: [{ name: { $autocomplete: q } }, { 'member.user.name': { $autocomplete: q } }] }` — **annotate the filter `: ChannelFilters`** so the `$or` array gets its `ArrayTwoOrMore` contextual type (an un-annotated array literal is inferred as a plain array and rejected — tsc-verified). Two merged queries also work if you prefer. Do **not** load channels and filter client-side — that only searches the first page. **A transient/secondary search `queryChannels` (a search screen, a picker) should pass `{ watch: false, state: true }`** — you don't need live updates on search results, and the default `watch: true` opens channel subscriptions whose events get re-processed by any live `<ChannelList>` still mounted **elsewhere in the nav stack** (native-stack keeps the list screen you navigated *from* mounted in the background), causing repeated re-querying — the "search keeps reloading" loop, visible as spammed `client._buildSort()` warnings. (`watch: false` is verified to eliminate it; that the re-query is specifically the background `ChannelList` vs the client's channel-state machinery is inferred.) `state: true` still loads members/messages so result rows render. Also **`member.user.name` search works with a user token** (not server-only) — an empty result is almost always the *connected* user genuinely having no matching channel, so log the actual filter (`members.$in` shows who you're querying as) before blaming the SDK. Memoize `filters`/`sort` so `<ChannelList>` re-queries. |
 | Channel metadata / meta counters | `channel.updatePartial` read-modify-write | agent-guided | No atomic counter primitive - Sendbird's dedicated endpoints were atomic; serialize concurrent writers app-side if it matters. |
 | `getChannelWithoutCache` / `serialize` / `buildChannelFromSerializedData` | `channel.query()` / re-`client.channel().watch()` | manual | Channels aren't serialized in Stream; rebuild from `(type,id)` + `watch()`/`queryChannels`. |
 
@@ -111,7 +120,7 @@ One `MessageResponse` shape replaces Sendbird's class hierarchy (`BaseMessage` /
 | `thumbnailSizes` -> `Thumbnail[]` pre-generated | single CDN `thumb_url` | manual | No server-side multi-size thumbnails; resize client-side. For **video**, generate a poster frame yourself and set `attachment.thumb_url` before sending. |
 | `AppInfo.uploadSizeLimit` / `multipleFilesMessageFileCountLimit` (server) | `AttachmentManager` config (`maxNumberOfFilesPerMessage`) + 100 MB Stream cap | agent-guided | Count limit moves client-side; use `availableUploadSlots()` to gate the attach button. Pre-upload compression is a `doFileUploadRequest` hook on `<Channel>`, not a param. |
 | `cancelUploadingFileMessage` | `AttachmentManager.cancelAttachmentUploads()` / `clearAttachments()` | agent-guided | For manual uploads cancelled pre-send, call `channel.deleteImage(url)` / `deleteFile(url)` to avoid orphaned CDN files. |
-| Voice messages (Sendbird player/recorder) | built-in `AudioPlayer` / `AudioRecorder` + `useAudioRecorder` | agent-guided | Confirm exact symbol names against the installed package / [`DOCS.md`](DOCS.md). |
+| Voice messages (Sendbird `enableVoiceMessage: true`) | built-in `AudioPlayer` / `AudioRecorder` + `useAudioRecorder` | agent-guided | **Recording is OPT-IN: `<Channel audioRecordingEnabled>` defaults to `false`** (confirm in the pinned Channel source), so Sendbird's `enableVoiceMessage: true` maps to *setting this prop* — omit it and you silently drop voice messages (the composer shows a send button at rest instead of a mic; a "Ported" claim here is meaningless unless you saw the mic render). Needs an audio package installed — Expo SDK 53+: `expo-audio`; expo-av on older; RN CLI: the audio matrix in [`CHAT-REACT-NATIVE.md`](CHAT-REACT-NATIVE.md#optional-dependency-map) (`stream-chat-expo` lists `expo-audio`/`expo-av` as optional peers). The recorder UI tints from `semantics.accentPrimary` / `chatWaveformBar(Playing)` — recolour those too. The record button renders on the simulator but capture needs a real device (no mic on the sim). Confirm exact symbol names against the installed package / [`DOCS.md`](DOCS.md). |
 
 ## 5. Events & real-time
 
@@ -137,7 +146,7 @@ One `MessageResponse` shape replaces Sendbird's class hierarchy (`BaseMessage` /
 | Presence UI (baked into UIKit avatars) | `OnlineIndicator` + `useUserActivityStatus` + `useChannelOnlineMemberCount` | agent-guided | `useIsOnline` is the **current user's own** connectivity, not another user's presence - don't confuse them. |
 | `getReadMembers()` / `getReadStatus()` / `getUnreadMembers()` / `isReadMessage()` (per-member) | `channel.state.read` (`ChannelReadStatus` keyed by userId) + `channel.lastRead()` | agent-guided | Read receipts must be enabled per channel type ("Read Events") or `markRead()` is a no-op. Derive readers from `read[userId].last_read >= message.created_at`. |
 | `channel.unreadMessageCount` / `unreadMentionCount` (live props) | `channel.countUnread()` / `countUnreadMentions()` (methods) | agent-guided | Global totals via `client.getUnreadCount()` (async) + `e.total_unread_count` on events. No per-channel "unread reply count" - thread unread is `Thread.ownUnreadCount`. |
-| `getDeliveryStatus` / `getUndeliveredMemberCount` / `markAsDelivered` | `MessageDeliveryStatus` (inferred from ack + read state) | manual | No per-member delivery count. Delivery Events is a separate dashboard flag; drop explicit `markAsDelivered`. |
+| `getDeliveryStatus` / `getUndeliveredMemberCount` / `markAsDelivered` | `channel.messageReceiptsTracker` (`deliveredForMessage` / `deliveredNotReadForMessage` / `hasUserDelivered`) + `message.delivered` event; RN renders it in the default `<MessageStatus>` | agent-guided | **Per-member delivery IS supported (stream-chat ≥9.x — verified in 9.50.2).** Enable `delivery_events: true` on the channel *type* (via `UpdateChannelType`/`chat.updateChannelType`, not only the dashboard); the SDK auto-marks delivery (`markChannelsDelivered` / `syncDeliveredCandidates`) so drop explicit `markAsDelivered`. `<MessageStatus>` shows three tiers on outgoing messages: single check (sent) → **grey** double-check (`deliveredToCount > 1`) → **accent** double-check (read). The delivered tier only advances when the recipient's client is connected to emit `message.delivered`, and is transient (skipped when the reader has the channel open). Was previously (wrongly) documented as "no per-member delivery" — corrected. |
 
 ## 7. Pagination: every stateful cursor dies
 
@@ -146,7 +155,7 @@ stateless. Convert each; in UI, the prebuilt components paginate for you.
 
 | Sendbird query | Stream call | Paging |
 |---|---|---|
-| `createMyGroupChannelListQuery` / `GroupChannelCollection` | `client.queryChannels({ members: { $in: [me] } }, sort, options)` | offset = `channels.length`; in UI prefer `<ChannelList>` (dedupes by `cid`, live updates). |
+| `createMyGroupChannelListQuery` / `GroupChannelCollection` | `client.queryChannels({ members: { $in: [me] } }, sort, options)` | offset = `channels.length`; in UI prefer `<ChannelList>` (dedupes by `cid`, live updates). Its `channelNameContainsFilter` / `nicknameContainsFilter` search args -> `{ name: { $autocomplete } }` / `{ 'member.user.name': { $autocomplete } }` server-side filters (section 2), **not** a client-side filter over a loaded page. |
 | `createPublicGroupChannelListQuery` | `queryChannels` with a discoverable-type filter | offset/limit |
 | `OpenChannelListQuery` / `createOpenChannelListQuery` | `queryChannels({ type: 'livestream', ... })` | offset/limit |
 | `MessageCollection.loadPrevious()` / `loadNext()` | `channel.query({ messages: { limit, id_lt: oldestId } })` (or `id_gt`) | id cursor, not timestamp/offset. UI: `usePaginatedMessageListContext().loadMore` / `loadMoreRecent`. |
@@ -172,14 +181,20 @@ server-side filter so the set fits in one or two pages instead.
 
 **The most dangerous mismap lives here** - see the `muteUser` row.
 
+**Stream does not auto-create users named as members.** `channel.create({ members })` /
+`addMembers([...])` **fails** if a listed user doesn't exist yet (`"The following users … don't
+exist"`) — Sendbird auto-created invitees. Seed a **fixed roster** (agents/bots/support staff)
+server-side first (`getstream api UpdateUsers`); dynamic members must have connected at least once or
+be upserted server-side. Ties to the fixed-user-set note in section 1.
+
 | Sendbird | Stream | Automation | Notes / trap |
 |---|---|---|---|
 | `channel.invite(users)` / `inviteWithUserIds(ids)` | `channel.inviteMembers(ids)`; invitee calls `acceptInvite()` / `rejectInvite()` | agent-guided | Pass **ids**, not `User` objects. Use `addMembers` instead if your app auto-accepts invites (immediate membership, no pending state). |
 | `channel.join(accessCode?)` | `channel.addMembers([client.userID])` (private) or `watch()` (open) | agent-guided | No dedicated self-join; drop `accessCode` and move access control to channel-type permissions. |
 | `channel.leave(shouldRemoveOperatorStatus?)` | `channel.removeMembers([client.userID])` (+ `stopWatching()`) | agent-guided | Open-channel `exit()` -> `stopWatching()`. `shouldRemoveOperatorStatus` has no analog (roles drop on leave). |
 | Remove another member (no client method in Sendbird) | `channel.removeMembers(ids)` | agent-guided | Stream has a first-class client-side remove (Sendbird required server/ban). |
-| `myRole: Role` (`OPERATOR` \| `NONE`) / `Member.role` | `channel.state.membership.channel_role` + `own_capabilities` | agent-guided | Binary flag -> layered roles + server-configured grants. `OPERATOR` -> `'channel_moderator'`. **Gate UI on `useChannelOwnCapabilities` / `useCanAddMembersToChannel`, not a role-string check.** |
-| `addOperators(ids)` / `removeOperators(ids)` | `channel.addModerators(ids)` / `channel.demoteModerators(ids)` | agent-guided | Or `channel.assignRoles([{ user_id, channel_role }])` / `partialUpdateMember` for custom roles. |
+| `myRole: Role` (`OPERATOR` \| `NONE`) / `Member.role` | `channel.state.membership.channel_role` + `own_capabilities` | agent-guided | Binary flag -> layered roles + server-configured grants. `OPERATOR` -> `'channel_moderator'`. **There is no `owner` channel_role — the channel owner is `channel.data.created_by`.** **Editing the channel differs by default: in Sendbird any group-channel member can update channel info (name/cover); in Stream the default channel types grant `update-channel` only to the owner (`created_by`) + moderators/admins, so a regular member's `channel.update`/`updatePartial` is rejected server-side.** Gate any edit-channel UI on the `update-channel` own-capability (don't show it to plain members), or loosen the channel type's grants server-side if the app truly relied on member editing. **Gate UI on `useChannelOwnCapabilities` / `useCanAddMembersToChannel`, not a role-string check.** Capability strings (`update-channel`, `update-channel-members`, `ban-channel-members`, `delete-any-message`, …) are enumerated in `stream-chat-react-native-core`'s `OwnCapabilitiesContext` — read them there, don't invent slugs. |
+| `addOperators(ids)` / `removeOperators(ids)` | `channel.addModerators(ids)` / `channel.demoteModerators(ids)` — **server-side only** | GAP (server-side) | **`addModerators` / `demoteModerators` / `assignRoles` / `partialUpdateMember`, and `addMembers` with a `channel_role`, are privileged role changes — a normal user token cannot grant/revoke roles, so they must NOT appear in client code.** Do them from a backend/server SDK and record a migration gap. The only client-safe membership calls are role-less: `addMembers(ids)` / `removeMembers(ids)`. |
 | `channel.muteUser(user, duration?)` - **operator-enforced silencing** | timed `channel.banUser(id, { timeout, reason })` | agent-guided | **`client.muteUser` is the WRONG target** - it is a personal, caller-scoped mute that does NOT stop the target from posting. Reserve it for an "I don't want to hear from X" feature. Kill-list #5. |
 | `blockUser(user)` - **global** | `client.blockUser(id)` - **DM-only** | agent-guided | Blocked users still post in shared group channels. Filter client-side or ban/moderate for group hiding. `unBlockUser(id)` (capital B); read state via `getBlockedUsers()`. |
 | `channel.report(category, desc)` | - (gap) | manual | No channel-report endpoint - flag a representative message instead. |
@@ -208,7 +223,7 @@ Notifee yourself and call the client methods (fetch the manifest-selected Push p
 | `unregister...` / `unregister...All` | `client.removeDevice(id)` | agent-guided | No "remove all" helper - `getDevices()` then `removeDevice` each. On token refresh: `removeDevice(old)` then `addDevice(new)`. |
 | (no client list) | `client.getDevices(userID?)` | agent-guided | Enumerate + prune stale tokens (Stream lacks Sendbird's auto-dedupe). |
 | `setPushTriggerOption(PushTriggerOption)` (account-wide) | `client.setPushPreferences([{ chat_level }])` | agent-guided | `ALL`/`OFF`/`MENTION_ONLY` -> `'all'`/`'none'`/`'mentions'` (+ optional snooze). `addDevice`/`removeDevice` remains a valid coarse toggle. |
-| `channel.setMyPushTriggerOption(option)` (per-channel) | `client.setPushPreferences([{ channel_cid, chat_level }])` or `channel.mute()` | agent-guided | Read from `channel.push_preferences.chat_level`. |
+| `channel.setMyPushTriggerOption(option)` (per-channel) | `client.setPushPreferences([{ channel_cid, chat_level }])` | agent-guided | **Prefer `setPushPreferences` — it preserves the 3-way ALL/MENTION_ONLY/OFF (`chat_level: 'all'`/`'mentions'`/`'none'`).** `channel.mute()`/`unmute()` is a binary fallback that DROPS the "mentions only" tier, so don't default to it for a trigger-option port. Read the current value from `channel.push_preferences.chat_level`; requires the push-preferences feature enabled on the app. |
 | `setDoNotDisturb` / `setWeeklyDoNotDisturb` (recurring quiet hours + timezone) | - (gap) | manual | Only one-shot snooze maps (a `disabled_until`-style window). Reimplement recurring DND yourself. |
 | `setPushTemplate` at runtime | - (gap) | manual | Templates are per-provider dashboard/server config (`upsertPushProvider`), not a runtime client switch. |
 | `markPushNotificationAsDelivered` / `AsClicked` (analytics) | - (gap) | manual | No client analytics calls; wire open-handling/navigation in your Notifee/messaging handlers. |
@@ -234,8 +249,8 @@ app-owned - your React Navigation / Expo Router header).
 | `createGroupChannelCreateFragment` | - (gap) | manual | No prebuilt create screen - build a user picker then `client.channel('messaging', { members }).create()`/`watch()`. |
 | `createGroupChannelMembersFragment` | - (gap) | manual | Build on `Object.values(channel.state.members)` / `channel.queryMembers` + the channel-details contexts. |
 | `createGroupChannelInviteFragment` | - (gap) | manual | Use `ChannelAddMembers*` contexts + `channel.inviteMembers`/`addMembers`. |
-| `createGroupChannelModerationFragment` / `Operators` / `RegisterOperator` / `MutedMembers` / `BannedUsers` | - (gap) | manual | No prebuilt moderation/operator screens - compose from `banUser`/`muteUser`/`addModerators`/`assignRoles` + `useChannelOwnCapabilities` gating. |
-| `createGroupChannelSettingsFragment` / `Notifications` | - (gap) | manual | Build from `channel.update`/`updatePartial`, `channel.mute()`/`unmute()`, push-preference APIs. |
+| `createGroupChannelModerationFragment` / `Operators` / `RegisterOperator` / `MutedMembers` / `BannedUsers` | - (gap) | manual | No prebuilt moderation/operator screens - compose from **client-safe** ops (`banUser`/`muteUser`/`removeMembers`) + `useChannelOwnCapabilities` gating. **Operator promote/demote is server-side only: build the Operators screen read-only and move role changes to a backend. `RegisterOperator` (a client-side promote screen) has no client equivalent — omit it.** |
+| `createGroupChannelSettingsFragment` / `Notifications` | - (gap) | manual | Build from `channel.update`/`updatePartial` and the **push-preference API (`client.setPushPreferences([{ channel_cid, chat_level }])`)** for the notification trigger — not `channel.mute()`, which is binary and loses the mentions tier. |
 | `createMessageSearchFragment` | - (gap) | manual | Section 9. |
 
 ## 12. Context hooks & selectors
@@ -258,6 +273,12 @@ app-owned - your React Navigation / Expo Router header).
 | `LightUIKitTheme` / `DarkUIKitTheme` | `defaultTheme` deep-merged + `useColorScheme()` selection | agent-guided | No `theme="light"\|"dark"` prop - build two theme objects and select on the RN `useColorScheme()`; pin brand colors, keep chrome adaptive. |
 | `createBaseStringSet` / `StringSet` | `Streami18n` (i18next; `registerTranslation`/`setLanguage`) -> `<Chat i18nInstance={…}>` | agent-guided | Stream's keys are the English source strings themselves - re-key, no 1:1 key map. |
 | `dateLocale` / date format strings | Day.js + `timestamp/` i18n keys | agent-guided | Different date library and key scheme. |
+
+**Custom fields need TS module augmentation.** Stream's `Custom*Data` interfaces are empty by default,
+so custom channel/user/message fields don't typecheck (`tsc` errors "does not exist in type …").
+Augment them: `declare module 'stream-chat' { interface CustomChannelData {…}; interface CustomUserData
+{…}; interface CustomMessageData {…} }`. Note `name` belongs on `CustomChannelData` (it's `Omit`-ed
+inside `ChannelFilters`), so declare it there if you set or filter on it.
 
 ## 14. Offline & sync
 
@@ -285,7 +306,6 @@ ledger and routed through the plan checkpoint (runbook section 2 - or its non-in
 | **Recurring DND quiet hours** (daily/weekly + timezone) | One-shot snooze only | Schedule `setPushPreferences` snooze windows client/server-side. |
 | **Runtime push template switch**; **per-message push toggle** | Dashboard/server-side only | Configure templates on the push provider; use `skip_push` per send. |
 | **Session lifecycle callbacks** (`onSessionRefreshed`/`Closed`/`Error`) | - | `connection.changed` + `tokenProvider` error handling. |
-| **Per-member delivery status / count** (`getDeliveryStatus`) | Capability gap | `MessageDeliveryStatus` (delivered vs read) from ack + read state. |
 | **`ReplyType` list-visibility enum** | - | `show_in_channel` per reply; no toggle to hide all replies. |
 | **Server-side multi-size thumbnails** (`thumbnailSizes`) | Single `thumb_url` | Resize client-side; generate video posters yourself. |
 | **CSAT / message feedback / submitForm** (Desk) | No primitive | Custom message/attachment fields, a reaction, or an external tool. |
