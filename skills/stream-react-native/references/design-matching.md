@@ -18,6 +18,16 @@ match and label the rest "known cosmetic gaps." "Risky" or "more effort" is not 
 region; only genuine impossibility is, and then you say exactly what and why. The composer is the
 region most often left at its default and is exactly where users notice the mismatch.
 
+**Banned as a resolution:** the strings *"acceptable approximation", "minor", "difference noted",
+"close enough", "keep default"*. Each decomposed region ends **Fixed** or **Impossible: \<concrete
+reason\>** — nothing in between. (These exact hand-waves shipped ~10 real per-region defects.)
+
+**Screenshots verify appearance, not interaction.** `simctl` can't tap, so a screenshot diff never
+exercises press/`onSelect`/navigation. Any custom slot with a tap handler (custom `ChannelPreview`,
+message press, buttons) must be verified by *driving* it (temp auto-nav / device), not eyeballed — a
+custom `ChannelPreview` that read `onSelect` from props (instead of `useChannelsContext`) silently
+no-op'd channel-tap and was invisible to the screenshot loop.
+
 ---
 
 ## Work in batches - don't let a full match take all day
@@ -211,7 +221,7 @@ the manifest-selected docs and the installed package, not from memory. For the r
 see the [Theming Blueprint](./CHAT-REACT-NATIVE-blueprints.md#theming-blueprint) and the
 [Component Override Blueprint](./CHAT-REACT-NATIVE-blueprints.md#component-override-blueprint).
 
-For every region note the followings: color, background color, border, border radius, padding / gap, typography (font, font weight, font and line size) - save findings to a file called `design-analisys.md`. Unless asked otherwise, remove the `design-analisys.md` after the verification step.
+For every region note the followings: color, background color, border, border radius, padding / gap, typography (font, font weight, font and line size) - save findings to a file called `design-analysis.md`. Unless asked otherwise, remove the `design-analysis.md` after the verification step.
 
 #### Chat
 
@@ -371,6 +381,13 @@ For a **bottom** tab bar, you still do **not** replace the host. `AttachmentPick
 | Thread reply screen | Does it exist? Not all apps have threads; parent message + replies | Layout / **App-owned nav** | separate nav screen: `Channel` with `threadList` + `Thread` (**Thread Screen** blueprint in [CHAT-REACT-NATIVE-blueprints.md](CHAT-REACT-NATIVE-blueprints.md)) - reuses your row + composer overrides; see the RN-specific thread notes in Step 2 |
 | Thread inbox / list | row layout | Theming (+ Layout) | `ThreadList` inside `Chat` (**Thread List Screen** blueprint); thread-list theme keys + `ThreadList` item props if the row differs |
 | Message replies indicators (message component) | Layout and styling | Theming + Layout | `MessageReplies`; default is connector + avatars |
+
+> The RN slot/mechanism details behind these Chat rows (which slot to override for metadata
+> beside/inside the bubble, ungrouping + spacing, uniform bubble corners, in-bubble reactions,
+> appending content below a message, `ChannelPreview` `onSelect`, composer button shape/position,
+> the v9 no-cascade token model) live in
+> [CHAT-REACT-NATIVE.md](CHAT-REACT-NATIVE.md#composer-attach-button-and-message-metadata-facts) —
+> confirm names against the pinned package.
 
 #### Video
 
@@ -571,7 +588,7 @@ Presence-and-color is not enough; verify **size, position, and proportion** too.
    `simctl` can't tap, so reach non-initial screens with temporary in-code navigation and drive
    composer/picker states via SDK hooks - see the fast loop, stale-bundle trap, and cleanup steps in
    [SIMULATOR-VERIFICATION.md](SIMULATOR-VERIFICATION.md).
-3. **Build a comparison table.** For each region from `design-analisys.md` target attribute (size / position /
+3. **Build a comparison table.** For each region from `design-analysis.md` target attribute (size / position /
    color / presence) -> what rendered -> **PASS / FAIL**. Walk the whole checklist; don't stop at the
    regions that happen to look right. **Numbers alone lie** — a glyph box can "match" (±1 logical px)
    while the field is too tall, a stroke too heavy, or a control off-center. So for the high-detail

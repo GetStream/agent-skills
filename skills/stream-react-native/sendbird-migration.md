@@ -151,28 +151,59 @@ screenshots** (Pixel tier), not measured computed styles. A migration briefly ho
 reference an RN design match can have: **the original app, buildable and drivable in the simulator**.
 That window closes the moment section 5 starts; spend real effort on the highest rung you can reach.
 
-1. **The original runs (highest rung): capture it in the simulator now.** Build and boot the
-   original Sendbird app on the iOS simulator per
-   [`references/SIMULATOR-VERIFICATION.md`](references/SIMULATOR-VERIFICATION.md), and screenshot
-   every parity-ledger row with a visual surface into a reference folder (e.g.
-   `sendbird-reference/`). **Drive the states, don't capture only rest:** an incoming *and* outgoing
-   bubble, a same-author run (grouping + avatar rule), an attachment/photo album, a message with
-   reactions, a reply/thread open, a long multi-line message, typing, read receipts, the composer
-   at-rest *and* typing (send/mic swap), the attachment picker open, and both light/dark if the app
-   themes. If the dev data is empty, populate it through the original's own UI first (Sendbird's
-   client flows still work at this point). These screenshots become the **Pixel-tier reference** for
-   [`references/design-matching.md`](references/design-matching.md) Step 1. Fill the ledger's
-   Spec-rows column from them.
-2. **User-provided screenshots** of the running app - ask if any exist; treat as the reference
-   (Pixel tier) when the original can't be built.
-3. **Code-derived spec** (always available): extract the palette and type from the Sendbird theme -
-   `createTheme` / `colorSet` / `LightUIKitTheme` / `DarkUIKitTheme` /`Palette` in
-   `@sendbird/uikit-react-native-foundation` - plus the strings, into a written spec. Say explicitly,
-   in the plan and the final report, that this rung **cannot certify** composer / bubble / reaction
-   fidelity - only structure and exact colors.
+**The deliverable of this step is the design analysis, not a folder of screenshots.** The pixels are
+only the input; the output is [`references/design-matching.md`](references/design-matching.md)
+**Step 1 (Decompose the reference into regions)** run against the original - every screen broken into
+regions, each region carrying its concrete spec (measured sizes, matched weights, sampled colors),
+saved to `design-analysis.md`. Run Step 1 **now, while the original renders** - this is the one moment
+the reference is a running app you can re-screenshot and pixel-sample, so it is also the moment its
+spec is cheapest and most accurate to extract; deferring it means decomposing from memory later.
 
-Whichever rung produced it, this baseline is the **reference design** for step 6. It is run
-scaffolding (never committed).
+1. **The original runs (highest rung): capture it in the simulator, then decompose it.** Build and
+   boot the original Sendbird app on the iOS simulator per
+   [`references/SIMULATOR-VERIFICATION.md`](references/SIMULATOR-VERIFICATION.md), and use that page's
+   simulator-driving discipline to capture **every region and every state** the design match will be
+   judged on - not just the channel list:
+   - **Screens & states to shoot:** the channel list; a chat with **both an incoming and an outgoing
+     message** visible; the composer **at rest and while typing** (the send/mic swap); any thread
+     screen; the attachment picker open; reactions; and - if the app supports it - **dark mode** (flip
+     the OS appearance, [SIMULATOR-VERIFICATION.md](references/SIMULATOR-VERIFICATION.md) §6). A
+     list-only screenshot hides every bubble/composer difference, which is exactly where a migration
+     looks wrong.
+   - **Reach them without taps the same way** - `simctl` can't tap, so drive navigation and composer
+     states from **temporary code scaffold** and screenshot each
+     ([SIMULATOR-VERIFICATION.md](references/SIMULATOR-VERIFICATION.md) §3-§4). **Caveat: you are
+     driving the *original Sendbird* app here, so the state-driving hooks in §4 are Stream's and do
+     NOT apply** - use Sendbird's own navigation and composer APIs (or seed the state server-side) to
+     reach each screen/state. Only the SDK-agnostic loop carries over unchanged: pin one UDID, `simctl
+     launch`, `simctl io … screenshot`, wait for the client before the shot, and the dark-mode flip.
+   - **Then run design-matching Step 1 on the shots:** go region by region, and for each region record
+     the concrete spec - bubble radius/shape/max-width/alignment, avatar shape/size, font sizes and
+     **weights**, paddings/gaps, and the **sampled** colors (bubble fills, accent, read-receipt ticks,
+     background) - **measured and pixel-sampled off the screenshots, not eyeballed** (the measure-
+     don't-guess and sample-every-color methods live in that page). Write the result to
+     `design-analysis.md`, and fill the parity ledger's **Spec rows** column so every visual feature
+     names the region(s) and captured state(s) that spec it.
+2. **The original won't build, but the user has screenshots (rung 2):** treat the user's screenshots
+   as the reference and run the **same** design-matching Step 1 decomposition on them - still Pixel
+   tier, measured and sampled the same way. You just can't re-shoot new states, so decompose what you
+   have into `design-analysis.md` and flag any region no screenshot covers.
+3. **No runnable app and no screenshots (rung 3): derive the spec from code.** Read the Sendbird theme
+   (`colorSet` / `SBUTheme` / string sets) and record its exact palette and dimensions as the region
+   spec in `design-analysis.md`. This is a **structural** match with an explicit palette override -
+   the values came from code, not a sampled sketch, so include them as exact rows despite the
+   no-sampling rule for the structural tier.
+
+Whichever rung you reach, the output is the same `design-analysis.md` region spec that section 6 hands
+to design-matching as **the reference design**. Keep it until the section 6 verify loop passes, then
+remove it (unless the user asked to keep it), per design-matching's Step 1.
+
+> **HARD STOP (ordering):** on a Pixel baseline, do **not** install Stream packages or edit **any**
+> file until `design-analysis.md` exists and decomposes every in-scope region with a concrete,
+> **sampled** spec. Capturing the baseline late — after packages/scaffold are in — is a process
+> failure even if you self-correct: the window where the original is drivable is exactly when the spec
+> is cheapest and most accurate. The design analysis is the **contract** the implementation and the
+> section-7 verify must satisfy, not a checkbox.
 
 ---
 
@@ -419,9 +450,11 @@ replacements are a **JS theme object, not CSS** (there is no DOM / stylesheet on
   the English source strings themselves - re-key, don't map 1:1.
 
 Then hand the visual work to [`references/design-matching.md`](references/design-matching.md) with
-the **section 0c baseline as the reference design**. Because RN verification is simulator-based (no
-DOM to probe), enter its pipeline at **Step 1 (Decompose the reference into regions)** with the
-captured screenshots as the reference, regardless of rung:
+the **section 0c baseline as the reference design**. Its **Step 1 (Decompose the reference into
+regions)** was already run in section 0c - the `design-analysis.md` region spec is your entry point;
+reuse it rather than re-decomposing, route each region through the three axes, and continue to Step 3.
+If a region is missing a spec (a state 0c couldn't capture), decompose it now off the screenshots.
+Regardless of rung, the reference is those captured screenshots + `design-analysis.md`:
 
 - **Rung 1/2 (simulator capture / user screenshots):** Pixel tier - run the full pipeline
   (Decompose -> three axes -> Step 1.5 native packages -> Step 2.5 completion contract -> Step 3
@@ -463,6 +496,21 @@ Run all of these; each catches a failure a real migration shipped. The compiler 
    this-round simulator capture of the migrated app compared to its reference, **driven states
    included** (composer typing state, reactions, thread open, attachment picker). A visual feature
    whose ledger row says Ported but has no verdict row is unverified - treat it as FAIL.
+   - **Produce the region-diff artifact, don't claim it.** A full-screen resemblance glance is NOT a
+     verify. Output a table — `region | baseline crop | migrated crop | PASS/FAIL` — one row per
+     filled Spec-rows cell, from actual crops (the `magick`/PIL crop+compare recipe). Whole-screen
+     "looks close" is exactly how ~10 per-region defects (split avatar, receipt placement, in-bubble
+     reactions, timestamp side, composer button shapes, date-pill colour, bubble tail) shipped
+     unnoticed in a real run.
+   - **A region you specced but never built is a FAIL, not done.** Cross-check every
+     `design-analysis.md` region against an implemented+verified result (a real run specced the header
+     avatar and add-reaction button, then never built them — no gate caught it).
+   - **Banned as a resolution:** "acceptable approximation", "minor", "difference noted", "close
+     enough", "keep default". Every decomposed region ends **Fixed** or **Impossible: \<reason\>**.
+   - **Screenshots don't test interaction.** `simctl` can't tap, so a screenshot diff never exercises
+     press/nav handlers. Any custom slot with `onPress`/`onSelect`/navigation (custom `ChannelPreview`,
+     message press, buttons) must be verified by *driving* it (temp auto-nav / device), not a shot — a
+     custom `ChannelPreview` silently broke channel-tap and was invisible to the screenshot loop.
 6. **Ledger closure:** every parity-ledger row is Ported / Rewritten / N/A / GAP-with-decision. A
    `GAP - provisional` row (section 2 default) closes the gate only if the final report calls it out
    explicitly as a decision the user still owes.

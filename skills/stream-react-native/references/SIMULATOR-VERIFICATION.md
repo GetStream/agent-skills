@@ -293,6 +293,12 @@ per the color-sampling method in [design-matching.md](design-matching.md).
 
 ## 7. Known environmental limits (don't fight these)
 
+- **Screenshots verify appearance, NOT interaction.** `simctl` can't tap, so a screenshot diff never
+  exercises `onPress`/`onSelect`/navigation handlers — a broken tap looks identical to a working one.
+  Any custom slot with a handler (a custom `ChannelPreview` row, message press, a custom button) must
+  be verified by *driving* it: temp auto-nav (§3), a seeded state, or a real device. A custom
+  `ChannelPreview` that read `onSelect` from props instead of `useChannelsContext()` silently no-op'd
+  channel-tap and passed every screenshot check.
 - **Component overrides won't show if wired wrong:** in `stream-chat-react-native` v9 a slot such as
   `MessageHeader` is applied through **`WithComponents overrides={{ MessageHeader: … }}`**, not by
   passing it as a `<Channel MessageHeader={…}>` prop (that prop is silently ignored — no error, no
