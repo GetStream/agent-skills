@@ -131,21 +131,22 @@ one is why a screen "looks migrated" but is still off:
 
 | Check (inside the chat) | The gap a green build hides |
 |---|---|
-| **Outgoing bubble** | Left as Stream's pale brand shade (`colorScheme.brand.shade100`); a solid source bubble needs its fill **and** text color set (`StreamTheme.messageItemTheme`), or the text stays dark/illegible. |
+| **Outgoing bubble** | Left as Stream's pale brand shade (`colorScheme.brand.shade100`); a solid source bubble needs its fill **and** text color set (`StreamTheme.messageItemTheme`; §6 → *Message bubble fill & text*), or the text stays dark/illegible. |
 | **Incoming bubble** | Not matched to the source's incoming fill + text. |
 | **Row layout** | A restructured row (author-on-top, flat rows, no bubble) treated as a recolor — it's a **widget replacement** (the Restructured axis above), not a theme token. |
 | **Bubble geometry & text scale** | Fill matched but geometry left at Stream defaults: the **tail corner squares** on the last message of a run (Sendbird rounds every corner uniformly, 16), the **body text is larger** (Sendbird body is 14) and the **item width caps at 264/272** — so migrated bubbles wrap lines Sendbird fits on one. Fix via `messageItemTheme.bubble.shape` / `.text.textStyle` / `messageItem → DefaultStreamMessageItem(props.copyWith(maxWidth:))` ([`design-matching.md`](design-matching.md) → Message row). |
 | **Status bar** | Sendbird tints the status strip with the accent (white glyphs); a migration keeps the white-glyph style without the tinted strip → **invisible clock**, or drops the tint entirely. Paint the inset + set `AnnotatedRegion` brightness ([`design-matching.md`](design-matching.md) → Header / chrome, incl. the `removePadding` trap). |
-| **Metadata placement** | Author name / timestamp / receipts / avatar sitting at **Stream's default positions** instead of the source's — re-order via the core `messageContent` slot (+ `messageHeader` / `messageFooter` extensions); a placement miss reads "matched" at a glance, so compare native-scale crops, never thumbnails. |
+| **Metadata placement** | Author name / timestamp / receipts / avatar sitting at **Stream's default positions** instead of the source's — match the source's arrangement (wherever it puts them) per §6 → *Message-row metadata* (the `messageHeader` / `messageContent` slots **plus** a `messageItem` hand-off, because those slots can't see the message); a placement miss reads "matched" at a glance, so compare native-scale crops, never thumbnails. |
 | **Header trailing** | `StreamChannelHeader` defaults its trailing edge to the channel avatar; the source header's actual actions not reproduced. |
 | **Composer inventory** | Stream's default set shipped as-is instead of matched 1:1. Inventory the source composer left→right in **both** states and match every control, the placeholder, and the field container (§6 *Composer parity*) — **including the send button**: its accent **tint** (not Stream's default **blue**) and its **rest⇄typing presence** (Sendbird hides send on an empty field; Stream's default rests on a **mic**, becoming a persistent send when voice recording isn't wired — `voiceRecordingCallback == null`). No source mic → `enableVoiceRecording: false`; an **added** affordance is a fail exactly like a dropped one. The signature of a skipped pass — **a stock trailing control (mic, or persistent blue send), the outlined `+` chip, the gray-bordered field** — is a FAIL even when sending works. |
 | **Composer states** | The rest⇄typing swap, and the **edit** and **quote/reply** states, never compared against the source. |
-| **Composer chrome (bar + pill)** | **Behavior parity ≠ chrome parity.** A pass that matches the placeholder and send-presence can still ship Stream's chrome: the `borderDefault` **bar top hairline** (Sendbird has none), a roomier **bar height**, a **white gray-bordered pill** where Sendbird uses a solid `#EEEEEE` borderless field (radius 20 vs Stream's 24), a **circle-outline `+`** where Sendbird's glyph is a rounded square. Each chrome item closes on a crop pair — a code comment naming the source shape is not evidence. Mechanics: [`design-matching.md`](design-matching.md) → Composer checklist (scoped-token pill/bar recipes). |
+| **Composer chrome (bar + pill)** | **Behavior parity ≠ chrome parity.** A pass that matches the placeholder and send-presence can still ship Stream's chrome — the bar top hairline, bar height, pill fill/border/radius, and the `+` glyph shape are all separate from behavior, and each reads as "unmigrated". Close each on a native-scale crop pair — a code comment naming the source shape is not evidence. Mechanisms + the exact tokens: §6 → *Composer parity*; full checklist: [`design-matching.md`](design-matching.md) → Composer. |
 | **Composer-area extras** | Suggestion / quick-reply chips, banners, or any auxiliary UI the source renders around the input **dropped, or re-homed** away from the source's placement (inside vs above the field). Rebuild them at the source's exact position — e.g. via the composer's `inputHeader` / header sub-slots ([`design-matching.md`](design-matching.md) → Composer). |
-| **Avatars** | Stream's circular avatar left as-is; source shape/size not matched, or an avatar shown where the source hides it (1:1 / bot chat). |
+| **Avatars** | Stream's circular avatar left as-is; source shape/size not matched; an avatar shown where the source hides it (1:1 / bot chat); or an **invented** colorful/initials avatar where the source renders its default grey placeholder (§6 → *Avatars*). |
+| **Reactions** | Left at Stream's default — overlay pills on the bubble's top edge, Stream's own emoji set and order — instead of the source's. Match what the **source actually renders**: **position** (in-bubble vs. overlay — read it off the baseline shot, don't assume), the **emoji set**, and the **order**. Sendbird's reaction set and ordering are app-configurable, so the running source is the only benchmark — never assume either SDK's default. Relocate via the `reactions` slot / `reactionsTheme`, with one shared type→emoji map ([`design-matching.md`](design-matching.md) → Message row / reactions; [`RULES.md`](RULES.md)). |
 | **Custom cards** | Rendered as plain text or nested in a default bubble instead of via a custom `Attachment` builder (§5). |
 | **Empty / loading / error strings** | A kept pre-built widget shows Stream's default English instead of the source's strings (§6 localization row). |
-| **Dark palette** | Migrated light-only when the source ships both (`SBUThemeProvider`) — build both variants and switch on `Theme.of(context).brightness` (§6); how the switch triggers follows the source, but both palettes must exist. |
+| **Dark palette** | Migrated light-only when the source ships both (`SBUThemeProvider`) — build both variants and switch on `Theme.of(context).brightness` (§6); how the switch triggers follows the source, but both palettes must exist. Toggle and verify **both** on the device — a built-but-unverified palette is unverified, not done. |
 
 **Flutter realities to expect:** avatars are **circular-only** (Slack-style rounded squares need a
 custom avatar widget); there's **no consolidated Styles axis** (insets/radii spread across theme
@@ -156,18 +157,29 @@ objects); **no global reaction-emoji config**. A Sendbird app using any of these
 as the connected user (from the client, or server-side with `SendMessage … user_id=<connected user>`),
 and seed the cross-user **incoming** messages and any custom-card messages server-side (`getstream`
 CLI, §7). The outgoing message is the one to be sure of — it's where the bubble fill/text match shows.
-Then open the list **and** each chat on the app's **real navigation path** and compare region-by-region
+Cover the channel shapes too: a **group** chat AND a **1:1** (the §4 DM render check needs one), plus
+extra members/watchers on any open/livestream surface so participant counts render.
+Then open the list **and** each chat — including the 1:1: its list row and header must show the
+**other member's single avatar and name**, not a two-avatar cluster (§4) — on the app's **real
+navigation path** and compare region-by-region
 against the Sendbird baseline at native scale (crop both sides and measure — don't eyeball; iterate on
 hot reload). Rendering is not behavior — a screen that paints can still be behaviorally dead, so
 **drive every interaction the source has** and confirm its observed effect; when present, these are the
 ones that get silently dropped: **send text · send an attachment via the picker · Reply → quote preview
 above the input (`onReplyTap → controller.quotedMessage`) → send → quoted message renders · Edit →
 composer loads the text → save → edited message shows · long-press → actions menu · react from the
-picker · open a thread and reply · channel-row long-press · mark-read.** A rendered-but-inert affordance
+picker · open a thread and reply · channel-row long-press · mark-read · navigate back (chat → list,
+thread → chat).** The routing layer is migration-owned (§3), so a broken pop — or a header with no
+wired back affordance — is a migration defect. A rendered-but-inert affordance
 is a fail. Run on a device you confirmed is booted (`flutter devices` → `flutter run -d <deviceId>` —
-never a device/OS you haven't confirmed); to reach gated screens, and if the device or run session
-wedges mid-pass, use the driving tools and the recovery ladder in
-[`design-matching.md`](design-matching.md) Step 5 — an environment failure never upgrades a region to
+never a device/OS you haven't confirmed). To reach a gated chat screen where tapping isn't available,
+use a temporary env-gated re-route: launch with `--dart-define=AUDIT_CHANNEL=<cid>`, read it via
+`String.fromEnvironment`, and when set point `home:` at the target screen wrapped in
+`StreamChannel(channel: client.channel('messaging', id: cid))` — delete it after (same rules as the
+throwaway scaffold), and beware the stale-define trap: an incremental build can reuse the previous
+run's define values, so force the rebuild with a changing nonce define. If the device or run session
+wedges mid-pass, recover via the ladder in [`design-matching.md`](design-matching.md) Step 5 — an
+environment failure never upgrades a region to
 verified: regions you could not check are reported as **unverified**, never implied matched. Delete any
 throwaway verification scaffold before delivery and re-verify on the real navigation path
 ([`RULES.md`](RULES.md) → "Project ownership"). Confirm Sendbird is fully removed
@@ -514,14 +526,12 @@ local), call `.toLocal()` so the rendered text matches the source.
 | `SendbirdUIKit.setFontFamily(...)` | text styles in the theme |
 | `SBUStringProvider().setStrings(...)` (custom UI strings) | A kept Stream pre-built widget shows **default English** until overridden — its empty / loading / error states are the classic silent misses (e.g. an empty chat reverts to "Send a message to start the conversation" instead of the source's `noMessages`). Catch them all centrally: subclass `StreamChatLocalizationsEn` (from `stream_chat_localizations`), `@override` the specific getters (`sendMessageToStartConversationText` for the empty chat, `writeAMessageLabel` for the composer placeholder, …), and register it as a `LocalizationsDelegate` in `MaterialApp.localizationsDelegates` (ahead of `GlobalStreamChatLocalizations.delegates`). Per-widget builders only cover the surfaces you remember to set: `StreamMessageListView(builders: StreamMessageListViewBuilders(empty: …))` (the message list groups its placeholder slots under `builders:`), `StreamChannelListView(emptyBuilder:)` (top-level there), `StreamMessageComposer(placeholderBuilder:)`. |
 
-The *how* of matching a specific look lives in [`design-matching.md`](design-matching.md) — this
-table only maps the concepts. Sendbird's Flutter theme values live in the `sendbird_uikit` package's
-`SBUColors` / `SBUThemeProvider` (source: `github.com/sendbird/sendbird-uikit-flutter` →
-`lib/src/public/resource/`) — read them to name concrete colors, then confirm against the running app.
-
-The per-region specifics — composer parity, avatars, message-bubble fill/text, custom cards — are the
-checklist in §0.5 habit 2; the exact `StreamTheme` / component-builder knobs live in
-[`design-matching.md`](design-matching.md).
+This table only maps the concepts. The *how* for the regions migrations keep shipping at Stream
+defaults — the composer, the message-row metadata, the bubble fill/text, and avatars — is inlined
+below; the fully general procedure and every other region's mechanics (reaction relocation, custom
+cards → §5, media overlays, the full theme-token tables) live in
+[`design-matching.md`](design-matching.md). Name concrete Sendbird values from `SBUColors` /
+`SBUThemeProvider` per §0.5 habit 1 (which carries the source path), then confirm against the running app.
 
 ### Composer parity — inventory the source composer button-by-button
 
@@ -546,9 +556,145 @@ integration:
   field's **fill, border, corner radius, and height** to the source — measured, not eyeballed.
 
 Inventory the source composer **left→right and right→left, in both states** (at rest and with text),
-and reproduce exactly that set — no more, no less. The inventory names **WHAT** to match;
-[`design-matching.md`](design-matching.md) → Composer is the **HOW** (the sub-slot map, stock-default
-chrome, per-part sampling and measurement).
+and reproduce exactly that set — no more, no less.
+
+**The mechanisms (v10 — confirm each name against the pinned source, [`design-matching.md`](design-matching.md) Step 3).**
+The composer is slot-composed — `[messageComposerLeading] [messageComposerInput → (inputHeader |
+inputLeading | inputCenter | inputTrailing)] [messageComposerTrailing]` — and every slot is overridden
+via `StreamChat(componentBuilders: StreamComponentBuilders(extensions: streamChatComponentBuilders(<slot>: (context, props) => …)))`:
+
+- **Bar + pill chrome (top hairline · pill fill · border · radius) — where the source's bar differs
+  from Stream's, matching it needs a scoped-token override, not just a wrapper.** The composer paints
+  its **own** bar (`Material(color: backgroundElevation1)`) with a top hairline (`Border(top:)` in
+  `colorScheme.borderDefault`); the pill reads the SAME tokens (`backgroundElevation1` fill,
+  `borderDefault` border, `radius.xxxl` corner ≈24). So wrapping the composer in a `Container(color:)`
+  does nothing, and **leaving Stream's chrome where the source's bar looks different — its top separator
+  and bordered pale pill against, say, a borderless solid field — is a FAIL, not a cosmetic detail.**
+  Read the source bar's fill/border/hairline/corner off the baseline crop and drive the tokens to
+  match; the mechanism is a scoped `Theme` around the terminal default (most Sendbird composers land on
+  a borderless solid pill with no hairline — this skeleton reaches that; adjust the values to your
+  source):
+
+  ```dart
+  messageComposerInput: (context, props) {
+    final t = StreamTheme.of(context);
+    return Theme(
+      data: Theme.of(context).copyWith(extensions: [
+        t.copyWith(colorScheme: t.colorScheme.copyWith(
+          backgroundElevation1: <source field fill>,   // pill fill
+          borderDefault: <source border, or transparent>,  // transparent kills pill border AND bar hairline
+        )),
+      ]),
+      child: DefaultStreamMessageComposerInput(props: props),  // NOT StreamMessageComposerInput — recurses
+    );
+  },
+  ```
+  Corner differs? add `radius: t.radius.copyWith(xxxl: <measured>)`. Bar fill ≠ pill fill? scope a
+  second `Theme` around the whole composer for the bar.
+- **Leading `+`.** Stock is an **outlined `+` chip**; Sendbird's is a plain rounded-square glyph
+  tinted with the accent. Override `messageComposerLeading`: render the measured glyph and wire
+  `props.onAttachmentButtonPressed`.
+- **Send presence.** Disable the mic the source doesn't have (`enableVoiceRecording: false`) — but the
+  stock trailing then renders a **persistent enabled send**, where Sendbird **hides send on an empty
+  field**. Override `messageComposerInputTrailing`: listen to `props.controller`, return
+  `SizedBox.shrink()` while the text is empty, else the accent-tinted send calling
+  `props.onSendPressed`. The default slot is a **state machine** (slow-mode countdown · voice UI ·
+  confirm-edit · confirm-command · send) — reproduce the states the app uses, at minimum
+  **edit → confirm-edit**.
+- **Vertical centering is a measured gate.** The bar row AND the in-pill row are both
+  `Row(crossAxisAlignment: end)`, so a custom side-slot glyph **bottom-anchors and rides low**. Wrap
+  each in `SizedBox(height: <measured single-line field height>, child: Center(glyph))` — every side
+  slot in one pass (fixing send but not the `+` is the recurring miss). Gate: |glyph center-Y − pill
+  center-Y| ≤ 2 px on a native-scale crop.
+
+These recipes cover the stock Sendbird composer; for anything beyond them — each slot's full Props,
+stock defaults per sub-slot, attachment-picker presentation, custom-field caveats — Grep
+[`design-matching.md`](design-matching.md) → Composer.
+
+### Message-row metadata — match the source's row layout, wherever it puts name/time/receipts
+
+**The target is the source's arrangement, not any fixed layout.** Read off the baseline where the author
+name, timestamp, and receipts actually sit relative to the bubble, and reproduce *that*. Stream's default
+bundles author + time + ticks into one footer **below** the bubble, rendered only on the last message of
+a run — so **leaving that default when the source arranges the row differently is a FAIL, the same as
+shipping the default composer.** This is a standard, expected step; don't defer it as "risky
+restructuring." It's a set of narrow slot overrides that each keep the default composite running (v10 —
+confirm the names against the pinned source):
+
+- **Name in a different place** (e.g. above the bubble) → the extension slot **`messageHeader`** (its
+  default carries pin/reminder annotations, never the name) — render the author row for the source's
+  cases (per its grouping).
+- **Time/receipts beside the bubble** → the core **`messageContent`** slot (on `StreamComponentBuilders`
+  **directly**, not under `extensions:`); it hands you the composed bubble as `props.child`, so return
+  `Row[props.child, timeReceiptColumn]`.
+- **Hide the default footer** you've replaced → `StreamTheme.messageItemTheme.metadataVisibility` gone.
+
+The one non-obvious constraint: `messageContent` sees only `props.child`, not the `Message`, so pass the
+message down from the `messageItem` slot (which has it) through a tiny `InheritedWidget`. **That
+hand-off is the reusable mechanism — the skeleton below is worked for the common stock-Sendbird case
+(name-above, time-beside); if your source differs (metadata *inside* the bubble, a role/status badge,
+inline meta on short messages, a different order), keep the same message-hand-off + slot pattern and
+build whatever the source shows — the arrangement inside the slots is yours, not fixed:**
+
+```dart
+// carries the message down to messageContent
+class _MsgScope extends InheritedWidget {
+  const _MsgScope({required this.message, required super.child});
+  final Message message;
+  static Message of(BuildContext c) =>
+      c.dependOnInheritedWidgetOfExactType<_MsgScope>()!.message;
+  @override bool updateShouldNotify(_MsgScope o) => o.message != message;
+}
+
+// messageItem publishes it (and raises maxWidth so flanking meta doesn't force early wraps)
+messageItem: (context, props) => _MsgScope(
+  message: props.message,
+  child: DefaultStreamMessageItem(props: props.copyWith(maxWidth: <measured>)), // NOT StreamMessageItem.fromProps — recurses
+),
+
+// messageContent reads it and arranges the bubble + meta as the source does (inline lambda — its Props isn't nameable)
+messageContent: (context, props) => Row(
+  crossAxisAlignment: CrossAxisAlignment.end,
+  children: [Flexible(child: props.child), _timeReceipt(_MsgScope.of(context))],
+),
+```
+
+- **Two gates after the `messageItem` override:** seed one attachment message into a scratch channel
+  rendered by the same UI and confirm the list still paints (SDK attachment widgets embed
+  shrink-wrapping viewports that can blank the whole list under intrinsic measurement), and re-crop
+  **wrap parity** (multi-line bubbles break at the same words as the source).
+
+The general machinery — content-kind routing for media overlays, metadata *inside* the bubble,
+reaction-pill relocation — is [`design-matching.md`](design-matching.md) → Message row, bubble, metadata.
+
+### Message bubble fill & text — set the color per side, and set the text with it
+
+The message row reads **`StreamTheme`**, not the Material `ColorScheme`: the default outgoing bubble is
+`colorScheme.brand.shade100` (a pale brand tint), incoming is `colorScheme.backgroundSurface` — so
+recoloring `MaterialApp`'s seed leaves the bubbles unchanged. Set the source's fills on
+`StreamTheme.messageItemTheme.bubble`, and set the **text** with them — a solid Sendbird outgoing bubble
+needs its fill **and** an on-accent text color, or the text stays dark and illegible:
+
+- **Fill (per side)** → `bubble.backgroundColor: StreamMessageLayoutProperty.resolveWith((p) =>
+  p.alignment == StreamMessageAlignment.end ? outgoing : incoming)` — one property that resolves by
+  alignment (don't set a flat color; it applies to both sides).
+- **Text** → `messageItemTheme.text.textStyle` (resolve per alignment too if the sides differ); outgoing
+  is usually white on a solid accent.
+
+Bubble **geometry** — border/radius, the squared tail corner on the last message of a run, body-text
+size, and `maxWidth` — is the §0.5 *Bubble geometry & text scale* row + [`design-matching.md`](design-matching.md) → Message row.
+
+### Avatars — match the source's shape/size, don't invent
+
+Match the source's avatar exactly and don't "upgrade" a plain placeholder. Where the source shows the
+**default grey person-circle** (no uploaded images), Stream must too — not an invented colorful/initials
+avatar; where the source **hides** the avatar (1:1 / bot chats), hide it
+(`StreamTheme.messageItemTheme.avatarVisibility`), and set the default size via `.avatarSize`.
+`StreamUserAvatar` renders **circular only** and sizes to fixed `StreamAvatarSize` buckets (`xs` 20 · `sm`
+24 · `md` 32 · `lg` 40 · `xl` 48 · `xxl` 80 lp) — a **rounded-square** (Slack-style) avatar or an
+off-bucket measured size needs a small custom widget (a `ClipRRect` around the user's image with an
+initials fallback). For a migrated **1:1**, draw the **other member's single** avatar, not Stream's
+member cluster (§4).
 
 ---
 
@@ -596,7 +742,9 @@ the client.
 5. **Wire one client** + provider; repoint existing bootstraps without changing their public API (§2).
 6. **Migrate each touchpoint** — views + navigation + action wiring (§3), channels (§4),
    messages/attachments (§5).
-7. **Re-apply theming/customization** via the two axes (§6, [`design-matching.md`](design-matching.md)).
+7. **Re-apply theming/customization** via the two axes (§6 — its inline *Composer parity* /
+   *Message-row metadata* recipes included; [`design-matching.md`](design-matching.md) for the
+   general procedure).
 8. **Move seeding server-side** (§7).
 9. **Verify against the baseline** (§0.5 habits 2–3 + [`design-matching.md`](design-matching.md)
    Step 5) — walk the §0.5 checklist on every screen at native scale (preserve path: zero visual
