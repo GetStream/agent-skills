@@ -31,7 +31,7 @@ Post one message asking all relevant things together. Do not split into multiple
 
 Once the user answers, execute the needed CLI steps in sequence without pausing between them. Narrate each step briefly, but do not ask "shall I continue?" between steps. Demo data calls are mutating; run them only when the user asked for them.
 
-### Step A0 - Confirm CLI install and auth
+### Step A0 - Confirm CLI install
 
 Detect the binary:
 
