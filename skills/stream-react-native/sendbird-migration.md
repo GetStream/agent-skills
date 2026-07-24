@@ -681,8 +681,8 @@ Run all of these; each catches a failure a real migration shipped. The compiler 
      one frame; incoming *and* outgoing), the **whole composer bar** (at-rest *and* typing — not
      button-by-button), a **channel-list row** (a 1:1 *and* a group), and the **header**. Then answer the
      region's **placement question** from that crop before any PASS — reactions *inside vs below* the
-     bubble, send/mic *inside vs outside* the pill, metadata *inside/beside/below*, avatar *silhouette vs
-     initials*. A sub-element that looks right in isolation can still be mispositioned; presence + colour
+     bubble, send/mic *inside vs outside* the pill (plus the pill *filled vs outlined* and attach
+     *circle vs square*), metadata *inside/beside/below*, avatar *silhouette vs initials*. A sub-element that looks right in isolation can still be mispositioned; presence + colour
      is not enough.
    - **A region you specced but never built is a FAIL, not done.** Cross-check every
      `design-analysis.md` region against an implemented+verified result (a real run specced the header
