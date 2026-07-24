@@ -544,6 +544,11 @@ same-author run, an attachment/album, a reply/quote, a long wrapping message, a 
 gate 5). Reactions are the easiest to forget and one of the two regions that keep shipping wrong: the
 reactions box can't be matched or verified if no seeded message ever renders it. Add reactions at seed
 time, server-side, as part of creating the data — not as an afterthought during verification.
+**Seed reactions only with types in the app's `supportedReactions`:** the SDK filters unsupported types
+out of `useMessageContext`'s `reactions`, so a reaction seeded as an unsupported type (e.g. `question`)
+silently never renders — and the crop then shows nothing while looking like a layout bug. Use the
+default set (`like`/`love`/`haha`/`wow`/`sad`) or extend `supportedReactions` (with an `Icon`) first, and
+seed a reaction on **both** an incoming and an outgoing message.
 
 ---
 
@@ -573,16 +578,19 @@ under wrap-up pressure — that overload is why these regions get skimmed.** For
 screens this fan-out is **required, not a recommendation** — matching them inside the main agent's
 wrap-up is the exact failure to avoid. Do not treat
 `design-matching.md` as documentation to consult in passing; make it dedicated work. **Fan out one
-focused subagent per _region_ on the checklist above** — at minimum the recurring offenders
-(reactions, the composer attach `+` **shape**, composer **send/mic placement**, bubble **fill + text**,
-**metadata placement**, avatar) — **not** one broad "do the design" subagent. A whole-screen subagent
-gets trusted blindly and glances-and-declares (a real run did exactly that); a **one-region** task
-cannot — you either rebuilt the reactions box or you didn't. Give each a clean, single-purpose context
+focused subagent per _composite screen-area_** — the **message row** (it owns bubble fill+text,
+metadata placement, reactions, and avatar *together*), the **composer** (the whole bar), the
+**channel-list row**, and the **header** — **not** one broad "do the design" subagent, and **not** one
+per tiny sub-element (a reactions-only subagent crops the pills in isolation and can't see whether they
+sit *inside vs below* the bubble — the exact miss from a real run). A whole-screen subagent gets trusted
+blindly and glances-and-declares; a composite-area subagent owns every checklist region in its area,
+rebuilds them **together**, and crops the **whole composite full-width** — so the *positioning* between
+sub-elements is verified, not just each element in isolation. Give each a clean, single-purpose context
 and a tight contract: **in** — the region's section-0c baseline crop + the exact recipe from
 [`references/design-matching.md`](references/design-matching.md); **out** — the region built to
 pixel-match **plus the baseline↔migrated crop pair it produced** as its deliverable, not a prose "PASS".
-A one-region task keeps the main agent light and gives the region full attention — that is what makes it
-come out pixel-accurate. **Treat the returned crop pair as the evidence, never the subagent's words:**
+A composite-area task keeps the main agent light and gives the area full attention — that is what makes
+it come out pixel-accurate. **Treat the returned crop pair as the evidence, never the subagent's words:**
 do not relay a region as matched when you have not seen its baseline↔migrated crop. Hand each subagent the **section 0c baseline as the
 reference design**: its **Step 1 (Decompose the reference into
 regions)** was already run in section 0c - the `design-analysis.md` region spec is your entry point;
@@ -664,6 +672,18 @@ Run all of these; each catches a failure a real migration shipped. The compiler 
      screenshot, or a rebuilt original) — a spec you authored from the palette is not a baseline and
      cannot certify "looks like the original," only "recolored." On the palette-only rung, where no
      original crop exists, structural regions are logged **Impossible: no layout reference**, not PASS.
+   - **Crop the whole composite + its container + margins — full-width, never the sub-element you built.**
+     A crop framed on the pills or the button alone verifies *contents* but hides *positioning*: a real
+     run cropped reactions in isolation, saw "emoji + count + add-button" on both sides, and missed that
+     the source renders them **inside** the bubble while it had built them **below**. Crop **full-width**
+     (screen-edge to screen-edge, so the bubble/bar/row boundary and both margins are always in frame),
+     at these composite units: a **whole single message row** (bubble + metadata + reactions + avatar in
+     one frame; incoming *and* outgoing), the **whole composer bar** (at-rest *and* typing — not
+     button-by-button), a **channel-list row** (a 1:1 *and* a group), and the **header**. Then answer the
+     region's **placement question** from that crop before any PASS — reactions *inside vs below* the
+     bubble, send/mic *inside vs outside* the pill, metadata *inside/beside/below*, avatar *silhouette vs
+     initials*. A sub-element that looks right in isolation can still be mispositioned; presence + colour
+     is not enough.
    - **A region you specced but never built is a FAIL, not done.** Cross-check every
      `design-analysis.md` region against an implemented+verified result (a real run specced the header
      avatar and add-reaction button, then never built them — no gate caught it).
