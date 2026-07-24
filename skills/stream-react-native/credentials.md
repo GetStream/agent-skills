@@ -31,7 +31,7 @@ Post one message asking all relevant things together. Do not split into multiple
 
 Once the user answers, execute the needed CLI steps in sequence without pausing between them. Narrate each step briefly, but do not ask "shall I continue?" between steps. Demo data calls are mutating; run them only when the user asked for them.
 
-### Step A0 - Confirm CLI install and auth
+### Step A0 - Confirm CLI install
 
 Detect the binary:
 
@@ -51,7 +51,7 @@ If the user wants CLI-based credentials:
 getstream env --target expo
 ```
 
-`getstream env` writes the app's public API key to `.env` as `EXPO_PUBLIC_STREAM_API_KEY`; read it in code with `process.env.EXPO_PUBLIC_STREAM_API_KEY`. You don't need to hold the key yourself, and the secret is never written. (Bare RN CLI without Expo: `getstream env` has no native target yet - inline the public key or wire it through your env library; never the secret.) If `getstream env` reports the project isn't initialized or you're not signed in, run `getstream init`, then re-run it. If the user pastes an API key, use it directly and skip this step.
+`getstream env` writes the app's public API key to `.env` as `EXPO_PUBLIC_STREAM_API_KEY`; read it in code with `process.env.EXPO_PUBLIC_STREAM_API_KEY`. You don't need to hold the key yourself, and the secret is never written. (Bare RN CLI without Expo: `getstream env` has no native target yet - inline the public key or wire it through your env library; never the secret.) If `getstream env` reports the project isn't initialized or you're not signed in, the project needs `getstream init` first.
 
 **Echo the selected app to the user before any mutation:** before running Step C, say `Selected Stream app: "<app_name>" (api_key: <last_4_chars>)` so a misconfigured project is caught before it writes to the wrong app. If the user expected a different app, run `getstream init` to switch it before continuing.
 

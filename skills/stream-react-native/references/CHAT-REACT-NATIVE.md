@@ -220,6 +220,30 @@ Use [DOCS.md](DOCS.md) to fetch the manifest-selected theming/customization page
 
 `WithComponents` can wrap any subtree. Inner overrides merge over outer overrides.
 
+### Component override model (v9+) — `WithComponents` only
+
+- **ALL component overrides go through one `WithComponents overrides={{ … }}` provider** placed above navigation so they apply on every screen. **Passing a component as a `<Channel>` prop is silently ignored** — no error, no effect; it reads exactly like a stale bundle during verification. If an override "isn't taking," first confirm it's in `WithComponents`, not a `<Channel>` prop.
+- **The full overridable slot set is the compiled `components` map** in the installed package (`node_modules/stream-chat-react-native-core/.../contexts/componentsContext/defaultComponents.js`) — grep that for real slot names, don't work from memory.
+- **Nullable extension slots live in `OptionalComponentOverrides`, not `DEFAULT_COMPONENTS`.** The in-bubble content slots (`MessageContentTopView` / `MessageContentBottomView` / `MessageContentLeading` / `MessageContentTrailing`, `MessageText`, `Input`, …) are in `OptionalComponentOverrides`, so they **won't appear if you only grep the `DEFAULT_COMPONENTS` keys** — "that slot doesn't exist" is usually "I grepped the wrong map." Check both.
+
+### Composer, attach button, and message-metadata facts
+
+Reference facts the composer/message customizations lean on (verified against **stream-chat-expo 9.7.0**; confirm against the installed package — the full design-match procedure is in [design-matching.md](design-matching.md#composer-deep-dive--the-render-tree-the-surfaces-and-the-two-facet-buttons)):
+
+- **Composer surface vs inner rows.** `messageComposer.wrapper` (and `floatingWrapper`) is the **full-bleed bar surface** (default: padding only, no background). `messageComposer.container` / `contentContainer` are inner `flexDirection: 'row'` layout rows sized to their children — theming `container` colours only a band around the controls, not the bar. The input pill is `inputBoxWrapper`; grow it via symmetric `inputBox` `paddingTop`/`paddingBottom`, not a fixed wrapper height (the pill doesn't vertically-centre a single line).
+- **Send/mic** is the SDK's `OutputButtons`, rendered **inside** the input pill (`MessageInputTrailingView`) and **stateful** (mic/audio at rest → send when the input has text). Reuse `OutputButtons` / `AudioRecordingButton`; don't hand-roll. Move it outside the pill via `MessageComposerTrailingView`.
+- **`toggleAttachmentPicker` is a private helper *inside* the SDK `AttachButton`** — composed from `openAttachmentPicker` / `closeAttachmentPicker` / `focusInputOnPickerClose` / `inputBoxRef` + `attachmentPickerStore`. It is **not on any context or hook**. A custom attach button must **replicate it, including the refocus-input-on-close branch** — not just call open/close. The SDK `AttachButton` also renders as a bordered `Button variant="secondary" type="outline"` with `icons.Plus` and swaps `+`→keyboard while the picker is open; a custom borderless `+` must reproduce that open-state swap.
+- **A chat app's attach sheet (tiles on top + gallery below) is Stream's `AttachmentPicker`** — override `AttachmentPickerSelectionBar` via `WithComponents`; don't build a standalone modal.
+- **Metadata inside the bubble** (timestamp/ticks bottom-trailing) is structural — render in `MessageContentBottomView`/`MessageContentTrailingView` (inside the bubble), set `alignSelf`, reproduce the body padding, and set the default outside `MessageFooter` to `() => null`. Reuse `MessageStatus` for ticks (recolour via the check-icon `stroke`).
+- **Metadata BESIDE the bubble** (timestamp/ticks to the side, same row) is a different slot: override **`MessageSpacer`** (trailing child of the message row; row is `row-reverse` for outgoing, so it lands left-of-outgoing / right-of-incoming, bottom-aligned). Not `MessageContent`, not `MessageFooter`. Pair with `MessageFooter → () => null`.
+- **Append content BELOW a whole message** (e.g. a translate affordance) — override the **`Message`** slot and wrap the default `Message`; don't use `MessageFooter` (renders inside the content column, collides with avatar alignment). The wrapper is above the SDK's `MessageProvider`, so read `message` from **props**, not `useMessageContext`.
+- **Ungroup messages** (each standalone, avatar/name/time on every one) → `getMessageGroupStyle={() => ['single']}`, NOT `enableMessageGroupingByUser={false}` (which empties `groupStyles` and removes the per-message vertical padding → messages collapse). `['single']` also re-enables the bubble **tail** (`messageBubbleRadiusTail`); override `theme.messageItemView.content.container` corner radii for uniform bubbles. Note the incoming **avatar** hides unless a message is `lastGroupMessage` — with grouping changed, override `MessageAuthor` (mounted only for incoming rows) to always render it.
+- **Attached, full-width reaction box** (vs the default external pill) → render in `MessageContentBottomView` with `alignSelf: 'stretch'`, and null both `ReactionListTop`/`ReactionListBottom`. Toggle via `useMessageContext().handleReaction(type)` (there is **no** `showMessageReactions` on that context).
+- **Custom `ChannelPreview` slot** receives `{ channel, lastMessage, unread, muted, pinned }` — **`onSelect` comes from `useChannelsContext()`, not props** (reading `props.onSelect` silently no-ops the row tap). The default preview renders the sent/read tick on **line 2** with a `You:` prefix; designs that want the tick on line 1 (by the timestamp) or no prefix must reroute via the preview slots.
+- **`AttachButton` `iconOnly` renders a CIRCLE** (a squircle/square reference is a shape override, not a recolor). **Send/mic default INSIDE the pill** — move outside via `OutputButtons` in `MessageComposerTrailingView` + null `MessageInputTrailingView`.
+- **Theme overrides don't cascade:** user `style.semantics` merges *after* `$token` resolution, so overriding `accentPrimary` doesn't retint `$brand*`-derived tokens. Set literals for each. **Composer buttons use `button*` tokens** (`buttonSecondaryText`/`buttonSecondaryBorder` for attach/mic, `buttonPrimaryBg` for send), not `accentPrimary`.
+- **Composer placeholder text** (e.g. changing "Send a message" to something shorter) is a **translation, not a prop:** build a `Streami18n` from **`stream-chat-expo`** (the RN SDK's own — not `stream-chat`) with `translationsForLanguage: { 'Send a message': '<your text>' }` and pass it as `<Chat i18nInstance={…}>`.
+
 ---
 
 ## Offline support
@@ -273,6 +297,7 @@ When in doubt, run the probe and check the `EXPO_SDK` line before applying any b
 ## Gotchas
 
 - The bundled references assume React Native New Architecture.
+- **Expo SDK 57 pins a crash-prone `react-native-reanimated@4.5.0` + `react-native-worklets@0.10.0`.** Require ≥`4.5.1`/≥`0.10.2` (good pairing: `4.5.2`/`0.10.2`) and rebuild native — the crash is on worklet/animation paths, not at boot, so a clean launch does not clear it. `npx expo install react-native-reanimated` re-pins the bad version; the safe versions are baked into the [builder.md](../builder.md) install blocks. See [../RULES.md](../RULES.md) > Required peer setup.
 - `react-native-teleport` is required for overlays.
 - `useCreateChatClient` returns `null` while connecting.
 - Never pass `null` to `Chat`.

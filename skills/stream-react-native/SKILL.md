@@ -1,6 +1,6 @@
 ---
 name: stream-react-native
-description: "Use when creating, building, or integrating Stream Chat, Stream Video, or Stream Feeds in React Native Community CLI or Expo apps - new RN/Expo Chat / Video / Feeds apps from scratch, existing-app integration, stream-chat-react-native, stream-chat-expo, @stream-io/video-react-native-sdk, @stream-io/feeds-react-native-sdk, useCreateFeedsClient, StreamFeeds, StreamFeed, activity feed, timeline feed, notification feed, for-you feed, useFeedActivities, useActivityComments, reactions, comments, follows, migration/setup, migrate or upgrade an SDK version, upgrade stream-chat-react-native to v9, v8 to v9, bump Stream version, channel list, message list, MessageComposer, attachment picker, image/file attachments, media picker, audio messages, threads, thread list, video call, livestream, audio room, ringing, CallContent, ParticipantView, React Navigation, Expo Router, theming, offline support, push notifications, and Chat / Video / Feeds UI customization. Not for Moderation review UI."
+description: "Use when creating, building, or integrating Stream Chat, Stream Video, or Stream Feeds in React Native Community CLI or Expo apps - new RN/Expo Chat / Video / Feeds apps from scratch, existing-app integration, stream-chat-react-native, stream-chat-expo, @stream-io/video-react-native-sdk, @stream-io/feeds-react-native-sdk, useCreateFeedsClient, StreamFeeds, StreamFeed, activity feed, timeline feed, notification feed, for-you feed, useFeedActivities, useActivityComments, reactions, comments, follows, migration/setup, migrate or upgrade an SDK version, upgrade stream-chat-react-native to v9, v8 to v9, bump Stream version, migrate from Sendbird, replace @sendbird/uikit-react-native / @sendbird/chat with Stream, Sendbird to Stream React Native/Expo migration, channel list, message list, MessageComposer, attachment picker, image/file attachments, media picker, audio messages, threads, thread list, video call, livestream, audio room, ringing, CallContent, ParticipantView, React Navigation, Expo Router, theming, offline support, push notifications, and Chat / Video / Feeds UI customization. Not for Moderation review UI."
 license: See LICENSE in repository root
 compatibility: Supports new or existing React Native CLI and Expo apps running Stream Chat RN or Stream Video RN with React Native New Architecture. The `getstream` CLI is the default credentials and requested demo-data path; pasted API key and token are accepted as fallback.
 metadata:
@@ -43,6 +43,7 @@ Before any tool call, decide the track from the user's input alone. Do not probe
 |---|---|
 | "Build/create/scaffold a new React Native app", "create an Expo app", "new Stream Chat RN app", "new Stream Video RN app", "new Stream Feeds RN app", empty directory + React Native/Expo Chat / Video / Feeds | **A - New app** |
 | "Upgrade/migrate/bump a Stream SDK version", "upgrade stream-chat-react-native to v9", "migrate Chat RN to the new SDK", "v8 to v9", "bump Stream Video/Feeds", "Feeds v2 -> v3" | **M - Migrate / upgrade** |
+| "Migrate from Sendbird", "replace Sendbird with Stream", "we're switching off Sendbird", "rip out @sendbird/uikit-react-native", "convert SendbirdUIKitContainer / createGroupChannelFragment to Stream", `@sendbird/chat` / `@sendbird/uikit-react-native` / `-foundation` present in the target's `package.json` | **S - Migrate from Sendbird** |
 | "Add/integrate Stream Chat into this app", "wire Chat RN", "set up stream-chat-expo", "add a video call", "wire Stream Video", "set up @stream-io/video-react-native-sdk", "add an activity feed", "wire Stream Feeds", "set up @stream-io/feeds-react-native-sdk", "change/customize this Chat / Video / Feeds UI" | **B - Existing app** |
 | `React Native`, `Expo`, `Expo Router`, `stream-chat-react-native`, `stream-chat-expo`, `@stream-io/video-react-native-sdk`, `@stream-io/feeds-react-native-sdk`, `Stream Chat RN`, `Stream Video RN`, `Stream Feeds RN`, `Chat React Native`, `Video React Native`, `Feeds React Native`, migration | **C - Reference lookup** if the user only asks how/docs; otherwise **B - Existing app** |
 | Explicit product/runtime token: `Chat React Native`, `Chat Expo`, `Video React Native`, `Video Expo`, `Feeds React Native`, `Feeds Expo` | **C - Reference lookup** |
@@ -88,6 +89,7 @@ Do not invent missing React Native Moderation API details from memory.
 
 - **Tracks A, B, D** -> run Project signals, then continue in [`builder.md`](builder.md) and [`sdk.md`](sdk.md). Run [`credentials.md`](credentials.md) before writing Chat, Video, or Feeds connection code or creating requested demo data.
 - **Track M** -> Read [`migrate.md`](migrate.md) first; it fetches the live upgrade guide before any edit. Run Project signals for lane / package-manager / New-Architecture detection, but **skip credentials, provisioning, and the scaffold path** - it edits an existing project.
+- **Track S** -> Read [`sendbird-migration.md`](sendbird-migration.md) first; it detects the Sendbird integration shape (and the Expo-vs-bare flavor) before any edit. Run Project signals for lane / package-manager / New-Architecture detection, but **do not enter Track A/B/D or any scaffold path** - it re-implements an existing Sendbird integration in place.
 - **Track C** -> skip credentials and project probes if the product + runtime are explicit. Only run a read-only probe if RN CLI vs Expo is ambiguous and the answer affects the guidance.
 
 ---
@@ -122,6 +124,7 @@ Use the result to produce a one-line status, for example:
 - `Empty workspace detected - defaulting to Expo new app unless the user asked for RN CLI`
 - `Expo app detected - stream-chat-expo absent - Expo Router present - ready for Chat setup`
 - `Expo app detected - Expo SDK 56+ - apply RULES.md > Expo Router SDK 56+ rule (no @react-navigation/*)`
+- `⚠️ react-native-reanimated 4.5.0 + react-native-worklets 0.10.0 detected — known crash pair (Expo SDK 57 pin); bump to ≥4.5.1/≥0.10.2 and rebuild native (RULES.md > Required peer setup)`
 - `Expo app detected - @stream-io/video-react-native-sdk absent - ready for Video setup`
 - `Expo app detected - @stream-io/feeds-react-native-sdk absent - ready for Feeds setup`
 - `RN CLI app detected - ios/android present - stream-chat-react-native installed - checking provider placement`
@@ -142,6 +145,7 @@ If there is no RN/Expo project and Track A applies, scaffold one through [`build
 | C - Reference lookup | [`sdk.md`](sdk.md) + [`references/DOCS.md`](references/DOCS.md) + relevant product reference files |
 | D - Bootstrap / setup | [`builder.md`](builder.md) + [`sdk.md`](sdk.md) + `llms.txt` docs lookup |
 | M - Migrate / upgrade | [`migrate.md`](migrate.md) + [`references/DOCS.md`](references/DOCS.md) (live upgrade guide) + product reference for the migrated SDK |
+| S - Migrate from Sendbird | [`sendbird-migration.md`](sendbird-migration.md) + [`references/sendbird-mapping.md`](references/sendbird-mapping.md) + [`references/sendbird-mapping-extended.md`](references/sendbird-mapping-extended.md) + [`references/design-matching.md`](references/design-matching.md) + [`credentials.md`](credentials.md) + [`references/CHAT-REACT-NATIVE.md`](references/CHAT-REACT-NATIVE.md) |
 
 ---
 
@@ -187,7 +191,7 @@ Enforced by [`RULES.md`](RULES.md) > Package version and docs discipline.
 ## Styling-depth flag: matching a provided design
 
 Orthogonal to the track above: if a request carries a **target appearance** - an attached
-screenshot, a Figma frame, or "make it look like WhatsApp / iMessage / Slack / \<app\>" - do not
+screenshot, a Figma frame, or "make it look like \<app\>" - do not
 treat it as a set-a-few-colors task. **Before** writing UI code, run
 [`references/design-matching.md`](references/design-matching.md):
 it decomposes the reference region by region and plans **every** difference as one of three axes -
@@ -199,6 +203,18 @@ Implement every region, the composer included; a region left at the SDK default 
 This runs in addition to (not instead of) the `DOCS.md` lookup: fetch the manifest-selected
 theming/customization pages to confirm exact theme paths and component names. A plain request
 with **no** target appearance does not trip this flag - build from the blueprints as usual.
+
+**Front-loaded traps (the recurring RN design-match failures — internalize before you start; full detail + recipes in [`references/design-matching.md`](references/design-matching.md)):**
+- **Composer is first-class and structural, not a colour.** If it floats (inset pill, rounded, shadow, content behind), set **`messageInputFloating` on `<Channel>`** — never fake a floating pill with a translucent background fill. The composer *bar* surface is `messageComposer.wrapper` (`container` is only an inner row — colouring it paints a band around the buttons). Send/mic lives **inside** the input pill and **swaps** at-rest↔typing (reuse `OutputButtons`, don't hand-roll). The attach `+` is **two things** — a trigger *and* a `+`↔keyboard stateful icon wired to `toggleAttachmentPicker` (don't drop in the bordered SDK `AttachButton` and assume it matches).
+- **Never fake a structure with a background fill; resolve the structural mechanism (prop/flag/slot) before cosmetic polish** (glass, exact colours).
+- **Timestamp/receipts *inside* the bubble is a structural relayout** (`MessageContent*` slots), not a theme key — the inside-the-bubble metadata look many reskins need.
+- **A chat app's attach sheet IS Stream's `AttachmentPicker`** (tiles on top + gallery below) — override `AttachmentPickerSelectionBar`, don't build a parallel modal. A **bottom** bar is also overridable (both `AttachmentPickerSelectionBar` and `AttachmentPickerContent` are context slots) — null the bar + override the content with an absolute-overlay bar; the host being a direct import does NOT lock the layout.
+- **`Channel` `keyboardVerticalOffset`/`topInset`: pass an explicit `0` for an inside-`Channel` header** — omitting `keyboardVerticalOffset` passes `undefined` (it has no SDK default), not `0`. Set a non-zero value only for a **native** header (or a sibling header *above* `<Channel>`). Verify keyboard-avoidance by **focusing the input to raise the real keyboard** — `setText` doesn't raise it.
+- **Overriding a composite slot drops every sub-feature the default drew** unless you reproduce it (avatar, grouping, reactions, replies, receipts, edited/deleted state).
+- **Verify every STATE, not every screen** — composer at-rest/typing/**keyboard-up**/**voice-recording**/edit each render differently; a state you don't drive hides its defects. When you override a brand/accent colour, override **every** cascading token (recorder/waveform included), because an un-rendered state hides a stray default.
+- **Setup traps that silently break these builds:** on Expo SDK 57 bump past the crash-prone reanimated pin (≥4.5.1/≥0.10.2), and on Reanimated 4 set `FORCE_REACT_RENDER_FOR_SETTLED_ANIMATIONS: false` in root `package.json` (both in [`RULES.md`](RULES.md) > Required peer setup).
+
+The cross-cutting reasoning rules that catch these (partial-styling → inner container, regression adjacency, name-isn't-the-node, reinvention red flag, no magic numbers, green-launch ≠ correct, assumed-≠-SDK-default, verify-every-state, override-every-cascading-token) live in [`RULES.md`](RULES.md) > Design-matching discipline — read them for any design-match request.
 
 ---
 
@@ -273,3 +289,19 @@ Use when the user wants package install and shared wiring more than a full featu
 | **M3** | Apply | Bump only the targeted packages (each at its own target; bump the lane's Chat wrapper), apply every documented breaking change, ground each symbol in installed `node_modules/stream-chat-react-native-core` source, grep for renamed symbols, do native config + keyboard cleanup. |
 | **M4** | Verify | `tsc --noEmit` -> Metro bundle -> native build -> simulator/device smoke of the core flow. No `next build`; a green `tsc` is not a render. |
 | **M5** | Summarize | Packages bumped, breaking changes applied, native/New-Arch changes, files touched, manual follow-ups. Offer (don't auto-run) the next step. |
+
+---
+
+## Track S - Migrate from Sendbird
+
+**Full detail:** [`sendbird-migration.md`](sendbird-migration.md) - Read it first. It detects the existing Sendbird integration shape **and** the Expo-vs-bare flavor, then re-implements each touchpoint **in place** against the grounded Sendbird<->Stream mapping ([`references/sendbird-mapping.md`](references/sendbird-mapping.md) + [`references/sendbird-mapping-extended.md`](references/sendbird-mapping-extended.md)), and finally offers the separate server-side data migration. Not a scaffold track: **do not enter Track A/B/D**. The compiler is the oracle - never migrate from memory ([`references/sendbird-mapping.md`](references/sendbird-mapping.md) > Trust model).
+
+| Phase | Name | What you do |
+|---|---|---|
+| **S0** | Detect & inventory | Run Project signals for the flavor (Expo vs bare RN), package manager, New-Arch, navigation. Grep the Sendbird footprint, classify each touchpoint + every `@sendbird` symbol (mapped / unmapped-known / unknown), build the **parity ledger**, and capture the **visual baseline** (simulator screenshots of the original, or code-derived theme) - [`sendbird-migration.md`](sendbird-migration.md) section 0. |
+| **S1** | Plan & checkpoint | Assemble the plan (flavor + shape, token path, design bar, gaps). Pause and batch-ask the user on any GAP row, unresolved credentials, or an ambiguous design bar; else proceed. Section 2. |
+| **S2** | Packages & connection | Install Stream **alongside** Sendbird (flavor-correct package + peers; wire `GestureHandlerRootView` / `OverlayProvider` / Reanimated Babel plugin). Prove a real user connects (`useCreateChatClient` + `tokenProvider`) via [`credentials.md`](credentials.md) **before** touching UI. Sections 3-4. |
+| **S3** | Migrate touchpoints | File-by-file, in place: UI composition (no `<Window>`; app-owned header), channels, messages/attachments, events (`{ unsubscribe }` cleanup), pagination (stateless), membership/moderation, offline. Delete hand-rolled machinery for reactive primitives. Then remove all three Sendbird packages. Section 5. |
+| **S4** | Design parity | Re-author the theme as a JS `Theme` object (no CSS), then run [`references/design-matching.md`](references/design-matching.md) from Step 1 with the baseline as the reference. Section 6. |
+| **S5** | Verify | Gates in order: `tsc --noEmit`, native build, zero `@sendbird` imports, two-user simulator smoke, design verify loop vs the ledger, ledger closure, README. Section 7. |
+| **S6** | Offer data migration | Never auto-run. Offer the server-side data migration ([`../stream/sendbird-data-migration.md`](../stream/sendbird-data-migration.md)); stop if the user only wanted the SDK swap. Section 8. |
