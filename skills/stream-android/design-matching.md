@@ -112,6 +112,34 @@ color (do not eyeball a "green"/"blue") and build a full `StreamDesign.Colors` w
 ColorScale(...)` (s50..s900 stepped around the sampled hue) plus `accentPrimary`, so accented surfaces
 are vivid and consistent. Verify the rendered accent hex matches the sampled reference hex.
 
+### Outgoing quoted reply: you must override the quote slot
+
+When the outgoing bubble contains a quoted reply, you MUST override
+`MessageQuotedContent` for the outgoing (mine) branch. Do not leave it at the
+SDK default. This is the decision that gets missed: the region looks handled
+because the main bubble is styled, but the quote is a separate slot with its
+own tokens.
+
+Why: the default `QuotedMessage` derives its fill and text from
+`chatBgAttachmentOutgoing` and `chatTextOutgoing`, independent of the fill you
+pinned on the bubble. Left alone it renders a separate rounded card and the
+quote text inverts in dark. It is the bubble-color trap one level down, in a
+slot you did not touch.
+
+Fix: in the outgoing (mine) branch, apply the same treatment you gave the main
+bubble text. Detect the branch carefully, because the slot's params are
+swapped: `params.message` is the quoted message and `params.replyMessage` is
+the containing message, so branch on whether `params.replyMessage` is the
+current user's message, not `params.message`. Pin the quote author and quote
+text to the same fixed ink, draw the quote flush on the bubble fill with no
+background card, keep the accent bar. Delegate the incoming branch to the
+default. Text-only quotes; do not build attachment-preview handling for a case
+you are not seeding.
+
+Verify: on a clean rebuild with the outgoing message seeded as a reply,
+confirm in light and dark that the quote ink matches the main text, the quote
+sits flush with no card, and incoming quotes are unchanged.
+
 ---
 
 ## Step 0: Identify the screens (one or more screenshots)
