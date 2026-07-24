@@ -99,6 +99,15 @@ paddings and gaps; and the **sampled colors** (bubble fills, accent, ticks, back
 roughly like it" is the failure mode - a region with the right color but the wrong size or spacing
 still fails the eye.
 
+**When the reference is *code-derived* (a migration's palette-only rung), the values are *intended*,
+not *verified* — and verification is not optional at any tier.** A colour read from a theme file says
+what the source *meant* to paint, not what the SDK actually renders, and a theme file carries **no
+layout at all**, so a code-derived spec can seed colours but never structure. Confirm colours against
+the running app's render, and treat every structural region as unmatched until an **independent**
+reference (the original's real pixels) confirms it — a spec you authored yourself cannot certify
+"looks like the original," only "recolored." See
+[`../sendbird-migration.md`](../sendbird-migration.md) §0c/§6.
+
 ### Getting sizes right — MEASURE, do not eyeball round numbers
 
 Picking `24`, `28`, `44` by eye is the recurring failure, and it shows most in the composer (wrong

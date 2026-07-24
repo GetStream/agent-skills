@@ -188,15 +188,34 @@ spec is cheapest and most accurate to extract; deferring it means decomposing fr
    as the reference and run the **same** design-matching Step 1 decomposition on them - still Pixel
    tier, measured and sampled the same way. You just can't re-shoot new states, so decompose what you
    have into `design-analysis.md` and flag any region no screenshot covers.
-3. **No runnable app and no screenshots (rung 3): derive the spec from code.** Read the Sendbird theme
-   (`colorSet` / `SBUTheme` / string sets) and record its exact palette and dimensions as the region
-   spec in `design-analysis.md`. This is a **structural** match with an explicit palette override -
-   the values came from code, not a sampled sketch, so include them as exact rows despite the
-   no-sampling rule for the structural tier.
+3. **No runnable app and no screenshots — rung 3 (palette-only recolor, last resort).** First try to
+   avoid this rung: **rebuild the original** (a `git worktree` at the pre-migration Sendbird commit, or
+   the source SDK if this is a brand-new screen) and boot it in the simulator — that promotes you back
+   to rung 1 and hands you a real reference *and* its source to read. Only when the original genuinely
+   cannot be built **and** no screenshots exist: read the Sendbird theme (`colorSet` / `SBUTheme` /
+   string sets) and record its palette in `design-analysis.md`. **Be honest about what this is: a theme
+   file is colours, not layout — you cannot derive structure from a palette, so this rung only
+   *recolours stock Stream* and will NOT resemble the original's structure** (bubble/tail geometry,
+   metadata placement, row layout, composer). It is a recolor, not a match. When you ship on this rung,
+   **say so in the summary: "layout not matched to the original."** "structural" here names the fidelity
+   *tier* (how little you could learn about the original), not an achieved outcome — the rung changes
+   only how you obtained the *reference*; **it never lowers the region contract or the verification
+   bar** (§6). And confirm even the palette against the running app: a colour read from code is the
+   *intended* value, and the SDK may not repaint the element you expect.
 
 Whichever rung you reach, the output is the same `design-analysis.md` region spec that section 6 hands
 to design-matching as **the reference design**. Keep it until the section 6 verify loop passes, then
 remove it (unless the user asked to keep it), per design-matching's Step 1.
+
+> **The rung is about the *visual* reference only — it is orthogonal to the parity-ledger code
+> analysis, and neither replaces the other.** Reading the Sendbird source to inventory **features,
+> behaviours, and component/API mappings** — silent/ephemeral flags, custom channel/attachment/message
+> types, push config, roles & permissions, and any Sendbird-only feature — is mandatory at **every**
+> rung: none of it is visible in a screenshot, it feeds the **parity ledger** (not the design spec),
+> and it is the only way to find *what must be ported at all*. Screenshots make the port *look* right;
+> code analysis finds *what exists*. So a lower rung means a less pixel-perfect **reference** — never
+> less **verification** and never less code analysis. (This is why rebuilding the original on rung 3
+> helps twice: a screenshottable reference **and** its source to sweep.)
 
 > **HARD STOP (ordering):** on a Pixel baseline, do **not** install Stream packages or edit **any**
 > file until `design-analysis.md` exists and decomposes every in-scope region with a concrete,
@@ -243,7 +262,7 @@ parity ledger plus four strategy lines:
 |---|---|---|
 | Flavor + integration shape(s) | section 0 classification | "Expo (`stream-chat-expo`); UIKit fragments + a `MessageCollection` hook" |
 | Credentials & token path | section 4's precedence, resolved on paper | "user-provided key; backend token endpoint re-pointed to mint Stream JWTs" |
-| Design bar + baseline rung | section 0c baseline rung | "pixel (simulator capture of the original)", "pixel (user screenshots)", or "structural + exact palette (code-derived)" |
+| How the reference is obtained | section 0c baseline rung | "rebuild + capture the original (default)", "user screenshots", or — last resort, no original obtainable — "palette-only recolor (layout NOT matched)". Matching the original is non-negotiable; this row is *how* you'll get the reference, never *whether* to match. |
 | Gaps + proposed resolutions | ledger GAP rows + [`references/sendbird-mapping.md`](references/sendbird-mapping.md) section 15 | "FeedChannel -> admin-post-only channel (substitute); scheduled messages -> server-side job" |
 
 For the gaps row: collect every feature with **no Stream equivalent** (`FeedChannel` /
@@ -257,12 +276,14 @@ one), **rebuild app-side**, or **drop**.
 - the ledger has **>= 1 GAP row** (a product decision exists - it is the user's, not yours);
 - the **credentials/token path is unresolved** (no key provided or found, or no way for clients to
   obtain tokens);
-- the **design bar is ambiguous** (pixel fidelity implied, but no baseline screenshots exist and the
-  user hasn't said how close is close enough);
+- the reference is **not obtainable** the default way (the original can't be built and the user has no
+  screenshots) — ask **how to get one** (rebuild? can they share screenshots?); do **not** offer lower
+  fidelity as a time saving, and never frame it as cheap-vs-faithful. Matching the original is the
+  target; build effort is not a reason to drop it (RULES.md: "never because it's risky or more effort");
 - the **user asked** to review the plan first.
 
-Ask everything in **one batched round** - gap decisions, the credentials call, the design bar -
-never a drip of single questions. When no trigger holds, don't interrupt: proceed, and include the
+Ask everything in **one batched round** - gap decisions, the credentials call, how to obtain the
+reference - never a drip of single questions. When no trigger holds, don't interrupt: proceed, and include the
 plan in the final summary.
 
 **Non-interactive runs** (no user available, or "don't check in, use defaults"): do not stall. Take
@@ -454,19 +475,30 @@ the **section 0c baseline as the reference design**. Its **Step 1 (Decompose the
 regions)** was already run in section 0c - the `design-analysis.md` region spec is your entry point;
 reuse it rather than re-decomposing, route each region through the three axes, and continue to Step 3.
 If a region is missing a spec (a state 0c couldn't capture), decompose it now off the screenshots.
-Regardless of rung, the reference is those captured screenshots + `design-analysis.md`:
+The reference for rungs 1/2 is those captured screenshots + `design-analysis.md`; on the palette-only
+rung there are no original screenshots, so the visual reference is only the palette and structure is
+unmatched by definition:
 
 - **Rung 1/2 (simulator capture / user screenshots):** Pixel tier - run the full pipeline
   (Decompose -> three axes -> Step 1.5 native packages -> Step 2.5 completion contract -> Step 3
   verify). Sample colors and measure sizes off the reference screenshots.
-- **Rung 3 (code-derived):** structural match **with one override** - the `colorSet` / theme values
-  were read from code, not sampled from a sketch, so include them as exact palette rows despite the
-  no-sampling rule for structural tier.
+- **Rung 3 (palette-only recolor):** you have colours but **no layout reference** — yet you still run
+  the **same** pipeline and the **same Step 3 verify**; the region contract (every region ends
+  **Fixed** or **Impossible**) is **not** waived. The only difference: structural regions have no
+  original to match, so each is either matched to Stream's sensible default *or* logged
+  **Impossible: no layout reference (palette-only rung)** — never silently left at the default, never
+  marked matched. The palette rows are the *intended* colours read from code; confirm they actually
+  render on the running app (a token may not repaint the element you expect — verify against the app,
+  not the constant).
 
 Its Step 3 owns the capture-and-compare loop - including screenshotting the **migrated** app on the
 simulator and comparing region-by-region against the reference crops (the `magick` crop+stack
-recipe). Do not declare the design matched from code review; neither real trial run captured a single
-screenshot, and both shipped unverified skins.
+recipe). **The reference must be independent ground truth — the original's actual pixels.** A
+`design-analysis.md` you authored yourself is **not** a valid baseline: comparing the migrated app
+against a spec you wrote from the same palette passes *by construction* and proves nothing (a real run
+did exactly this — certified its own recolor as a "match"). A code-derived spec can certify
+*"recolored,"* never *"looks like the original."* Do not declare the design matched from code review;
+neither real trial run captured a single screenshot, and both shipped unverified skins.
 
 ---
 
@@ -501,7 +533,10 @@ Run all of these; each catches a failure a real migration shipped. The compiler 
      filled Spec-rows cell, from actual crops (the `magick`/PIL crop+compare recipe). Whole-screen
      "looks close" is exactly how ~10 per-region defects (split avatar, receipt placement, in-bubble
      reactions, timestamp side, composer button shapes, date-pill colour, bubble tail) shipped
-     unnoticed in a real run.
+     unnoticed in a real run. **The `baseline crop` must be the original's real pixels** (a rung-1/2
+     screenshot, or a rebuilt original) — a spec you authored from the palette is not a baseline and
+     cannot certify "looks like the original," only "recolored." On the palette-only rung, where no
+     original crop exists, structural regions are logged **Impossible: no layout reference**, not PASS.
    - **A region you specced but never built is a FAIL, not done.** Cross-check every
      `design-analysis.md` region against an implemented+verified result (a real run specced the header
      avatar and add-reaction button, then never built them — no gate caught it).
@@ -522,6 +557,7 @@ Run all of these; each catches a failure a real migration shipped. The compiler 
 | "tsc and the build pass, we're done" | A green build proved nothing about the connection, the pixels, or whether `@sendbird` is really gone - gates 3-5 exist because each failed in a real run. |
 | "The token wiring is obviously right" | A real run shipped without ever connecting; Stream requires a token where Sendbird did not. Gate: section 4. |
 | "The theme was ported, it'll look the same" | Both real runs shipped unverified skins. A match is claimed from a simulator capture, not from theme diffs. |
+| "It's stock Sendbird + a palette, so structural match + theming is enough — no verification needed" | Sendbird's stock UI is **not** Stream's stock UI (bubble tail, metadata placement, avatar, composer buttons, spacing all differ), and a palette carries no layout — so "stock new-SDK UI + accent" is a **named failure mode**, not a valid outcome. Even the palette-only rung captures the migrated app and logs every structural region Fixed or Impossible; a self-authored spec certifies "recolored," never "matches the original." |
 | "I screenshotted the original once - baseline done" | A resting shot holds no composer-typing, reaction, or picker detail - exactly where real runs shipped wrong. Rung 1 is driven states in the simulator (section 0c). |
 | "That feature was tiny, nobody will miss it" | Silent drops are how READMEs advertise ghosts. It's a ledger row: N/A or GAP, decided, in writing. |
 | "I'll port the MessageCollection faithfully and refactor later" | The mechanical port of hand-rolled machinery IS the bug (lost optimistic sends, stale state, dead handlers). Golden rule 3. |
