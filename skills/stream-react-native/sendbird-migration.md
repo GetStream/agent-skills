@@ -59,6 +59,87 @@ four real sample apps (126 symbols; 28 hard gaps, 29 behavioral diffs). Anything
 
 ---
 
+## Fidelity is the job — read this every time, it's the part every run gets wrong
+
+Getting the app to **build, connect, and deliver messages live** is the easy 80%. The migration is
+judged on the **last 20%: does each screen look and behave like the Sendbird original?** That 20% is
+where **both real trial runs failed** — never on the SDK swap, always on the design match — and they
+failed the *same* way: they reached design last, under wrap-up pressure, glanced at a full-screen
+screenshot of *their own* app, saw a coherent chat app, and wrote "PASS" with no side-by-side
+comparison behind it. **Internal coherence is not fidelity.** An app that looks like a nice chat app
+*on its own* has been verified against nothing — colored-initial avatars where the original shows
+**gray silhouettes is a FAIL even though colored looks nicer**, and "more idiomatic" / "more
+on-brand" / "arguably better than the original" is a skip dressed up as a choice.
+
+**Two screens are NON-NEGOTIABLE — every region on them ends `Fixed` or genuinely `Impossible`, never "good enough":**
+1. **The channel list** — row anatomy: avatar shape, title / preview / timestamp placement, unread
+   badge treatment.
+2. **The channel screen: message list + composer** — where the gaps hide and where every run shipped
+   wrong. Bubble shape/tail, incoming vs outgoing **background AND text** colour, avatar treatment,
+   timestamp + read-receipt placement, reaction placement, and the **composer** (button inventory, the
+   at-rest → typing send/mic swap, attach-button shape). A channel-**list** screenshot hides all of it
+   — "the list looks right" is not "the app looks right."
+
+**On these two screens, "good enough" is not enough.** "close enough", "acceptable approximation",
+"minor", "keep default", "arguably better", "residual", "cosmetic", "polish", "deferred",
+"nice-to-have" — and any other qualifier — are FAILs here, not resolutions — every region ends
+`Fixed` or genuinely `Impossible: <reason>`. **A single region on either screen that doesn't match —
+and isn't genuinely `Impossible` with a reason — is an immediate no-go for the whole migration.** Not
+"mostly there", not "just one small thing": any unmatched, undiffed region blocks delivery. Surface
+it, do not ship it.
+
+**Walk this per-region checklist on both screens — each row is a Sendbird→Stream _default_ gap that a
+green build and a full-screen glance hide. The "how" for each lives in
+[`references/design-matching.md`](references/design-matching.md); this is the list you may not skip.**
+These are the **most-missed regions — a floor, not the full set.** Do **not** treat the table as
+exhaustive: `design-matching.md`'s region decomposition is authoritative and covers everything else
+(quoted replies, polls, the attachment/image viewer, typing indicator, the thread screen, …).
+
+*Channel list:*
+| Region | The Stream-default gap to catch |
+|---|---|
+| Row anatomy | avatar / title / preview / timestamp / unread-badge **positions** left at Stream's `ChannelPreview` layout instead of the source's |
+| Avatar | Stream's circular avatar + generated fallback shipped where the source shows a different shape/size or a plain placeholder; a **1:1** row must show the **other member's single** avatar, not Stream's member cluster |
+| Unread badge | Stream default colour / shape / position instead of the source's (often accent-tinted) |
+| Preview + timestamp | wrong truncation, wrong side, or Stream's relative-time format vs the source's |
+
+*Channel screen (message list + composer):*
+| Region | The Stream-default gap to catch |
+|---|---|
+| Outgoing bubble | left as Stream's **pale accent tint** instead of the source's solid fill — and a solid fill needs its **text colour set too**, or the text stays dark / illegible |
+| Incoming bubble | not matched to the source's incoming fill + text |
+| Bubble geometry | radius / tail / **max-width** left at Stream defaults, so bubbles wrap where the source fits one line; the grouped-run tail corner not matched |
+| Metadata placement | timestamp + read receipts left in Stream's **footer below** the bubble when the source puts them **inside / beside** it (structural — `MessageContent` / `MessageFooter`, not a theme key) |
+| Avatar treatment | shown on own messages, or shown in a 1:1 where the source hides it, or wrong shape / size |
+| Reactions | Stream's default overlay pills + emoji set/order instead of the source's **position** (in-bubble vs overlay), **set**, and **order** — read off the baseline, never assume |
+| Composer inventory | Stream's default button set shipped as-is: match 1:1 — the attach/`+` **shape**, the at-rest→typing **send/mic swap**, and **no** control the source lacks (an added button is a fail like a dropped one) |
+| Composer states | at-rest / **typing** / **voice-recording** / **edit** never each rendered and compared |
+| Composer chrome | floating vs docked (`messageInputFloating`), pill fill / border / radius, and the bar/wrapper background left at Stream's |
+| Header | title / subtitle / avatar / right-side actions not matched to the source header |
+| Date separators | Stream's default pill colour / style instead of the source's |
+| Empty / loading / error strings | Stream's default English (`Streami18n`) instead of the source's copy |
+
+**Reactions and the composer are where Sendbird and Stream diverge MOST — treat the Stream default as
+_wrong_ for these two until a crop proves otherwise; they are structural rebuilds, not recolors.**
+Sendbird commonly renders **reactions** as a box/bar **attached to the bubble** (Stream's default floats
+pills *above/outside* it — `ReactionListTop`/`ReactionListBottom`), and its **composer** commonly puts
+**send/mic OUTSIDE the input pill** with a **bordered/squared `+`** (Stream's default keeps send/mic
+**inside** the pill via `OutputButtons` and ships a plain/circular `AttachButton`). Same-looking ≠ same:
+read the exact arrangement off the section-0c baseline and rebuild to it — do not assume either SDK's
+default (recipes: [`references/design-matching.md`](references/design-matching.md) → Composer / reactions rows).
+
+**Verify each screen AS YOU BUILD IT — do not batch verification into a phase at the end.** Deferring
+the compare to a terminal step reached under completion pressure is the single mechanism behind both
+failures. So a screen is **not built until it is verified**: screenshot the migrated screen and diff it
+region-by-region against the reference *before you move to the next one*. The exact loop lives in
+[`references/design-matching.md`](references/design-matching.md) Step 3 — run that loop here, in full,
+region by region. Skipping or shortcutting it is the failure both runs hit. Section 7's design gate is then a **final reconciliation** that
+every screen was already verified, not the first time you look. The instant you are about to call
+design "done" without a per-region baseline↔migrated comparison in hand, stop — that is the exact
+moment both runs went wrong.
+
+---
+
 ## 0. Detect & inventory (before any edit)
 
 Map the footprint first - no code changes until this section is done.
@@ -177,6 +258,16 @@ spec is cheapest and most accurate to extract; deferring it means decomposing fr
      NOT apply** - use Sendbird's own navigation and composer APIs (or seed the state server-side) to
      reach each screen/state. Only the SDK-agnostic loop carries over unchanged: pin one UDID, `simctl
      launch`, `simctl io … screenshot`, wait for the client before the shot, and the dark-mode flip.
+   - **A stuck login screen is usually a slow cold connect, not a dead backend.** The original can sit
+     on its login/auth screen for 30–60s on a cold start (fresh socket + offline-cache restore), and its
+     console may not surface in your terminal — so absence of an error is not evidence of failure. **Wait
+     45–60s and re-screenshot before concluding auth failed; do NOT probe the backend to "prove" it's
+     down** (a real run burned cycles curling the Sendbird REST API and nearly asked for screenshots it
+     didn't need).
+   - **Tooling precheck — do it now, before you need to crop.** The region-diff crops need ImageMagick or
+     PIL; if neither is installed, set it up up front (`python3 -m venv .designvenv && .designvenv/bin/pip
+     install Pillow numpy`, or install `magick`). A tool missing mid-verify is a silent reason the crop
+     step gets skipped.
    - **Then run design-matching Step 1 on the shots:** go region by region, and for each region record
      the concrete spec - bubble radius/shape/max-width/alignment, avatar shape/size, font sizes and
      **weights**, paddings/gaps, and the **sampled** colors (bubble fills, accent, read-receipt ticks,
@@ -447,6 +538,13 @@ clients act only as themselves - cross-user seeding is server-side (CLI/backend)
 [`RULES.md`](RULES.md) / [`credentials.md`](credentials.md). Keep only a thin "ensure my own
 channels exist" client step if the original had one.
 
+**When you seed, put at least one message carrying reactions in EVERY channel** (not just one channel) —
+plus, in the channel you'll design-verify, the rest of the region-triggering set (incoming + outgoing, a
+same-author run, an attachment/album, a reply/quote, a long wrapping message, a cross-day separator; §7
+gate 5). Reactions are the easiest to forget and one of the two regions that keep shipping wrong: the
+reactions box can't be matched or verified if no seeded message ever renders it. Add reactions at seed
+time, server-side, as part of creating the data — not as an afterthought during verification.
+
 ---
 
 ## 6. Design parity - the app must look the same
@@ -470,8 +568,23 @@ replacements are a **JS theme object, not CSS** (there is no DOM / stylesheet on
   ([`references/sendbird-mapping.md`](references/sendbird-mapping.md) section 14). Stream's keys are
   the English source strings themselves - re-key, don't map 1:1.
 
-Then hand the visual work to [`references/design-matching.md`](references/design-matching.md) with
-the **section 0c baseline as the reference design**. Its **Step 1 (Decompose the reference into
+**Offload the design match to subagents so the main migration agent isn't the one matching pixels
+under wrap-up pressure — that overload is why these regions get skimmed.** For the two non-negotiable
+screens this fan-out is **required, not a recommendation** — matching them inside the main agent's
+wrap-up is the exact failure to avoid. Do not treat
+`design-matching.md` as documentation to consult in passing; make it dedicated work. **Fan out one
+focused subagent per _region_ on the checklist above** — at minimum the recurring offenders
+(reactions, the composer attach `+` **shape**, composer **send/mic placement**, bubble **fill + text**,
+**metadata placement**, avatar) — **not** one broad "do the design" subagent. A whole-screen subagent
+gets trusted blindly and glances-and-declares (a real run did exactly that); a **one-region** task
+cannot — you either rebuilt the reactions box or you didn't. Give each a clean, single-purpose context
+and a tight contract: **in** — the region's section-0c baseline crop + the exact recipe from
+[`references/design-matching.md`](references/design-matching.md); **out** — the region built to
+pixel-match **plus the baseline↔migrated crop pair it produced** as its deliverable, not a prose "PASS".
+A one-region task keeps the main agent light and gives the region full attention — that is what makes it
+come out pixel-accurate. **Treat the returned crop pair as the evidence, never the subagent's words:**
+do not relay a region as matched when you have not seen its baseline↔migrated crop. Hand each subagent the **section 0c baseline as the
+reference design**: its **Step 1 (Decompose the reference into
 regions)** was already run in section 0c - the `design-analysis.md` region spec is your entry point;
 reuse it rather than re-decomposing, route each region through the three axes, and continue to Step 3.
 If a region is missing a spec (a state 0c couldn't capture), decompose it now off the screenshots.
@@ -522,12 +635,26 @@ Run all of these; each catches a failure a real migration shipped. The compiler 
    appears **optimistically once** for the sender (kill-list #1/#2), arrives live for the receiver,
    unread badges and typing indicators move, and there are no console errors. If you cannot run the
    app, say so and have the user run this check - do not skip it silently.
-5. **Design verify loop** (step 6) reaches its
+5. **Design verify loop — reconciliation, not the first look.** Per the fidelity preamble and §6, each
+   screen was verified *as it was built* (by the dedicated per-region design-match subagents of §6 —
+   **required, not optional**, for these two screens); this gate
+   **confirms** it and **fails if that never happened** — a design match first attempted here, at the
+   end, is the failure both runs hit. **Hard block: the two non-negotiable screens — the channel list
+   and the channel screen (message list + composer) — must have _every_ region `Fixed` or genuinely
+   `Impossible: <reason>`, each citing a baseline↔migrated crop. One "good enough" / "close enough" /
+   un-diffed region on either screen = this gate FAILS, full stop; the migration does not close.** It
+   reaches its
    [`references/design-matching.md`](references/design-matching.md) Step 3 exit - and closes
    **against the ledger**: every ledger row with a filled Spec-rows cell has a PASS verdict citing a
    this-round simulator capture of the migrated app compared to its reference, **driven states
    included** (composer typing state, reactions, thread open, attachment picker). A visual feature
    whose ledger row says Ported but has no verdict row is unverified - treat it as FAIL.
+   - **Seed data so every region actually renders BEFORE you compare.** You cannot verify a region you
+     never drew. Populate both directions (incoming + outgoing), a **same-author run** (so grouping +
+     avatars show), an **attachment / album**, a **reaction**, a **reply/quote**, a **long message that
+     wraps**, and a **cross-day date separator** — plus a **group** chat and a **1:1** (the 1:1 row +
+     header must show the other member's single avatar, not a cluster). A region that never rendered is
+     **unverified**, not passed.
    - **Produce the region-diff artifact, don't claim it.** A full-screen resemblance glance is NOT a
      verify. Output a table — `region | baseline crop | migrated crop | PASS/FAIL` — one row per
      filled Spec-rows cell, from actual crops (the `magick`/PIL crop+compare recipe). Whole-screen
@@ -541,11 +668,20 @@ Run all of these; each catches a failure a real migration shipped. The compiler 
      `design-analysis.md` region against an implemented+verified result (a real run specced the header
      avatar and add-reaction button, then never built them — no gate caught it).
    - **Banned as a resolution:** "acceptable approximation", "minor", "difference noted", "close
-     enough", "keep default". Every decomposed region ends **Fixed** or **Impossible: \<reason\>**.
-   - **Screenshots don't test interaction.** `simctl` can't tap, so a screenshot diff never exercises
-     press/nav handlers. Any custom slot with `onPress`/`onSelect`/navigation (custom `ChannelPreview`,
-     message press, buttons) must be verified by *driving* it (temp auto-nav / device), not a shot — a
-     custom `ChannelPreview` silently broke channel-tap and was invisible to the screenshot loop.
+     enough", "keep default", "residual" / "cosmetic residual", "cosmetic", "polish", "deferred",
+     "nice-to-have" — **and any other qualifier or adjective**. A region's only valid terminal states are
+     **Fixed** or **Impossible: \<reason\>**; a synonym for "good enough" is still "good enough" (a real
+     run slipped past this list by calling an unfinished region a "cosmetic residual").
+   - **Screenshots don't test interaction — a screen that paints can still be behaviorally dead.**
+     `simctl` can't tap, so a screenshot diff never exercises press/nav handlers. Any custom slot with
+     `onPress`/`onSelect`/navigation (custom `ChannelPreview`, message press, buttons) must be verified
+     by *driving* it (temp auto-nav / device), not a shot — a custom `ChannelPreview` silently broke
+     channel-tap and was invisible to the screenshot loop. **Drive every interaction the source has and
+     confirm its observed effect:** send text · send an attachment via the picker · **reply** → quote
+     preview → send → quoted message renders · **edit** → composer prefills → save → edited state shows ·
+     **long-press** → actions menu · **react** from the picker · open a **thread** and reply ·
+     channel-row tap **and** long-press · **back-nav** (chat → list, thread → chat). A rendered-but-inert
+     affordance is a FAIL.
 6. **Ledger closure:** every parity-ledger row is Ported / Rewritten / N/A / GAP-with-decision. A
    `GAP - provisional` row (section 2 default) closes the gate only if the final report calls it out
    explicitly as a decision the user still owes.
@@ -557,6 +693,7 @@ Run all of these; each catches a failure a real migration shipped. The compiler 
 | "tsc and the build pass, we're done" | A green build proved nothing about the connection, the pixels, or whether `@sendbird` is really gone - gates 3-5 exist because each failed in a real run. |
 | "The token wiring is obviously right" | A real run shipped without ever connecting; Stream requires a token where Sendbird did not. Gate: section 4. |
 | "The theme was ported, it'll look the same" | Both real runs shipped unverified skins. A match is claimed from a simulator capture, not from theme diffs. |
+| "Good enough on those screens, let's ship" | Not for the two non-negotiable screens. The channel list **and** the channel screen (message list + composer) end every region `Fixed` or genuinely `Impossible` — "good enough" / "close enough" is a FAIL there. And "the list matches" is not "the app matches": the list hides every bubble, avatar, metadata and composer gap on the chat screen, which is exactly where every real run shipped wrong. |
 | "It's stock Sendbird + a palette, so structural match + theming is enough — no verification needed" | Sendbird's stock UI is **not** Stream's stock UI (bubble tail, metadata placement, avatar, composer buttons, spacing all differ), and a palette carries no layout — so "stock new-SDK UI + accent" is a **named failure mode**, not a valid outcome. Even the palette-only rung captures the migrated app and logs every structural region Fixed or Impossible; a self-authored spec certifies "recolored," never "matches the original." |
 | "I screenshotted the original once - baseline done" | A resting shot holds no composer-typing, reaction, or picker detail - exactly where real runs shipped wrong. Rung 1 is driven states in the simulator (section 0c). |
 | "That feature was tiny, nobody will miss it" | Silent drops are how READMEs advertise ghosts. It's a ledger row: N/A or GAP, decided, in writing. |
