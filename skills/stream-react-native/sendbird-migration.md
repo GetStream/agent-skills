@@ -128,12 +128,25 @@ pills *above/outside* it — `ReactionListTop`/`ReactionListBottom`), and its **
 read the exact arrangement off the section-0c baseline and rebuild to it — do not assume either SDK's
 default (recipes: [`references/design-matching.md`](references/design-matching.md) → Composer / reactions rows).
 
-**Verify each screen AS YOU BUILD IT — do not batch verification into a phase at the end.** Deferring
-the compare to a terminal step reached under completion pressure is the single mechanism behind both
-failures. So a screen is **not built until it is verified**: screenshot the migrated screen and diff it
-region-by-region against the reference *before you move to the next one*. The exact loop lives in
-[`references/design-matching.md`](references/design-matching.md) Step 3 — run that loop here, in full,
-region by region.
+**Build order — do the two NON-NEGOTIABLE screens FIRST, verify them, THEN build everything else, THEN
+a quick pass at the end.** This is the required sequence for a Sendbird migration; do not build all
+screens and defer every verification to a terminal phase reached under completion pressure (the single
+mechanism behind both failed runs):
+
+1. **Build the channel list + the channel screen (message list + composer) first, and verify them
+   on the simulator before building any other screen** — screenshot each and diff it region-by-region
+   against the reference (the [`references/design-matching.md`](references/design-matching.md) Step 3
+   loop, in full). These two carry the whole design bar; matching them early, while they are the only
+   thing on screen, is far cheaper than retrofitting after 20 screens exist. A non-negotiable screen is
+   **not built until it is verified**.
+2. **Then build the remaining screens** (settings, members, invite, create, moderation, operators,
+   muted/banned, search, notifications, thread, …). These are mostly rebuilt-from-scratch touchpoints
+   with no design-baseline of their own, so they don't need the per-region pixel loop as you write them.
+3. **Then a quick verification pass at the end for those remaining screens** — drive each one on the
+   simulator (temp auto-nav scaffold; `simctl` can't tap) and confirm it renders **and its handlers
+   actually fire** (menu taps, create flow, ban/mute, search, thread open), since a screen that paints
+   can still be behaviorally dead. This is a render+interaction smoke, not a pixel diff — but "compiles
+   and is wired" is **not** the same as verified, and skipping it entirely is a silent gap.
 
 **For the two NON-NEGOTIABLE screens (channel list, and the channel screen = message list + composer),
 treat each verification as a single audit pass, not a stream of one-off fixes — a sim relaunch is the
@@ -303,6 +316,18 @@ spec is cheapest and most accurate to extract; deferring it means decomposing fr
      don't-guess and sample-every-color methods live in that page). Write the result to
      `design-analysis.md`, and fill the parity ledger's **Spec rows** column so every visual feature
      names the region(s) and captured state(s) that spec it.
+   - **Give `design-analysis.md` a `Plan` column: the exact Stream SDK feature/mechanism each region
+     will use.** The region spec captures *what the original looks like*; the `Plan` column commits *how
+     you will reproduce it in Stream* before you write any UI - one entry per region naming the concrete
+     mechanism: the theme key (`semantics.chatBgOutgoing`, `channelPreview.unreadContainer`, …), the
+     `WithComponents` slot (`MessageAuthor`, `ChannelPreviewAvatar`, `MessageContentBottomView`,
+     `MessageComposerLeadingView`, …), the `<Channel>` prop (`messageInputFloating`,
+     `audioRecordingEnabled`, …), or a documented hook/config - plus the axis (theming / layout /
+     functional) and whether it's an SDK default that already matches. Table shape:
+     `Region | Spec (measured) | Plan (Stream SDK feature) | Axis | Status`. This turns the design match
+     into a resolved build plan (and pre-empts the *reinvention red flag* - if the Plan is "custom
+     component from scratch", re-check whether an SDK slot already covers it). Confirm each named
+     key/slot/prop against the installed package before relying on it.
 2. **The original won't build, but the user has screenshots (rung 2):** treat the user's screenshots
    as the reference and run the **same** design-matching Step 1 decomposition on them - still Pixel
    tier, measured and sampled the same way. You just can't re-shoot new states, so decompose what you
@@ -441,7 +466,14 @@ connection gate impossible to run. Order:
    `<OverlayProvider>` above navigation (it uses `react-native-teleport` for portal-hosted overlays -
    long-press menu, attachment picker, image gallery). Skipping these is the RN analog of forgetting
    the stylesheet on web: broken overlays or a crash, not a clean error.
-3. Only after section 5 completes: uninstall `@sendbird/chat`, `@sendbird/uikit-react-native`, and
+3. **Kick off the native build NOW - as soon as the Stream packages + peers are installed - don't wait
+   for the migration to finish.** The native build (`npx expo prebuild --clean` + `expo run:ios`, or
+   the RN CLI equivalent) is the single most expensive step (minutes, not seconds) and it is where the
+   **native peers actually get exercised**, so starting it early buys two things: (a) the build runs in
+   the background *while* you migrate touchpoints (sections 4-5), overlapping the two slow phases
+   instead of serialising them; and (b) it surfaces native/peer failures immediately - most notably the
+
+4. Only after section 5 completes: uninstall `@sendbird/chat`, `@sendbird/uikit-react-native`, and
    `@sendbird/uikit-react-native-foundation`, drop the Sendbird platform-service factories, and grep
    to confirm zero `@sendbird` imports remain.
 
