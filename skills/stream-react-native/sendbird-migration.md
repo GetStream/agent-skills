@@ -133,7 +133,35 @@ the compare to a terminal step reached under completion pressure is the single m
 failures. So a screen is **not built until it is verified**: screenshot the migrated screen and diff it
 region-by-region against the reference *before you move to the next one*. The exact loop lives in
 [`references/design-matching.md`](references/design-matching.md) Step 3 — run that loop here, in full,
-region by region. Skipping or shortcutting it is the failure both runs hit. Section 7's design gate is then a **final reconciliation** that
+region by region.
+
+**For the two NON-NEGOTIABLE screens (channel list, and the channel screen = message list + composer),
+treat each verification as a single audit pass, not a stream of one-off fixes — a sim relaunch is the
+expensive unit of this whole stage, so minimize relaunches, not keystrokes.** When the screen first
+renders:
+1. **Enumerate EVERY difference in ONE screenshot read.** Walk the complete Step-1 region checklist
+   against that one capture and write the full PASS/FAIL ledger — avatar, grouping, sender name, bubble
+   fills, **outgoing metadata placement (check + timestamp)**, reactions box, date separators,
+   attachments, composer at-rest. Do **not** fix the first delta you notice and relaunch; a partial read
+   that costs a relaunch per region is the anti-pattern this rule exists to kill.
+2. **Fix the whole ledger in ONE edit round, then relaunch ONCE and re-diff.** Batch every region's fix
+   (theme tokens + component-slot overrides together) before rebuilding. Iterate only on regions that
+   *still* fail on the re-diff — never re-verify a region that already passed by burning another launch
+   ([`references/design-matching.md`](references/design-matching.md) → *Work in batches*).
+3. **A missing region is a blocker, not a ledger row — but resolve it by READING SOURCE, not by
+   relaunch-and-guess.** If a region is absent entirely (composer/MessageList not on screen at rest),
+   that is a structural/layout or wiring bug (e.g. `<Channel>`'s `height:'100%'` root needs a `flex:1`
+   bounded parent; or a slot passed as a `<Channel>` prop instead of via `WithComponents overrides`).
+   Diagnose it by reading the component in `node_modules` for the pinned version — **do not brute-force
+   it through the `topInset`/`keyboardVerticalOffset` knobs** (those only move things once the keyboard
+   rises), and do not spend a relaunch per hypothesis. Fix the structure, *then* fold the region back
+   into the step-1 ledger for the batched pass.
+4. **Drive multiple states/screens from one scaffold session where you can.** Since `simctl` can't tap,
+   each state needs temp scaffold — but batch the scaffold too: parametrize one auto-nav/state-driver
+   session to reach several targets per launch rather than editing-and-relaunching once per screen
+   ([`references/SIMULATOR-VERIFICATION.md`](references/SIMULATOR-VERIFICATION.md) §3–§4).
+
+Section 7's design gate is then a **final reconciliation** that
 every screen was already verified, not the first time you look. The instant you are about to call
 design "done" without a per-region baseline↔migrated comparison in hand, stop — that is the exact
 moment both runs went wrong.

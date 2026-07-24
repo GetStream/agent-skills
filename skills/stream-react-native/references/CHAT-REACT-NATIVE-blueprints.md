@@ -261,6 +261,7 @@ export const ChannelScreenWithNativeCapability = ({ route }) => {
 Wiring:
 
 - Keep `MessageComposer` inside `Channel`.
+- This variant omits the inner `<View style={{ flex: 1 }}>` because it assumes `Channel` is the screen root under a **native-stack nav header** (the navigator gives it a bounded scene). If instead an **app-owned header sits as a sibling _above_ `Channel`** in the same screen, wrap `MessageList` + `MessageComposer` in a `flex: 1` view — otherwise the composer renders off-screen (see the Channel Screen section's Wiring for the full triage).
 - Pair `keyboardVerticalOffset` with `topInset` set to the same header height — without it, the attachment picker bottom sheet gets clamped short of its full snap point.
 - Add `bottomInset` only when a specific layout requires it (e.g. tab bar that owns the bottom safe-area).
 - Use `WithComponents` for custom buttons, previews, rows, or capability-specific UI slots.
@@ -407,6 +408,8 @@ export const ChannelScreen = ({ navigation, route }) => {
 Wiring:
 
 - `Channel` initializes and watches the channel by default.
+- **The `<View style={{ flex: 1 }}>` wrapper around `MessageList` + `MessageComposer` is load-bearing — do not drop it.** `Channel` renders its children inside a `height: '100%'` container, which needs a **bounded parent**. If `Channel` (or that inner wrapper) has no `flex: 1` box constraining its height — the common case being an **app-owned header rendered as a sibling _above_ `Channel`** in the same screen, rather than a native-stack nav header — the `100%` resolves against the full screen and pushes `MessageComposer` **off the bottom**, so the composer (and often the list's lower portion) is invisible at rest.
+- **Triage when the composer/`MessageList` is missing _at rest_ (keyboard down): it is a flex / bounded-parent problem, NOT a `topInset` one.** Diagnose by reading the `Channel` container in `node_modules` for the pinned version and giving it a `flex: 1` parent — **do not reach for `topInset` / `keyboardVerticalOffset`**, which only move things once the keyboard rises or the attachment picker opens, and never bring back a region that is absent at rest. (Chasing this through the inset knobs was the single biggest time sink in a real migration run.)
 - Use `keyboardVerticalOffset={headerHeight}` for navigation headers, and pass the same value as `topInset` so the attachment picker bottom sheet reaches its full snap point.
 - Add `bottomInset` only when a specific layout requires it (e.g. tab bar that owns the bottom safe-area).
 - If implementing threads, store the selected thread in context or parent state. See Thread Screen.
