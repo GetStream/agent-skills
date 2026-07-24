@@ -74,35 +74,38 @@ Swapping the SDK so the app *builds and connects* is the easy 80%. The migration
 in the channel **list** — they live **inside the chat** (bubbles, alignment, composer buttons, custom
 cards). A green build and a correct channel list are **not** "done". Four habits prevent this:
 
-**0. The source app IS the benchmark — build it first if it doesn't exist.** Never design a migrated
-screen from scratch or against Stream's defaults. Run the Sendbird app and screenshot every **in-scope
-(Sendbird-backed)** screen/variant — §0's touchpoints: the list **and** the chat, with an incoming
-**and** an outgoing message visible; those shots are the spec. (A screen with no Sendbird involvement
-gets no fidelity pass — the migration doesn't touch it; the one app-wide check is that a shared edit
-such as `MaterialApp.theme` didn't bleed into non-chat screens.) If you're adding a *new* use-case that
-has no Sendbird original yet, **build the Sendbird version first** (in the source SDK) and screenshot
-it — going straight to Stream invents a design with nothing to check against, and it will be wrong; a
-git worktree at the Sendbird baseline lets you build the reference without disturbing the Stream work.
-To screenshot the source you must get past its login: the app gates its SDK behind
-`SendbirdChat.connect(userId, accessToken: token)`, usually fired from a login screen — press the login
-with the platform automation tool (Android `adb shell input tap`, iOS `idb ui tap`), drive it with an
-integration-test harness, or connect the source in code at launch. Sendbird **auto-creates a user on
-`connect(userId)`** unless the app enforces access tokens, so a second connect-in-code session can send
-the cross-user data the baseline needs (ask for a test user/token only when tokens are enforced). The
-reference is only valid once you've reached the real screens, not the login.
+**0. The source SDK IS the spec — running the source only *confirms* it.** Never design a migrated
+screen from scratch or against Stream's defaults. The spec exists **without running anything**: the
+app's Sendbird theme/config (`SBUColors` / `SBUThemeProvider` overrides) applied through the **Sendbird
+UIKit's default rendering** — both open source (`github.com/sendbird/sendbird-uikit-flutter`; theme
+under `lib/src/public/resource/`, layout in the `SBU…` widgets' `build()`) — so you can read what
+*would* render for every in-scope screen: the list **and** the chat, incoming **and** outgoing. **If the
+source is runnable, run it and screenshot to confirm** — the render is the tiebreaker when a theme
+constant and the SDK's actual output disagree (habit 1). **If it isn't** (no creds, dead backend, won't
+build — the common production case), derive the spec from the source read and **mark every value you
+couldn't confirm against a render as unverified**, never as matched. Either way you verify your *Stream*
+render against this spec (habit 3) — the target is usually runnable even when the source isn't. (A
+screen with no Sendbird involvement gets no fidelity pass — the migration doesn't touch it; the one
+app-wide check is that a shared edit such as `MaterialApp.theme` didn't bleed into non-chat screens. For
+a *new* use-case with no Sendbird original, read the same source defaults, or build a throwaway Sendbird
+reference in a git worktree if you need to see it.) To run the source when you can, get past its login
+(`SendbirdChat.connect(userId, accessToken: token)`) via the platform automation tool (`adb shell input
+tap`), an integration-test harness, or connecting in code at launch — Sendbird auto-creates the user on
+`connect(userId)` unless access tokens are enforced.
 
-**1. Derive every value from the source — pixel-sample, don't guess, never accept Stream's default.**
-For each region pull the concrete Sendbird value: colors from the theme classes (`SBUColors` /
-`SBUThemeProvider`) — **read the actual values there** (source: `github.com/sendbird/sendbird-uikit-flutter`
-→ `lib/src/public/resource/`); a per-app override or a newer default means any constant baked in here
-would be wrong. Sendbird encodes **emphasis tiers** in the alpha channel (high/mid/low ≈ 88/50/38%
-opacity) — match the tier per element, and pull fonts/sizes/paddings per element too. **Name the value
-from the theme, but let the rendered pixel be the source of truth** — the theme constant can lie, so
-confirm each color against the running app and sample it (method in
-[`design-matching.md`](design-matching.md) Step 1). When you hand-build a view, pull **every** element's
-value including **text**, and keep the source's emphasis hierarchy (a quieter author over a brighter
-message) — full-strength everything inverts it. If a rendered color *contradicts the app's own accent*,
-that's likely an SDK quirk: prefer brand consistency, and when it's ambiguous **ask rather than guess**.
+**1. Derive every value from the source — never guess, never accept Stream's default.** Each region's
+value comes from the app's Sendbird theme (`SBUColors` / `SBUThemeProvider` — read the actual values in
+`lib/src/public/resource/` of `github.com/sendbird/sendbird-uikit-flutter`; a per-app override or a
+newer default makes any constant baked in here wrong) applied through the SDK's default rendering.
+Sendbird encodes **emphasis tiers** in the alpha channel (high/mid/low ≈ 88/50/38% opacity) — match the
+tier per element, and pull fonts/sizes/paddings per element too, **text included**, keeping the source's
+hierarchy (a quieter author over a brighter message; full-strength everything inverts it). **Read the
+SDK's *rendering*, not just the theme constant — the constant can lie** (a value set in the theme may
+never reach the widget). **When the source is runnable, pixel-sample it to settle disagreements** (method
+in [`design-matching.md`](design-matching.md) Step 1); **when it isn't, the source read is the spec —
+flag any value a render would have confirmed as unverified.** If a value *contradicts the app's own
+accent*, that's likely an SDK quirk: prefer brand consistency, and when ambiguous **ask rather than
+guess**.
 
 Then **classify the *kind* of difference** — it tells you which knob to reach for, and using the wrong
 one is why a screen "looks migrated" but is still off:
@@ -534,7 +537,7 @@ defaults — the composer, the message-row metadata, the bubble fill/text, and a
 below; the fully general procedure and every other region's mechanics (reaction relocation, custom
 cards → §5, media overlays, the full theme-token tables) live in
 [`design-matching.md`](design-matching.md). Name concrete Sendbird values from `SBUColors` /
-`SBUThemeProvider` per §0.5 habit 1 (which carries the source path), then confirm against the running app.
+`SBUThemeProvider` per §0.5 habit 1 (which carries the source path), confirming against the running app when runnable.
 
 ### Composer parity — inventory the source composer button-by-button
 
@@ -631,7 +634,10 @@ confirm the names against the pinned source):
   cases (per its grouping).
 - **Time/receipts beside the bubble** → the core **`messageContent`** slot (on `StreamComponentBuilders`
   **directly**, not under `extensions:`); it hands you the composed bubble as `props.child`, so return
-  `Row[props.child, timeReceiptColumn]`. **Do not reach for the intuitively-named `messageFooter` slot
+  `Row[props.child, timeReceiptColumn]`. It will **not** appear in `streamChatComponentBuilders(...)` — to
+  confirm it (or any leaf slot) exists, grep the `StreamComponentBuilders` factory in
+  `stream_component_factory.dart`, **not just** the extension helper `stream_chat_component_builders.dart`;
+  a slot absent from one is usually a core param on the other. **Do not reach for the intuitively-named `messageFooter` slot
   to put time beside — it only stacks *below* the bubble.** `messageFooter` is the right tool only when
   the source actually renders the timestamp **below** (then use it and skip `messageContent`); a
   beside-the-bubble layout is `messageContent` or nothing.
@@ -741,10 +747,10 @@ the client.
 
 ## 9. Procedure checklist
 1. **Detect** the integration shape + the per-widget UI strategy (§0).
-2. **Capture the source baseline** (§0.5 habit 0) — run the Sendbird app and screenshot every
-   **Sendbird-backed** screen/variant (§0's touchpoints — not the app's unrelated screens), list and
-   chat, incoming and outgoing. Those shots are the spec the rest of the migration is judged against —
-   capture them **before** writing any Stream code.
+2. **Derive the source spec** (§0.5 habit 0) — read the Sendbird theme + UIKit default rendering for
+   every **Sendbird-backed** screen/variant (§0's touchpoints — not the app's unrelated screens), list
+   and chat, incoming and outgoing; **run the source and screenshot to confirm when it's runnable**,
+   flagging unconfirmed values as unverified. Establish this spec **before** writing any Stream code.
 3. **Swap packages** (§1).
 4. **Credentials**: API key + token via the CLI (§2, [`SKILL.md`](SKILL.md) Step 0.5).
 5. **Wire one client** + provider; repoint existing bootstraps without changing their public API (§2).
