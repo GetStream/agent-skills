@@ -157,6 +157,19 @@ comparison behind it. **Internal coherence is not fidelity.** An app that looks 
 **gray silhouettes is a FAIL even though colored looks nicer**, and "more idiomatic" / "more
 on-brand" / "arguably better than the original" is a skip dressed up as a choice.
 
+For the channel list and chat screens - **Give `design-analysis.md` a `Plan` column: the exact Stream SDK feature/mechanism each region
+will use.** The region spec captures *what the original looks like*; the `Plan` column commits *how
+you will reproduce it in Stream* before you write any UI - one entry per region naming the concrete
+mechanism: the theme key (`semantics.chatBgOutgoing`, `channelPreview.unreadContainer`, …), the
+`WithComponents` slot (`MessageAuthor`, `ChannelPreviewAvatar`, `MessageContentBottomView`,
+`MessageComposerLeadingView`, …), the `<Channel>` prop (`messageInputFloating`,
+`audioRecordingEnabled`, …), or a documented hook/config - plus the axis (theming / layout /
+functional) and whether it's an SDK default that already matches. Table shape:
+`Region | Spec (measured) | Plan (Stream SDK feature) | Axis | Status`. This turns the design match
+into a resolved build plan (and pre-empts the *reinvention red flag* - if the Plan is "custom
+component from scratch", re-check whether an SDK slot already covers it). Confirm each named
+key/slot/prop against the installed package before relying on it.
+
 ### The source app IS the benchmark — capture it before you delete it
 
 The migrated app must look like the original, so record what "the original" looks like first. Unlike
@@ -376,13 +389,19 @@ connection gate impossible to run. Order:
    `<OverlayProvider>` above navigation (it uses `react-native-teleport` for portal-hosted overlays -
    long-press menu, attachment picker, image gallery). Skipping these is the RN analog of forgetting
    the stylesheet on web: broken overlays or a crash, not a clean error.
-3. Only after section 5 completes: uninstall `@sendbird/chat`, `@sendbird/uikit-react-native`, and
+3. **Kick off the native build NOW - as soon as the Stream packages + peers are installed - don't wait
+   for the migration to finish.** The native build (`npx expo prebuild --clean` + `expo run:ios`, or
+   the RN CLI equivalent) is the single most expensive step (minutes, not seconds) and it is where the
+   **native peers actually get exercised**, so starting it early buys two things: (a) the build runs in
+   the background *while* you migrate touchpoints (sections 4-5), overlapping the two slow phases
+   instead of serialising them; and (b) it surfaces native/peer failures immediately.
+4. Only after section 5 completes: uninstall `@sendbird/chat`, `@sendbird/uikit-react-native`, and
    `@sendbird/uikit-react-native-foundation`, drop the Sendbird platform-service factories, and grep
    to confirm zero `@sendbird` imports remain.
 
 ---
 
-## 4. Credentials & connection proof (gate: a real user connects)
+## 4. Credentials
 
 The biggest conceptual shift: Sendbird connects with just a `userId` (auto-creating users
 server-side, token optional); **Stream always requires a signed token** - there is no userId-only
@@ -405,32 +424,11 @@ a fully migrated app that had never once connected:
    client-supplied parameter** ([`RULES.md`](RULES.md) > Secrets and auth).
 3. For local/dev parity with Sendbird's tokenless connect, `client.devToken(userId)` works **only
    while dev tokens are enabled** on the Stream app - otherwise it is rejected server-side.
-   **First check whether dev tokens are enabled** (Dashboard > app > Authentication, or treat a
-   server-side rejection on the first `devToken` connect as the signal). **If they are disabled,
+   **First check whether dev tokens are enabled** (Dashboard > app > Authentication). **If they are disabled,
    do NOT try to reproduce Sendbird's connect-any-userId behaviour - fall back to a fixed set of
    test users whose tokens are pre-minted via the `getstream` CLI / backend** (`getstream token
    <id>`), and connect as one of those. Gate any pasted-credential/dev-token path behind `__DEV__`
    or a feature flag so it cannot ship. Never use `devToken()` for production.
-4. Connect as a real user and confirm the WebSocket is healthy before proceeding. The Sendbird tree
-   is still intact (section 3), so mount the proof in a small dev-only screen rather than the main
-   flow - it exists to fail fast on auth, not to migrate UI. It is scaffolding, not migration:
-   delete it once section 5 wires the real flow (in-place rule, golden rule 1).
-
-```tsx
-// <SendbirdUIKitContainer appId userId nickname accessToken> connected internally.
-// Stream splits it: build + connect the client with the hook, then providers just distribute it.
-const client = useCreateChatClient({
-  apiKey,                                  // was Sendbird appId
-  tokenOrProvider,                         // string token, or async () => Promise<string>
-  userData: { id: userId, name: nickname },// nickname -> name, profileUrl -> image
-});
-if (!client) return null;                  // hook returns null while connecting
-return (
-  <OverlayProvider>
-    <Chat client={client}>{/* ChannelList / Channel composition */}</Chat>
-  </OverlayProvider>
-);
-```
 
 ---
 
