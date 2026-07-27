@@ -208,7 +208,7 @@ Do not run C4 through C7 when Feeds is not in scope, or when the user only asked
 
 ### Channel-type configuration - disable threads (optional) [Chat]
 
-<a id="disable-threads"></a>Some feature toggles live on the **channel type**, not on the client. Thread replies are one: whether the SDK surfaces a reply-in-thread affordance is governed by the `replies` setting on the `messaging` channel type (enabled by default). If a design has no threads (see the thread scope gate in [`references/design-matching.md`](references/design-matching.md)), turn them off at the source so the UI never offers a thread action the design lacks:
+<a id="disable-threads"></a>Some feature toggles live on the **channel type**, not on the client. Thread replies are one: whether the SDK surfaces a reply-in-thread affordance is governed by the `replies` setting on the `messaging` channel type (enabled by default). If a design has no threads (see the thread-scope decision in [`references/design-matching.md`](references/design-matching.md) Step 2), turn them off at the source so the UI never offers a thread action the design lacks:
 
 ```bash
 # Confirm the body shape first, then disable thread replies on the messaging type.

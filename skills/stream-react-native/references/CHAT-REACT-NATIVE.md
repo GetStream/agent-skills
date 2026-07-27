@@ -27,7 +27,7 @@ First path:
 6. Place `OverlayProvider` and `Chat` high in the tree.
 7. Use `useCreateChatClient` for normal auth.
 8. Render `ChannelList`, `Channel`, `MessageList`, `MessageComposer`, and optional `Thread`.
-9. If the user provided a target appearance (screenshot, Figma, or "look like \<app\>"), **before** building run [design-matching.md](design-matching.md): decompose the reference region by region, plan every theming/layout/functional difference, then apply the `Theming Blueprint` and `Component Override Blueprint` and verify region-by-region.
+9. If the user provided a target appearance (screenshot, Figma, or "look like \<app\>"), **before** building run [design-matching.md](design-matching.md) (the procedure: analyse → route → build → verify) with [custom-ui.md](custom-ui.md) (the per-region routing map + completion contract), then apply the `Theming Blueprint` and `Component Override Blueprint` and verify region-by-region.
 
 Full screen blueprints: [CHAT-REACT-NATIVE-blueprints.md](CHAT-REACT-NATIVE-blueprints.md). Load only the section you are implementing.
 
@@ -228,7 +228,7 @@ Use [DOCS.md](DOCS.md) to fetch the manifest-selected theming/customization page
 
 ### Composer, attach button, and message-metadata facts
 
-Reference facts the composer/message customizations lean on (verified against **stream-chat-expo 9.7.0**; confirm against the installed package — the full design-match procedure is in [design-matching.md](design-matching.md#composer-deep-dive--the-render-tree-the-surfaces-and-the-two-facet-buttons)):
+Reference facts the composer/message customizations lean on (verified against **stream-chat-expo 9.7.0**; confirm against the installed package — the composer deep-dive is in [custom-ui.md](custom-ui.md#composer-deep-dive--the-render-tree-the-surfaces-and-the-two-facet-buttons), the procedure around it in [design-matching.md](design-matching.md)):
 
 - **Composer surface vs inner rows.** `messageComposer.wrapper` (and `floatingWrapper`) is the **full-bleed bar surface** (default: padding only, no background). `messageComposer.container` / `contentContainer` are inner `flexDirection: 'row'` layout rows sized to their children — theming `container` colours only a band around the controls, not the bar. The input pill is `inputBoxWrapper`; grow it via symmetric `inputBox` `paddingTop`/`paddingBottom`, not a fixed wrapper height (the pill doesn't vertically-centre a single line).
 - **Send/mic** is the SDK's `OutputButtons`, rendered **inside** the input pill (`MessageInputTrailingView`) and **stateful** (mic/audio at rest → send when the input has text). Reuse `OutputButtons` / `AudioRecordingButton`; don't hand-roll. Move it outside the pill via `MessageComposerTrailingView`.

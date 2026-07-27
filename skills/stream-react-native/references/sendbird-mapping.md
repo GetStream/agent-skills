@@ -233,7 +233,7 @@ Notifee yourself and call the client methods (fetch the manifest-selected Push p
 UIKit ships drop-in **fragment factories** customized via `renderX` props; Stream RN is
 compositional - assemble primitives, customize by swapping components. Whenever a row makes you write
 your own component for a prebuilt region, fill the completion contract in
-[`design-matching.md`](design-matching.md) Step 2.5 (sub-feature inheritance) first. **There is no
+[`custom-ui.md`](custom-ui.md) (sub-feature inheritance) first. **There is no
 `<Window>` in RN** (web-only) and **no `ChannelHeader` slot inside `<Channel>`** (the header is
 app-owned - your React Navigation / Expo Router header).
 

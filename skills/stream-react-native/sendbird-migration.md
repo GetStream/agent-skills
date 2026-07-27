@@ -133,8 +133,8 @@ reply/threads via `ReplyType`, typing, read receipts, ...). One row per feature:
 
 The **Spec rows** column is filled by the §0.5 visual-baseline capture: every feature with a
 visual surface names its [`references/design-matching.md`](references/design-matching.md) Step 1
-region(s) and the captured state(s) that show it (`-` for features with no visual surface). It is
-the bridge verify gate 5 checks - a visual feature cannot close as Ported while its look was never
+(design analysis) region row(s) and the captured state(s) that show it (`-` for features with no visual surface). It is
+the bridge the verify gate checks (§6 gate 5) - a visual feature cannot close as Ported while its look was never
 specced or never judged.
 
 This ledger is the migration's backbone: every row must end as **Ported**, **Rewritten**,
@@ -157,27 +157,25 @@ comparison behind it. **Internal coherence is not fidelity.** An app that looks 
 **gray silhouettes is a FAIL even though colored looks nicer**, and "more idiomatic" / "more
 on-brand" / "arguably better than the original" is a skip dressed up as a choice.
 
-For the channel list and chat screens - **Give `design-analysis.md` a `Plan` column: the exact Stream SDK feature/mechanism each region
-will use.** The region spec captures *what the original looks like*; the `Plan` column commits *how
-you will reproduce it in Stream* before you write any UI - one entry per region naming the concrete
-mechanism: the theme key (`semantics.chatBgOutgoing`, `channelPreview.unreadContainer`, …), the
-`WithComponents` slot (`MessageAuthor`, `ChannelPreviewAvatar`, `MessageContentBottomView`,
-`MessageComposerLeadingView`, …), the `<Channel>` prop (`messageInputFloating`,
-`audioRecordingEnabled`, …), or a documented hook/config - plus the axis (theming / layout /
-functional) and whether it's an SDK default that already matches. Table shape:
-`Region | Spec (measured) | Plan (Stream SDK feature) | Axis | Status`. This turns the design match
-into a resolved build plan (and pre-empts the *reinvention red flag* - if the Plan is "custom
-component from scratch", re-check whether an SDK slot already covers it). Confirm each named
-key/slot/prop against the installed package before relying on it.
-
 ### The source app IS the benchmark — capture it before you delete it
 
 The migrated app must look like the original, so record what "the original" looks like first. Unlike
 web, an RN app has **no DOM to probe** — the reference is **simulator screenshots**, and the one
 moment you can re-screenshot and pixel-sample the original is *now, while it still runs*. The
 deliverable is not a folder of screenshots but the **design spec**:
-[`references/design-matching.md`](references/design-matching.md) **Step 1 (Decompose the reference
-into regions)** run against the original, saved to `design-analysis.md`.
+[`references/design-matching.md`](references/design-matching.md) **Step 1 (Design analysis)** run
+against the original, saved to `design-analysis.md`.
+
+**How Track S maps onto design-matching.** Track S enters that file with the captured original as
+the reference and runs its full four-step orchestration - it does not have a parallel design
+procedure of its own:
+
+| Track S section | design-matching step |
+|---|---|
+| **§0.5** (this section) - capture the original, run the decomposition | **Step 1 - Design analysis** (the design-analysis agent writes `design-analysis.md`) |
+| **§2** Plan & checkpoint | the coordinator's interactive half of **Step 1**, run concurrently with the analysis agent |
+| **§5** Migrate the touchpoints | **Step 2 (Route + ownership manifest)** then **Step 3 (Build, fan-out)** - the touchpoint rebuild and the region build are one pass |
+| **§6** Verify, gate 5 | **Step 4 - the verify loop**, scoped per *Two screens are NON-NEGOTIABLE* below |
 
 1. **Build and boot the original** on the iOS simulator
    ([`references/SIMULATOR-VERIFICATION.md`](references/SIMULATOR-VERIFICATION.md)) and capture
@@ -193,18 +191,25 @@ into regions)** run against the original, saved to `design-analysis.md`.
    - **Tooling precheck now, before you crop:** the region-diff crops need ImageMagick or PIL; if
      neither is installed, `python3 -m venv .designvenv && .designvenv/bin/pip install Pillow numpy`
      (or install `magick`) up front — a tool missing mid-verify is a silent reason the crop gets skipped.
-   - **Then run design-matching Step 1 on the shots:** region by region, record the concrete spec —
+   - **Then run design-matching Step 1 (Design analysis) on the shots:** region by region, record the concrete spec —
      bubble radius/shape/max-width/alignment, avatar shape/size, font sizes and **weights**,
      paddings/gaps, and the **sampled** colours (bubble fills, accent, read-receipt ticks, background)
      — measured and pixel-sampled off the screenshots, not eyeballed. Write it to `design-analysis.md`
      and fill the parity ledger's **Spec rows**.
-2. **If the original won't build:** use the user's screenshots and run the same Step 1 decomposition
+2. **If the original won't build:** use the user's screenshots and run the same Step 1 analysis
    on them (flag any region no shot covers). **If there are none:** rebuild the original — a
    `git worktree` at the pre-migration Sendbird commit — and boot it; it is the benchmark, worth the
    build. Only if getting *any* pixels of the original is genuinely impossible, read the Sendbird theme
    (`colorSet` / `SBUTheme`) for its palette and **say plainly in the summary that the layout is NOT
    matched** — a palette gives colours, never layout, so that path only recolours stock Stream, which
    is a recolor, not a match.
+
+**The baseline must be independent ground truth — the original's actual pixels.** A
+`design-analysis.md` you authored yourself is not a valid baseline: comparing the migrated app
+against a spec you wrote passes *by construction* and proves nothing (a real run did exactly this
+and certified its own skin as a "match"). Every verify row cites the original's crop, not the spec
+alone. If you only had the theme and no original pixels, you can certify *"recolored"*, never
+*"looks like the original"*.
 
 > **This capture path only governs how you learn the *look*. It is orthogonal to the parity-ledger
 > code analysis** — reading the Sendbird source for features, behaviours, and API mappings (silent /
@@ -216,8 +221,8 @@ into regions)** run against the original, saved to `design-analysis.md`.
 > `design-analysis.md` exists and decomposes every in-scope region with a concrete, **sampled** spec.
 > The window where the original is drivable is exactly when the spec is cheapest and most accurate;
 > capturing it late is a process failure even if you self-correct. The design analysis is the
-> **contract** the implementation and the §7 verify must satisfy, not a checkbox. Keep it until the
-> §7 verify loop passes, then remove it (unless the user asked to keep it).
+> **contract** the implementation and the §6 verify must satisfy, not a checkbox. Keep it until the
+> §6 verify gate passes, then remove it (unless the user asked to keep it).
 
 ### Two screens are NON-NEGOTIABLE
 
@@ -238,11 +243,21 @@ either screen that doesn't match — and isn't genuinely `Impossible` with a rea
 no-go for the whole migration.** Not "mostly there", not "just one small thing": any unmatched,
 undiffed region blocks delivery. Surface it, do not ship it.
 
+**These two screens are also what the verify loop is scoped to.** design-matching **Step 4** - the
+region-judge fan-out, the rounds, and the shrink-to-PASS convergence gate - runs over the channel
+list and the channel screen; every region there needs its own reference↔migrated crop pair and a
+verdict row. Regions **outside** those two screens are still specced in §0.5, built to spec in §5,
+and looked at in the same capture, but they do **not** need their own judge or their own round: a
+sensible spot-check is enough, and a difference there is reported, not a blocker. Spend the loop
+where every real run shipped wrong; do not dilute it across surfaces nobody regressed.
+
 **Walk this per-region checklist on both screens — each row is a Sendbird→Stream _default_ gap a
-green build and a full-screen glance hide.** The "how" for each lives in
-[`references/design-matching.md`](references/design-matching.md). These are the **most-missed regions
-— a floor, not the full set**; design-matching's decomposition is authoritative and covers everything
-else (quoted replies, polls, the attachment/image viewer, typing indicator, the thread screen, …).
+green build and a full-screen glance hide.** The routing + mechanism for each lives in
+[`references/custom-ui.md`](references/custom-ui.md); the procedure that decomposes, builds, and
+verifies them is [`references/design-matching.md`](references/design-matching.md). These are the
+**most-missed regions — a floor, not the full set**; the design analysis is authoritative and covers
+everything else (quoted replies, polls, the attachment/image viewer, typing indicator, the thread
+screen, …).
 
 *Channel list:*
 | Region | The Stream-default gap to catch |
@@ -275,16 +290,17 @@ floats pills *above/outside* it — `ReactionListTop`/`ReactionListBottom`), and
 commonly puts **send/mic OUTSIDE the input pill** with a **bordered/squared `+`** (Stream's default
 keeps send/mic **inside** the pill via `OutputButtons` and ships a plain/circular `AttachButton`).
 Same-looking ≠ same: read the exact arrangement off the baseline and rebuild to it — do not assume
-either SDK's default (recipes: [`references/design-matching.md`](references/design-matching.md) →
-Composer / reactions rows).
+either SDK's default (recipes: [`references/custom-ui.md`](references/custom-ui.md) → the Composer
+and reactions rows + the composer deep-dive).
 
 ### Verify each screen AS YOU BUILD IT — not in a phase at the end
 
 Deferring the compare to a terminal step reached under completion pressure is the single mechanism
 behind every failure. So a screen is **not built until it is verified**: screenshot the migrated
-screen and diff it region-by-region against the baseline *before you move to the next one*. §6 hands
-each of the two screens to a dedicated per-region subagent; §7's Gate 0 + design gate are the
-**final reconciliation** that it happened, not the first time you look. The instant you are about to
+screen and diff it region-by-region against the baseline *before you move to the next one*.
+design-matching's Step 3 → Step 4 cycle gives each composite screen-area its own worker and its own
+judge; §6's Gate 0 + design gate are the **final reconciliation** that it happened, not the first
+time you look. The instant you are about to
 call design "done" without a per-region baseline↔migrated comparison in hand, stop — that is the
 exact moment every run went wrong.
 
@@ -318,6 +334,12 @@ against the app; the full catalog with workarounds is in
 ---
 
 ## 2. Plan & checkpoint - involve the user before the first edit
+
+**This section is the coordinator's interactive half of design-matching
+[Step 1](references/design-matching.md).** The design-analysis agent is already running against the
+§0.5 captures while you assemble the plan here - subagents never talk to the user, so every
+question the run needs (gap decisions, credentials, how the reference is obtained) surfaces in this
+one batched checkpoint. Do not serialise: dispatch the analysis, then plan.
 
 Assemble the migration plan from section 0's outputs. It is **not a new document** - it is the
 parity ledger plus four strategy lines:
@@ -432,7 +454,17 @@ a fully migrated app that had never once connected:
 
 ---
 
-## 5. Migrate the touchpoints
+## 5. Migrate the touchpoints (= design-matching Steps 2-3)
+
+**This section is design-matching's build half.** Once the packages are installed (section 3) you
+have what routing needs, so run [`references/design-matching.md`](references/design-matching.md)
+**Step 2** (route every region, add the `Plan` column, ground the names against the installed
+package, declare the file-ownership manifest) and then **Step 3** (dispatch one feature worker per
+composite screen-area while verify-infra prepares the seed data and the simulator harness). The
+touchpoint rewrite and the region build are **one pass**: a file you are already rewriting is the
+file whose look you match. Migrating to SDK defaults and deferring the look to a later reskin phase
+is a second, avoidable rebuild - and it is the sequencing that made every failed run reach design
+last, under wrap-up pressure.
 
 Work file-by-file, **in place** (golden rule 1), per the section 0 classification, pulling exact
 symbol mappings from [`references/sendbird-mapping.md`](references/sendbird-mapping.md) - the domain
@@ -448,12 +480,10 @@ guide. Import UI symbols from the flavor package (`stream-chat-react-native` **o
   header is app-owned in RN** - there is no `ChannelHeader` slot inside `<Channel>`; the nav header
   is your React Navigation / Expo Router header (drive its title from channel state, never a
   literal). Writing your own component for a prebuilt region is gated by the completion contract in
-  [`references/design-matching.md`](references/design-matching.md) Step 2.5 (RN's sub-feature
-  inheritance rule - the analog of web's custom-ui contract): fill it, don't silently drop
-  reactions/receipts/grouping/attachments. **Any touchpoint that rebuilds a visual region (composer,
-  message row, channel preview) also carries its §0.5 region spec: build to the original's captured
-  look in this pass** - migrating to SDK defaults and deferring the look to a step-6 reskin is a
-  second, avoidable rebuild. **Keep `<ChannelList>` as the query, watch, and real-time owner** - don't
+  [`references/custom-ui.md`](references/custom-ui.md) (RN's sub-feature inheritance rule): fill it,
+  don't silently drop reactions/receipts/grouping/attachments. **Any touchpoint that rebuilds a
+  visual region (composer, message row, channel preview) also carries its §0.5 region spec: build to
+  the original's captured look in this pass.** **Keep `<ChannelList>` as the query, watch, and real-time owner** - don't
   maintain a parallel `client.queryChannels()` result and re-fetch it on events.
 - **Channels** (sections 2, 7): three Sendbird classes -> one `Channel` + type string;
   `OpenChannel` -> `livestream` type (kill-list #10); distinct channels -> member-set channels with
@@ -490,6 +520,21 @@ useEffect(() => {
   `@op-engineering/op-sqlite` if the app relied on Sendbird's cache; delete `onHugeGapDetected` /
   changelog rebuild (recovery is automatic); reset the DB on sign-out (kill-list #11).
 
+- **Theming, light/dark, and strings** (the Sendbird levers all die; their Stream RN replacements are
+  a **JS theme object, not CSS** - there is no DOM or stylesheet on native): re-author `colorSet` /
+  `createTheme` / `LightUIKitTheme` / `DarkUIKitTheme` / `Palette` (from
+  `@sendbird/uikit-react-native-foundation`) as a `DeepPartial<Theme>` object passed to **both**
+  `<OverlayProvider value={{ style }}>` **and** `<Chat style={…}>`, read via `useTheme()`; in RN that
+  object carries **both** colour **and** spacing/dimension. There is no `theme="light"|"dark"` prop -
+  build **two** theme objects and select on `useColorScheme()` (pin brand/content colours, keep chrome
+  surfaces adaptive). `createBaseStringSet` / `StringSet` overrides -> a `Streami18n` instance
+  (`registerTranslation` / `setLanguage`) on `<Chat i18nInstance={…}>`
+  ([`references/sendbird-mapping.md`](references/sendbird-mapping.md) section 14; Stream's keys are the
+  English source strings themselves - re-key, don't map 1:1). Confirm every theme key against the
+  installed package and the manifest-selected Theming page ([`references/DOCS.md`](references/DOCS.md)) -
+  never from memory. Theme + provider wiring is **coordinator-owned** in the design-matching manifest;
+  workers report a needed change rather than editing it.
+
 When every touchpoint is migrated, finish section 3 step 3: remove the three Sendbird packages and
 confirm zero `@sendbird` imports remain.
 
@@ -500,7 +545,7 @@ channels exist" client step if the original had one.
 
 **When you seed, put at least one message carrying reactions in EVERY channel** (not just one) — plus,
 in the channel you'll design-verify, the rest of the region-triggering set (incoming + outgoing, a
-same-author run, an attachment/album, a reply/quote, a long wrapping message, a cross-day separator; §7
+same-author run, an attachment/album, a reply/quote, a long wrapping message, a cross-day separator; §6
 gate 5). Reactions are the easiest to forget and one of the two regions that keep shipping wrong: the
 reactions box can't be matched or verified if no seeded message ever renders it. Add reactions at seed
 time, server-side, as part of creating the data — not as an afterthought during verification. **Seed
@@ -512,62 +557,7 @@ and seed a reaction on **both** an incoming and an outgoing message.
 
 ---
 
-## 6. Design parity - re-apply the look, then match it region-by-region
-
-The framing, the two non-negotiable screens, the per-region checklist, and the baseline all live in
-**§0.5** — this section is the *mechanism*. Sendbird's theming levers all die; their Stream RN
-replacements are a **JS theme object, not CSS** (there is no DOM / stylesheet on native):
-
-- **Palette & dimensions:** re-author `colorSet` / `createTheme` / `LightUIKitTheme` /
-  `DarkUIKitTheme` / `Palette` (from `@sendbird/uikit-react-native-foundation`) as a
-  `DeepPartial<Theme>` object passed to **both** `<OverlayProvider value={{ style }}>` **and**
-  `<Chat style={…}>`, read via `useTheme()`. In RN the theme object carries **both color and
-  spacing/dimension**, so most reskins are theme-only. Confirm exact theme keys against the installed
-  package and the manifest-selected Theming page ([`references/DOCS.md`](references/DOCS.md)) - do not
-  hard-code key names from memory. See the Theming Blueprint in
-  [`references/CHAT-REACT-NATIVE-blueprints.md`](references/CHAT-REACT-NATIVE-blueprints.md).
-- **Light/dark:** there is no `theme="light"|"dark"` prop - build two theme objects and select on
-  `useColorScheme()` (from `react-native`); pin brand/content colors, keep chrome surfaces adaptive
-  ([`references/design-matching.md`](references/design-matching.md) > light/dark).
-- **Strings & i18n:** `createBaseStringSet` / `StringSet` overrides -> a `Streami18n` instance
-  (`registerTranslation` / `setLanguage`) passed to `<Chat i18nInstance={…}>`
-  ([`references/sendbird-mapping.md`](references/sendbird-mapping.md) section 14). Stream's keys are
-  the English source strings themselves - re-key, don't map 1:1.
-
-**Run the design match as its own first-class task, not a sub-step skimmed under wrap-up pressure —
-that overload is why these regions get missed.** Do not treat `design-matching.md` as documentation
-to consult in passing; make it dedicated work. **Fan out one focused subagent per _composite
-screen-area_** — the **message row** (it owns bubble fill+text, metadata placement, reactions, and
-avatar *together*), the **composer** (the whole bar), the **channel-list row**, and the **header** —
-**not** one broad "do the design" subagent, and **not** one per tiny sub-element (a reactions-only
-subagent crops the pills in isolation and can't see whether they sit *inside vs below* the bubble —
-the exact miss from a real run). A composite-area subagent owns every checklist region in its area,
-rebuilds them **together**, and crops the **whole composite full-width** — so *positioning* between
-sub-elements is verified, not just each element in isolation.
-
-- **Contract per subagent:** **in** — the area's baseline crop + the exact recipe from
-  [`references/design-matching.md`](references/design-matching.md); **out** — the area built to
-  pixel-match **plus the baseline↔migrated crop pair it produced**, not a prose "PASS". **Treat the
-  returned crop pair as the evidence, never the subagent's words:** do not relay an area as matched
-  when you have not seen its baseline↔migrated crop.
-- **Fan-out is a mechanism, not a mandate to over-delegate.** These subagents *write* code, so two
-  editing the same file at once will corrupt it — give each **disjoint** files/slots, run them
-  sequentially, or isolate them (`isolation: 'worktree'`); and don't hand *core implementation* to a
-  subagent just to offload effort (a real run did that, got nothing usable back, and clobbered files
-  mid-edit). Matching a screen inline is fine; matching it *from memory at wrap-up* is the failure.
-
-Each subagent gets `design-analysis.md` as the reference design (its Step 1 was already run in §0.5);
-reuse it rather than re-decomposing, route each region through the three axes, and run design-matching
-Step 3 — its capture-and-compare loop, screenshotting the **migrated** app and comparing region by
-region against the reference crops. **The baseline must be independent ground truth — the original's
-actual pixels.** A `design-analysis.md` you authored yourself is not a valid baseline: comparing the
-app against a spec you wrote passes *by construction* and proves nothing (a real run did exactly this
-and certified its own skin as a "match"). If you only had the theme (no original pixels), you can
-certify *"recolored"*, never *"looks like the original"*.
-
----
-
-## 7. Verify - gates, in order
+## 6. Verify - gates, in order
 
 Run all of these; each catches a failure a real migration shipped. The compiler is the oracle
 (golden rule / trust model).
@@ -597,8 +587,8 @@ never even tried to match** is not "done" just because the channel list looked r
    appears **optimistically once** for the sender (kill-list #1/#2), arrives live for the receiver,
    unread badges and typing indicators move, and there are no console errors. If you cannot run the
    app, say so and have the user run this check - do not skip it silently.
-5. **Design verify — reconciliation, not the first look.** Per §0.5 and §6, each screen was verified
-   *as it was built* by the per-region design-match subagents; this gate **confirms** it and **fails
+5. **Design verify — reconciliation, not the first look.** Per §0.5 and design-matching Step 4, each
+   screen was verified *as it was built* by its region-judge; this gate **confirms** it and **fails
    if it never happened**. **Hard block: the two non-negotiable screens — the channel list and the
    channel screen (message list + composer) — must have _every_ region `Fixed` or genuinely
    `Impossible: <reason>`, each citing a baseline↔migrated crop. One "good enough" / "close enough" /
@@ -615,7 +605,8 @@ never even tried to match** is not "done" just because the channel list looked r
    - **Confirm every mandatory region is actually ON SCREEN before you compare — a missing region is a
      layout bug, not something to verify around.** A chat screen with **no visible composer** (or a
      clipped message list / header) means a region got pushed off-screen — almost always the
-     header-outside-`<Channel>` trap (§6 / [`RULES.md`](RULES.md)). A mandatory region absent from the
+     header-outside-`<Channel>` trap ([`RULES.md`](RULES.md) /
+     [`references/design-matching.md`](references/design-matching.md) Step 3). A mandatory region absent from the
      frame = **not done**; fix the layout and re-shoot. (First glance at any chat-screen shot: *is the
      composer even there?*)
    - **Produce the region-diff artifact, don't claim it.** A full-screen glance is NOT a verify. Output
@@ -669,7 +660,7 @@ never even tried to match** is not "done" just because the channel list looked r
 
 ---
 
-## 8. Offer the data migration (never auto-run it)
+## 7. Offer the data migration (never auto-run it)
 
 Everything above migrates the **code**. The app now points at an **empty** Stream app - no users,
 channels, or history moved. Once gates 1-7 pass, ask:

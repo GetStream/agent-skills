@@ -58,7 +58,7 @@ grid on a physical device.
 
 **Layout is verifiable in ANY picker state — don't wait on a populated grid.** The composer↔picker
 relationship (e.g. the `topInset` gap covered in
-[design-matching.md](design-matching.md#composer---attachment-picker)) renders identically whether the
+[custom-ui.md](custom-ui.md#composer---attachment-picker)) renders identically whether the
 sheet shows a photo grid, the Files list, or the "not granted" panel — the sheet always fills its
 reserved height. So you can confirm there's no gap between the composer and the picker without ever
 populating the grid; conversely, **an empty or not-granted grid is not a layout bug** — don't chase

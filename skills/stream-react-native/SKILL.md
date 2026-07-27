@@ -145,7 +145,7 @@ If there is no RN/Expo project and Track A applies, scaffold one through [`build
 | C - Reference lookup | [`sdk.md`](sdk.md) + [`references/DOCS.md`](references/DOCS.md) + relevant product reference files |
 | D - Bootstrap / setup | [`builder.md`](builder.md) + [`sdk.md`](sdk.md) + `llms.txt` docs lookup |
 | M - Migrate / upgrade | [`migrate.md`](migrate.md) + [`references/DOCS.md`](references/DOCS.md) (live upgrade guide) + product reference for the migrated SDK |
-| S - Migrate from Sendbird | [`sendbird-migration.md`](sendbird-migration.md) + [`references/sendbird-mapping.md`](references/sendbird-mapping.md) + [`references/sendbird-mapping-extended.md`](references/sendbird-mapping-extended.md) + [`references/design-matching.md`](references/design-matching.md) + [`credentials.md`](credentials.md) + [`references/CHAT-REACT-NATIVE.md`](references/CHAT-REACT-NATIVE.md) |
+| S - Migrate from Sendbird | [`sendbird-migration.md`](sendbird-migration.md) + [`references/sendbird-mapping.md`](references/sendbird-mapping.md) + [`references/sendbird-mapping-extended.md`](references/sendbird-mapping-extended.md) + [`references/design-matching.md`](references/design-matching.md) + [`references/custom-ui.md`](references/custom-ui.md) + [`credentials.md`](credentials.md) + [`references/CHAT-REACT-NATIVE.md`](references/CHAT-REACT-NATIVE.md) |
 
 ---
 
@@ -193,18 +193,28 @@ Enforced by [`RULES.md`](RULES.md) > Package version and docs discipline.
 Orthogonal to the track above: if a request carries a **target appearance** - an attached
 screenshot, a Figma frame, or "make it look like \<app\>" - do not
 treat it as a set-a-few-colors task. **Before** writing UI code, run
-[`references/design-matching.md`](references/design-matching.md):
-it decomposes the reference region by region and plans **every** difference as one of three axes -
-**theming** (the `Theme` object), **layout** (`WithComponents` slot overrides + props), or
-**functional** (props / config / SDK hooks) - then verifies region-by-region against the reference.
-Implement every region, the composer included; a region left at the SDK default is a FAIL, not a
-"known cosmetic gap."
+[`references/design-matching.md`](references/design-matching.md) - the four-step procedure, run as a
+coordinator + subagent orchestration: **Step 1 design analysis** (decompose and measure the
+reference into `design-analysis.md`), **Step 2 route + ownership** (commit each region to a concrete
+SDK mechanism, grounded against the installed package, and declare who owns which file), **Step 3
+build fan-out** (one worker per composite screen-area, verify-infra alongside), **Step 4 the verify
+loop** (one simulator capture per round, a region-judge per area, iterate until every row passes).
+Every difference routes to one of three axes - **theming** (the `Theme` object), **layout**
+(`WithComponents` slot overrides + props), or **functional** (props / config / SDK hooks). Implement
+every region, the composer included; a region left at the SDK default is a FAIL, not a "known
+cosmetic gap."
+
+The per-region routing map (what to check on each region, the exact slot/key it routes to, the
+composer / metadata / picker / long-press deep-dives) and the completion contract for any region you
+render yourself live in [`references/custom-ui.md`](references/custom-ui.md) - read it alongside the
+procedure, and whenever you write your own component for a prebuilt region even outside a design
+match.
 
 This runs in addition to (not instead of) the `DOCS.md` lookup: fetch the manifest-selected
 theming/customization pages to confirm exact theme paths and component names. A plain request
 with **no** target appearance does not trip this flag - build from the blueprints as usual.
 
-**Front-loaded traps (the recurring RN design-match failures — internalize before you start; full detail + recipes in [`references/design-matching.md`](references/design-matching.md)):**
+**Front-loaded traps (the recurring RN design-match failures — internalize before you start; full detail + recipes in [`references/custom-ui.md`](references/custom-ui.md)):**
 - **Composer is first-class and structural, not a colour.** If it floats (inset pill, rounded, shadow, content behind), set **`messageInputFloating` on `<Channel>`** — never fake a floating pill with a translucent background fill. The composer *bar* surface is `messageComposer.wrapper` (`container` is only an inner row — colouring it paints a band around the buttons). Send/mic lives **inside** the input pill and **swaps** at-rest↔typing (reuse `OutputButtons`, don't hand-roll). The attach `+` is **two things** — a trigger *and* a `+`↔keyboard stateful icon wired to `toggleAttachmentPicker` (don't drop in the bordered SDK `AttachButton` and assume it matches).
 - **Never fake a structure with a background fill; resolve the structural mechanism (prop/flag/slot) before cosmetic polish** (glass, exact colours).
 - **Timestamp/receipts *inside* the bubble is a structural relayout** (`MessageContent*` slots), not a theme key — the inside-the-bubble metadata look many reskins need.
@@ -299,9 +309,8 @@ Use when the user wants package install and shared wiring more than a full featu
 | Phase | Name | What you do |
 |---|---|---|
 | **S0** | Detect & inventory | Run Project signals for the flavor (Expo vs bare RN), package manager, New-Arch, navigation. Grep the Sendbird footprint, classify each touchpoint + every `@sendbird` symbol (mapped / unmapped-known / unknown), build the **parity ledger**, and capture the **visual baseline** (simulator screenshots of the original, or code-derived theme) - [`sendbird-migration.md`](sendbird-migration.md) section 0. |
-| **S1** | Plan & checkpoint | Assemble the plan (flavor + shape, token path, design bar, gaps). Pause and batch-ask the user on any GAP row, unresolved credentials, or an ambiguous design bar; else proceed. Section 2. |
+| **S1** | Plan & checkpoint | Assemble the plan (flavor + shape, token path, design bar, gaps) while the design-matching **Step 1** analysis agent runs on the §0.5 captures. Pause and batch-ask the user on any GAP row, unresolved credentials, or an ambiguous design bar; else proceed. Section 2. |
 | **S2** | Packages & connection | Install Stream **alongside** Sendbird (flavor-correct package + peers; wire `GestureHandlerRootView` / `OverlayProvider` / Reanimated Babel plugin). Prove a real user connects (`useCreateChatClient` + `tokenProvider`) via [`credentials.md`](credentials.md) **before** touching UI. Sections 3-4. |
-| **S3** | Migrate touchpoints | File-by-file, in place: UI composition (no `<Window>`; app-owned header), channels, messages/attachments, events (`{ unsubscribe }` cleanup), pagination (stateless), membership/moderation, offline. Delete hand-rolled machinery for reactive primitives. Then remove all three Sendbird packages. Section 5. |
-| **S4** | Design parity | Re-author the theme as a JS `Theme` object (no CSS), then run [`references/design-matching.md`](references/design-matching.md) from Step 1 with the baseline as the reference. Section 6. |
-| **S5** | Verify | Gates in order: `tsc --noEmit`, native build, zero `@sendbird` imports, two-user simulator smoke, design verify loop vs the ledger, ledger closure, README. Section 7. |
-| **S6** | Offer data migration | Never auto-run. Offer the server-side data migration ([`../stream/sendbird-data-migration.md`](../stream/sendbird-data-migration.md)); stop if the user only wanted the SDK swap. Section 8. |
+| **S3** | Migrate touchpoints + design parity | File-by-file, in place, as design-matching **Steps 2-3**: route every region and declare ownership, then build - UI composition (no `<Window>`; app-owned header), channels, messages/attachments, events (`{ unsubscribe }` cleanup), pagination (stateless), membership/moderation, offline, plus the theme re-authored as a JS `Theme` object (no CSS) and `Streami18n` strings. Delete hand-rolled machinery for reactive primitives. Then remove all three Sendbird packages. Section 5. |
+| **S4** | Verify | Gates in order: `tsc --noEmit`, native build, zero `@sendbird` imports, two-user simulator smoke, the design-matching **Step 4** verify loop vs the ledger (scoped to the two non-negotiable screens), ledger closure, README. Section 6. |
+| **S5** | Offer data migration | Never auto-run. Offer the server-side data migration ([`../stream/sendbird-data-migration.md`](../stream/sendbird-data-migration.md)); stop if the user only wanted the SDK swap. Section 7. |

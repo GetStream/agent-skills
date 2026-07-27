@@ -18,7 +18,7 @@ Expo lane: change imports from `"stream-chat-react-native"` to `"stream-chat-exp
 | thread navigation, replies, thread list | Thread Screen or Thread List Screen |
 | React Navigation or Expo Router shell | Navigation Shell |
 | theme, dark mode, colors, design tokens | Theming Blueprint |
-| screenshot / Figma / "match this design" / "make it look like \<app\>" | [design-matching.md](design-matching.md) first (decompose + plan every region), then Theming + Component Override Blueprints |
+| screenshot / Figma / "match this design" / "make it look like \<app\>" | [design-matching.md](design-matching.md) first (analyse → route → build → verify) + [custom-ui.md](custom-ui.md) (per-region routing + contract), then Theming + Component Override Blueprints |
 | UI slot, component, behavior, or composer customization | DOCS.md -> primary manifest lookup, then Component Override Blueprint |
 | cookbook / advanced feature (push, mentions, search, reactions UI, link previews, etc.) | DOCS.md -> primary manifest lookup, then implement to match |
 | offline support | Offline and Sign-out Blueprint |
@@ -581,7 +581,7 @@ Wiring:
 
 Always consult [DOCS.md](./DOCS.md) to find a relevant guide/cookbook, if there is no match, read SDK context and hooks to reuse business logic. Aim for using SDK provided hooks and contexts, only use low-level client if there are no hooks. Use `WithComponents` for custom subcomponents. Keep custom message rows memoized and use SDK context hooks.
 
-The two examples below are the **shape** to imitate for the most-missed design-match slots — the message-metadata-inside-the-bubble case and a custom attach button. **Confirm the exact hook, prop, and slot names against the installed package** (`node_modules/stream-chat-react-native-core`) for the pinned version before shipping — verified against **stream-chat-expo 9.7.0**; the pattern (which slot, which context hook, what to reproduce) is what generalizes, not the verbatim signatures. Full routing is in [design-matching.md](design-matching.md).
+The two examples below are the **shape** to imitate for the most-missed design-match slots — the message-metadata-inside-the-bubble case and a custom attach button. **Confirm the exact hook, prop, and slot names against the installed package** (`node_modules/stream-chat-react-native-core`) for the pinned version before shipping — verified against **stream-chat-expo 9.7.0**; the pattern (which slot, which context hook, what to reproduce) is what generalizes, not the verbatim signatures. Full routing is in [custom-ui.md](custom-ui.md).
 
 **Example A — timestamp + read receipts INSIDE the bubble (bottom-trailing corner).** Render metadata in the in-bubble slot, reuse `MessageStatus` for the ticks, reproduce the bubble's padding, and suppress the default outside footer so it isn't duplicated:
 
@@ -652,7 +652,7 @@ const CustomAttachButton = () => {
 Wiring:
 
 - Prefer the smallest documented override that satisfies the requested customization.
-- Avoid replacing core message components unless required. When you DO replace a composite slot, reproduce every sub-feature the default drew (avatar, grouping, reactions, replies, receipts, edited/deleted state) — see [design-matching.md](design-matching.md#step-25-overriding-a-slot-inherits-all-of-its-sub-features).
+- Avoid replacing core message components unless required. When you DO replace a composite slot, reproduce every sub-feature the default drew (avatar, grouping, reactions, replies, receipts, edited/deleted state) — see [custom-ui.md](custom-ui.md#overriding-a-slot-inherits-all-of-its-sub-features).
 - If replacing message row structure and still using the long-press overlay, preserve overlay anchor behavior by reading the manifest-selected context docs.
 - Consult the theme object to adjust spacing as necessary. The composer *bar* surface is `messageComposer.wrapper` (not `container` — see [CHAT-REACT-NATIVE.md](CHAT-REACT-NATIVE.md#composer-attach-button-and-message-metadata-facts)).
 - Provide `WithComponents` at root level so overrides apply for all application screens
