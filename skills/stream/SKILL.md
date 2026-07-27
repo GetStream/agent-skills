@@ -40,6 +40,10 @@ This skill picks the track from the user's input. Building (web + platform) and 
 - Triggers: "audit/review my video integration", "is my video app production-ready?", "what am I missing before launch?"
 - Routes here even when the request contains "check" - the audit intent takes precedence over the CLI "check {anything}" route below
 
+**Migrate a server-side (backend) Stream SDK to the generated OpenAPI SDK** -> use the `stream-backend` skill
+- An `upgrade`/`migrate`/`bump`/`switch`/`move` verb + a server SDK token (`stream-chat-go` today), or a project whose `go.mod` imports `GetStream/stream-chat-go`
+- Server-side only (Go supported now). Local-only and docs-driven - no CLI onboarding. Client/frontend SDKs use the platform packs instead
+
 **Query Stream data or run a CLI command** -> handled here (see **Stream CLI** below)
 - "list calls", "show channels", "any flagged", "find users", a literal `getstream` command, or "install the CLI" / "set up stream"
 
@@ -56,6 +60,7 @@ Scan the user's input for the signals below in order. The classifier is determin
 
 | Signal in user input | Route |
 |---|---|
+| **Migrate a server-side (backend) SDK to the generated OpenAPI SDK** (matched **before** the web migration row below): an `upgrade`/`migrate`/`bump`/`switch`/`move` verb + a server SDK token (`stream-chat-go` today), or a project whose `go.mod` imports `GetStream/stream-chat-go`. Server-side, not the web/RN packs. | `stream-backend` (installs on demand) |
 | **Upgrade / migrate an installed SDK** (build/integrate intent - matched **before** the docs rows): "upgrade/migrate/bump/update `stream-chat-react` to vN", "migrate to the new SDK version", "bump my Stream version" - an upgrade verb (`upgrade`/`migrate`/`bump`/`update`) + a Stream package token, **no peer signal**. Peer signal (`react native` / `expo` / an `@stream-io/*-react-native-*` token) -> `stream-react-native` instead (its own migration flow). | `stream-react` (Track M) |
 | **Audit/review an existing integration** (read-only - matched **before** the SDK-token / docs rows below): "audit/review my video integration", "audit my Chat React integration", "review my Video React app", "is my video app production-ready?", "what am I missing before launch?" - audit/review intent **even when an SDK token like `Chat React` / `Video React` is present**. Peer signal (`react native` / `expo`) -> `stream-react-native`; web / React / Next.js or no platform signal -> `stream-react` (Track F - Video has a **dedicated checklist**; Chat/Feeds get a general docs-based review, stated up front). **Also wins over the CLI "check {anything}" row below** whenever the request frames a best-practices / production-readiness review rather than a data query. | matching platform pack (read-only audit) |
 | Explicit SDK/framework token: `Chat React`, `Video iOS`, `Feeds Node`, `Moderation`, etc. (with or without version), and **no build/integrate verb and no audit/review intent** (`upgrade`/`migrate`/`bump`/`update` count as build/integrate verbs -> migration row above; "audit/review" -> audit row above) | `stream-docs` |
@@ -129,9 +134,12 @@ For a bare `/stream` (and whenever the user wants to pick a skill directly), out
 > - `/stream-react-native` - React Native - Expo
 > - `/stream-flutter` - Flutter - Dart
 >
+> **Server SDKs**
+> - `/stream-backend` - migrate a server-side integration to the generated OpenAPI SDK (Go today) - e.g. *"migrate my stream-chat-go code to getstream-go"*
+>
 > Or just ask - query data or run `getstream` commands directly: *"list my channels"*. New to a skill? Just describe the task and I'll install the right one automatically.
 
-The closing line is load-bearing: typing an uninstalled slash command errors with "Unknown skill" *before* this router runs, so natural-language description is the only dead-end-proof path - it routes here and the missing peer is installed per [`peers.yaml`](peers.yaml). Keep this menu in sync with `peers.yaml`: every peer there appears here under Core or Platform SDKs, and new platforms get a bullet under Platform SDKs when their entry is added.
+The closing line is load-bearing: typing an uninstalled slash command errors with "Unknown skill" *before* this router runs, so natural-language description is the only dead-end-proof path - it routes here and the missing peer is installed per [`peers.yaml`](peers.yaml). Keep this menu in sync with `peers.yaml`: every peer there appears here under Core, Platform SDKs, or Server SDKs, and new peers get a bullet under the matching group when their entry is added.
 
 ---
 

@@ -112,3 +112,11 @@ peers:
       - video call react native
       - livestream react native
       - audio room react native
+
+  - name: stream-backend
+    glob: "{.agents,.claude}/skills/stream-backend/SKILL.md"
+    install: getstream skills stream-backend
+    install_policy: silent
+    purpose: "Migrate a server-side (backend) Stream integration from a legacy hand-written SDK to the generated OpenAPI SDK. Language-parameterized; Go is supported today (github.com/GetStream/stream-chat-go -> github.com/GetStream/getstream-go). Local-only and docs-driven (fetches the official migration guide live); no CLI onboarding. Not for client/frontend SDKs - those use the platform packs."
+    signals:
+      - stream-chat-go

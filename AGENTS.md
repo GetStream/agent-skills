@@ -14,6 +14,7 @@ The pack has a generic router (which includes the CLI), core specialists, and pl
 | [`skills/stream-builder/SKILL.md`](skills/stream-builder/SKILL.md) | Framework-agnostic builder - only when named explicitly; web React/Next.js defaults to stream-react |
 | [`skills/stream-swift/SKILL.md`](skills/stream-swift/SKILL.md) | Build or integrate Stream Chat/Video/Feeds in Swift/SwiftUI/UIKit/iOS apps |
 | [`skills/stream-flutter/SKILL.md`](skills/stream-flutter/SKILL.md) | Build or integrate Stream Chat in Flutter apps (stream_chat_flutter and stream_chat_flutter_core) |
+| [`skills/stream-backend/SKILL.md`](skills/stream-backend/SKILL.md) | Migrate a server-side (backend) Stream integration from a legacy hand-written SDK to the generated OpenAPI SDK (Go today: stream-chat-go -> getstream-go) |
 
 (Querying data and running CLI commands is handled by the router itself - see its **Stream CLI** section.)
 
