@@ -366,8 +366,7 @@ provisional) then; parking it as a TODO is what this section exists to prevent.
 ## 3. Packages
 
 **Install Stream alongside Sendbird first; remove Sendbird last.** Ripping the Sendbird packages out
-now leaves the app unbuildable until every touchpoint is migrated - which makes the section 4
-connection gate impossible to run. Order:
+now leaves the app unbuildable until every touchpoint is migrated. Order:
 
 1. Add Stream with the project's existing package manager, per the **flavor** (section 0a) and
    [`RULES.md`](RULES.md) > Runtime lane ownership. Confirm current dist-tags first
@@ -407,9 +406,6 @@ The biggest conceptual shift: Sendbird connects with just a `userId` (auto-creat
 server-side, token optional); **Stream always requires a signed token** - there is no userId-only
 path (kill-list #4). Handle secrets per [`RULES.md`](RULES.md) > Secrets and auth and
 [`credentials.md`](credentials.md) - never put the API secret on device.
-
-Wire it, then **prove the connection end-to-end before migrating any UI** - a real trial run shipped
-a fully migrated app that had never once connected:
 
 1. Get the Stream API key and replace the Sendbird `appId`. Precedence: **(a)** credentials the user
    provided (in the request or the project's env/config) - use as-is; **(b)** only if none exist,
