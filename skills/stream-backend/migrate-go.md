@@ -22,7 +22,7 @@ Establish:
 - The **import alias** used in the code (commonly `stream`), so you rename every reference, not just the import line.
 - The **call sites**: every method invoked on the legacy client or channel object. This list is the migration's work-list and its done-check.
 
-Target module: `github.com/GetStream/getstream-go/v4` (confirm the latest major before editing).
+Target module: `github.com/GetStream/getstream-go/v5` (confirm the latest major before editing).
 
 ## G2: Fetch the guide (before any edit)
 
@@ -49,7 +49,7 @@ Map each call site from G1 to a section of the guide. Two outcomes only:
 
 Work from the fetched guide, operation by operation. These recurring rules from the README's Key Differences apply throughout, but the per-operation detail always comes from the topic file:
 
-- **Module + alias:** `stream-chat-go/v8` -> `getstream-go/v4`; alias `stream` -> `getstream` on every reference.
+- **Module + alias:** `stream-chat-go/v8` -> `getstream-go/v5`; alias `stream` -> `getstream` on every reference.
 - **Env vars:** `STREAM_KEY` -> `STREAM_API_KEY`, `STREAM_SECRET` -> `STREAM_API_SECRET`.
 - **Sub-clients:** root-client methods move under `client.Chat()`, `client.Moderation()`, `client.Video()`, `client.Feeds()`. The channel object is `client.Chat().Channel(type, id)`.
 - **Request structs:** flat structs become typed `*Request` types; content is nested (e.g. `SendMessageRequest{ Message: MessageRequest{...} }`).
@@ -87,7 +87,7 @@ Fix every error the migration surfaced and re-run until `build` and `vet` are cl
 ## G6: Report
 
 State plainly:
-- Module bumped: `stream-chat-go/v8` -> `getstream-go/v4`, and env var renames if the app reads them.
+- Module bumped: `stream-chat-go/v8` -> `getstream-go/v5`, and env var renames if the app reads them.
 - Operations migrated, grouped by topic.
 - **Behavioral changes** the user must handle (async delete + `TaskID` polling, any semantics that shifted).
 - **Uncovered call sites** left untouched (Video/Feeds/uploads/search/etc.) with a note that the guide does not cover them yet.
