@@ -162,7 +162,7 @@ stateless. Convert each; in UI, the prebuilt components paginate for you.
 | `createPreviousMessageListQuery().load()` | same as above; for open channels, `channel.query({ messages: { limit } })` after `watch()` | id cursor. `MessageList` loads older pages on scroll automatically. |
 | `startingPoint` timestamp jump | `channel.state.loadMessageIntoState(messageId)` (or `channel.query({ messages: { id_around, limit } })`); `loadLatestMessages()` for the tail | message-id anchor |
 | `getMessagesByTimestamp` | `channel.query({ messages: { created_at_around: <ISO>, limit } })` | convert epoch-ms -> ISO first |
-| `createApplicationUserListQuery` | `client.queryUsers(filters, sort, { offset, limit })` | `userIdsFilter` -> `{ id: { $in } }`, `nicknameStartsWithFilter` -> `{ name: { $autocomplete } }` |
+| `createApplicationUserListQuery` | `client.queryUsers(filters, sort, { offset, limit })` | `userIdsFilter` -> `{ id: { $in } }`, `nicknameStartsWithFilter` -> `{ name: { $autocomplete } }`. **TRAP: `queryUsers({}, …)` with an EMPTY filter is not "list all users" — it returns none for a user token, silently** (no throw), so a hand-built user picker renders its empty state and looks like a data bug. Sendbird's list-every-user query has no client-side equivalent; always pass a real condition (`{ id: { $in: rosterIds } }` for a fixed roster, `{ name: { $autocomplete: q } }` for a search field, or a team/contact field of your own). |
 | `BannedUserListQuery` | `client.queryBannedUsers({ channel_cid? }, sort, { offset, limit })` | read `response.bans[]` |
 | `createOperatorListQuery` | `channel.queryMembers({ channel_role: 'channel_moderator' }, sort, options)` | - |
 | `createMemberListQuery` | `channel.queryMembers(filter, sort, options)` | `MemberStateFilter.INVITED/JOINED` -> filter on `invited` |
@@ -193,7 +193,7 @@ be upserted server-side. Ties to the fixed-user-set note in section 1.
 | `channel.join(accessCode?)` | `channel.addMembers([client.userID])` (private) or `watch()` (open) | agent-guided | No dedicated self-join; drop `accessCode` and move access control to channel-type permissions. |
 | `channel.leave(shouldRemoveOperatorStatus?)` | `channel.removeMembers([client.userID])` (+ `stopWatching()`) | agent-guided | Open-channel `exit()` -> `stopWatching()`. `shouldRemoveOperatorStatus` has no analog (roles drop on leave). |
 | Remove another member (no client method in Sendbird) | `channel.removeMembers(ids)` | agent-guided | Stream has a first-class client-side remove (Sendbird required server/ban). |
-| `myRole: Role` (`OPERATOR` \| `NONE`) / `Member.role` | `channel.state.membership.channel_role` + `own_capabilities` | agent-guided | Binary flag -> layered roles + server-configured grants. `OPERATOR` -> `'channel_moderator'`. **There is no `owner` channel_role — the channel owner is `channel.data.created_by`.** **Editing the channel differs by default: in Sendbird any group-channel member can update channel info (name/cover); in Stream the default channel types grant `update-channel` only to the owner (`created_by`) + moderators/admins, so a regular member's `channel.update`/`updatePartial` is rejected server-side.** Gate any edit-channel UI on the `update-channel` own-capability (don't show it to plain members), or loosen the channel type's grants server-side if the app truly relied on member editing. **Gate UI on `useChannelOwnCapabilities` / `useCanAddMembersToChannel`, not a role-string check.** Capability strings (`update-channel`, `update-channel-members`, `ban-channel-members`, `delete-any-message`, …) are enumerated in `stream-chat-react-native-core`'s `OwnCapabilitiesContext` — read them there, don't invent slugs. |
+| `myRole: Role` (`OPERATOR` \| `NONE`) / `Member.role` | `channel.state.membership.channel_role` + `own_capabilities` | agent-guided | Binary flag -> layered roles + server-configured grants. `OPERATOR` -> `'channel_moderator'`. **There is no `owner` channel_role — the channel owner is `channel.data.created_by`.** **Editing the channel differs by default: in Sendbird any group-channel member can update channel info (name/cover); in Stream the default channel types grant `update-channel` only to the owner (`created_by`) + moderators/admins, so a regular member's `channel.update`/`updatePartial` is rejected server-side.** Gate any edit-channel UI on the `update-channel` own-capability (don't show it to plain members), or loosen the channel type's grants server-side if the app truly relied on member editing. **Gate UI on own-capabilities, not a role-string check — and pick the right hook, because one of the two throws.** See the capability-hook rules + slug list in section 12. |
 | `addOperators(ids)` / `removeOperators(ids)` | `channel.addModerators(ids)` / `channel.demoteModerators(ids)` — **server-side only** | GAP (server-side) | **`addModerators` / `demoteModerators` / `assignRoles` / `partialUpdateMember`, and `addMembers` with a `channel_role`, are privileged role changes — a normal user token cannot grant/revoke roles, so they must NOT appear in client code.** Do them from a backend/server SDK and record a migration gap. The only client-safe membership calls are role-less: `addMembers(ids)` / `removeMembers(ids)`. |
 | `channel.muteUser(user, duration?)` - **operator-enforced silencing** | timed `channel.banUser(id, { timeout, reason })` | agent-guided | **`client.muteUser` is the WRONG target** - it is a personal, caller-scoped mute that does NOT stop the target from posting. Reserve it for an "I don't want to hear from X" feature. Kill-list #5. |
 | `blockUser(user)` - **global** | `client.blockUser(id)` - **DM-only** | agent-guided | Blocked users still post in shared group channels. Filter client-side or ban/moderate for group hiding. `unBlockUser(id)` (capital B); read state via `getBlockedUsers()`. |
@@ -249,7 +249,7 @@ app-owned - your React Navigation / Expo Router header).
 | `createGroupChannelCreateFragment` | - (gap) | manual | No prebuilt create screen - build a user picker then `client.channel('messaging', { members }).create()`/`watch()`. |
 | `createGroupChannelMembersFragment` | - (gap) | manual | Build on `Object.values(channel.state.members)` / `channel.queryMembers` + the channel-details contexts. |
 | `createGroupChannelInviteFragment` | - (gap) | manual | Use `ChannelAddMembers*` contexts + `channel.inviteMembers`/`addMembers`. |
-| `createGroupChannelModerationFragment` / `Operators` / `RegisterOperator` / `MutedMembers` / `BannedUsers` | - (gap) | manual | No prebuilt moderation/operator screens - compose from **client-safe** ops (`banUser`/`muteUser`/`removeMembers`) + `useChannelOwnCapabilities` gating. **Operator promote/demote is server-side only: build the Operators screen read-only and move role changes to a backend. `RegisterOperator` (a client-side promote screen) has no client equivalent — omit it.** |
+| `createGroupChannelModerationFragment` / `Operators` / `RegisterOperator` / `MutedMembers` / `BannedUsers` | - (gap) | manual | No prebuilt moderation/operator screens - compose from **client-safe** ops (`banUser`/`muteUser`/`removeMembers`) + own-capability gating. **Operator promote/demote is server-side only: build the Operators screen read-only and move role changes to a backend. `RegisterOperator` (a client-side promote screen) has no client equivalent — omit it.** **These screens are NOT inside `<Channel>`, so do not call `useOwnCapabilitiesContext()` in them — it throws. Use `useChannelOwnCapabilities(channel)` (returns `string[]`) — see section 12.** |
 | `createGroupChannelSettingsFragment` / `Notifications` | - (gap) | manual | Build from `channel.update`/`updatePartial` and the **push-preference API (`client.setPushPreferences([{ channel_cid, chat_level }])`)** for the notification trigger — not `channel.mute()`, which is binary and loses the mentions tier. |
 | `createMessageSearchFragment` | - (gap) | manual | Section 9. |
 
@@ -264,6 +264,68 @@ app-owned - your React Navigation / Expo Router header).
 | `useUIKitTheme()` | `useTheme()` | agent-guided | Returns `{ theme }` in Stream's `Theme` shape - color/typography keys differ. |
 | `useMessageContext` | `useMessageContext` (different shape) | agent-guided | `MessageContextValue`: `message`, `isMyMessage()`, handlers, ... |
 | `usePushTokenRegistration` | - (gap) | manual | No hook - call `addDevice`/`removeDevice` in your own effects. |
+
+### Own capabilities: TWO hooks, and the context one throws outside `<Channel>`
+
+There are two ways to read a channel's own-capabilities, and picking the wrong one crashes the screen.
+The failure is a **runtime throw, not a type error** — `tsc` passes and the screen dies on mount.
+
+| Hook | Signature | Needs `<Channel>`? | Use it when |
+|---|---|---|---|
+| **`useChannelOwnCapabilities(channel)`** | `(channel?: Channel) => string[] \| undefined` | **No** — takes the channel as an argument | **Default choice**, and the only option in a screen that doesn't mount `<Channel>` |
+| `useOwnCapabilitiesContext()` | `() => Record<OwnCapability, boolean>` | **Yes** | Only inside `<Channel>` (message row, composer, custom slots) |
+
+`useOwnCapabilitiesContext()` defaults its context to a `DEFAULT_BASE_CONTEXT_VALUE` sentinel and
+**throws** on it — *"The useOwnCapabilitiesContext hook was called outside the Channel Component."* It
+does not return an empty object; it crashes. This bites exactly where a Sendbird migration needs
+capabilities most: the hand-built **settings / members / invite / moderation / operators / muted /
+banned** screens (section 11) are plain navigation screens, and they must **not** mount `<Channel>` just
+to satisfy a hook — that drags in the message list, composer, keyboard handling and attachment picker
+for a screen that renders rows.
+
+So in those screens use `useChannelOwnCapabilities(channel)` and test slugs directly:
+
+```tsx
+const capabilities = useChannelOwnCapabilities(channel);          // string[] | undefined
+const canRemoveMembers = !!capabilities?.includes('update-channel-members');
+const canBan           = !!capabilities?.includes('ban-channel-members');
+```
+
+Both hooks read the same source (`channel.data.own_capabilities`) and both stay live on the
+`capabilities.changed` event, so there is no reactivity cost to the context-free one — don't hand-roll
+your own `channel.data.own_capabilities` reader.
+
+**Notable capability slugs.** The SDK's typed subset is exported as **`allOwnCapabilities`** (an
+`OwnCapability -> slug` map) from `stream-chat-react-native-core` — read slugs there, don't invent them:
+
+| Area | Slugs |
+|---|---|
+| Messaging | `send-message`, `send-reply`, `send-reaction`, `send-links`, `send-typing-events`, `upload-file`, `quote-message` |
+| Own vs. any message | `update-own-message` / `update-any-message`, `delete-own-message` / `delete-any-message` |
+| Moderation | `ban-channel-members`, `flag-message`, `pin-message` |
+| Membership / channel | `update-channel-members`, `read-events` |
+| Polls | `send-poll`, `cast-poll-vote`, `query-poll-votes` |
+
+**The raw array is a superset of that map — which is the other reason to prefer the `string[]` hook.**
+The server also sends channel-level grants the SDK doesn't type, e.g. `delete-channel`, `freeze-channel`,
+`mute-channel`, `leave-channel`, `join-channel`, `search-messages`, `create-attachment`, `create-mention`,
+`connect-events`, `delivery-events`, `send-custom-events`, `notify-*`. Notably **`update-channel` is NOT
+in `allOwnCapabilities`**, so an edit-channel affordance can only be gated by checking the raw slug —
+`capabilities?.includes('update-channel')` — which `useOwnCapabilitiesContext()`'s typed record cannot
+express. Capability sets are per-user-per-channel and configured on the channel **type**, so treat any
+list as environment-specific and check the slug rather than assuming a role implies it.
+
+**Rule of thumb: before calling any `use*Context()` from a screen you built yourself, confirm which
+component provides it.** If the answer is `<Channel>` / `<ChannelList>` / `<Chat>` and your screen
+doesn't mount it, use the argument-taking hook or the underlying `client` / `channel` object:
+
+| Need | Inside `<Channel>` | Outside `<Channel>` (nav screens) |
+|---|---|---|
+| own capabilities | `useOwnCapabilitiesContext()` | **`useChannelOwnCapabilities(channel)`** |
+| members | `useChannelContext().members` | `channel.state.members` after `await channel.watch()` |
+| channel meta (name/image/frozen) | `useChannelContext().channel` | `channel.data` |
+
+Verified against `stream-chat-expo@9.7.1`.
 
 ## 13. Theming & i18n
 
