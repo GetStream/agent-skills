@@ -283,6 +283,16 @@ adb shell "cmd uimode night yes"            # → no to switch back
 adb exec-out screencap -p > dark.png
 ```
 
+**Caveat — `simctl ui appearance` only works if the app follows the OS.** The flip above assumes dark
+mode is driven by `useColorScheme()`. If the app drives dark mode from **app state** — a manual toggle
+persisted in MMKV / AsyncStorage / a theme context (common in migrated apps, e.g. a moon/sun button) —
+then `simctl ui appearance dark` is a **no-op** and you'll wrongly conclude dark mode is broken (or
+waste a relaunch chasing it). **Check the app's theme-toggle source first:** if it reads
+`useColorScheme()`, use the flip above; if it reads a persisted flag, drive dark mode the app's own way
+— flip the persisted flag from temporary scaffold (set the MMKV/AsyncStorage key or call the theme
+context's setter), then relaunch/re-render and screenshot. Don't reach for `simctl ui appearance` on an
+app-state-driven toggle.
+
 Then confirm the carve-out held: **structural surfaces** (message-list background, composer/input
 background, borders) flipped to their dark values, while **pinned brand/content** colors (bubble
 fills, glyphs, accent, read-receipt ticks) look identical to light mode. A surface that stayed light
