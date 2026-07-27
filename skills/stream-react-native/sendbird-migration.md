@@ -88,6 +88,22 @@ and isn't genuinely `Impossible` with a reason — is an immediate no-go for the
 "mostly there", not "just one small thing": any unmatched, undiffed region blocks delivery. Surface
 it, do not ship it.
 
+**Design-match SCOPE — the pixel loop applies to those two screens ONLY. Every other screen is
+matched a different way, and the ways are not interchangeable:**
+
+| Screen | How it is matched | Reference |
+|---|---|---|
+| **Channel list** + **channel screen** (message list + composer) — the two non-negotiable ones | the **full design-matching pipeline**: region decomposition, measured/sampled spec, baseline↔migrated crops, every region `Fixed` or `Impossible` | the section-0c captures — **the original app's real pixels** |
+| **Every other Sendbird-owned screen** (settings, members, invite, create, moderation, operators, muted/banned, search, notifications, thread list, …) | **matched from the Sendbird SOURCE CODE** — read the fragment/component that rendered it and reproduce its structure, row anatomy, ordering, labels/copy and actions. **No pixel loop, no crops, no region ledger** — followed by the render+interaction smoke (build-order step 3) | the Sendbird source you are deleting |
+| **Login / auth screen** | **change as little as humanly possible** — swap the Sendbird connect for `useCreateChatClient` + the token path and *nothing else*. Do **not** restyle, re-lay-out, re-copy or "improve" it: it is already the original, so any edit beyond the connect call can only move it away from parity | itself (leave it alone) |
+| **Screens with no Sendbird involvement** (anything with no `@sendbird` import — marketing, onboarding, unrelated profile/settings, feature screens) | **OFF-LIMITS. Do not touch them at all** — not restyled, not "aligned to the new theme", not refactored, not reformatted | — |
+
+Getting this scope wrong wastes the run in both directions: pixel-diffing a settings screen burns
+relaunches on a screen nobody specced, while *not* pixel-diffing the channel screen is the failure
+this whole file exists to prevent. And a diff touching a non-Sendbird screen is scope creep (golden
+rule 1) — at the end, `git diff --stat` should name only Sendbird touchpoints, the login file's
+connect call, and genuinely new files.
+
 **Walk this per-region checklist on both screens — each row is a Sendbird→Stream _default_ gap that a
 green build and a full-screen glance hide. The "how" for each lives in
 [`references/design-matching.md`](references/design-matching.md); this is the list you may not skip.**
@@ -141,7 +157,10 @@ mechanism behind both failed runs):
    **not built until it is verified**.
 2. **Then build the remaining screens** (settings, members, invite, create, moderation, operators,
    muted/banned, search, notifications, thread, …). These are mostly rebuilt-from-scratch touchpoints
-   with no design-baseline of their own, so they don't need the per-region pixel loop as you write them.
+   with no design-baseline of their own: **match them from the Sendbird source you're replacing**
+   (structure, row anatomy, ordering, labels, actions) — they do **not** get the per-region pixel loop
+   (see *Design-match SCOPE* above). Leave the login screen alone apart from its connect call, and do
+   not touch screens with no Sendbird involvement at all.
 3. **Then a quick verification pass at the end for those remaining screens** — drive each one on the
    simulator (temp auto-nav scaffold; `simctl` can't tap) and confirm it renders **and its handlers
    actually fire** (menu taps, create flow, ban/mute, search, thread open), since a screen that paints
@@ -285,7 +304,11 @@ spec is cheapest and most accurate to extract; deferring it means decomposing fr
    boot the original Sendbird app on the iOS simulator per
    [`references/SIMULATOR-VERIFICATION.md`](references/SIMULATOR-VERIFICATION.md), and use that page's
    simulator-driving discipline to capture **every region and every state** the design match will be
-   judged on - not just the channel list:
+   judged on - not just the channel list. **Scope: shoot the two non-negotiable screens
+   exhaustively** (channel list + channel screen, every state below). You do **not** need a capture of
+   every other screen — settings/members/moderation/search/… are matched from the Sendbird source, the
+   login screen is left as-is, and non-Sendbird screens are off-limits (*Design-match SCOPE* above). A
+   shot of one of those is a bonus, never a deliverable; a missing channel-screen **state** is a gap:
    - **Screens & states to shoot:** the channel list; a chat with **both an incoming and an outgoing
      message** visible; the composer **at rest and while typing** (the send/mic swap); any thread
      screen; the attachment picker open; reactions; and - if the app supports it - **dark mode** (flip
@@ -327,7 +350,11 @@ spec is cheapest and most accurate to extract; deferring it means decomposing fr
      `Region | Spec (measured) | Plan (Stream SDK feature) | Axis | Status`. This turns the design match
      into a resolved build plan (and pre-empts the *reinvention red flag* - if the Plan is "custom
      component from scratch", re-check whether an SDK slot already covers it). Confirm each named
-     key/slot/prop against the installed package before relying on it.
+     key/slot/prop against the installed package before relying on it. **Scope: region rows exist for
+     the two non-negotiable screens only.** For the other Sendbird screens, `design-analysis.md`
+     carries a single line each — the Sendbird source component being reproduced and the Stream
+     primitives that will replace it — not a region table; the login screen gets no row at all beyond
+     "connect call swapped, otherwise unchanged" (*Design-match SCOPE*).
 2. **The original won't build, but the user has screenshots (rung 2):** treat the user's screenshots
    as the reference and run the **same** design-matching Step 1 decomposition on them - still Pixel
    tier, measured and sampled the same way. You just can't re-shoot new states, so decompose what you
@@ -408,6 +435,7 @@ parity ledger plus four strategy lines:
 | Credentials & token path | section 4's precedence, resolved on paper | "user-provided key; backend token endpoint re-pointed to mint Stream JWTs" |
 | How the reference is obtained | section 0c baseline rung | "rebuild + capture the original (default)", "user screenshots", or — last resort, no original obtainable — "palette-only recolor (layout NOT matched)". Matching the original is non-negotiable; this row is *how* you'll get the reference, never *whether* to match. |
 | Gaps + proposed resolutions | ledger GAP rows + [`references/sendbird-mapping.md`](references/sendbird-mapping.md) section 15 | "FeedChannel -> admin-post-only channel (substitute); scheduled messages -> server-side job" |
+| Design plan (per region, in scope order) | `design-analysis.md`'s **`Plan` column** (section 0c) - resolved **before** the first UI edit, and only for the two non-negotiable screens; one line each for the other Sendbird screens | "outgoing bubble -> theme fill + text colour (key confirmed against the installed package); metadata inside bubble -> `MessageContentBottomView` slot; settings screen -> reproduce the Sendbird settings fragment's rows in place" |
 
 For the gaps row: collect every feature with **no Stream equivalent** (`FeedChannel` /
 notifications, scheduled messages, `ReportCategory` enum, channel-level report, offline cache
@@ -479,7 +507,7 @@ connection gate impossible to run. Order:
 
 ---
 
-## 4. Credentials & connection proof (gate: a real user connects)
+## 4. Credentials
 
 The biggest conceptual shift: Sendbird connects with just a `userId` (auto-creating users
 server-side, token optional); **Stream always requires a signed token** - there is no userId-only
@@ -502,32 +530,11 @@ a fully migrated app that had never once connected:
    client-supplied parameter** ([`RULES.md`](RULES.md) > Secrets and auth).
 3. For local/dev parity with Sendbird's tokenless connect, `client.devToken(userId)` works **only
    while dev tokens are enabled** on the Stream app - otherwise it is rejected server-side.
-   **First check whether dev tokens are enabled** (Dashboard > app > Authentication, or treat a
-   server-side rejection on the first `devToken` connect as the signal). **If they are disabled,
+   **First check whether dev tokens are enabled** (Dashboard > app > Authentication). **If they are disabled,
    do NOT try to reproduce Sendbird's connect-any-userId behaviour - fall back to a fixed set of
    test users whose tokens are pre-minted via the `getstream` CLI / backend** (`getstream token
    <id>`), and connect as one of those. Gate any pasted-credential/dev-token path behind `__DEV__`
    or a feature flag so it cannot ship. Never use `devToken()` for production.
-4. Connect as a real user and confirm the WebSocket is healthy before proceeding. The Sendbird tree
-   is still intact (section 3), so mount the proof in a small dev-only screen rather than the main
-   flow - it exists to fail fast on auth, not to migrate UI. It is scaffolding, not migration:
-   delete it once section 5 wires the real flow (in-place rule, golden rule 1).
-
-```tsx
-// <SendbirdUIKitContainer appId userId nickname accessToken> connected internally.
-// Stream splits it: build + connect the client with the hook, then providers just distribute it.
-const client = useCreateChatClient({
-  apiKey,                                  // was Sendbird appId
-  tokenOrProvider,                         // string token, or async () => Promise<string>
-  userData: { id: userId, name: nickname },// nickname -> name, profileUrl -> image
-});
-if (!client) return null;                  // hook returns null while connecting
-return (
-  <OverlayProvider>
-    <Chat client={client}>{/* ChannelList / Channel composition */}</Chat>
-  </OverlayProvider>
-);
-```
 
 ---
 
@@ -537,6 +544,13 @@ Work file-by-file, **in place** (golden rule 1), per the section 0 classificatio
 symbol mappings from [`references/sendbird-mapping.md`](references/sendbird-mapping.md) - the domain
 guide. Import UI symbols from the flavor package (`stream-chat-react-native` **or**
 `stream-chat-expo`); the symbol names are identical.
+
+**Sequence this section by the *Build order* rule in *Fidelity is the job* (top of this file), not by
+file-tree order:** the touchpoints behind the **channel list** and the **channel screen** (message
+list + composer) are migrated **and verified on the simulator first**; only then the remaining
+Sendbird screens (matched from their Sendbird source, per *Design-match SCOPE*); then the
+render+interaction smoke over those. Leave the login screen at its connect-call swap, and touch no
+screen that has no `@sendbird` import.
 
 - **UI composition** (sections 12-13): `SendbirdUIKitContainer` -> `useCreateChatClient` +
   `<OverlayProvider><Chat>`; `createGroupChannelFragment` -> `<Channel channel={c}><MessageList/>
@@ -615,7 +629,14 @@ seed a reaction on **both** an incoming and an outgoing message.
 ## 6. Design parity - the app must look the same
 
 Design fidelity is a deliverable, not a nicety. Sendbird's theming levers all die; their Stream RN
-replacements are a **JS theme object, not CSS** (there is no DOM / stylesheet on native):
+replacements are a **JS theme object, not CSS** (there is no DOM / stylesheet on native).
+
+**This section's pipeline (crops, region ledger, subagent fan-out) is for the two non-negotiable
+screens only** — the channel list and the channel screen. The other Sendbird screens were matched from
+their Sendbird source in section 5 and close on the render+interaction smoke instead; the login screen
+is untouched beyond its connect call; screens with no Sendbird involvement are off-limits
+(*Design-match SCOPE*, top of this file). The theme object below is app-wide, so it necessarily
+recolours those screens too — that is the theme applying, not a licence to edit them.
 
 - **Palette & dimensions:** re-author `colorSet` / `createTheme` / `LightUIKitTheme` /
   `DarkUIKitTheme` / `Palette` (from `@sendbird/uikit-react-native-foundation`) as a
@@ -747,6 +768,12 @@ Run all of these; each catches a failure a real migration shipped. The compiler 
    - **A region you specced but never built is a FAIL, not done.** Cross-check every
      `design-analysis.md` region against an implemented+verified result (a real run specced the header
      avatar and add-reaction button, then never built them — no gate caught it).
+   - **Scope of this gate (don't over- or under-apply it).** The per-region crop contract above binds
+     the **two non-negotiable screens**. The other Sendbird screens close on a **source-parity read**
+     (their structure/rows/labels/actions match the Sendbird component they replaced) plus the
+     **render+interaction smoke** — no crops required. The **login screen** closes on "unchanged apart
+     from the connect call". Screens with **no Sendbird involvement** close on `git diff` showing them
+     **untouched** — a diff there is a gate failure, not a bonus.
    - **Banned as a resolution:** "acceptable approximation", "minor", "difference noted", "close
      enough", "keep default", "residual" / "cosmetic residual", "cosmetic", "polish", "deferred",
      "nice-to-have" — **and any other qualifier or adjective**. A region's only valid terminal states are
@@ -775,6 +802,8 @@ Run all of these; each catches a failure a real migration shipped. The compiler 
 | "The theme was ported, it'll look the same" | Both real runs shipped unverified skins. A match is claimed from a simulator capture, not from theme diffs. |
 | "Good enough on those screens, let's ship" | Not for the two non-negotiable screens. The channel list **and** the channel screen (message list + composer) end every region `Fixed` or genuinely `Impossible` — "good enough" / "close enough" is a FAIL there. And "the list matches" is not "the app matches": the list hides every bubble, avatar, metadata and composer gap on the chat screen, which is exactly where every real run shipped wrong. |
 | "It's stock Sendbird + a palette, so structural match + theming is enough — no verification needed" | Sendbird's stock UI is **not** Stream's stock UI (bubble tail, metadata placement, avatar, composer buttons, spacing all differ), and a palette carries no layout — so "stock new-SDK UI + accent" is a **named failure mode**, not a valid outcome. Even the palette-only rung captures the migrated app and logs every structural region Fixed or Impossible; a self-authored spec certifies "recolored," never "matches the original." |
+| "While I was in there I tidied up the login screen / restyled the other screens to match" | Out of scope. The login screen changes by exactly one thing (the connect call); non-Sendbird screens are off-limits; the other Sendbird screens are reproduced from their Sendbird source, not redesigned. Every one of those edits moves the app *away* from parity while consuming the budget the channel screen needed (golden rule 1). |
+| "I pixel-diffed the settings/members screens too, to be thorough" | That budget belonged to the channel list and channel screen. Those two get the crop loop; the rest get a source-parity read plus a render+interaction smoke. Thoroughness in the wrong place is how the non-negotiable screens ship un-diffed. |
 | "I screenshotted the original once - baseline done" | A resting shot holds no composer-typing, reaction, or picker detail - exactly where real runs shipped wrong. Rung 1 is driven states in the simulator (section 0c). |
 | "That feature was tiny, nobody will miss it" | Silent drops are how READMEs advertise ghosts. It's a ledger row: N/A or GAP, decided, in writing. |
 | "I'll port the MessageCollection faithfully and refactor later" | The mechanical port of hand-rolled machinery IS the bug (lost optimistic sends, stale state, dead handlers). Golden rule 3. |
