@@ -484,6 +484,6 @@ Common streams on `channel.state`:
 | `messagesStream`     | `List<Message>`               |
 | `membersStream`      | `List<Member>`                |
 | `lastMessageStream`  | `Message?`                    |
-| `typingEventsStream` | `Map<User, TypingStartEvent>` |
+| `typingEventsStream` | `Map<User, Event>` |
 | `unreadCountStream`  | `int`                         |
 | `readStream`         | `List<Read>`                  |

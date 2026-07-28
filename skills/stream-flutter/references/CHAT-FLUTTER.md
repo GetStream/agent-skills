@@ -196,7 +196,7 @@ class _ChannelListPageState extends State<ChannelListPage> {
 }
 ```
 
-`StreamChannelListController` is a `late final` field - never create it in `build`. Dispose it in `dispose()`. The sort parameter is `channelStateSort:`.
+`StreamChannelListController` is a `late final` field - never create it in `build`. Dispose it in `dispose()`. Its sort parameter is `channelStateSort:` (a `List<SortOption<ChannelState>>`).
 
 Unlike `StreamMessageListView` (which groups its slots under `builders:`), `StreamChannelListView` takes its placeholder slots as **top-level callbacks**: `emptyBuilder`, `loadingBuilder`, `errorBuilder`, `itemBuilder`, `separatorBuilder`, `listBuilder`. Use `emptyBuilder: (context) => ...` for the "no channels yet" state (e.g. a CTA to create/discover a group).
 
@@ -258,7 +258,7 @@ StreamMessageListView(
 
 The composer widget for sending messages, attachments, and voice recordings. Must be a descendant of `StreamChannel`. The attachment picker is embedded inline inside the composer — there is no separate modal sheet to open.
 
-Voice recording is enabled by default (`enableVoiceRecording` defaults to `true`).
+Voice recording is enabled by default on the `StreamMessageComposer` **widget** (`enableVoiceRecording` defaults to `true`). **Caveat — the default flips on the props path:** on `MessageComposerProps` (the object handed to you when you override the composer through the component factory / the `.fromProps` path) the effective default is **`false`**, so a factory-overridden composer has **no** mic unless you set it. Detail: [`design-matching.md`](../design-matching.md) → Composer.
 
 ```dart
 StreamMessageComposer()

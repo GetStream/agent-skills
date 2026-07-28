@@ -463,9 +463,8 @@ class _MessageSearchPageState extends State<MessageSearchPage> {
   late final _controller = StreamMessageSearchListController(
     client: StreamChatCore.of(context).client,
     filter: Filter.in_('members', [StreamChatCore.of(context).currentUser!.id]),
-    searchQuery: '',
+    searchQuery: '', // exactly ONE of searchQuery / messageFilter — passing both asserts
     sort: const [SortOption.desc('created_at')],
-    messageFilter: Filter.equal('type', 'regular'),
     limit: 20,
   );
 

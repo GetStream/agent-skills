@@ -192,7 +192,7 @@ channel.state!.messages                // List<Message> (current value)
 
 // Members and typing
 channel.state!.membersStream           // Stream<List<Member>>
-channel.state!.typingEventsStream      // Stream<Map<User, TypingStartEvent>>
+channel.state!.typingEventsStream      // Stream<Map<User, Event>>
 
 // Reads and unread
 channel.state!.readStream             // Stream<List<Read>>
