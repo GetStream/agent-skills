@@ -145,7 +145,7 @@ If there is no RN/Expo project and Track A applies, scaffold one through [`build
 | C - Reference lookup | [`sdk.md`](sdk.md) + [`references/DOCS.md`](references/DOCS.md) + relevant product reference files |
 | D - Bootstrap / setup | [`builder.md`](builder.md) + [`sdk.md`](sdk.md) + `llms.txt` docs lookup |
 | M - Migrate / upgrade | [`migrate.md`](migrate.md) + [`references/DOCS.md`](references/DOCS.md) (live upgrade guide) + product reference for the migrated SDK |
-| S - Migrate from Sendbird | [`sendbird-migration.md`](sendbird-migration.md) + [`references/sendbird-mapping.md`](references/sendbird-mapping.md) + [`references/sendbird-mapping-extended.md`](references/sendbird-mapping-extended.md) + [`references/design-matching.md`](references/design-matching.md) + [`credentials.md`](credentials.md) + [`references/CHAT-REACT-NATIVE.md`](references/CHAT-REACT-NATIVE.md) |
+| S - Migrate from Sendbird | [`sendbird-migration.md`](sendbird-migration.md) + [`references/sendbird-notes.md`](references/sendbird-notes.md) + [`references/sendbird-symbols.tsv`](references/sendbird-symbols.tsv) + [`references/design-matching.md`](references/design-matching.md) + [`credentials.md`](credentials.md) + [`references/CHAT-REACT-NATIVE.md`](references/CHAT-REACT-NATIVE.md) |
 
 ---
 
@@ -294,7 +294,7 @@ Use when the user wants package install and shared wiring more than a full featu
 
 ## Track S - Migrate from Sendbird
 
-**Full detail:** [`sendbird-migration.md`](sendbird-migration.md) - Read it first. It detects the existing Sendbird integration shape **and** the Expo-vs-bare flavor, then re-implements each touchpoint **in place** against the grounded Sendbird<->Stream mapping ([`references/sendbird-mapping.md`](references/sendbird-mapping.md) + [`references/sendbird-mapping-extended.md`](references/sendbird-mapping-extended.md)), and finally offers the separate server-side data migration. Not a scaffold track: **do not enter Track A/B/D**. The compiler is the oracle - never migrate from memory ([`references/sendbird-mapping.md`](references/sendbird-mapping.md) > Trust model).
+**Full detail:** [`sendbird-migration.md`](sendbird-migration.md) - Read it first. It detects the existing Sendbird integration shape **and** the Expo-vs-bare flavor, then re-implements each touchpoint **in place** against the grounded Sendbird<->Stream mapping ([`references/sendbird-notes.md`](references/sendbird-notes.md) + [`references/sendbird-symbols.tsv`](references/sendbird-symbols.tsv)), and finally offers the separate server-side data migration. Not a scaffold track: **do not enter Track A/B/D**. The compiler is the oracle - never migrate from memory ([`references/sendbird-notes.md`](references/sendbird-notes.md) > Trust model).
 
 | Phase | Name | What you do |
 |---|---|---|

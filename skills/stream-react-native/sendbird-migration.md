@@ -9,12 +9,25 @@ Sendbird integration shape - UIKit fragment drop-in, custom hooks, a Context+red
 re-implements each touchpoint in place. This is not a scaffold track: do not enter Track A, Track B,
 or any onboarding step.
 
-This file owns the **procedure**; the cross-SDK knowledge lives in
-[`references/sendbird-mapping.md`](references/sendbird-mapping.md) (symbol tables, behavioral
-diffs, pagination recipes, feature-gap catalog - grounded against the installed SDK types and
-`tsc`-verified recipes), with a concept-level companion
-([`references/sendbird-mapping-extended.md`](references/sendbird-mapping-extended.md), domain-level
-model mapping + the unmapped-symbol resolution protocol) for symbols the curated file doesn't carry.
+This file owns the **procedure**. The cross-SDK knowledge is split in two, and the split is a
+loading rule, not a filing preference:
+
+- **[`references/sendbird-symbols.tsv`](references/sendbird-symbols.tsv)** — 361 symbol rows
+  (`sendbird` · `stream` · `automation` · `tier` · `section` · `note`). **A lookup table, not
+  reading material: `grep` it, never `Read` it.** Reading it end-to-end costs ~23k tokens to
+  answer a question that a `grep` answers in a few hundred. Section 0 already produces the app's
+  Sendbird symbol inventory — resolve the whole thing in one shot:
+  ```bash
+  grep -F -f app-sendbird-symbols.txt references/sendbird-symbols.tsv
+  grep -F 'createGroupChannelFragment' references/sendbird-symbols.tsv   # one symbol
+  ```
+  `tier=curated` rows are `tsc`-verified; `tier=inferred` rows are existence-checked hypotheses
+  from the 806-symbol long tail. A `note` of `-> sendbird-notes.md#anchor` means the trap was too
+  long for one line.
+- **[`references/sendbird-notes.md`](references/sendbird-notes.md)** — the prose behind the rows:
+  trust model, behavioral diffs, pagination discipline, the own-capabilities hook trap, the
+  feature-gap catalog, and the unmapped-symbol resolution protocol. ~6k tokens; read this one.
+
 Where a step touches a Stream RN component's *current* props/hooks, fetch the matching page via
 [`references/DOCS.md`](references/DOCS.md) per [`RULES.md`](RULES.md) > Package version and docs
 discipline - a future major can rename symbols (exactly as Chat RN v8 -> v9 did, see
@@ -49,7 +62,7 @@ Three golden rules, learned from real migration runs:
 **The compiler is the oracle.** Every `after` pattern in the mapping files is typechecked against
 the installed Stream RN SDK. If a rewrite doesn't `tsc --noEmit`, the compiler is right and the row
 is stale - fix against the real types, never emit an unverified symbol
-([`references/sendbird-mapping.md`](references/sendbird-mapping.md) > Trust model).
+([`references/sendbird-notes.md`](references/sendbird-notes.md) > Trust model).
 
 **Provenance.** The mapping corpus was extracted from Sendbird `@sendbird/chat@4.22.7`,
 `@sendbird/uikit-react-native@3.12.7` (`-foundation@3.12.7`) vs Stream `stream-chat@9.50.2`,
@@ -90,7 +103,7 @@ cat package.json   # note ALL THREE Sendbird packages (chat, uikit-react-native,
 
 | Pattern found | How it migrates |
 |---|---|
-| **UIKit fragment drop-in** (`SendbirdUIKitContainer`, `createGroupChannelFragment`, `createGroupChannelListFragment`, `renderMessage`/`renderX` props) | Architectural remap, not a rename - compose Stream RN primitives ([`references/sendbird-mapping.md`](references/sendbird-mapping.md) sections 12-13). |
+| **UIKit fragment drop-in** (`SendbirdUIKitContainer`, `createGroupChannelFragment`, `createGroupChannelListFragment`, `renderMessage`/`renderX` props) | Architectural remap, not a rename - compose Stream RN primitives ([`references/sendbird-notes.md`](references/sendbird-notes.md) sections 12-13). |
 | **Custom hook wrapping the SDK** (returns `{ state, actions }`, e.g. a `useConversation`) | Keep the hook's public return shape; replace the body with Stream calls + context hooks. Callers don't change. |
 | **`MessageCollection` store** (init policy + `setMessageCollectionHandler`) | Delete the collection lifecycle; mount `<Channel>` + read `channel.state.messages` / context hooks (golden rule 3). |
 | **Context + reducer store** (SDK handler callbacks re-dispatch) | Keep the store shape; effects do the async Stream work and re-dispatch. The reducer stays pure. |
@@ -114,13 +127,16 @@ as usual; the UIKit-fragment rows (sections 12-13) simply don't apply.
 **Classify every `@sendbird/*` symbol into three tiers** (the anti-hallucination discipline -
 nothing is invisible):
 
-- **`mapped`** - has a row in [`references/sendbird-mapping.md`](references/sendbird-mapping.md):
-  apply it (agent-guided rewrite, or a `manual` gap -> `TODO(migration)`).
-- **`unmapped-known`** - a real Sendbird API with **no prebuilt row** (no sampled app used it).
-  **Do not skip it.** Resolve it: find the concept in
-  [`references/sendbird-mapping-extended.md`](references/sendbird-mapping-extended.md) (domain-level
-  direction), pick the Stream symbol, confirm it exists in the installed Stream RN types, and verify
-  with `tsc`. Never emit an unverified symbol.
+- **`mapped`** - `grep` hits a row in
+  [`references/sendbird-symbols.tsv`](references/sendbird-symbols.tsv): apply it (agent-guided
+  rewrite, or a `manual`/`none` gap -> `TODO(migration)`). `tier=inferred` rows are strong
+  candidates, not `tsc`-verified — confirm before shipping.
+- **`unmapped-known`** - a real Sendbird API with **no row at all** (neither tier covers it).
+  **Do not skip it.** Resolve it: find the nearest concept/family among the rows you did hit,
+  pick the Stream symbol, confirm it exists in the installed Stream RN types, and verify with
+  `tsc`. Never emit an unverified symbol. Full protocol:
+  [`references/sendbird-notes.md`](references/sendbird-notes.md) > Resolving a symbol not in this
+  table.
 - **`unknown`** - imported from `@sendbird` but not in the indexed SDK surface. Likely a version
   difference; check against the Sendbird version the target actually has installed.
 
@@ -294,7 +310,7 @@ exact moment every run went wrong.
 
 Verified behavioral differences that produce silent runtime bugs, not build errors. Check every one
 against the app; the full catalog with workarounds is in
-[`references/sendbird-mapping.md`](references/sendbird-mapping.md) > Kill list and the gaps table.
+[`references/sendbird-notes.md`](references/sendbird-notes.md) > Kill list and the gaps table.
 
 | # | Trap | Consequence if ported 1:1 |
 |---|---|---|
@@ -309,7 +325,7 @@ against the app; the full catalog with workarounds is in
 | 9 | **Events arrive only for watched channels** | Handlers ported as global listeners miss events for channels nobody watched. `watch()` the channel; `client.on`/`channel.on` return `{ unsubscribe }` - call it in effect cleanup. |
 | 10 | **`OpenChannel` -> `livestream` type, and `read_events` is off there.** enter/exit -> `watch()` / `stopWatching()` | Unread counts silently stop working on migrated open channels. Enable client-side unread: `new StreamChat(apiKey, { isLocalUnreadCountEnabled: true })` + `channel.markReadLocally()` / `channel.countUnread()`. The `livestream` type must be configured server-side first. |
 | 11 | **No offline cache by default** - Sendbird UIKit enables one via `localCacheEnabled` | State no longer survives reload unless you opt in: `enableOfflineSupport` on `<Chat>` + `@op-engineering/op-sqlite` (native; Expo needs a dev client). Reset on sign-out: `await client.offlineDb.resetDB()` **before** `disconnectUser()` (else cross-user leak). |
-| 12 | **Every stateful `.next()` / `.load()` query cursor dies** (channel-list, message history, users, search, members, threads) | Each becomes a stateless call: `queryChannels` offset/limit, `channel.query({ messages: { id_lt, limit } })` id-cursor. Per-query recipes in [`references/sendbird-mapping.md`](references/sendbird-mapping.md) section 7. |
+| 12 | **Every stateful `.next()` / `.load()` query cursor dies** (channel-list, message history, users, search, members, threads) | Each becomes a stateless call: `queryChannels` offset/limit, `channel.query({ messages: { id_lt, limit } })` id-cursor. Per-query recipes in [`references/sendbird-notes.md`](references/sendbird-notes.md) section 7. |
 | 13 | **Distinct/DM channels are created by omitting the id**, not a flag | Porting `isDistinct: true` as a data field breaks dedup. `client.channel('messaging', { members })` with **no id** dedups by member set; passing an id disables it. |
 | 14 | **Read receipts are a dashboard toggle + auto-marked.** Per-member read state lives on `channel.state.read`, not `getReadStatus()` | `markRead()` is a no-op unless "Read Events" is enabled on the channel type; `<Channel>` marks read automatically. Delete manual `markAsRead` timers and per-member read queries. |
 | 15 | **Reconnection is automatic.** Sendbird's `ConnectionHandler` / manual `reconnect()` has no equivalent | Delete the reconnect state machine. Read `isOnline` / `connectionRecovering` from `useChatContext` (or `useIsOnline`); pass a `tokenProvider` so re-auth is silent. |
@@ -327,7 +343,7 @@ parity ledger plus four strategy lines:
 | Flavor + integration shape(s) | section 0 classification | "Expo (`stream-chat-expo`); UIKit fragments + a `MessageCollection` hook" |
 | Credentials & token path | section 4's precedence, resolved on paper | "user-provided key; backend token endpoint re-pointed to mint Stream JWTs" |
 | How the reference is obtained | §0.5 baseline capture | "rebuild + capture the original (default)", or "user screenshots". Matching the original is non-negotiable; this row is *how* you'll get the reference, never *whether* to match. |
-| Gaps + proposed resolutions | ledger GAP rows + [`references/sendbird-mapping.md`](references/sendbird-mapping.md) section 15 | "FeedChannel -> admin-post-only channel (substitute); scheduled messages -> server-side job" |
+| Gaps + proposed resolutions | ledger GAP rows + [`references/sendbird-notes.md`](references/sendbird-notes.md) section 15 | "FeedChannel -> admin-post-only channel (substitute); scheduled messages -> server-side job" |
 
 For the gaps row: collect every feature with **no Stream equivalent** (`FeedChannel` /
 notifications, scheduled messages, `ReportCategory` enum, channel-level report, offline cache
@@ -414,7 +430,7 @@ path (kill-list #4). Handle secrets per [`RULES.md`](RULES.md) > Secrets and aut
    -> an async `tokenProvider` (`() => Promise<string>`) passed as `tokenOrProvider`. `resolve(token)`
    -> `return token`; `reject(err)` -> `throw err`. Stream re-invokes it automatically on expiry -
    **do not** try to imperatively push a new token in
-   ([`references/sendbird-mapping.md`](references/sendbird-mapping.md) section 1). Production needs a
+   ([`references/sendbird-notes.md`](references/sendbird-notes.md) section 1). Production needs a
    backend token endpoint; an existing Sendbird token endpoint gets re-pointed to mint Stream JWTs.
    **The backend must derive the user id from its own authenticated session, never from a
    client-supplied parameter** ([`RULES.md`](RULES.md) > Secrets and auth).
@@ -431,8 +447,10 @@ path (kill-list #4). Handle secrets per [`RULES.md`](RULES.md) > Secrets and aut
 ## 5. Migrate the touchpoints
 
 Work file-by-file, **in place** (golden rule 1), per the section 0 classification, pulling exact
-symbol mappings from [`references/sendbird-mapping.md`](references/sendbird-mapping.md) - the domain
-guide. Import UI symbols from the flavor package (`stream-chat-react-native` **or**
+symbol mappings from the `grep` of
+[`references/sendbird-symbols.tsv`](references/sendbird-symbols.tsv) you ran in section 0, and the
+behavioral prose from [`references/sendbird-notes.md`](references/sendbird-notes.md). Import UI
+symbols from the flavor package (`stream-chat-react-native` **or**
 `stream-chat-expo`); the symbol names are identical.
 
 - **UI composition** (sections 12-13): `SendbirdUIKitContainer` -> `useCreateChatClient` +
@@ -527,7 +545,7 @@ replacements are a **JS theme object, not CSS** (there is no DOM / stylesheet on
   ([`references/design-matching.md`](references/design-matching.md) > light/dark).
 - **Strings & i18n:** `createBaseStringSet` / `StringSet` overrides -> a `Streami18n` instance
   (`registerTranslation` / `setLanguage`) passed to `<Chat i18nInstance={…}>`
-  ([`references/sendbird-mapping.md`](references/sendbird-mapping.md) section 14). Stream's keys are
+  ([`references/sendbird-notes.md`](references/sendbird-notes.md) section 14). Stream's keys are
   the English source strings themselves - re-key, don't map 1:1.
 
 **Run the design match as its own first-class task, not a sub-step skimmed under wrap-up pressure —
