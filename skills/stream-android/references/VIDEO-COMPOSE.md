@@ -83,7 +83,7 @@ class App : Application() {
             apiKey = "your_api_key",
             user = user,
             token = "your_static_token_here",
-            loggingLevel = LoggingLevel(if ((applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0) Priority.DEBUG else Priority.NONE),
+            loggingLevel = LoggingLevel(if ((applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0) Priority.DEBUG else Priority.ERROR),
         ).build()
     }
 }
@@ -479,10 +479,10 @@ A failed WebSocket connection prevents calls from being established.
 Pass `loggingLevel` to `StreamVideoBuilder` to surface socket and SFU events in Logcat:
 
 ```kotlin
-loggingLevel = LoggingLevel(priority = if ((applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0) Priority.DEBUG else Priority.NONE)
+loggingLevel = LoggingLevel(priority = if ((applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0) Priority.DEBUG else Priority.ERROR)
 ```
 
-Levels: `Priority.VERBOSE`, `DEBUG`, `INFO`, `WARN`, `ERROR`, `ASSERT`, `NONE`. Configure it before `build()` returns; setting it after has no effect on existing connections.
+Levels (from the `io.getstream.log.Priority` enum): `Priority.VERBOSE`, `DEBUG`, `INFO`, `WARN`, `ERROR`, `ASSERT`. There is **no** `Priority.NONE` — use `Priority.ERROR` (or `ASSERT`) for the quietest release logging. Configure it before `build()` returns; setting it after has no effect on existing connections.
 
 ---
 

@@ -24,6 +24,8 @@ Use this table to resolve a user request to the section(s) you must read before 
 | "theme", colors, dark mode, `VideoTheme` | [VIDEO-COMPOSE.md → Customization → VideoTheme](VIDEO-COMPOSE.md#videotheme) |
 | "Chat + Video", combined app, in-call chat | [VIDEO-COMPOSE.md → Gotchas](VIDEO-COMPOSE.md#gotchas) (the "Chat + Video coexist" bullet) |
 | "deep link", push notification → call, intent extras for `cid` / call id | [Call Deep-link Blueprint](#call-deep-link-blueprint) |
+| "watch a livestream", "livestream viewer", `LivestreamPlayer`, RTMP/OBS stream, viewer count | [Livestream Viewer Blueprint](#livestream-viewer-blueprint) |
+| "broadcast a livestream", "go live from the device", `livestream` call, backstage, `goLive` / `stopLive`, host/broadcaster screen | [Livestream Broadcaster Blueprint](#livestream-broadcaster-blueprint) |
 
 If the request is something not covered, do not fabricate APIs — say the blueprint is not bundled and fall back per [`RULES.md`](../RULES.md).
 
@@ -59,7 +61,7 @@ class App : Application() {
             user = user,
             token = "your_static_token_here",
             loggingLevel = LoggingLevel(
-                priority = if ((applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0) Priority.DEBUG else Priority.NONE,
+                priority = if ((applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0) Priority.DEBUG else Priority.ERROR,
             ),
         ).build()
     }
@@ -645,3 +647,150 @@ class CallDeepLinkActivity : ComponentActivity() {
 - `LaunchCallPermissions(call)` runs once when the Composable enters the composition; the permission dialog appears before `call.join` resolves.
 - `LaunchedEffect(call)` ties the join coroutine to the Composable's lifecycle — leaving the screen cancels in-flight join.
 - For incoming-call deep links delivered via push, prefer the SDK's `RingingCallContent` flow instead of jumping straight into `CallContent` — that keeps accept/reject UX consistent.
+
+---
+
+## Livestream Viewer Blueprint
+
+Watch a livestream (e.g. one published via RTMP/OBS or from another device) with the drop-in `LivestreamPlayer`. The call type is `livestream`. A viewer can be anonymous.
+
+```kotlin
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.compose.runtime.Composable
+import io.getstream.video.android.compose.permission.LaunchCallPermissions
+import io.getstream.video.android.compose.theme.VideoTheme
+import io.getstream.video.android.compose.ui.components.livestream.LivestreamPlayer
+import io.getstream.video.android.core.Call
+import io.getstream.video.android.core.StreamVideoBuilder
+import io.getstream.video.android.model.User
+
+class ViewerActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        val client = StreamVideoBuilder(
+            context = applicationContext,
+            user = User.anonymous(),          // a viewer needs no named identity
+            apiKey = "your_api_key",
+            token = "your_viewer_token",
+        ).build()
+
+        val call = client.call("livestream", "your_call_id")
+        setContent {
+            VideoTheme {
+                LaunchCallPermissions(call = call, onAllPermissionsGranted = { call.join() })
+                LivestreamPlayer(call = call)
+            }
+        }
+    }
+}
+```
+
+**Wiring:**
+- `LivestreamPlayer(call)` renders the host video plus a default overlay (live badge, viewer count, duration, pause/play). Customize with `overlayContent = { ... }` and/or `rendererContent = { ... }`; drop to `VideoRenderer` for a fully custom player.
+- Viewer state lives on `call.state`: `totalParticipants` (viewer count), `duration`, `backstage` (true until the host goes live — viewers can't join a backstage call), `livestream` (the host video track as `StateFlow<ParticipantState.Media?>`).
+- Publishing the source (RTMP push from OBS, or a broadcaster device) is a separate concern — see the broadcaster blueprint below.
+
+---
+
+## Livestream Broadcaster Blueprint
+
+Broadcast a livestream **from the device camera** over WebRTC, using backstage → go-live. The broadcaster's user needs a broadcast-capable role (`host` or `admin`). There is **no** drop-in broadcaster component — build the host screen from `call.state`.
+
+Create the user with a broadcast role and get the `livestream` call (build the client once in `Application` per the [Application Class Blueprint](#application-class-blueprint)):
+
+```kotlin
+val user = User(id = "broadcaster_id", name = "Broadcaster", role = "host")
+// ...StreamVideoBuilder(... user = user ...).build()
+val call = StreamVideo.instance().call("livestream", "your_call_id")
+```
+
+Gate on camera + mic, then join in backstage and render the host screen:
+
+```kotlin
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import io.getstream.video.android.compose.permission.LaunchPermissionRequest
+import io.getstream.video.android.compose.theme.VideoTheme
+import io.getstream.video.android.core.Call
+
+@Composable
+fun LiveHost(call: Call) {
+    LaunchPermissionRequest(
+        permissions = listOf(
+            android.Manifest.permission.RECORD_AUDIO,
+            android.Manifest.permission.CAMERA,
+        ),
+    ) {
+        AllPermissionsGranted {
+            LaunchedEffect(call) { call.join(create = true) }  // joins in backstage; goLive() opens it to viewers
+            LiveHostContent(call = call)
+        }
+        NoneGranted { /* explain why camera + mic are required */ }
+    }
+}
+```
+
+`LiveHostContent` — camera preview via `VideoRenderer`, a backstage/live status header, and a start/stop button driven by `call.state.backstage`:
+
+```kotlin
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Button
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Modifier
+import io.getstream.video.android.compose.ui.components.video.VideoRenderer
+import io.getstream.video.android.core.Call
+import io.getstream.video.android.core.RealtimeConnection
+import kotlinx.coroutines.launch
+
+@Composable
+fun LiveHostContent(call: Call) {
+    val connection by call.state.connection.collectAsState()
+    val backstage by call.state.backstage.collectAsState()
+    val totalParticipants by call.state.totalParticipants.collectAsState()
+    val duration by call.state.duration.collectAsState()
+    val localParticipant by call.state.localParticipant.collectAsState()
+    val video by (localParticipant?.video ?: return).collectAsState()
+    val scope = rememberCoroutineScope()
+
+    Scaffold(
+        modifier = Modifier.fillMaxSize(),
+        topBar = {
+            when {
+                connection == RealtimeConnection.Connected && !backstage ->
+                    Text("Live - $totalParticipants watching - $duration")
+                connection == RealtimeConnection.Connected ->
+                    Text("The livestream is not started yet")
+                connection is RealtimeConnection.Failed ->
+                    Text("Connection failed")
+            }
+        },
+        bottomBar = {
+            Button(onClick = { scope.launch { if (backstage) call.goLive() else call.stopLive() } }) {
+                Text(if (backstage) "Start Broadcast" else "Stop Broadcast")
+            }
+        },
+    ) { padding ->
+        VideoRenderer(
+            modifier = Modifier.fillMaxSize().padding(padding),
+            call = call,
+            video = video,               // ParticipantState.Media? — the current overload; do NOT pass videoFallbackContent = {} (deprecated)
+        )
+    }
+}
+```
+
+**Wiring:**
+- **`call.goLive()` / `call.stopLive()`** flip `call.state.backstage`. Backstage is on by default for the `livestream` call type (configurable in the dashboard) — only after `goLive()` can regular viewers join. `goLive()` returns a `Result`; call it from a coroutine (`rememberCoroutineScope().launch { }`).
+- **Role matters:** a plain `user` role can join but not broadcast/go-live. Build the broadcaster `User` with `role = "host"` (or `"admin"`).
+- **`VideoRenderer` API (v1.29.x):** the current overload takes `video: ParticipantState.Media?` and a `videoRendererConfig`; the older `videoFallbackContent = { }` lambda overload is **deprecated** — prefer configuring the fallback via `rememberVideoRendererConfig(...)` rather than the deprecated slot.
+- **Manifest:** `CAMERA` and `RECORD_AUDIO` are declared by the SDK library manifest and merge in automatically; you only add them if you want them as explicitly-required features. `INTERNET` likewise merges from the SDK.
+- **Leaving:** call `call.leave()` when the host exits (stops the foreground service). `call.stopLive()` only ends the broadcast for viewers — it does **not** disconnect the host. Never call `end()` unless you intend to end the call for everyone.
+- **Emulator caveat:** the emulator has no real camera (renders the virtual scene) and may hit ICE STUN/TURN errors reaching the SFU — verify broadcast on a physical device.
