@@ -317,7 +317,7 @@ against the app; the full catalog with workarounds is in
 | 1 | **Only the UI-context send produces an optimistic message.** `channel.sendMessage()` on the client inserts **no** pending/optimistic message; only `MessageComposer` / `useMessageInputContext().sendMessage()` does | A port that calls `channel.sendMessage` from a custom composer loses optimistic UI (message appears only after the server acks). Send through the UI path, or override `<Channel doSendMessageRequest>` to keep optimistic state. |
 | 2 | **One stable message id, no `reqId` reconciliation.** Sendbird tracks pending sends by `reqId` (messageId `0` until acked); Stream keeps one id across the lifecycle | A port that swaps ids on success double-keys the list / breaks retry. Delete `reqId` bookkeeping; use the one id for keys, retry, edit, delete. |
 | 3 | **`StreamChat.getInstance(apiKey)` is a process-wide, first-call-wins singleton** - NOT keyed by apiKey | A second `getInstance` with a different key silently returns the first client. Use `useCreateChatClient` ([`RULES.md`](RULES.md) > Client lifetime and providers); use `new StreamChat(apiKey)` only if multiple keys must coexist. |
-| 4 | **A token is always required.** Sendbird's `connect(userId)` with no token has no Stream equivalent | The userId-only auto-create path is gone. Dev: `client.devToken(id)` **only while dev tokens are enabled** on the app (**check this first — if disabled, connect as one of a fixed set of test users with tokens pre-minted via the `getstream` CLI/backend**, don't auto-create arbitrary users); prod: a `tokenProvider`. See section 4. |
+| 4 | **A token is always required.** Sendbird's `connect(userId)` with no token has no Stream equivalent | The userId-only auto-create path is gone. Dev: `client.devToken(id)` **only while dev tokens are enabled** — a new app has them **off**, and the fixed decision then is a **pre-minted fixed user roster** ([`credentials.md`](credentials.md#dev-tokens-disabled)); prod: a `tokenProvider`. See section 4. |
 | 5 | **`muteUser` is a personal, caller-scoped mute**, not Sendbird's operator silencing | "Muted" users keep posting for everyone. Operator mute -> timed `channel.banUser(id, { timeout, reason })`. Reserve `client.muteUser` for an "I don't want to hear from X" feature. |
 | 6 | **Ban duration units differ.** Sendbird durations are seconds/ms; Stream `timeout` is **minutes** | A 1:1 duration port makes bans wildly wrong. Convert (`timeout = Math.round(sendbirdDurationMs / 60000)`); confirm the source unit against the installed Sendbird API. |
 | 7 | **Blocking is DM-only in Stream**, global in Sendbird | `client.blockUser` stops direct messages only; blocked users still post in shared group channels. Filter client-side or ban/moderate for group hiding. |
@@ -398,9 +398,14 @@ now leaves the app unbuildable until every touchpoint is migrated. Order:
    [`references/CHAT-REACT-NATIVE.md`](references/CHAT-REACT-NATIVE.md). On the React-19 / RN-0.85
    baseline, a third-party peer that hasn't bumped its range may force `--legacy-peer-deps`; a partial
    install failure can leave a nested/inconsistent tree, so reconcile it cleanly rather than layering
-   on top.
+   on top. **`react-native-teleport` is the recurring offender** — it peers on `react-dom@*`, pulls a
+   newer `react-dom` than Expo's pinned `react`, and fails strict peer resolution. Prefer **pinning
+   `react-dom` to the project's exact `react` version** over `--legacy-peer-deps`: both worked in real
+   runs, but the pin keeps the tree consistent instead of suppressing the check.
 2. Wire the mandatory RN chrome the Sendbird container used to own for you: the Reanimated/Worklets
-   Babel plugin **last** in `babel.config.js`, `GestureHandlerRootView` at the app entry, and
+   Babel plugin **last** in `babel.config.js` — **RN CLI and Expo <54 only; on Expo SDK 54+ create no
+   `babel.config.js`, `babel-preset-expo` appends the plugin itself** ([`builder.md`](builder.md) §5 >
+   Babel plugin) —, `GestureHandlerRootView` at the app entry, and
    `<OverlayProvider>` above navigation (it uses `react-native-teleport` for portal-hosted overlays -
    long-press menu, attachment picker, image gallery). Skipping these is the RN analog of forgetting
    the stylesheet on web: broken overlays or a crash, not a clean error.
@@ -435,12 +440,13 @@ path (kill-list #4). Handle secrets per [`RULES.md`](RULES.md) > Secrets and aut
    **The backend must derive the user id from its own authenticated session, never from a
    client-supplied parameter** ([`RULES.md`](RULES.md) > Secrets and auth).
 3. For local/dev parity with Sendbird's tokenless connect, `client.devToken(userId)` works **only
-   while dev tokens are enabled** on the Stream app - otherwise it is rejected server-side.
-   **First check whether dev tokens are enabled** (Dashboard > app > Authentication). **If they are disabled,
-   do NOT try to reproduce Sendbird's connect-any-userId behaviour - fall back to a fixed set of
-   test users whose tokens are pre-minted via the `getstream` CLI / backend** (`getstream token
-   <id>`), and connect as one of those. Gate any pasted-credential/dev-token path behind `__DEV__`
-   or a feature flag so it cannot ship. Never use `devToken()` for production.
+   while dev tokens are enabled**, and **a freshly created Stream app has them off** - so on a new app
+   this path is closed by default. **Follow the single decision in
+   [`credentials.md` > dev tokens disabled](credentials.md#dev-tokens-disabled): connect as one of a
+   fixed set of test users with tokens pre-minted in Step B** - don't reproduce Sendbird's
+   connect-any-userId behaviour, and don't loosen the app's auth to get it. A free-text "type any name
+   and join" login screen therefore becomes a **GAP row the user owns**. Gate any
+   pasted-credential/dev-token path behind `__DEV__` or a feature flag so it cannot ship.
 
 ---
 
@@ -596,21 +602,41 @@ can push the composer **entirely off-screen** (a whole-region disappearance, not
 before appearance**, and *attempted* before *present*: a channel screen whose **message-list bubbles you
 never even tried to match** is not "done" just because the channel list looked right.
 
-1. **Types:** `npx tsc --noEmit` - zero errors. A row that doesn't typecheck is stale; fix against
-   the installed types.
+**Run every gate command from an absolute `cd`, and NEVER pipe one.** A pipe reports the *pipe's* exit
+status, so `npx tsc --noEmit | head` prints `0` on a failing typecheck and `run-ios | tail` prints
+success on a build that died with 65 — one real run reported gate 2 green on a broken build that way.
+And `npx <tool>` outside the project resolves an unrelated registry package (`npx tsc` in the wrong
+directory prints *"This is not the tsc command you are looking for"*, which reads like a pass). Shape:
+`cd <abs-project-path> && <cmd> > /tmp/gate.log 2>&1; echo "EXIT=$?"; tail -20 /tmp/gate.log`.
+
+1. **Types:** `tsc --noEmit` - zero errors (`npx tsc --noEmit`, or `yarn tsc --noEmit` /
+   `pnpm exec tsc --noEmit`, from the project root per the rule above). A row that doesn't typecheck is
+   stale; fix against the installed types.
 2. **Bundle + native build:** Metro bundles and the app builds for the flavor
    (Expo: `npx expo run:ios` / bare: `npx react-native run-ios`). There is no `next build`; a green
-   `tsc` is not a build.
+   `tsc` is not a build. On Expo, `run:ios` exits **non-zero on an osascript permission error after
+   "Build Succeeded"** — read the log, not just the exit code, before calling this a failure.
 3. **Sendbird is actually gone:** `grep -rn "@sendbird" --include=*.{ts,tsx,js,jsx} .` returns
    nothing, and the three Sendbird packages are uninstalled. A migration that "passed" while still
    importing `@sendbird` shipped a hybrid that only looked done.
-4. **Runtime smoke (simulator/device):** boot the app per
+4. **Runtime smoke (simulator/device) — connectivity AND interaction.** Boot the app per
    [`references/SIMULATOR-VERIFICATION.md`](references/SIMULATOR-VERIFICATION.md), log in as two
    users, and have one create a conversation **before sending its first message**. Assert the other's
    channel rail gains it live with no manual re-fetch. Then send each way. Assert: the message
    appears **optimistically once** for the sender (kill-list #1/#2), arrives live for the receiver,
    unread badges and typing indicators move, and there are no console errors. If you cannot run the
    app, say so and have the user run this check - do not skip it silently.
+   - **Then drive every interaction the source app has, and confirm its observed effect.** `simctl`
+     can't tap, so nothing below is exercised by a screenshot — a screen that paints correctly can be
+     entirely dead, and this gate is the only thing that catches it: send text · **send an attachment
+     through the picker** · **reply** → quote preview → send → quoted message renders · **edit** →
+     composer prefills → save → edited state shows · **long-press** → actions menu · **react** from the
+     picker · open a **thread** and reply · channel-row tap **and** long-press · **back-nav** (chat →
+     list, thread → chat). A rendered-but-inert affordance is a FAIL.
+   - **This list is not a design check and does not close with the design gate.** A real run screenshotted
+     the attach menu, called the picker verified, and shipped an image upload that aborted the app with
+     `SIGABRT` on the first real tap — a screenshot of an attach menu is identical whether the upload
+     works or crashes. Drive the upload, don't photograph the button.
 5. **Design verify — reconciliation, not the first look.** Per §0.5 and §6, each screen was verified
    *as it was built* by the per-region design-match subagents; this gate **confirms** it and **fails
    if it never happened**. **Hard block: the two non-negotiable screens — the channel list and the
@@ -656,13 +682,8 @@ never even tried to match** is not "done" just because the channel list looked r
      "nice-to-have" — **and any other qualifier or adjective**. A region's only valid terminal states
      are **Fixed** or **Impossible: \<reason\>**; a synonym for "good enough" is still "good enough" (a
      real run slipped past this list by calling an unfinished region a "cosmetic residual").
-   - **Screenshots don't test interaction — a screen that paints can still be behaviorally dead.**
-     `simctl` can't tap, so a screenshot diff never exercises press/nav handlers. **Drive every
-     interaction the source has and confirm its observed effect:** send text · send an attachment via
-     the picker · **reply** → quote preview → send → quoted message renders · **edit** → composer
-     prefills → save → edited state shows · **long-press** → actions menu · **react** from the picker ·
-     open a **thread** and reply · channel-row tap **and** long-press · **back-nav** (chat → list,
-     thread → chat). A rendered-but-inert affordance is a FAIL.
+   - **Passing this gate says nothing about interaction** — every handler is verified in **gate 4**, not
+     here. A pixel-perfect region can be behaviorally dead; don't let a design PASS stand in for it.
 6. **Ledger closure:** every parity-ledger row is Ported / Rewritten / N/A / GAP-with-decision. A
    `GAP - provisional` row (section 2 default) closes the gate only if the final report calls it out
    explicitly as a decision the user still owes.

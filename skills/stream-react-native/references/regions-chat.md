@@ -53,6 +53,29 @@ the manifest-selected docs and the installed package, never from memory.
 | **Own (selected) reaction styling** | is YOUR OWN reaction tinted differently | Theming or Layout | Theming or a `ReactionListItem` override; own state is `reaction.own` from `useMessageContext()`. |
 | **Custom reaction set / emoji** (`supportedReactions`) | does the reference use different reaction emoji, or an extra type (e.g. 😃 `smile`)? | Functional | **EXTEND the SDK default `reactionData` (a public export), don't rebuild the array.** The defaults are already emoji (`👍 😂 ❤️ 😮 😢`, each `isMain: true`) — there is nothing to "swap to emoji." Spread `reactionData` and append/replace only what differs: `[{ type: 'smile', Icon, isMain: true }, ...reactionData]`. **`isMain: true` is mandatory on any custom entry** — the context-menu reaction picker filters to `supportedReactions.filter(r => r.isMain)`, so an entry without it never appears in the picker (the row collapses to just the "more emojis" `+` toggle) even though already-applied chips still render. Rebuilding from scratch also silently drops the default's extra-emoji list (the `...emojis.map(...)` spread that fills the "more" sheet). See [Step 2.5](design-matching.md#step-25-overriding-a-slot-inherits-all-of-its-sub-features) — this is that trap applied to a data array, not a component. |
 
+<a id="dead-theme-keys"></a>
+## Theme keys that type-check but don't render — confirmed dead / deceptive
+
+A `Theme` key compiling is no proof it paints (see the principle in
+[design-matching.md](design-matching.md#three-axes-of-customization-internalize-this-first)). Each row
+below was read out of the installed **`stream-chat-react-native-core@9.7.1`** source after a real run
+lost time to it; **re-confirm against your pinned version** before relying on a row. When a key you
+expect to work does nothing, suspect this class before you suspect a stale bundle.
+
+| Key / prop | Why it doesn't do what the name implies | Reach it instead by |
+|---|---|---|
+| `theme.avatar` `height` / `width` | `Avatar` composes `[styles.container, avatarSizes[size], {backgroundColor}, border, style]` — no theme size is in the list at all. Setting it squares/ignores avatars rather than resizing them. | the `style` prop (last in the array, so it wins) on `Avatar`/`UserAvatar`, plus the `size` prop |
+| `messageComposer.micButtonContainer.backgroundColor` | `AudioRecordingButton`'s `useAnimatedStyle` writes `backgroundColor: … : 'transparent'` on every frame; a Reanimated animated style is applied natively and beats the static entry regardless of array order. | put the fill on a **wrapper** around the button |
+| `icons.Mic` size | rendered as `<icons.Mic height={20} width={20} …>` — hardcoded; neither `micButtonContainer` nor `audioRecordingButtonContainer` reaches it. | override the icon through the `icons` map |
+| `messageComposer.wrapper` **in floating mode** | with `messageInputFloating`, the inner view's style is `[styles.wrapper]` only — the theme's `wrapper` is dropped from that branch (it's applied in the docked branch). | `messageComposer.floatingWrapper` |
+| `semantics.*` inherited into `myMessageTheme` | `mergeThemes` builds `{...baseTheme, semantics}` — it **replaces the entire `semantics` object** with freshly resolved SDK defaults *before* merging your `myMessageTheme`, so your base theme's semantic tokens are discarded for own messages. Defining one token silently reverts the others (a real run's own-bubble fill snapped back to SDK brand blue). | restate **every** `semantics` token own-messages need inside `myMessageTheme` |
+| `messageList.contentContainer` for row gutters | row horizontal padding comes from the **top-level** `theme.screenPadding` (default `16`). | set `theme.screenPadding` |
+
+Two `<Channel>` **prop** defaults in the same family — they make a region look unimplementable when it
+is only unset: `audioRecordingEnabled` defaults to **`false`** (so `OutputButtons` never shows the
+at-rest mic, only send), and `reactionListPosition` defaults to **`'top'`** (a design with reactions
+below the bubble needs `'bottom'`, or the in-bubble route in the reactions table above).
+
 ## Message metadata inside the bubble (bottom-trailing corner) — a worked relayout
 
 Putting the **timestamp + delivery/read ticks *inside* the bubble** (bottom-trailing corner, sharing the last row with the text) is one of the two most-missed message-design details (the other is the composer). It is **structural** — no theme key moves metadata inside; routing it to a colour key is the classic failure. **Read the default `MessageContent` / `MessageSimple` in the installed package first** (verified against **stream-chat-expo 9.7.0**; confirm the slot names against the pinned version), then:
@@ -158,7 +181,7 @@ For a **bottom** tab bar, you still do **not** replace the host. `AttachmentPick
 >
 > **Verify with the picker OPEN, and wait for the image grid to load.** A picker screenshot taken before the device photo library / remote thumbnails finish loading shows a short, half-empty grid that *also* looks like a gap — re-screenshot after the grid settles before diagnosing (and open to the **Files** tab per SIMULATOR-VERIFICATION to avoid the un-dismissable photo-permission prompt).
 >
-> **Don't mistake the picker's empty / not-granted placeholder for a tabs↔content gap.** The selection bar and the content render inside **one** sheet, contiguous (content height = `attachmentPickerBottomSheetHeight − selectionBarHeight`), so a populated gallery starts right below the tabs. But the **not-granted / empty-state panel is centre-aligned** in the content area, so it floats in the middle with a large gap above it — which looks exactly like a broken "tabs detached from content" layout. On the simulator this is the *default* state: `xcrun simctl privacy grant photos` frequently does **not** satisfy `expo-media-library`, so the grid never populates. Do **not** diagnose that centred placeholder as a layout bug, and do **not** declare the picker layout verified from the not-granted state alone — confirm a populated grid on a device (or once access is genuinely granted) before judging tabs↔content spacing.
+> **Don't mistake the picker's empty / not-granted placeholder for a tabs↔content gap.** The selection bar and the content render inside **one** sheet, contiguous (content height = `attachmentPickerBottomSheetHeight − selectionBarHeight`), so a populated gallery starts right below the tabs. But the **not-granted / empty-state panel is centre-aligned** in the content area, so it floats in the middle with a large gap above it — which looks exactly like a broken "tabs detached from content" layout. On the simulator this is the **expected** state — [SIMULATOR-VERIFICATION.md](SIMULATOR-VERIFICATION.md) has you *revoke* photo access on purpose, because granting it does not reliably suppress the un-dismissable SpringBoard prompt. Do **not** diagnose that centred placeholder as a layout bug, and do **not** declare the picker layout verified from the not-granted state alone — confirm a populated grid on a device before judging tabs↔content spacing.
 
 **Thread surfaces** (if in scope)
 

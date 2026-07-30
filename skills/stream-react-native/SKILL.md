@@ -287,7 +287,7 @@ Use when the user wants package install and shared wiring more than a full featu
 | **M2** | Fetch the guide | From the product manifest ([`references/DOCS.md`](references/DOCS.md)) fetch the matching upgrade guide (known entry point: Chat RN **v8 -> v9**). Hard gate on failure -> `stream-docs` -> stop and ask. |
 | **M2.5** | Prerequisites | Clear RN-specific blockers first: New Architecture requirement, new native/peer deps (e.g. `react-native-teleport` for Chat v9), native rebuild. |
 | **M3** | Apply | Bump only the targeted packages (each at its own target; bump the lane's Chat wrapper), apply every documented breaking change, ground each symbol in installed `node_modules/stream-chat-react-native-core` source, grep for renamed symbols, do native config + keyboard cleanup. |
-| **M4** | Verify | `tsc --noEmit` -> Metro bundle -> native build -> simulator/device smoke of the core flow. No `next build`; a green `tsc` is not a render. |
+| **M4** | Verify | `tsc --noEmit` -> Metro bundle -> native build -> simulator/device smoke of the core flow. No `next build`; a green `tsc` is not a render. Run gate commands from an absolute `cd` and **never piped** - a pipe returns the pipe's exit status, not the command's. |
 | **M5** | Summarize | Packages bumped, breaking changes applied, native/New-Arch changes, files touched, manual follow-ups. Offer (don't auto-run) the next step. |
 
 ---
@@ -303,5 +303,5 @@ Use when the user wants package install and shared wiring more than a full featu
 | **S2** | Packages & connection | Install Stream **alongside** Sendbird (flavor-correct package + peers; wire `GestureHandlerRootView` / `OverlayProvider` / Reanimated Babel plugin). Prove a real user connects (`useCreateChatClient` + `tokenProvider`) via [`credentials.md`](credentials.md) **before** touching UI. Sections 3-4. |
 | **S3** | Migrate touchpoints | File-by-file, in place: UI composition (no `<Window>`; app-owned header), channels, messages/attachments, events (`{ unsubscribe }` cleanup), pagination (stateless), membership/moderation, offline. Delete hand-rolled machinery for reactive primitives. Then remove all three Sendbird packages. Section 5. |
 | **S4** | Design parity | Re-author the theme as a JS `Theme` object (no CSS), then run [`references/design-matching.md`](references/design-matching.md) from Step 1 with the baseline as the reference. Section 6. |
-| **S5** | Verify | Gates in order: `tsc --noEmit`, native build, zero `@sendbird` imports, two-user simulator smoke, design verify loop vs the ledger, ledger closure, README. Section 7. |
+| **S5** | Verify | Gates in order: `tsc --noEmit`, native build, zero `@sendbird` imports, two-user simulator smoke **+ every interaction driven** (gate 4 - handlers are verified there, not by the design gate), design verify loop vs the ledger, ledger closure, README. Run gate commands from an absolute `cd` and **never piped**. Section 7. |
 | **S6** | Offer data migration | Never auto-run. Offer the server-side data migration ([`../stream/sendbird-data-migration.md`](../stream/sendbird-data-migration.md)); stop if the user only wanted the SDK swap. Section 8. |

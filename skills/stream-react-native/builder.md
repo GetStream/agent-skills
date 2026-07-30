@@ -14,7 +14,7 @@ Start by understanding what kind of React Native project is in front of you:
 - `package.json` with `react-native` and `ios/` + `android/` -> RN CLI lane
 - `app/_layout.*` or `expo-router` -> Expo Router
 - `@react-navigation/*` -> React Navigation
-- `babel.config.js` -> required place for Reanimated/Worklets plugin (Chat)
+- `babel.config.js` -> required place for the Reanimated/Worklets plugin on **RN CLI**, and on Expo **below SDK 54**. On Expo SDK 54+ its absence is correct — do not create one (§5 > Babel plugin)
 
 Also note any installed Stream packages:
 
@@ -97,7 +97,7 @@ npx expo install @stream-io/video-react-native-sdk \
 npx expo install react-native-reanimated react-native-worklets react-native-gesture-handler
 ```
 
-Add `@stream-io/video-react-native-sdk` and `@config-plugins/react-native-webrtc` to `app.json` `plugins`. If you installed the animation peers, add `react-native-worklets/plugin` as the last Babel plugin. Also enable Android edge-to-edge under `android` in `app.json` (`"edgeToEdgeEnabled": true`; default-on Expo SDK 54+). Then `npx expo prebuild --clean`.
+Add `@stream-io/video-react-native-sdk` and `@config-plugins/react-native-webrtc` to `app.json` `plugins`. On Expo SDK 54+ do **not** add a Babel plugin or a `babel.config.js` — `babel-preset-expo` appends `react-native-worklets/plugin` itself (§5 > Babel plugin). Also enable Android edge-to-edge under `android` in `app.json` (`"edgeToEdgeEnabled": true`; default-on Expo SDK 54+). Then `npx expo prebuild --clean`.
 
 **Video - RN CLI:**
 
@@ -390,13 +390,21 @@ After adding native optional packages, follow their platform permission steps. F
 
 ## 5. Configure native/runtime requirements
 
-### Babel plugin (Chat only, RN CLI only)
+### Babel plugin — RN CLI, and Expo only below SDK 54
 
-If Chat is in scope, ensure the Reanimated or Worklets plugin is the last Babel plugin:
+**On Expo SDK 54+ there is nothing to do here: do NOT create a `babel.config.js`.** `babel-preset-expo`
+resolves `react-native-worklets/plugin` and pushes it onto the end of the plugin list automatically
+whenever the package is installed (verified in `babel-preset-expo/build/configs/expo.js` — *"Automatically
+add worklets or reanimated plugin when package is installed"*), so the SDK 54+ templates ship no
+`babel.config.js` **by design**. Hand-writing one duplicates the plugin, and if it names
+`babel-preset-expo` while that isn't a top-level dependency Metro dies with `Cannot read properties of
+undefined (reading 'transformFile')` — which reads like a corrupt cache, not a config error. Two real runs
+created one anyway; one of them lost Metro to exactly this. **A missing `babel.config.js` on Expo SDK 54+
+is not a finding.** Below SDK 54, and on RN CLI, write it:
 
 ```js
 module.exports = {
-  presets: ["module:@react-native/babel-preset"],
+  presets: ["module:@react-native/babel-preset"],   // Expo <54: "babel-preset-expo"
   plugins: [
     // other plugins
     "react-native-worklets/plugin",
@@ -406,7 +414,7 @@ module.exports = {
 
 Use `react-native-reanimated/plugin` if the project is still on Reanimated 3. Use `react-native-worklets/plugin` for Reanimated 4+.
 
-Reanimated/Worklets are optional for Video - the SDK falls back to the RN `Animated` API when they are absent. But Stream's sample apps (including the video-only ones) install `react-native-reanimated` + `react-native-worklets` + `react-native-gesture-handler` for the smoother animated floating-participant tile. If they are installed (or Chat is also in scope), add the Reanimated/Worklets plugin as the last Babel plugin.
+Reanimated/Worklets are optional for Video - the SDK falls back to the RN `Animated` API when they are absent. But Stream's sample apps (including the video-only ones) install `react-native-reanimated` + `react-native-worklets` + `react-native-gesture-handler` for the smoother animated floating-participant tile. If they are installed (or Chat is also in scope) **and the lane needs a Babel config per the rule above**, add the Reanimated/Worklets plugin as the last Babel plugin.
 
 ### Reanimated static feature flag (Chat + Reanimated 4 — both lanes)
 
@@ -601,4 +609,9 @@ verify it (especially for a design match), follow the fast loop in
 packages before the first native build, start Metro **not** in CI mode (`npx expo start --dev-client
 --clear`) so edits aren't served stale, start Metro separately from `expo run:ios` (which exits and
 can take the bundler down), reach non-initial screens with temporary in-code navigation (`simctl`
-can't tap), and wait for the client to reconnect before trusting a screenshot.
+can't tap), and wait for the client to reconnect before trusting a screenshot. Three traps from that
+page that cost real runs the most time: **redirect Metro to a log, never pipe it** (a closing pipe kills
+it — and a piped gate command returns the *pipe's* exit status, so a failing build reads as green);
+**`simctl terminate` before every `simctl launch`** (launch on a running app returns its PID without
+restarting, so you screenshot stale UI); and **`simctl privacy revoke photos`** before launching, since
+*granting* does not reliably suppress iOS 26's un-dismissable photo prompt.

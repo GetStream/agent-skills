@@ -275,7 +275,7 @@ No modules array - one client exposes everything. **`getInstance` is a process-w
 
 ### `SendbirdChat.connect(userId, authToken?)`
 
-Takes a user **object**, not a bare id, so profile fields are set at connect. **Sendbird's token-less userId-only connect has NO Stream equivalent** - a token is always required. `client.devToken(id)` works only while dev tokens are enabled; else mint real tokens (runbook section 4).
+Takes a user **object**, not a bare id, so profile fields are set at connect. **Sendbird's token-less userId-only connect has NO Stream equivalent** - a token is always required. `client.devToken(id)` works only while dev tokens are enabled, and a **new app has them off** - the resolution is then a pre-minted fixed user roster, decided once in [`../credentials.md`](../credentials.md#dev-tokens-disabled) (runbook section 4).
 
 <a id="openchannel-enter-exit"></a>
 

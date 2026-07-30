@@ -53,6 +53,14 @@ and preference order: Functional - Theming - Layout / structure.
 | **Theming** | The `DeepPartial<Theme>` object passed to **both** `<OverlayProvider value={{ style }}>` **and** `<Chat style={…}>` (see [Theming Blueprint](./CHAT-REACT-NATIVE-blueprints.md#theming-blueprint)) | Colors, fonts, spacing, padding, border-radius, and dimensions - *within the existing layout*. In RN the theme object carries **both** color **and** padding/dimension, so most reskins are theme-only. | The structure - which views render, their arrangement, whether metadata sits inside or below the bubble, which buttons the composer has. |
 | **Layout / structure** | Component overrides via `WithComponents overrides={{ … }}` - see the [Component Override Blueprint](./CHAT-REACT-NATIVE-blueprints.md#component-override-blueprint) | The actual views: extend or override parts of the UI | Colors/fonts/spacing that a theme key already reaches (don't replace a component to change a padding). | 
 
+**A theme key that type-checks is NOT evidence that it renders.** `Theme` is a wide type and several of
+its keys are dead or partly dead at runtime — the component overwrites them after the theme is applied,
+drops them in one of its branches, or never reads them at all. `tsc` is green, the app builds, the
+pixel doesn't move, and the natural (wrong) conclusion is "stale bundle". Across four real runs this
+was the single largest defect class. **Before trusting any theme key for a region that matters, open the
+component in the installed package and confirm the key reaches the rendered style** — and check the
+confirmed-dead list in [`regions-chat.md`](regions-chat.md#dead-theme-keys) first.
+
 **Two recurring mis-routings:**
 - Solving a **structural** difference with a **theming** token. "Read receipts inside the bubble", "a
   camera button in the composer", "the timestamp overlaid on the image", "an avatar on my own
