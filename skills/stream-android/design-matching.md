@@ -473,6 +473,30 @@ structural change truly needs it.
     sectioning is out of scope for a styling pass, **say so** rather than faking one flat list as if it
     matched.
 
+### Header trailing action: keep exactly one weighted centre child
+
+Prefer the three header sub-slots. If you replace `ChannelHeader` wholesale,
+you discard `HeaderScaffold`'s layout, including the `weight(1f)` it passes to
+the centre child. Its Row uses `Arrangement.spacedBy(spacingXs)`, not
+`SpaceBetween`, so with no weighted child every child packs left and the
+trailing action strands mid-row instead of sitting at the right margin. With
+two weighted siblings they split the free space and it strands as well.
+
+What forces the replacement: `HeaderScaffold` unconditionally emits a 1dp
+`HorizontalDivider` and fixes the bar height, and neither is reachable from the
+sub-slots. So a reference with no header divider forces you to rebuild the Row,
+which is what introduces this bug.
+
+Fix: when you rebuild the header Row, give exactly one child `weight(1f)`, the
+centre content. Leave leading and trailing unweighted so they hug their edges.
+If instead you override `ChannelHeaderCenterContent` and keep the default
+`ChannelHeader`, apply the `params.modifier` you are handed, which already
+carries the weight.
+
+Verify: measure the trailing control's right edge to the screen's right edge
+and compare to the reference. Stranded inboard (observed at roughly 96dp
+against a reference of roughly 18dp) means the weight is missing or duplicated.
+
 ---
 
 ## Step 3: Grounding (do not guess slot signatures)
