@@ -246,9 +246,12 @@ Stream CLI (`getstream api SendMessage …`), screenshot, then hard-delete
 
 ## 4. Drive composer & picker states
 
-The composer is not one screenshot, it is **several states**, and the default (empty input) hides the
-one people most often get wrong. `simctl` can't type, so drive each state from a temp child inside
-`<Channel>` that calls SDK hooks, screenshot it, then delete the scaffold (§3 cleanup rules apply).
+**Capture at-rest, typing and picker-open on every run; drive any other state only when a reference
+screenshot shows it** ([regions-chat.md](regions-chat.md) > Composer verification gate). `simctl`
+can't type, so drive a state from a temp child inside `<Channel>` that calls SDK hooks, screenshot it,
+then delete the scaffold (§3 cleanup rules apply).
+
+**Mandatory — every run:**
 
 - **At rest (empty input):** - default state
 - **Typing (input has text):** - Drive it in:
@@ -257,7 +260,13 @@ one people most often get wrong. `simctl` can't type, so drive each state from a
   useMessageComposer().textComposer.setText('hello');   // → triggers the mic→send swap
   ```
   then screenshot and inspect the send button (shape, glyph, color, position).
-- **Keyboard UP (this is a SEPARATE state — `setText` does NOT raise the keyboard).** Programmatic
+- **Attachment picker open:** `useMessageInputContext().openAttachmentPicker()` (open to the Files
+  tab — see the open-then-switch order in §1). Verify the composer↔picker spacing here too.
+
+**Only when a reference screenshot shows the state** (driving these speculatively has not caught a
+defect; what they'd find — an unset `audioRecordingEnabled`, an off-screen composer — shows at rest):
+
+- **Keyboard UP (a SEPARATE state — `setText` does NOT raise the keyboard).** Programmatic
   `setText` fills the input but never opens the software keyboard, so it does **not** exercise
   keyboard-avoidance (`keyboardVerticalOffset` / `topInset` on `<Channel>`). To verify that, **focus
   the input** so the real keyboard rises (focus the composer's input, e.g. via the input ref in
@@ -272,17 +281,13 @@ one people most often get wrong. `simctl` can't type, so drive each state from a
   survives a theme pass. **`xcrun simctl privacy <udid> grant microphone <bundleId>` is a
   prerequisite** (§1): without it the mic prompt blocks like the photo one, and `expo-audio` can
   refuse to start with a "Missing audio…" error. One real run captured this state cleanly after the
-  grant; another still hit the `expo-audio` error even with it. **So: grant the mic and ATTEMPT the
-  capture** — "the simulator has no mic" is a conclusion you reach after the attempt fails, never a
-  reason to skip it. Three of four real runs skipped this state outright and shipped it unverified.
+  grant; another still hit the `expo-audio` error even with it. **If the reference shows this state,
+  grant the mic and ATTEMPT the capture** — "the simulator has no mic" is a conclusion you reach after
+  the attempt fails, not before it.
 - **Edit mode:** put the composer into edit state (trigger the edit action on an own message) and
-  screenshot the edit banner + confirm button.
-- **Attachment picker open:** `useMessageInputContext().openAttachmentPicker()` (open to the Files
-  tab — see the open-then-switch order in §1). Verify the composer↔picker spacing here too.
-
-Verify **every** state above, not just the ones that render by default — a state you never drive
-hides its defects (a stray default colour in the recorder, a keyboard-avoidance gap). "Looks right in
-the states I screenshotted" ≠ correct.
+  screenshot the edit banner + confirm button. **Worth driving whenever a custom override reads message
+  context** (`Reply`/quoted message, `MessageHeader`): the composer mounts those slots too, with no
+  message around them — a real run found a crash exactly there.
 
 ---
 
