@@ -140,7 +140,7 @@ The composer is the region users inspect most closely and the one most often lef
 - [ ] **Background fills EDGE-TO-EDGE and through the bottom safe area** — sample pixels in the *margin around* the controls, not just the controls. A colour band hugging the buttons = you coloured `container`, not `wrapper`.
 - [ ] **Single-line input is vertically centred** in the pill (grew via `inputBox` padding, not wrapper height).
 - [ ] **Attach button:** correct look (borderless vs bordered) **and** the `+`↔keyboard swap when the picker opens, wired to a `toggleAttachmentPicker` replica.
-- [ ] Each glyph matches the reference's size, weight, and colour; buttons vertically centred against the field.
+- [ ] Each glyph matches the reference's size, weight, fill-vs-outline character (compare ink ratio, not just the box), and colour.
 
 ## Liquid Glass (`GlassView`) — gotchas when a design uses frosted/translucent chrome
 

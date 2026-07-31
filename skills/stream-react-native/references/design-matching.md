@@ -386,7 +386,7 @@ Presence-and-color is not enough; verify **size, position, and proportion** too.
 3. **Build a comparison table.** For each region from `design-analysis.md` target attribute (size / position /
    color / presence) -> what rendered -> **PASS / FAIL**. Walk the whole checklist; don't stop at the
    regions that happen to look right. **Numbers alone lie** — a glyph box can "match" (±1 logical px)
-   while the field is too tall, a stroke too heavy, or a control off-center. So for the high-detail
+   while the field is too tall, a stroke too heavy, filled instead of outlined or a control off-center. So for the high-detail
    regions (the composer especially), screenshot on the **same device class** (same `@2x`/`@3x`), crop
    **both** bars at **native resolution** (same scale → no resizing, so sizes compare 1:1), and stack
    them to eyeball the real differences:
