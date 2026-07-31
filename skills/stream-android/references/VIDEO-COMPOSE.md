@@ -83,7 +83,7 @@ class App : Application() {
             apiKey = "your_api_key",
             user = user,
             token = "your_static_token_here",
-            loggingLevel = LoggingLevel(if ((applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0) Priority.DEBUG else Priority.NONE),
+            loggingLevel = LoggingLevel(if ((applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0) Priority.DEBUG else Priority.ERROR),
         ).build()
     }
 }
@@ -224,9 +224,12 @@ val participants by call.state.participants.collectAsStateWithLifecycle()
 val me by call.state.localParticipant.collectAsStateWithLifecycle()
 val others by call.state.remoteParticipants.collectAsStateWithLifecycle()
 val dominant by call.state.dominantSpeaker.collectAsStateWithLifecycle()
+val activeSpeakers by call.state.activeSpeakers.collectAsStateWithLifecycle()
 val connection by call.state.connection.collectAsStateWithLifecycle()
 val ringing by call.state.ringingState.collectAsStateWithLifecycle()
 ```
+
+`call.state.activeSpeakers` is a `StateFlow<List<ParticipantState>>` of everyone currently speaking (loudest first) — the primary input for an audio/voice visualization. `dominantSpeaker` is a single `StateFlow<ParticipantState?>` for the current loudest speaker.
 
 ### `ringingState` tracks the current ringing phase
 
@@ -273,8 +276,13 @@ Each participant is a `ParticipantState`. The renderable bits are also `StateFlo
 | `dominantSpeaker` | `StateFlow<Boolean>` | Loudest active speaker |
 | `videoEnabled` | `StateFlow<Boolean>` | Camera on |
 | `audioEnabled` | `StateFlow<Boolean>` | Microphone on |
+| `audioLevel` | `StateFlow<Float>` | Current audio level, `0f`..`1f` — drive a pulsing/scaling voice visualizer |
+| `audioLevels` | `StateFlow<List<Float>>` | Rolling window (5 samples) of recent audio levels — smooth waveforms / equalizer bars |
+| `userNameOrId` | `StateFlow<String>` | Display name, falling back to user id — handy for a "who's speaking" label |
 
 Use `sessionId` as the stable key in `LazyColumn` / `LazyVerticalGrid` `items(...)` calls — `userId` can repeat if the same user joins twice.
+
+For **audio-only / voice-agent UIs** (no camera), you typically don't render `video` at all — instead collect `call.state.activeSpeakers` plus each participant's `audioLevel` (a single value) or `audioLevels` (a smooth window) to animate a visualizer, and `userNameOrId` for a label. See the [Audio-Only Voice-Agent Blueprint](VIDEO-COMPOSE-blueprints.md#audio-only-voice-agent-blueprint).
 
 ### Client-level call routing
 
@@ -366,6 +374,8 @@ fun JoinScreen(call: Call) {
 
 `CallContent` already invokes a `DefaultPermissionHandler` internally using the `permissions` parameter — pass a custom `VideoPermissionsState` only if you want a different request shape.
 
+**Audio-only calls (voice agents, audio rooms):** `LaunchCallPermissions` / `rememberCallPermissionsState` request **both** `CAMERA` and `RECORD_AUDIO`, which is the wrong prompt for a mic-only experience. For audio-only, request just `RECORD_AUDIO` yourself — either the platform `ActivityResultContracts.RequestPermission`, or `LaunchPermissionRequest(permissions = listOf(Manifest.permission.RECORD_AUDIO)) { AllPermissionsGranted { ... } }` from the same package — then, after `join`, disable the camera track with `call.camera.setEnabled(false)` (keep `call.microphone` / `call.speaker` on). Joining a voice-agent call still uses `join(create = true)` so the call exists before your backend attaches the agent.
+
 ---
 
 ## Customization
@@ -412,6 +422,15 @@ CallContent(
 ```
 
 Drop down to `ParticipantsLayout(call, layoutType, videoRenderer = ...)` when you want the SDK's grid/spotlight logic but a custom tile.
+
+The lowest-level renderer is the standalone `VideoRenderer` composable (`io.getstream.video.android.compose.ui.components.video.VideoRenderer`) — it draws a single track and nothing else. Use it for a livestream host view or a fully custom layout:
+
+```kotlin
+val video by call.state.localParticipant.value?.video?.collectAsStateWithLifecycle() ?: return
+VideoRenderer(modifier = Modifier.fillMaxSize(), call = call, video = video)
+```
+
+> **1.29.x API note:** the current `VideoRenderer` overload takes `video: ParticipantState.Media?` (plus an optional `videoRendererConfig`). The older overload with a `videoFallbackContent = { }` lambda is **deprecated** — configure the fallback via `rememberVideoRendererConfig(...)` instead of passing the lambda.
 
 ### Custom controls
 
@@ -479,10 +498,10 @@ A failed WebSocket connection prevents calls from being established.
 Pass `loggingLevel` to `StreamVideoBuilder` to surface socket and SFU events in Logcat:
 
 ```kotlin
-loggingLevel = LoggingLevel(priority = if ((applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0) Priority.DEBUG else Priority.NONE)
+loggingLevel = LoggingLevel(priority = if ((applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0) Priority.DEBUG else Priority.ERROR)
 ```
 
-Levels: `Priority.VERBOSE`, `DEBUG`, `INFO`, `WARN`, `ERROR`, `ASSERT`, `NONE`. Configure it before `build()` returns; setting it after has no effect on existing connections.
+Levels (from the `io.getstream.log.Priority` enum): `Priority.VERBOSE`, `DEBUG`, `INFO`, `WARN`, `ERROR`, `ASSERT`. There is **no** `Priority.NONE` — use `Priority.ERROR` (or `ASSERT`) for the quietest release logging. Configure it before `build()` returns; setting it after has no effect on existing connections.
 
 ---
 
