@@ -319,6 +319,13 @@ following that map's install and permission notes - do NOT bulk-install the whol
 vague signal. If a region needs a capability package the app doesn't have, install it (or, if you
 can't, flag it) **before** Step 2 - otherwise that region is a `GAP`, not a match.
 
+**Kick off the native build NOW - as soon as the Stream packages + peers are installed - don't wait
+for the implementation to finish.** The native build (`npx expo prebuild --clean` + `expo run:ios`, or
+the RN CLI equivalent) is the single most expensive step (minutes, not seconds) and it is where the
+**native peers actually get exercised**, so starting it early buys two things: (a) the build runs in
+the background *while* you implement touchpoints, overlapping the two slow phases
+instead of serialising them; and (b) it surfaces native/peer failures immediately.
+
 ---
 
 ## Step 2.5: Overriding a slot inherits ALL of its sub-features
