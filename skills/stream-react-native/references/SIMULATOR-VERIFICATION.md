@@ -108,8 +108,10 @@ xcrun simctl spawn <udid> defaults write <bundleId> EXDevMenuIsOnboardingFinishe
 xcrun simctl terminate <udid> <bundleId>
 xcrun simctl launch <udid> <bundleId> --initialUrl "http://localhost:8081"
 
-# 5) Screenshot whatever is on screen.
-xcrun simctl io <udid> screenshot out.png
+# 5) Screenshot — but POLL for readiness first, never `sleep`. Copy the loop from §5.
+#    A bare launch→screenshot here catches the splash; a fixed sleep was 86% of capture wall time
+#    across seven real runs. §5 is two zero-dependency stages and is usually done in 2-8 s.
+xcrun simctl io <udid> screenshot <screen>-<state>-1.png
 ```
 
 **Why `--initialUrl` and nothing else (Expo):** on a dev-client the app must load a JS bundle from Metro.
@@ -144,8 +146,8 @@ npx react-native run-ios --udid <udid>
 xcrun simctl terminate <udid> <bundleId>
 xcrun simctl launch <udid> <bundleId>
 
-# 4) Screenshot.
-xcrun simctl io <udid> screenshot out.png
+# 4) Screenshot — POLL for readiness first (§5), never `sleep`.
+xcrun simctl io <udid> screenshot <screen>-<state>-1.png
 ```
 
 The CLI's dev overlay is a **LogBox "Open debugger to view warnings" toast** (bottom of screen), not a
@@ -284,18 +286,71 @@ the states I screenshotted" ≠ correct.
 
 ---
 
-## 5. Wait for the client before you trust a screenshot
+## 5. Wait for the client before you trust a screenshot — POLL, never `sleep`
 
 If the app gates its splash on the chat/video/feeds client resolving (e.g. splash hides only once
 `chatClient` is ready), a screenshot taken too soon captures the launch/splash screen (Expo splash,
-or the RN CLI launch screen / white screen), which looks like a hang. After any relaunch, **wait for
-the client to reconnect** (poll Metro logs or just re-screenshot after a short delay) before
-concluding anything is broken.
+or the RN CLI launch screen / white screen), which looks like a hang.
 
-The same applies **within** a screen, not just at launch: after navigating or relaunching, give
-images/avatars a moment to finish loading and any list entrance animation to settle before you take
-the "real" screenshot for a design comparison — a shot fired immediately can catch a placeholder or
-mid-transition frame and read as a mismatch that isn't one.
+**Never put a fixed `sleep` between `launch` and `screenshot`.** A blind sleep is either too short
+(you shoot the splash) or too long (you pay for it on every one of the ~20 captures a run makes).
+Measured across seven real runs: 138 capture cycles, **86% of their wall time was `sleep`**, ~100
+minutes total, and **40% of the cycles changed nothing at all** — they were re-shoots of a frame that
+came back too early. Poll instead; the app is usually ready in 2-8 s.
+
+Two stages, both zero-dependency. The frame captured immediately after `launch` **is** your splash
+reference — no baseline needed:
+
+```bash
+U=<udid>; B=<bundleId>; LOG=/tmp/metro-<proj>.log; OUT=<screen>-<state>-1.png
+
+# Stage A — wait for THIS relaunch's bundle. Mark the log first, or you match an older line.
+MARK=$(wc -l < "$LOG")
+xcrun simctl terminate $U $B 2>/dev/null
+xcrun simctl launch $U $B --initialUrl "http://localhost:8081" >/dev/null   # Expo; bare launch for RN CLI (§1)
+xcrun simctl io $U screenshot /tmp/splash.png                               # ← the splash reference
+for i in $(seq 1 20); do
+  tail -n +$((MARK+1)) "$LOG" | grep -qE 'iOS Bundled|metro:bundling:done' && break
+  sleep 1
+done
+
+# Stage B — poll until the frame LEAVES the splash and then STOPS changing (two identical in a row).
+SPLASH=$(md5 -q /tmp/splash.png); PREV=""; OK=0
+for i in $(seq 1 25); do
+  xcrun simctl io $U screenshot "$OUT" >/dev/null 2>&1
+  H=$(md5 -q "$OUT")
+  [ "$H" = "$SPLASH" ] && { PREV=""; sleep 1; continue; }        # still splash
+  [ "$H" = "$PREV" ] && { OK=1; echo "settled in ${i}s"; break; } # stable → this shoot is good
+  PREV=$H; sleep 1
+done
+# FAIL LOUDLY. A silent timeout leaves a splash frame in $OUT and it looks like a real capture.
+[ $OK -eq 1 ] || { echo "NOT READY — do NOT trust $OUT; diagnose (do NOT raise the cap)"; exit 1; }
+```
+
+On success `$OUT` already holds the settled frame — don't re-shoot it. On failure it holds a splash or
+mid-transition frame; **delete it** rather than leaving it to be mistaken for a capture later.
+
+Stage B's two-identical-frames test is what §5's second half used to ask for by feel: it also covers
+avatars still loading and list entrance animations, because a mid-transition frame never matches its
+predecessor. A shot fired immediately can catch a placeholder and read as a design mismatch that isn't
+one — the poll removes the guesswork.
+
+`iOS Bundled 1214ms index.ts (745 modules)` is the Expo/RN Metro ready line; a JSON-logging Metro
+prints `{"_e":"metro:bundling:done",…}`. A cached relaunch still prints one (`iOS Bundled 38ms … (1
+module)`). Note that `packager-status:running` only proves Metro is **up** — it says nothing about
+whether *your* app finished bundling, so don't gate on it.
+
+**The wait is capped, and the cap does NOT grow.** If Stage A or B runs out, you have a real defect —
+**diagnose it, do not raise the timeout and re-shoot.** In the seven runs the sleep ratcheted 20 s →
+40-90 s and never came back down, because one early frame was read as "too fast" instead of "broken";
+that single habit is where most of the 100 minutes went. When the cap trips, it is one of:
+
+- a **stale bundle** or a dev server on the wrong port → §2 (and the `PlatformConstants` note in §3);
+- `launch` **no-op'd** on an already-running app because you skipped `terminate` → §1/§2;
+- a **blocking modal** ("Open in Expo Go?", a permission prompt) that survives terminate → §3, reboot;
+- the client genuinely never connects → read the Metro log and the app's own error output.
+
+A longer sleep hides all four and produces a screenshot you cannot trust.
 
 ---
 
@@ -307,9 +362,20 @@ runtime and re-screenshot — no rebuild needed; a React Native app reading `use
 on the change:
 
 ```bash
-# iOS simulator (pinned UDID from §1)
-xcrun simctl ui <udid> appearance dark      # → light to switch back
-xcrun simctl io <udid> screenshot dark.png
+# iOS simulator (pinned UDID from §1). Shoot light FIRST — it is the reference the flip must move.
+U=<udid>
+xcrun simctl io $U screenshot light.png
+xcrun simctl ui $U appearance dark          # → light to switch back
+# The re-render is NOT instant. Poll until the frame differs from light and settles (§5, Stage B).
+LIGHT=$(md5 -q light.png); PREV=""; OK=0
+for i in $(seq 1 15); do
+  xcrun simctl io $U screenshot dark.png >/dev/null 2>&1
+  H=$(md5 -q dark.png)
+  [ "$H" = "$LIGHT" ] && { PREV=""; sleep 1; continue; }          # flip hasn't landed yet
+  [ "$H" = "$PREV" ] && { OK=1; break; }
+  PREV=$H; sleep 1
+done
+[ $OK -eq 1 ] || { echo "appearance flip never changed the frame — see the caveat below"; rm -f dark.png; }
 
 # Android emulator
 adb shell "cmd uimode night yes"            # → no to switch back
