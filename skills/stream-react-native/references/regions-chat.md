@@ -76,6 +76,47 @@ is only unset: `audioRecordingEnabled` defaults to **`false`** (so `OutputButton
 at-rest mic, only send), and `reactionListPosition` defaults to **`'top'`** (a design with reactions
 below the bubble needs `'bottom'`, or the in-bubble route in the reactions table above).
 
+## Text-only bubble height: set markdown.paragraph, not contentContainer
+
+For a text-only message the SDK zeroes `contentContainer`'s vertical padding
+(`MessageContent` sets `hidePaddingTop` and `hidePaddingBottom` when the message
+has only text). By default the bubble's entire vertical padding is then
+`markdown.paragraph`'s `marginTop` and `marginBottom`, 8 pt each, so a
+single-line bubble is 8 + lineHeight + 8.
+
+A theme value on `contentContainer` is not inert: it sits later in the style
+array than those zeros, so it overrides them and stays live. That is exactly why
+reaching for it to size the bubble adds padding on top of the 16 pt already
+there rather than replacing it, and the bubble overshoots by whatever you set.
+
+Fix: set the target padding on `messageItemView.content.markdown.paragraph`
+(`marginTop` / `marginBottom`) and do not set `contentContainer`'s vertical
+padding at all. Target the value you need, do not zero it: with `lineHeight: 20`,
+a 42.7 pt reference bubble wants roughly 11 pt each. The consumer value is
+spread last in `renderText`, so it takes effect exactly, verified as a clean
+replacement rather than a merge.
+
+Set `paragraphCenter` to the same values. A paragraph with fewer than three
+nodes containing bold renders with that key instead, so a short all-bold message
+silently keeps the 8/8 default otherwise.
+
+Keep `fontSize` and `lineHeight` on `markdown.text`, not on `paragraph`.
+`onlyEmojiMarkdown` shallow-replaces only the `text` key, so anything set on
+`paragraph` survives into the emoji-only path: a `fontSize` there caps the jumbo
+glyph (observed 44.3 pt shrinking to 25.0 pt), and a `lineHeight` there crushes
+it into a 20 pt line box. The SDK deliberately omits `lineHeight` when
+`onlyEmojis`, but the consumer spread lands after that check.
+
+Do not pre-compensate for the `marginTop: -8` caption offset on `textContainer`.
+It fires only when text is NOT the first item in `messageContentOrder`, so on a
+text-only message it never applies. Adding 8 pt to cancel it over-pads every
+bubble.
+
+Verify: measure a single-line text bubble. Its height should equal
+paddingTop + marginTop + lineHeight + marginBottom + paddingBottom, and that sum
+should close to the pixel against the reference. If it does not, one of the five
+is contributing a value you did not set.
+
 ## Message metadata inside the bubble (bottom-trailing corner) — a worked relayout
 
 Putting the **timestamp + delivery/read ticks *inside* the bubble** (bottom-trailing corner, sharing the last row with the text) is one of the two most-missed message-design details (the other is the composer). It is **structural** — no theme key moves metadata inside; routing it to a colour key is the classic failure. **Read the default `MessageContent` / `MessageSimple` in the installed package first** (verified against **stream-chat-expo 9.7.0**; confirm the slot names against the pinned version), then:
