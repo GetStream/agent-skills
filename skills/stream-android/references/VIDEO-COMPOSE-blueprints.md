@@ -26,6 +26,7 @@ Use this table to resolve a user request to the section(s) you must read before 
 | "deep link", push notification → call, intent extras for `cid` / call id | [Call Deep-link Blueprint](#call-deep-link-blueprint) |
 | "watch a livestream", "livestream viewer", `LivestreamPlayer`, RTMP/OBS stream, viewer count | [Livestream Viewer Blueprint](#livestream-viewer-blueprint) |
 | "broadcast a livestream", "go live from the device", `livestream` call, backstage, `goLive` / `stopLive`, host/broadcaster screen | [Livestream Broadcaster Blueprint](#livestream-broadcaster-blueprint) |
+| "voice agent", "AI voice assistant", audio-only call, audio visualization / speaking indicator, mic-only, fetch credentials from a backend at runtime | [Audio-Only Voice-Agent Blueprint](#audio-only-voice-agent-blueprint) |
 
 If the request is something not covered, do not fabricate APIs — say the blueprint is not bundled and fall back per [`RULES.md`](../RULES.md).
 
@@ -794,3 +795,92 @@ fun LiveHostContent(call: Call) {
 - **Manifest:** `CAMERA` and `RECORD_AUDIO` are declared by the SDK library manifest and merge in automatically; you only add them if you want them as explicitly-required features. `INTERNET` likewise merges from the SDK.
 - **Leaving:** call `call.leave()` when the host exits (stops the foreground service). `call.stopLive()` only ends the broadcast for viewers — it does **not** disconnect the host. Never call `end()` unless you intend to end the call for everyone.
 - **Emulator caveat:** the emulator has no real camera (renders the virtual scene) and may hit ICE STUN/TURN errors reaching the SFU — verify broadcast on a physical device.
+
+---
+
+## Audio-Only Voice-Agent Blueprint
+
+Build a mic-only voice experience (e.g. an AI voice assistant, or joining an audio room programmatically) where **there is no camera and no bundled call screen** — you visualize audio from `call.state`. Two things make this different from a normal video call:
+
+1. **Runtime credentials.** The `apiKey` / `token` / `userId` often arrive from a backend at runtime (not baked in, not typed on a login screen), so `StreamVideoBuilder(...).build()` must be **deferred until the async fetch resolves** — do it in an owned scope (a ViewModel), not in `Application.onCreate()`.
+2. **Mic-only permissions.** Request `RECORD_AUDIO` only; do not use `LaunchCallPermissions` (it also asks for `CAMERA`).
+
+### Build the client after a runtime fetch (ViewModel-owned)
+
+```kotlin
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import io.getstream.video.android.core.StreamVideo
+import io.getstream.video.android.core.StreamVideoBuilder
+import io.getstream.video.android.model.User
+import kotlinx.coroutines.launch
+
+class VoiceAgentViewModel : ViewModel() {
+
+    fun connect(creds: Credentials) {                 // creds came from GET /credentials
+        viewModelScope.launch {
+            // Build once. StreamVideoBuilder registers a process singleton, so guard against
+            // a rebuild on config-change/retry — reuse the existing client if present.
+            val client = StreamVideo.instanceOrNull() ?: StreamVideoBuilder(
+                context = appContext,
+                apiKey = creds.apiKey,
+                user = User(id = creds.userId, name = creds.userId),
+                token = creds.token,
+            ).build()
+
+            val call = client.call(creds.callType, creds.callId)
+            call.join(create = true)                   // create=true: call exists before the agent attaches
+            call.camera.setEnabled(false)              // audio-only: no camera track
+            call.microphone.setEnabled(true)
+            call.speaker.setEnabled(true)
+            // ...expose `call` as state for the UI, then POST /{callType}/{callId}/connect to your backend...
+        }
+    }
+
+    override fun onCleared() {
+        StreamVideo.instanceOrNull()?.let { viewModelScope.launch { it.call(/*type*/, /*id*/).leave() } }
+    }
+}
+```
+
+### Request mic-only permission (no camera prompt)
+
+```kotlin
+import io.getstream.video.android.compose.permission.LaunchPermissionRequest
+
+@Composable
+fun VoiceAgentGate(onGranted: () -> Unit) {
+    LaunchPermissionRequest(permissions = listOf(android.Manifest.permission.RECORD_AUDIO)) {
+        AllPermissionsGranted { onGranted() }
+        NoneGranted { /* explain why the mic is required */ }
+    }
+}
+// Or the platform API: rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { ... }
+```
+
+### Visualize who's talking (the audio flows)
+
+```kotlin
+@Composable
+fun AudioVisualizer(call: Call) {
+    val activeSpeakers by call.state.activeSpeakers.collectAsStateWithLifecycle()
+    val speaker = activeSpeakers.firstOrNull()
+    val level by (speaker?.audioLevel ?: MutableStateFlow(0f)).collectAsStateWithLifecycle()
+    val name by (speaker?.userNameOrId ?: MutableStateFlow("")).collectAsStateWithLifecycle()
+
+    // Scale/pulse a circle by `level` (0f..1f); label it with `name`.
+    Box(
+        modifier = Modifier
+            .size((80 + level * 120).dp)
+            .clip(CircleShape)
+            .background(VideoTheme.colors.brandPrimary),
+        contentAlignment = Alignment.Center,
+    ) { Text(if (name.isBlank()) "Listening..." else "$name speaking") }
+}
+```
+
+**Wiring:**
+- **`call.state.activeSpeakers`** (`StateFlow<List<ParticipantState>>`, loudest first) is the primary input; for an agent UI the agent is usually the first active speaker. Per participant, **`audioLevel`** (`StateFlow<Float>` 0f..1f) drives a single pulsing shape and **`audioLevels`** (`StateFlow<List<Float>>`, a 5-sample window) drives a smooth waveform/equalizer. **`userNameOrId`** gives a label without a null dance.
+- **Never** collect a nullable flow with `by` directly — fall back to a `MutableStateFlow(default)` (as above) or guard with `?.let`, so recomposition stays stable when there's no active speaker.
+- Build the client in the **ViewModel**, not `Application`, precisely because credentials are async here — this is the one sanctioned exception to the "build in Application" rule. Still build **once** (`instanceOrNull()` guard) and `leave()` on `onCleared()`.
+- The backend contract (`GET /credentials`, `POST /{callType}/{callId}/connect`) and any HTTP client (Retrofit, Ktor) are ordinary app code — not part of this skill. For a localhost dev backend on the emulator, use `http://10.0.2.2:3000/` and add a `network_security_config.xml` permitting cleartext to that host.
