@@ -381,10 +381,6 @@ for i in $(seq 1 15); do
   PREV=$H; sleep 1
 done
 [ $OK -eq 1 ] || { echo "appearance flip never changed the frame — see the caveat below"; rm -f dark.png; }
-
-# Android emulator
-adb shell "cmd uimode night yes"            # → no to switch back
-adb exec-out screencap -p > dark.png
 ```
 
 **Caveat — `simctl ui appearance` only works if the app follows the OS.** The flip above assumes dark
