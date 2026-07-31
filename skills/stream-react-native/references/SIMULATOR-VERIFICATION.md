@@ -11,6 +11,13 @@ Two lanes, and they behave **differently** at launch/reload — pick yours and r
 - **React Native Community CLI** (`pod install` + `npx react-native run-ios`, Metro via
   `react-native start`). No expo-dev-launcher, so several Expo-only steps below **do not apply**.
 
+**A third lane exists for BASELINE captures only: Expo Go.** Stream apps never target Expo Go, but the
+*pre-migration* app you are capturing a baseline from often does (Track S). It launches tap-free the
+same way the dev client does — `xcrun simctl launch <udid> host.exp.Exponent --initialUrl
+"http://127.0.0.1:<port>"`. Do **not** reach for `simctl openurl exp://…`: that fires an un-tappable
+"Open in Expo Go?" alert that survives `terminate` and forces a reboot (§3). Expo Go may not be
+installed on a fresh simulator — install it from `~/.expo/ios-simulator-app-cache/Expo-Go-*.tar.app`.
+
 The lane differences are called out inline and summarized in **§8**.
 
 ---
@@ -27,52 +34,60 @@ xcrun simctl boot <udid>; open -a Simulator
 in every `simctl`/`run:ios` call for the task instead of re-picking or re-booting mid-loop —
 juggling multiple booted simulators is how a screenshot ends up on the wrong device or a stale build.
 
-**Verifying the attachment picker — pre-seed photos + pre-grant BEFORE first launch.** The picker's
-gallery tab requests photo-library access, and that alert is SpringBoard-owned: you can't tap
+**Verifying the attachment picker — REVOKE photo access before first launch; do NOT grant it.** The
+picker's gallery tab requests photo-library access, and that alert is SpringBoard-owned: you can't tap
 Allow/Don't Allow, and it survives `terminate`/`launch`, so it covers every later screenshot until you
-reboot. Get ahead of it — add photos to the library and grant access **before** you launch the app,
-so the gallery has content and (usually) no blocking prompt fires:
+reboot. **`simctl privacy grant photos` does not reliably suppress it on iOS 26** — two real runs
+granted (one also pre-seeded the library and rebooted) and the un-dismissable prompt fired anyway,
+costing 5 simulator reboots between them. **Revoke instead:** a *denied* permission makes the SDK
+render its in-app *"You have not granted access to the photo library — Change in Settings"* panel,
+which is an ordinary view — no alert, nothing to tap, nothing to reboot out of.
 
 ```bash
-# 1) Put images in the simulator's photo library (any local files — reuse the reference PNGs).
-xcrun simctl addmedia <udid> /path/to/a.png /path/to/b.png /path/to/c.png
-# 2) Grant photo access to the app's bundle id (do this while the app is NOT running, then cold-launch).
-xcrun simctl privacy <udid> grant photos <bundleId>
+# Run both while the app is NOT running, then cold-launch.
+xcrun simctl privacy <udid> revoke photos <bundleId>
+# Grant the MIC, though — without it expo-audio can't start the recorder (see §4).
+xcrun simctl privacy <udid> grant microphone <bundleId>
 ```
 
-Then drive the picker open in code (`reactToIndex` forces the `images` tab on open, so the gallery
-grid shows the seeded photos):
+Then drive the picker open in code. **Order matters:** the SDK's `reactToIndex` forces
+`selectedPicker='images'` when the sheet settles at index 0, so a tab selected *before* the open call
+is discarded — switch **after** the sheet settles (both real runs hit this and landed on the same fix):
 
 ```tsx
-useAttachmentPickerContext().attachmentPickerStore.setSelectedPicker('images'); // or 'files'
 useMessageInputContext().openAttachmentPicker();
+// AFTER the sheet settles, not before — a pre-set picker is overwritten by reactToIndex.
+setTimeout(() => attachmentPickerStore.setSelectedPicker('files'), 1200);
 ```
 
-**iOS 26 caveat (verified):** `simctl privacy grant photos` reliably **suppresses the un-dismissable
-SpringBoard prompt**, but it does **not** always satisfy `expo-media-library`'s own permission check —
-the Stream picker may still render its in-app *"You have not granted access to the photo library —
-Change in Settings"* panel (not a blocking alert) even after a grant **and** a reboot. When the
-gallery won't populate on the sim, fall back to the **Files** tab (`setSelectedPicker('files')` — it
-never touches the photo library, so no prompt and no not-granted panel), and verify the real photo
-grid on a physical device.
+The **Files** tab never touches the photo library, so it's the tab to verify the selection bar and
+layout on. Confirm the real populated photo grid on a physical device.
 
 **Layout is verifiable in ANY picker state — don't wait on a populated grid.** The composer↔picker
 relationship (e.g. the `topInset` gap covered in
-[design-matching.md](design-matching.md#composer---attachment-picker)) renders identically whether the
+[regions-chat.md](regions-chat.md) > Composer - attachment picker) renders identically whether the
 sheet shows a photo grid, the Files list, or the "not granted" panel — the sheet always fills its
 reserved height. So you can confirm there's no gap between the composer and the picker without ever
 populating the grid; conversely, **an empty or not-granted grid is not a layout bug** — don't chase
 it as one, and don't let it mask a real gap (verify spacing against the composer, not the grid
 contents).
 
-If a blocking prompt did fire from an earlier run (e.g. you launched before granting), reboot to clear
-it: `xcrun simctl shutdown <udid> && xcrun simctl boot <udid>`.
+If a blocking prompt did fire from an earlier run, a reboot is the only tap-free recovery:
+`xcrun simctl shutdown <udid> && xcrun simctl boot <udid>`.
+
+**Write every capture to a UNIQUE filename.** Never reuse one path across capture attempts. A retry
+that overwrites its predecessor can be unrecoverable, because the app you are capturing may not render
+the same state twice — a real run lost the only baseline holding reaction pills (the source SDK's local
+cache dropped reactions on reload), and recovering it cost a `git worktree` rebuild of the original app
+on a second Metro. Name shots `<screen>-<state>-<attempt>.png` and delete the rejects at the end.
 
 ### Expo dev-client lane
 
 ```bash
-# 1) Start Metro SEPARATELY, in the background, NOT in CI mode
-npx expo start --dev-client --clear     # leave this running in the background
+# 1) Start Metro SEPARATELY, in the background, NOT in CI mode.
+#    Redirect to a log — NEVER pipe it. A closing pipe (| head, | tail) KILLS Metro; a real run
+#    lost its dev server mid-session to `expo start … | head -N` and had to restart detached.
+npx expo start --dev-client --clear > /tmp/metro-<proj>.log 2>&1 &
 
 # 2) Build + install the dev-client ONCE (the expensive native build).
 #    The BUILD + INSTALL is what you need here. expo run:ios also tries to *launch* the app at the
@@ -89,10 +104,14 @@ xcrun simctl spawn <udid> defaults write <bundleId> EXDevMenuIsOnboardingFinishe
 #    `--initialUrl` tells expo-dev-client which JS bundle to load, so it skips the dev-launcher
 #    menu AND never shows the "Open in <app>?" confirmation. This is the ONE reliable tap-free
 #    launch. Use the http:// Metro URL (localhost:8081 for a simulator) — NOT the exp+<scheme>:// form.
+#    ALWAYS terminate first: launch on a running app returns its PID without restarting (§2).
+xcrun simctl terminate <udid> <bundleId>
 xcrun simctl launch <udid> <bundleId> --initialUrl "http://localhost:8081"
 
-# 5) Screenshot whatever is on screen.
-xcrun simctl io <udid> screenshot out.png
+# 5) Screenshot — but POLL for readiness first, never `sleep`. Copy the loop from §5.
+#    A bare launch→screenshot here catches the splash; a fixed sleep was 86% of capture wall time
+#    across seven real runs. §5 is two zero-dependency stages and is usually done in 2-8 s.
+xcrun simctl io <udid> screenshot <screen>-<state>-1.png
 ```
 
 **Why `--initialUrl` and nothing else (Expo):** on a dev-client the app must load a JS bundle from Metro.
@@ -115,17 +134,20 @@ launches** the app itself, and it launches cleanly (no osascript error). The deb
 `localhost:8081` bundle URL baked in, so it auto-connects to Metro on any launch.
 
 ```bash
-# 1) Start Metro SEPARATELY, in the background
-npx react-native start &                 # leave running (see §2 for the watchman caveat)
+# 1) Start Metro SEPARATELY, in the background. Redirect to a log, never pipe it (a closing
+#    pipe kills Metro). See §2 for the watchman caveat.
+npx react-native start > /tmp/metro-<proj>.log 2>&1 &
 
 # 2) Build + install + launch ONCE (the expensive native build). This also launches cleanly.
 npx react-native run-ios --udid <udid>
 
 # 3) FAST relaunch on every later iteration — bare launch, NO --initialUrl. Auto-connects to Metro.
+#    Terminate first — launch on a running app returns its PID without restarting (§2).
+xcrun simctl terminate <udid> <bundleId>
 xcrun simctl launch <udid> <bundleId>
 
-# 4) Screenshot.
-xcrun simctl io <udid> screenshot out.png
+# 4) Screenshot — POLL for readiness first (§5), never `sleep`.
+xcrun simctl io <udid> screenshot <screen>-<state>-1.png
 ```
 
 The CLI's dev overlay is a **LogBox "Open debugger to view warnings" toast** (bottom of screen), not a
@@ -139,14 +161,18 @@ Fast Refresh usually applies edits in place, but when you **remove** a component
 deleting the temp navigation scaffold from §3 — the in-memory bundle can keep referencing the gone
 code and the app crashes on next interaction. Don't debug that as a real bug; it's a stale bundle.
 
-**Expo lane:** relaunch the app to force a fresh bundle fetch from Metro:
+**Expo lane — `terminate` FIRST, then launch:**
 
 ```bash
+xcrun simctl terminate <udid> <bundleId>
 xcrun simctl launch <udid> <bundleId> --initialUrl "http://localhost:8081"
 ```
 
-Each expo-dev-client launch re-downloads the bundle, so a relaunch can never carry a stale in-memory
-bundle. You do **not** need another `npx expo run:ios` — the native binary hasn't changed, only JS.
+**`simctl launch` against an already-running app returns the existing PID and does NOT restart it** —
+so the "relaunch" is a no-op, you screenshot the old UI, and read it as a failed fix (a real run did
+exactly that). The dev client can also hold a stale module-resolution error after the file is fixed,
+which only a genuine terminate+launch clears. You do **not** need another `npx expo run:ios` — the
+native binary hasn't changed, only JS.
 
 **RN CLI lane — the watchman caveat (important):** if **`watchman` is not installed**, Metro does
 **not** detect file edits, so **no** reload path surfaces your change — not Fast Refresh, not the
@@ -159,7 +185,8 @@ brew install watchman
 
 # Or, per-change without watchman: restart Metro with a cleared cache, THEN relaunch the app.
 #   (kill the old Metro on 8081 first)
-npx react-native start --reset-cache &
+npx react-native start --reset-cache > /tmp/metro-<proj>.log 2>&1 &
+xcrun simctl terminate <udid> <bundleId>          # launch alone no-ops on a running app
 xcrun simctl launch <udid> <bundleId>
 ```
 
@@ -174,7 +201,7 @@ background Metro above has no TTY to receive it (true for both lanes).
 ### Two "looks-like-a-crash" issues that are really Metro/port problems
 
 - **`EXPO_PUBLIC_*` env vars are inlined at Metro BUNDLE time, not runtime.** After writing `.env` (e.g. the API key + a token), the running bundle keeps the OLD/empty values until you **restart Metro with `--clear`**. Symptom: the app shows its "credentials missing" gate even though `.env` is correct. Confirm the value actually reached the served bundle: `curl -s "http://localhost:<port>/node_modules/expo-router/entry.bundle?platform=ios&dev=true" | grep -c "<value-prefix>"`.
-- **Wrong-Metro → `PlatformConstants could not be found` (`TurboModuleRegistry.getEnforcing('PlatformConstants')`).** This reads like a native/build failure but is a **JS-bundle ↔ native mismatch from loading the wrong Metro** — e.g. another dev server is already on `8081`, so the freshly built app loads *that* project's bundle. Fix: run your Metro on a **free port** (`--port 8082`) and **cold-launch** onto it (`xcrun simctl launch <udid> <bundle> --initialUrl "http://localhost:8082"`); a relaunch over a running app keeps the stale server, so terminate first. **Don't kill the user's other server** — just use a different port.
+- **Wrong-Metro → `PlatformConstants could not be found` (`TurboModuleRegistry.getEnforcing('PlatformConstants')`).** This reads like a native/build failure but is a **JS-bundle ↔ native mismatch from loading the wrong Metro** — e.g. another dev server is already on `8081`, so the freshly built app loads *that* project's bundle. Fix: run your Metro on a **free port** (`--port 8082`) and **cold-launch** onto it (`xcrun simctl launch <udid> <bundle> --initialUrl "http://localhost:8082"`); a relaunch over a running app keeps the stale server, so terminate first. **Don't kill the user's other server** — just use a different port. **If the user PINNED the occupied port**, that's a conflict only they can resolve: report what's holding it (`lsof -nP -iTCP:<port> -sTCP:LISTEN`, and which project it belongs to) and either ask, or proceed on a free port and say so. Two real runs silently killed a sibling project's dev server to honour a pinned port and had to disclose it afterwards.
 
 ## 3. Reaching non-initial screens without taps
 
@@ -204,6 +231,9 @@ screen behind the first one, drive navigation from code with **temporary** scaff
   accident, the only tap-free recovery is to **reboot the simulator**
   (`xcrun simctl shutdown <udid> && xcrun simctl boot <udid>`). Prefer the in-code temp nav above,
   and on Expo load the bundle with `--initialUrl "http://…"` (§1), never `openurl`.
+  **`expo run:ios` fires `openurl` itself** during its launch step, so the alert can appear even
+  though *you* never ran `openurl` — if a run:ios leaves a modal on screen, reboot and relaunch with
+  `--initialUrl` rather than hunting for what you did wrong.
 - **Then DELETE all temp scaffold** (remove the branch/import, don't just disable it), re-typecheck,
   and **force a clean relaunch** (§2 — mind the RN CLI watchman caveat) — otherwise a stale bundle
   still referencing the removed temp component crashes the app.
@@ -239,11 +269,16 @@ one people most often get wrong. `simctl` can't type, so drive each state from a
   (confirm the hook in the installed package). The sim has no mic so no audio is captured, but the
   **in-progress recorder UI still renders** — screenshot it and sample its tint (waveform / mic /
   timer): it draws from `accentPrimary` / `chatWaveformBar`, a common place a stray SDK-default colour
-  survives a theme pass.
+  survives a theme pass. **`xcrun simctl privacy <udid> grant microphone <bundleId>` is a
+  prerequisite** (§1): without it the mic prompt blocks like the photo one, and `expo-audio` can
+  refuse to start with a "Missing audio…" error. One real run captured this state cleanly after the
+  grant; another still hit the `expo-audio` error even with it. **So: grant the mic and ATTEMPT the
+  capture** — "the simulator has no mic" is a conclusion you reach after the attempt fails, never a
+  reason to skip it. Three of four real runs skipped this state outright and shipped it unverified.
 - **Edit mode:** put the composer into edit state (trigger the edit action on an own message) and
   screenshot the edit banner + confirm button.
 - **Attachment picker open:** `useMessageInputContext().openAttachmentPicker()` (open to the Files
-  tab, or pre-grant photos — see §1). Verify the composer↔picker spacing here too.
+  tab — see the open-then-switch order in §1). Verify the composer↔picker spacing here too.
 
 Verify **every** state above, not just the ones that render by default — a state you never drive
 hides its defects (a stray default colour in the recorder, a keyboard-avoidance gap). "Looks right in
@@ -251,18 +286,71 @@ the states I screenshotted" ≠ correct.
 
 ---
 
-## 5. Wait for the client before you trust a screenshot
+## 5. Wait for the client before you trust a screenshot — POLL, never `sleep`
 
 If the app gates its splash on the chat/video/feeds client resolving (e.g. splash hides only once
 `chatClient` is ready), a screenshot taken too soon captures the launch/splash screen (Expo splash,
-or the RN CLI launch screen / white screen), which looks like a hang. After any relaunch, **wait for
-the client to reconnect** (poll Metro logs or just re-screenshot after a short delay) before
-concluding anything is broken.
+or the RN CLI launch screen / white screen), which looks like a hang.
 
-The same applies **within** a screen, not just at launch: after navigating or relaunching, give
-images/avatars a moment to finish loading and any list entrance animation to settle before you take
-the "real" screenshot for a design comparison — a shot fired immediately can catch a placeholder or
-mid-transition frame and read as a mismatch that isn't one.
+**Never put a fixed `sleep` between `launch` and `screenshot`.** A blind sleep is either too short
+(you shoot the splash) or too long (you pay for it on every one of the ~20 captures a run makes).
+Measured across seven real runs: 138 capture cycles, **86% of their wall time was `sleep`**, ~100
+minutes total, and **40% of the cycles changed nothing at all** — they were re-shoots of a frame that
+came back too early. Poll instead; the app is usually ready in 2-8 s.
+
+Two stages, both zero-dependency. The frame captured immediately after `launch` **is** your splash
+reference — no baseline needed:
+
+```bash
+U=<udid>; B=<bundleId>; LOG=/tmp/metro-<proj>.log; OUT=<screen>-<state>-1.png
+
+# Stage A — wait for THIS relaunch's bundle. Mark the log first, or you match an older line.
+MARK=$(wc -l < "$LOG")
+xcrun simctl terminate $U $B 2>/dev/null
+xcrun simctl launch $U $B --initialUrl "http://localhost:8081" >/dev/null   # Expo; bare launch for RN CLI (§1)
+xcrun simctl io $U screenshot /tmp/splash.png                               # ← the splash reference
+for i in $(seq 1 20); do
+  tail -n +$((MARK+1)) "$LOG" | grep -qE 'iOS Bundled|metro:bundling:done' && break
+  sleep 1
+done
+
+# Stage B — poll until the frame LEAVES the splash and then STOPS changing (two identical in a row).
+SPLASH=$(md5 -q /tmp/splash.png); PREV=""; OK=0
+for i in $(seq 1 25); do
+  xcrun simctl io $U screenshot "$OUT" >/dev/null 2>&1
+  H=$(md5 -q "$OUT")
+  [ "$H" = "$SPLASH" ] && { PREV=""; sleep 1; continue; }        # still splash
+  [ "$H" = "$PREV" ] && { OK=1; echo "settled in ${i}s"; break; } # stable → this shoot is good
+  PREV=$H; sleep 1
+done
+# FAIL LOUDLY. A silent timeout leaves a splash frame in $OUT and it looks like a real capture.
+[ $OK -eq 1 ] || { echo "NOT READY — do NOT trust $OUT; diagnose (do NOT raise the cap)"; exit 1; }
+```
+
+On success `$OUT` already holds the settled frame — don't re-shoot it. On failure it holds a splash or
+mid-transition frame; **delete it** rather than leaving it to be mistaken for a capture later.
+
+Stage B's two-identical-frames test is what §5's second half used to ask for by feel: it also covers
+avatars still loading and list entrance animations, because a mid-transition frame never matches its
+predecessor. A shot fired immediately can catch a placeholder and read as a design mismatch that isn't
+one — the poll removes the guesswork.
+
+`iOS Bundled 1214ms index.ts (745 modules)` is the Expo/RN Metro ready line; a JSON-logging Metro
+prints `{"_e":"metro:bundling:done",…}`. A cached relaunch still prints one (`iOS Bundled 38ms … (1
+module)`). Note that `packager-status:running` only proves Metro is **up** — it says nothing about
+whether *your* app finished bundling, so don't gate on it.
+
+**The wait is capped, and the cap does NOT grow.** If Stage A or B runs out, you have a real defect —
+**diagnose it, do not raise the timeout and re-shoot.** In the seven runs the sleep ratcheted 20 s →
+40-90 s and never came back down, because one early frame was read as "too fast" instead of "broken";
+that single habit is where most of the 100 minutes went. When the cap trips, it is one of:
+
+- a **stale bundle** or a dev server on the wrong port → §2 (and the `PlatformConstants` note in §3);
+- `launch` **no-op'd** on an already-running app because you skipped `terminate` → §1/§2;
+- a **blocking modal** ("Open in Expo Go?", a permission prompt) that survives terminate → §3, reboot;
+- the client genuinely never connects → read the Metro log and the app's own error output.
+
+A longer sleep hides all four and produces a screenshot you cannot trust.
 
 ---
 
@@ -274,14 +362,35 @@ runtime and re-screenshot — no rebuild needed; a React Native app reading `use
 on the change:
 
 ```bash
-# iOS simulator (pinned UDID from §1)
-xcrun simctl ui <udid> appearance dark      # → light to switch back
-xcrun simctl io <udid> screenshot dark.png
+# iOS simulator (pinned UDID from §1). Shoot light FIRST — it is the reference the flip must move.
+U=<udid>
+xcrun simctl io $U screenshot light.png
+xcrun simctl ui $U appearance dark          # → light to switch back
+# The re-render is NOT instant. Poll until the frame differs from light and settles (§5, Stage B).
+LIGHT=$(md5 -q light.png); PREV=""; OK=0
+for i in $(seq 1 15); do
+  xcrun simctl io $U screenshot dark.png >/dev/null 2>&1
+  H=$(md5 -q dark.png)
+  [ "$H" = "$LIGHT" ] && { PREV=""; sleep 1; continue; }          # flip hasn't landed yet
+  [ "$H" = "$PREV" ] && { OK=1; break; }
+  PREV=$H; sleep 1
+done
+[ $OK -eq 1 ] || { echo "appearance flip never changed the frame — see the caveat below"; rm -f dark.png; }
 
 # Android emulator
 adb shell "cmd uimode night yes"            # → no to switch back
 adb exec-out screencap -p > dark.png
 ```
+
+**Caveat — `simctl ui appearance` only works if the app follows the OS.** The flip above assumes dark
+mode is driven by `useColorScheme()`. If the app drives dark mode from **app state** — a manual toggle
+persisted in MMKV / AsyncStorage / a theme context (common in migrated apps, e.g. a moon/sun button) —
+then `simctl ui appearance dark` is a **no-op** and you'll wrongly conclude dark mode is broken (or
+waste a relaunch chasing it). **Check the app's theme-toggle source first:** if it reads
+`useColorScheme()`, use the flip above; if it reads a persisted flag, drive dark mode the app's own way
+— flip the persisted flag from temporary scaffold (set the MMKV/AsyncStorage key or call the theme
+context's setter), then relaunch/re-render and screenshot. Don't reach for `simctl ui appearance` on an
+app-state-driven toggle.
 
 Then confirm the carve-out held: **structural surfaces** (message-list background, composer/input
 background, borders) flipped to their dark values, while **pinned brand/content** colors (bubble
@@ -305,16 +414,23 @@ per the color-sampling method in [design-matching.md](design-matching.md).
   effect, which looks exactly like a stale bundle during verification). Same in both lanes. Also, the
   *default* `MessageHeader` renders nothing unless the message is pinned / saved-for-later / reminder
   / sent-to-channel, so verify an override with an explicit, visibly-distinct custom component.
-- **iOS 26 Photo Library access:** opening the gallery grid without a prior grant fires a tap-only,
-  SpringBoard-owned Photo Library prompt you can't dismiss. **Pre-grant + pre-seed before launch**
-  (`simctl addmedia` + `simctl privacy grant photos <bundleId>`) to suppress that prompt — but note
-  the grant may still not satisfy `expo-media-library`, so the picker can show its in-app "not
-  granted" panel anyway. When the gallery won't populate on the sim, use the **Files** tab
-  (`setSelectedPicker('files')`) to verify the selection bar/layout, and confirm the real grid on a
-  device. Full procedure + the "layout is verifiable in any state" rule are in §1.
-- The simulator has **no camera or microphone** — voice/video *capture* can only be verified on a
-  real device (see the Video reference). The composer mic *button* still renders (with `expo-audio`
-  installed); its recording just won't produce audio.
+- **iOS 26 Photo Library access:** the gallery grid fires a tap-only, SpringBoard-owned prompt you
+  can't dismiss, and `simctl privacy grant photos` does **not** reliably suppress it. **Revoke photo
+  access before launch** so the SDK renders its in-app "not granted" panel instead of an alert, and
+  verify the selection bar/layout on the **Files** tab. Full procedure + the "layout is verifiable in
+  any state" rule are in §1.
+- The simulator has **no camera or microphone** — video/audio *capture* can only be verified on a real
+  device (see the Video reference). But the recorder **UI** is still screenshot-able: grant the mic
+  (§1) and drive the state (§4) before concluding otherwise.
+- **A piped command reports the PIPE's exit status, not the command's — never pipe a verification
+  command.** `npx tsc --noEmit | head -5; echo $?` prints `0` on a *failing* typecheck, and
+  `run-ios … | tail` prints tail's success on a build that died with 65. Both happened in one real
+  run, which then reported a passing gate on a broken build. Redirect to a file and read it back
+  instead: `<cmd> > /tmp/out.log 2>&1; echo "EXIT=$?"; tail -20 /tmp/out.log`. (Don't reach for
+  `${PIPESTATUS[0]}` either — this shell is zsh, where that expands to nothing and you get a blank
+  where the exit code should be.) Related: run project commands from an **absolute** `cd`, because
+  `npx <tool>` outside a project silently resolves an unrelated registry package — `npx tsc` in the
+  wrong directory prints "This is not the tsc command you are looking for" and looks like a pass.
 - **Physical-scale sizing reads correctly only on a device, not on the roomy sim window.** A
   keyboard-height–relative size — the attachment-picker sheet height (`attachmentPickerBottomSheetHeight`,
   should ≈ keyboard height), a safe-area gap, a bottom-bar height — can look fine on the large
@@ -330,12 +446,16 @@ per the color-sampling method in [design-matching.md](design-matching.md).
 
 ## 8. Expo vs RN CLI — quick reference
 
+Expo Go appears only as a **baseline-capture** lane (a pre-migration app you're screenshotting, never a
+Stream target — see §1): Metro is that app's own dev server, and you launch with
+`simctl launch host.exp.Exponent --initialUrl "http://127.0.0.1:<port>"`.
+
 | Step | Expo dev-client | React Native CLI |
 |---|---|---|
-| Metro | `npx expo start --dev-client --clear` | `npx react-native start` (install `watchman` — see §2) |
-| Build once | `npx expo run:ios --device <udid>` (its launch step errors on osascript — harmless) | `npx react-native run-ios --udid <udid>` (builds **and** launches cleanly) |
+| Metro | `npx expo start --dev-client --clear > log 2>&1 &` | `npx react-native start > log 2>&1 &` (install `watchman` — see §2) — **never pipe either** |
+| Build once | `npx expo run:ios --device <udid>` (its launch step errors on osascript — harmless; it also fires `openurl`, so a modal may be left on screen) | `npx react-native run-ios --udid <udid>` (builds **and** launches cleanly) |
 | Onboarding sheet | `defaults write <bundleId> EXDevMenuIsOnboardingFinished -bool YES` | n/a (no dev-launcher) |
-| Launch / relaunch | `simctl launch <bundleId> --initialUrl "http://localhost:8081"` | `simctl launch <bundleId>` (bare — no `--initialUrl`) |
+| Launch / relaunch | `simctl terminate` **then** `simctl launch <bundleId> --initialUrl "http://localhost:8081"` | `simctl terminate` **then** `simctl launch <bundleId>` (bare — no `--initialUrl`) |
 | Dev-launcher menu / "Open?" modal risk | Yes — avoid via `--initialUrl`, never `openurl` | None |
 | Reload after edit | relaunch (re-fetches fresh) | Fast Refresh **iff** watchman installed; else `react-native start --reset-cache` + relaunch (§2) |
 | Reach non-initial screen | Expo Router `router.push`, **encode the cid** | React Navigation `navigate('Channel', { channelCid })`, **no encoding** |

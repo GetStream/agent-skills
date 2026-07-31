@@ -71,6 +71,32 @@ Hold the token in context for code edits. Do not print it in summaries.
 
 If the user pastes a token, hold it in context and skip generation.
 
+<a id="dev-tokens-disabled"></a>
+#### `client.devToken()` and apps with dev tokens disabled — one decision, decided here
+
+**A newly created Stream app has dev tokens OFF** (`disable_auth_checks: false`), so `client.devToken(id)`
+is rejected server-side. Four of four real migration runs hit this and each improvised a different
+answer, so the resolution is fixed:
+
+**If dev tokens are disabled, connect as one of a FIXED SET of test users with tokens pre-minted here in
+Step B.** Do not enable `disable_auth_checks` to get around it, and do not auto-create arbitrary users
+from the client. Mint one token per roster user, hold them in a `__DEV__`-gated module (e.g.
+`src/lib/tokens.ts`), and document the production `tokenProvider` path beside it.
+
+```bash
+# One call per user — a batched `for` loop over `getstream token` may be blocked by the permission
+# classifier. Roster size: as many users as the app's flows need (2 is enough for a two-device smoke).
+getstream token <user_id>
+```
+
+Check the state before you write any connect code (Dashboard > app > Authentication, or the app's
+`disable_auth_checks`) so the roster is in place before the first run rather than retrofitted after a
+failed connect. The cost of the fixed roster is that a **free-text "type any name and join" login screen
+cannot be reproduced** — if the app being migrated has one, that is a **GAP row the user owns**
+(offer it explicitly; it needs a backend token endpoint), not a reason to loosen app auth.
+
+Never use `devToken()` for production; see [`sdk.md` > Auth model](sdk.md#auth-model).
+
 ### Step C - Demo data (Chat and Feeds, and only if the user asked)
 
 Video needs no demo data - skip this step for Video-only sessions. Chat and Feeds both have a demo-data flow; pick the branch(es) that match the products in scope:

@@ -145,7 +145,7 @@ If there is no RN/Expo project and Track A applies, scaffold one through [`build
 | C - Reference lookup | [`sdk.md`](sdk.md) + [`references/DOCS.md`](references/DOCS.md) + relevant product reference files |
 | D - Bootstrap / setup | [`builder.md`](builder.md) + [`sdk.md`](sdk.md) + `llms.txt` docs lookup |
 | M - Migrate / upgrade | [`migrate.md`](migrate.md) + [`references/DOCS.md`](references/DOCS.md) (live upgrade guide) + product reference for the migrated SDK |
-| S - Migrate from Sendbird | [`sendbird-migration.md`](sendbird-migration.md) + [`references/sendbird-mapping.md`](references/sendbird-mapping.md) + [`references/sendbird-mapping-extended.md`](references/sendbird-mapping-extended.md) + [`references/design-matching.md`](references/design-matching.md) + [`credentials.md`](credentials.md) + [`references/CHAT-REACT-NATIVE.md`](references/CHAT-REACT-NATIVE.md) |
+| S - Migrate from Sendbird | [`sendbird-migration.md`](sendbird-migration.md) + [`references/sendbird-notes.md`](references/sendbird-notes.md) + [`references/sendbird-symbols.tsv`](references/sendbird-symbols.tsv) + [`references/design-matching.md`](references/design-matching.md) + [`credentials.md`](credentials.md) + [`references/CHAT-REACT-NATIVE.md`](references/CHAT-REACT-NATIVE.md) |
 
 ---
 
@@ -287,14 +287,14 @@ Use when the user wants package install and shared wiring more than a full featu
 | **M2** | Fetch the guide | From the product manifest ([`references/DOCS.md`](references/DOCS.md)) fetch the matching upgrade guide (known entry point: Chat RN **v8 -> v9**). Hard gate on failure -> `stream-docs` -> stop and ask. |
 | **M2.5** | Prerequisites | Clear RN-specific blockers first: New Architecture requirement, new native/peer deps (e.g. `react-native-teleport` for Chat v9), native rebuild. |
 | **M3** | Apply | Bump only the targeted packages (each at its own target; bump the lane's Chat wrapper), apply every documented breaking change, ground each symbol in installed `node_modules/stream-chat-react-native-core` source, grep for renamed symbols, do native config + keyboard cleanup. |
-| **M4** | Verify | `tsc --noEmit` -> Metro bundle -> native build -> simulator/device smoke of the core flow. No `next build`; a green `tsc` is not a render. |
+| **M4** | Verify | `tsc --noEmit` -> Metro bundle -> native build -> simulator/device smoke of the core flow. No `next build`; a green `tsc` is not a render. Run gate commands from an absolute `cd` and **never piped** - a pipe returns the pipe's exit status, not the command's. |
 | **M5** | Summarize | Packages bumped, breaking changes applied, native/New-Arch changes, files touched, manual follow-ups. Offer (don't auto-run) the next step. |
 
 ---
 
 ## Track S - Migrate from Sendbird
 
-**Full detail:** [`sendbird-migration.md`](sendbird-migration.md) - Read it first. It detects the existing Sendbird integration shape **and** the Expo-vs-bare flavor, then re-implements each touchpoint **in place** against the grounded Sendbird<->Stream mapping ([`references/sendbird-mapping.md`](references/sendbird-mapping.md) + [`references/sendbird-mapping-extended.md`](references/sendbird-mapping-extended.md)), and finally offers the separate server-side data migration. Not a scaffold track: **do not enter Track A/B/D**. The compiler is the oracle - never migrate from memory ([`references/sendbird-mapping.md`](references/sendbird-mapping.md) > Trust model).
+**Full detail:** [`sendbird-migration.md`](sendbird-migration.md) - Read it first. It detects the existing Sendbird integration shape **and** the Expo-vs-bare flavor, then re-implements each touchpoint **in place** against the grounded Sendbird<->Stream mapping ([`references/sendbird-notes.md`](references/sendbird-notes.md) + [`references/sendbird-symbols.tsv`](references/sendbird-symbols.tsv)), and finally offers the separate server-side data migration. Not a scaffold track: **do not enter Track A/B/D**. The compiler is the oracle - never migrate from memory ([`references/sendbird-notes.md`](references/sendbird-notes.md) > Trust model).
 
 | Phase | Name | What you do |
 |---|---|---|
@@ -303,5 +303,5 @@ Use when the user wants package install and shared wiring more than a full featu
 | **S2** | Packages & connection | Install Stream **alongside** Sendbird (flavor-correct package + peers; wire `GestureHandlerRootView` / `OverlayProvider` / Reanimated Babel plugin). Prove a real user connects (`useCreateChatClient` + `tokenProvider`) via [`credentials.md`](credentials.md) **before** touching UI. Sections 3-4. |
 | **S3** | Migrate touchpoints | File-by-file, in place: UI composition (no `<Window>`; app-owned header), channels, messages/attachments, events (`{ unsubscribe }` cleanup), pagination (stateless), membership/moderation, offline. Delete hand-rolled machinery for reactive primitives. Then remove all three Sendbird packages. Section 5. |
 | **S4** | Design parity | Re-author the theme as a JS `Theme` object (no CSS), then run [`references/design-matching.md`](references/design-matching.md) from Step 1 with the baseline as the reference. Section 6. |
-| **S5** | Verify | Gates in order: `tsc --noEmit`, native build, zero `@sendbird` imports, two-user simulator smoke, design verify loop vs the ledger, ledger closure, README. Section 7. |
+| **S5** | Verify | Gates in order: `tsc --noEmit`, native build, zero `@sendbird` imports, two-user simulator smoke **+ every interaction driven** (gate 4 - handlers are verified there, not by the design gate), design verify loop vs the ledger, ledger closure, README. Run gate commands from an absolute `cd` and **never piped**. Section 7. |
 | **S6** | Offer data migration | Never auto-run. Offer the server-side data migration ([`../stream/sendbird-data-migration.md`](../stream/sendbird-data-migration.md)); stop if the user only wanted the SDK swap. Section 8. |

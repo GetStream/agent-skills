@@ -108,7 +108,11 @@ Work strictly from the fetched guide:
 Run with the **detected** package manager (do not introduce a second lockfile). There is no `next build` - it is a native app, so verification is type-check -> bundle -> native build -> smoke:
 
 ```bash
-npx tsc --noEmit # or: yarn tsc --noEmit / pnpm exec tsc --noEmit  - reports all type errors at once
+# Run from an ABSOLUTE cd into the project, and do NOT pipe it: a pipe returns the pipe's exit
+# status (so `| head` prints 0 on a failing typecheck), and `npx tsc` outside the project resolves
+# an unrelated registry package that prints "This is not the tsc command you are looking for".
+cd <abs-project-path> && npx tsc --noEmit > /tmp/tsc.log 2>&1; echo "EXIT=$?"; tail -20 /tmp/tsc.log
+# or: yarn tsc --noEmit / pnpm exec tsc --noEmit  - reports all type errors at once
 ```
 
 Then confirm it bundles and runs:
