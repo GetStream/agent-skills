@@ -13,7 +13,7 @@ These recur across the whole surface. They are how the generated SDKs are shaped
 | Pattern | Legacy | Generated |
 |---|---|---|
 | Sub-clients | Everything on one root client | Grouped: chat, moderation, video, feeds |
-| Requests | Loose positional arguments | One typed request object per operation |
+| Requests | Loose positional arguments or dicts | Structured: a typed request object in some languages, keyword arguments with typed models for nested payloads in others |
 | Optional fields | Zero values, or functional options | Explicitly optional, often nullable or pointer-wrapped |
 | Custom data | An extra-data bag | A `custom` map |
 | Options | Functional options or option structs | Fields on the request object |
@@ -78,6 +78,6 @@ The v1 flag-report workflow was replaced by a review queue with a different mode
 
 ## Not migrated
 
-Operations with no documented equivalent, or that cannot be verified against the SDK source, are left alone and reported. In practice this is the long tail of the legacy Chat surface: uploads, unread counts, threads, drafts, polls, reminders, commands, permissions and roles, import and export, and translation.
+An operation belongs here when it has **no equivalent, or you could not verify one**. Note the difference: a symbol reference not listing an operation does not mean the generated SDK lacks it. The references cover the common surface; the long tail (uploads, unread counts, threads, drafts, polls, reminders, commands, permissions and roles, import and export, translation) largely exists on both sides under names that mostly match. Check the SDK source before concluding something cannot be migrated.
 
-Leaving them is correct. The legacy SDK keeps working, so a partial migration is safe as long as the customer knows which parts are still on the old path.
+What genuinely belongs here is anything you could not confirm. Leaving those alone is correct: the legacy SDK keeps working, so a partial migration is safe as long as the customer knows which parts are still on the old path.

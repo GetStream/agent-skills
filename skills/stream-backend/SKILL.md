@@ -44,7 +44,7 @@ Resolve two things from the user's input and the project on disk.
 | Language | From (legacy) | To (generated) | Symbol reference |
 |---|---|---|---|
 | Go | `stream-chat-go` | `getstream-go` | [`references/go.md`](references/go.md) |
-| Python | `stream-chat` | `getstream` | not yet written |
+| Python | `stream-chat` | `getstream` | [`references/python.md`](references/python.md) |
 | Ruby | `stream-chat-ruby` | `getstream` | not yet written |
 | PHP | `get-stream/stream-chat` | `getstream/getstream` | not yet written |
 | Java | `stream-chat-java` | `stream-sdk-java` | not yet written |

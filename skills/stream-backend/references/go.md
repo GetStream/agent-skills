@@ -118,6 +118,6 @@ The generated request also exposes matching options the legacy SDK did not: list
 
 Types such as the user, message, reaction and device types split into request and response variants. Pick per use, per the decision rule in [`operations.md`](operations.md).
 
-## Not covered
+## Beyond this table
 
-File and image upload, unread counts, threads, drafts, polls, reminders, commands, permissions and roles, import and export, and message translation. Leave these on the legacy SDK and report them.
+File and image upload, unread counts, threads, drafts, polls, reminders, commands, permissions and roles, import and export, and message translation are not listed above. That means they are unverified here, **not that they are missing**: most exist on both sides under names that mostly match. Confirm each against the SDK source before migrating it, and report anything you cannot confirm rather than assuming it has no equivalent.
