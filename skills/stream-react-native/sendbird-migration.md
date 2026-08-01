@@ -278,7 +278,6 @@ else (quoted replies, polls, the attachment/image viewer, typing indicator, the 
 | Avatar treatment | shown on own messages, or shown in a 1:1 where the source hides it, or wrong shape / size |
 | Reactions | Stream's default overlay pills + emoji set/order instead of the source's **position** (in-bubble vs overlay), **set**, and **order** — read off the baseline, never assume |
 | Composer inventory | Stream's default button set shipped as-is: match 1:1 — the attach/`+` **shape**, the at-rest→typing **send/mic swap**, and **no** control the source lacks (an added button is a fail like a dropped one) |
-| Composer states | at-rest / **typing** / **voice-recording** / **edit** never each rendered and compared |
 | Composer chrome | floating vs docked (`messageInputFloating`), pill fill / border / radius, and the bar/wrapper background left at Stream's |
 | Header | title / subtitle / avatar / right-side actions not matched to the source header |
 | Date separators | Stream's default pill colour / style instead of the source's |
