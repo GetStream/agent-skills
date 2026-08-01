@@ -1,43 +1,30 @@
 # stream-migrate
 
-Rewrites a Go server integration from the legacy `stream-chat-go` SDK to the generated `getstream-go` SDK, and reports what it could not do.
+**Internal tool. Not shipped to customers and not referenced by the skill.**
+
+A type-aware Go codemod that rewrites a `stream-chat-go` integration to `getstream-go`. It exists to *validate* the Go mappings the `stream-backend` skill relies on: if the tool can apply a mapping and the result compiles against the real SDK, the mapping in `skills/stream-backend/references/go.md` is correct.
+
+It deliberately stays internal. Customers get one migration workflow across all six server-side SDKs, and shipping a tool that makes Go better than the rest would either invite "when do the other five get one" or quietly set the expectation that we owe five more codemods. We do not.
 
 ```bash
-go run github.com/GetStream/agent-skills/tools/stream-migrate@latest ./path      # preview to stdout
-go run github.com/GetStream/agent-skills/tools/stream-migrate@latest -w ./path   # apply in place
+go run . ./path      # preview to stdout
+go run . -w ./path   # apply in place
 ```
 
-The `stream-backend` skill runs this and handles what the report leaves behind. It is also useful on its own.
+Requires Go 1.23 or newer.
 
-## What it does
+## Why it is useful internally
 
-- Detects legacy calls with `go/types`, so it matches on what a call resolves to rather than on how it is spelled.
-- Rewrites call sites from a fixed mapping table (sub-clients, request structs, pointer fields, functional options folded into fields).
-- Rewrites legacy type references such as a client held in a struct field, because rewriting calls alone leaves the value they are called on with the wrong type.
-- Moves reads off a response under `Data`, since the generated calls return an envelope.
-- Classifies every call site and prints a report.
+- **It proves the mappings.** A mapping table nobody executes is a document with opinions in it. Running this over `testdata/chatmod` and building the result is evidence that the Go reference is accurate.
+- **It catches silent field loss.** Rules decline whenever a call carries a field they do not map, rather than dropping it. That behavior is what caught a bug where channel members vanished when built from a variable.
+- **It measures coverage.** The four-bucket report gives a real number for how much of a realistic integration is mechanical, which is hard to estimate by reading.
 
-## The report
+## Keeping it honest
 
-Four buckets, because "it compiles" and "it behaves the same" are different questions:
+`rules_test.go` and `rewrite_test.go` run without network or the real SDK. They cover the rewrites, the safety property that an unexpected call shape is declined rather than guessed, and that the reference documentation has not drifted from the implemented mappings.
 
-| Bucket | Meaning |
-|---|---|
-| APPLIED, SAFE | Mechanical rewrite, no behavior change. Accept in bulk. |
-| APPLIED, BEHAVIOR CHANGED | Rewritten and compiles, but runtime behavior differs. Read each one. |
-| NEEDS A DECISION | Not rewritten. The mapping needs a judgment the tool will not make. |
-| NOT MIGRATED | No mapping. Left untouched. |
-
-A rule with no explicit behavior classification is never reported as safe by accident: rules carry the note with them, and anything the table does not cover is reported rather than guessed at. The environment-variable rename and the sync-to-async delete are the clearest reasons the second bucket exists, since both compile cleanly and both break production if missed.
+`testdata/chatmod` is a representative Chat + Moderation integration written against the legacy SDK: several files, responses consumed, a spread of operations rather than a happy path. Copy it somewhere, run the tool over it, and build the result against `getstream-go`. Every remaining compile error should be one the report named.
 
 ## Limits
 
-- The mapping table is hand-written and covers what the migration guide documents. Generating it from the OpenAPI spec is the intended next step, so coverage tracks the SDK instead of being maintained by hand.
-- Response *payload* field renames are not rewritten. `Data` is inserted, but where the field itself changed shape, for example a single `User` becoming a `Users` map, the compiler points at the read and a human fixes it. The report says how many reads were moved so this is not a silent gap.
-- Only literal arguments are reshaped. A call built from variables degrades to "needs a decision" instead of being rewritten wrongly.
-
-Always finish with `go build ./... && go vet ./...`. The tool is deliberately conservative, and the compiler is the backstop.
-
-## Testing against a realistic integration
-
-`testdata/chatmod` is a representative Chat + Moderation integration written against the legacy SDK: several files, responses actually consumed, and a spread of operations rather than a happy path. Copy it somewhere, run the tool over it, and build the result.
+The mapping table is hand-written and reflects what has been verified against the SDK. Response payload field renames are not rewritten: `Data` is inserted, but where the field itself changed shape the compiler points at the read. Only literal arguments are reshaped; anything assembled at runtime is reported instead.
