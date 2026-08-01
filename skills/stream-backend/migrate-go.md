@@ -47,9 +47,31 @@ Map each call site from G1 to a section of the guide. Two outcomes only:
 
 `stream-chat-go` is a Chat SDK: every call site you find is Chat or chat moderation, and there is no Video or Feeds code to migrate (the legacy SDK has no such methods). The gaps are therefore *inside* Chat, in the parts of the legacy surface the guide does not document yet: file and image upload (`SendFile`, `SendImage`, `DeleteFile`), unread counts (`UnreadCounts`, `MarkUnread`, `UnreadCountsBatch`), threads, drafts, polls, reminders, blocklists, flags and flag reports (`FlagMessage`, `QueryFlagReports`, `ReviewFlagReport`), commands, permissions and roles (`AssignRole`, `Permissions`), import and export, and `TranslateMessage`.
 
-## G4: Apply the transforms
+## G4: Run the codemod
 
-Work from the fetched guide, operation by operation. These recurring rules from the README's Key Differences apply throughout, but the per-operation detail always comes from the topic file:
+**Do not hand-rewrite the call sites.** A deterministic tool does that part, and it does it better than retyping every call: it visits every match, it is repeatable, and it reports what it could not do.
+
+```bash
+go run github.com/GetStream/agent-skills/tools/stream-migrate@latest ./       # preview
+go run github.com/GetStream/agent-skills/tools/stream-migrate@latest -w ./    # apply
+```
+
+The tool prints a report in four buckets. Read it before touching anything:
+
+| Bucket | What you do with it |
+|---|---|
+| APPLIED, SAFE | Nothing. Mechanical rewrites, no behavior change. |
+| APPLIED, BEHAVIOR CHANGED | Rewritten and compiling, but runtime behavior differs. Carry every one of these into the final report to the user. |
+| NEEDS A DECISION | Not rewritten. You finish these, guided by the guide section for that operation. |
+| NOT MIGRATED | No mapping exists. Leave it alone and report it. |
+
+The tool also reports how many response reads it moved under `Data`. Where the payload field itself changed shape, for example a single `User` becoming a `Users` map, the compiler will point at the read in G5 and you fix it there.
+
+If the tool cannot run (no network for `go run`, or the project cannot be loaded), say so and stop rather than falling back to rewriting by hand from memory.
+
+## G4b: Resolve the residue
+
+Work the NEEDS A DECISION and NOT MIGRATED entries, one at a time, against the guide section for that operation. These recurring rules from the README's Key Differences apply throughout, but the per-operation detail always comes from the topic file:
 
 - **Module + alias:** `stream-chat-go/v8` -> `getstream-go/v5`; alias `stream` -> `getstream` on every reference.
 - **Env vars:** `STREAM_KEY` -> `STREAM_API_KEY`, `STREAM_SECRET` -> `STREAM_API_SECRET`.
@@ -67,12 +89,6 @@ Work from the fetched guide, operation by operation. These recurring rules from 
 - `AddMembers` / `RemoveMembers` / `AddModerators` / `DemoteModerators` are no longer methods; they are fields on `ch.Update(&UpdateChannelRequest{...})`.
 - `PushProvider` typed constants become plain strings (`"firebase"`, `"apn"`).
 
-After each operation, `grep` the codebase for the legacy symbol to confirm nothing was missed:
-
-```bash
-grep -rn "<oldSymbol>" --include=*.go .
-```
-
 Do not add features or refactor beyond the migration - this is a like-for-like port.
 
 ## G5: Verify (the backstop)
@@ -88,11 +104,11 @@ Fix every error the migration surfaced and re-run until `build` and `vet` are cl
 
 ## G6: Report
 
-State plainly:
-- Module bumped: `stream-chat-go/v8` -> `getstream-go/v5`, and env var renames if the app reads them.
-- Operations migrated, grouped by topic.
-- **Behavioral changes** the user must handle (async delete + `TaskID` polling, any semantics that shifted).
-- **Uncovered call sites** left untouched (uploads, unread counts, threads/drafts/polls, blocklists/flags, permissions, import/export, ...) with a note that the guide does not document them yet.
+Give the user the tool's buckets, not a wall of diff. State plainly:
+- Module bumped: `stream-chat-go/v8` -> `getstream-go/v5`.
+- How many call sites were rewritten safely. A count is enough; they do not need the list.
+- **Every behavior change, in full.** This is the part that matters, because these compile and still change how the app runs: the env var rename, any sync-to-async delete that now returns a task to poll, any flag write that moved from the v1 store to v2.
+- What you resolved by hand from the residue, and what you deliberately left, with the reason.
 - Verification result (`go build` / `go vet` output).
 
-Offer, do not auto-run, the natural next step (e.g. "want me to look at the Video calls the guide did not cover, against the live docs?").
+Offer, do not auto-run, the natural next step (e.g. "want me to work through the operations the guide does not document yet, against the live docs?").
