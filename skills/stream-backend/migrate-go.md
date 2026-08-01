@@ -8,6 +8,16 @@ Migrate a Go server integration from `github.com/GetStream/stream-chat-go` (lega
 
 ---
 
+## G0: Check the toolchain
+
+The migration runs a codemod, so the Go toolchain has to be present and recent enough:
+
+```bash
+go version
+```
+
+**Go 1.23 or newer is required.** If `go` is missing, or the version is older, stop and tell the user: without it the codemod cannot run, and hand-rewriting call sites from memory is not an acceptable substitute. `go run` also needs to reach the Go module proxy; in an offline or proxy-restricted environment, say so and stop.
+
 ## G1: Detect what is installed
 
 Read the real state, do not guess:
@@ -71,7 +81,15 @@ If the tool cannot run (no network for `go run`, or the project cannot be loaded
 
 ## G4b: Resolve the residue
 
-Work the NEEDS A DECISION and NOT MIGRATED entries, one at a time, against the guide section for that operation. These recurring rules from the README's Key Differences apply throughout, but the per-operation detail always comes from the topic file:
+Work the NEEDS A DECISION and NOT MIGRATED entries, one at a time, against the guide section for that operation.
+
+**Request or response types.** The tool rewrites the types it can name unambiguously, such as the client itself. It leaves the ones the generated SDK splits in two, because the legacy SDK used a single type for both directions: `stream.User` is `UserRequest` when a value is built and sent, and `UserResponse` when one is read back. That split is a reading of the code, which is your job, not the tool's. Decide per site from how the value flows:
+
+- Built as a literal and passed into a call -> the request type.
+- Assigned from a call's result, or read from a response -> the response type.
+- A function parameter or struct field -> follow the callers. A helper that builds a value for sending takes the request type; one that receives a value read back takes the response type. If both happen, split the helper rather than forcing one type onto both paths.
+
+The tool's note for each entry says which of these it saw. These recurring rules from the README's Key Differences apply throughout, but the per-operation detail always comes from the topic file:
 
 - **Module + alias:** `stream-chat-go/v8` -> `getstream-go/v5`; alias `stream` -> `getstream` on every reference.
 - **Env vars:** `STREAM_KEY` -> `STREAM_API_KEY`, `STREAM_SECRET` -> `STREAM_API_SECRET`.

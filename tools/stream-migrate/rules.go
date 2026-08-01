@@ -192,7 +192,11 @@ func buildUpsertUser(recv ast.Expr, c *ast.CallExpr) ast.Expr {
 	if !ok {
 		return nil
 	}
-	entry := &ast.KeyValueExpr{Key: idExpr, Value: lit(nil, userRequestFields(f)...)}
+	fields, ok := userRequestFields(f)
+	if !ok {
+		return nil
+	}
+	entry := &ast.KeyValueExpr{Key: idExpr, Value: lit(nil, fields...)}
 	users := lit(mapType("string", gs("UserRequest")), entry)
 	return call(sel(recv, "UpdateUsers"), c.Args[0], addr(lit(gs("UpdateUsersRequest"), kv("Users", users))))
 }
@@ -208,14 +212,23 @@ func buildUpsertUsers(recv ast.Expr, c *ast.CallExpr) ast.Expr {
 		if !ok {
 			return nil
 		}
-		entries = append(entries, &ast.KeyValueExpr{Key: idExpr, Value: lit(nil, userRequestFields(f)...)})
+		fields, ok := userRequestFields(f)
+		if !ok {
+			return nil
+		}
+		entries = append(entries, &ast.KeyValueExpr{Key: idExpr, Value: lit(nil, fields...)})
 	}
 	users := lit(mapType("string", gs("UserRequest")), entries...)
 	return call(sel(recv, "UpdateUsers"), c.Args[0], addr(lit(gs("UpdateUsersRequest"), kv("Users", users))))
 }
 
-// userRequestFields converts a legacy stream.User literal into UserRequest fields.
-func userRequestFields(f map[string]ast.Expr) []ast.Expr {
+// userRequestFields converts a legacy stream.User literal into UserRequest
+// fields, declining when the literal carries anything it does not map so that
+// no field is silently dropped.
+func userRequestFields(f map[string]ast.Expr) ([]ast.Expr, bool) {
+	if hasUnmappedFields(f, "ID", "Name", "Image", "Role", "Language", "Teams", "ExtraData") {
+		return nil, false
+	}
 	var elts []ast.Expr
 	if v, ok := f["ID"]; ok {
 		elts = append(elts, kv("ID", v))
@@ -229,7 +242,7 @@ func userRequestFields(f map[string]ast.Expr) []ast.Expr {
 	if v, ok := f["ExtraData"]; ok {
 		elts = append(elts, kv("Custom", v))
 	}
-	return elts
+	return elts, true
 }
 
 func buildQueryUsers(recv ast.Expr, c *ast.CallExpr) ast.Expr {
@@ -246,6 +259,9 @@ func buildPartialUpdateUser(recv ast.Expr, c *ast.CallExpr) ast.Expr {
 		return nil
 	}
 	f := fieldsOf(c.Args[1])
+	if hasUnmappedFields(f, "ID", "Set", "Unset") {
+		return nil
+	}
 	var elts []ast.Expr
 	for _, name := range []string{"ID", "Set", "Unset"} {
 		if v, ok := f[name]; ok {
@@ -305,8 +321,16 @@ func buildCreateChannel(recv ast.Expr, c *ast.CallExpr) ast.Expr {
 		return nil
 	}
 	ctx, ctype, cid, creator := c.Args[0], c.Args[1], c.Args[2], c.Args[3]
+	fields := fieldsOf(c.Args[4])
+	if hasUnmappedFields(fields, "Members") {
+		return nil
+	}
 	data := []ast.Expr{kv("CreatedByID", ptr(creator))}
-	if members := membersOf(fieldsOf(c.Args[4])["Members"]); members != nil {
+	if raw, present := fields["Members"]; present {
+		members := membersOf(raw)
+		if members == nil {
+			return nil // members built elsewhere; converting them would be a guess
+		}
 		data = append(data, kv("Members", members))
 	}
 	req := addr(lit(gs("GetOrCreateChannelRequest"), kv("Data", addr(lit(gs("ChannelInput"), data...)))))
@@ -327,6 +351,9 @@ func buildChannelPartialUpdate(recv ast.Expr, c *ast.CallExpr) ast.Expr {
 		return nil
 	}
 	f := fieldsOf(c.Args[1])
+	if hasUnmappedFields(f, "Set", "Unset") {
+		return nil
+	}
 	var elts []ast.Expr
 	for _, name := range []string{"Set", "Unset"} {
 		if v, ok := f[name]; ok {
@@ -434,6 +461,9 @@ func buildPartialUpdateMessage(recv ast.Expr, c *ast.CallExpr) ast.Expr {
 // optionally folding in the user id that used to be a separate argument.
 func messageRequest(f map[string]ast.Expr, userID ast.Expr) ast.Expr {
 	if f == nil {
+		return nil
+	}
+	if hasUnmappedFields(f, "Text", "ParentID", "HTML", "MML", "QuotedMessageID", "ShowInChannel", "Attachments", "ExtraData") {
 		return nil
 	}
 	var elts []ast.Expr
@@ -644,7 +674,7 @@ func buildAddDevice(recv ast.Expr, c *ast.CallExpr) ast.Expr {
 	}
 	f := fieldsOf(c.Args[1])
 	idExpr, ok := f["ID"]
-	if !ok {
+	if !ok || hasUnmappedFields(f, "ID", "UserID", "PushProvider") {
 		return nil
 	}
 	elts := []ast.Expr{kv("ID", idExpr)}
@@ -736,6 +766,22 @@ func fieldsOf(e ast.Expr) map[string]ast.Expr {
 		}
 	}
 	return out
+}
+
+// hasUnmappedFields reports whether a literal carries fields a rule does not
+// know how to map. Rules decline in that case: dropping a field the customer
+// set is a silent behavior change, and the whole point is to not do that.
+func hasUnmappedFields(f map[string]ast.Expr, known ...string) bool {
+	set := make(map[string]bool, len(known))
+	for _, name := range known {
+		set[name] = true
+	}
+	for name := range f {
+		if !set[name] {
+			return true
+		}
+	}
+	return false
 }
 
 // optPtr appends a pointer-wrapped field only when the source field is present.

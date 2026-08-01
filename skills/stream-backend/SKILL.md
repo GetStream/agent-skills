@@ -2,7 +2,7 @@
 name: stream-backend
 description: "Migrate a server-side (backend) Stream integration from a legacy hand-written SDK to the generated OpenAPI SDK. First supported path: Go - github.com/GetStream/stream-chat-go to github.com/GetStream/getstream-go. Language-parameterized: it detects or asks the server language, then runs that language's migration. Triggers on 'migrate stream-chat-go to getstream-go', 'move off stream-chat-go', 'switch to getstream-go', 'upgrade my Stream server SDK', and server SDK tokens (stream-chat-go, getstream-go). NOT for client / frontend SDKs (iOS, Android, React, React Native, Flutter) - those have their own packs (stream-swift, stream-android, stream-react, stream-react-native, stream-flutter)."
 license: See LICENSE in repository root
-compatibility: Requires the customer's server-side project checkout. Migration reads and edits local files and fetches the official migration guide live, so network access to github.com and raw.githubusercontent.com is required. No Stream account or CLI onboarding is needed - this is a local-only, docs-driven code migration.
+compatibility: Requires the customer's server-side project checkout, plus the toolchain of the language being migrated. For Go that means the Go toolchain, version 1.23 or newer, because the migration runs a codemod built with it. Fetches the official migration guide live, so network access to github.com and raw.githubusercontent.com is needed, and `go run` needs to reach the Go module proxy. No Stream account or CLI onboarding is required - this is a local-only, docs-driven code migration.
 metadata:
   author: GetStream
 allowed-tools: >-

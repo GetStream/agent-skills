@@ -229,11 +229,28 @@ func migrateTypeRefs(pkg *packages.Package, file *ast.File, existing []finding) 
 		pos := pkg.Fset.Position(sel.Pos())
 		if !reportedAt(existing, pos) {
 			found = append(found, finding{pos: pos, kind: needsDecision, name: sel.Sel.Name,
-				note: "legacy type reference with no unambiguous equivalent; pick the request or response type the generated SDK uses here"})
+				note: ambiguousTypeNote(cur, sel.Sel.Name)})
 		}
 		return false
 	}, nil)
 	return found, changed
+}
+
+// ambiguousTypeNote explains what a surviving legacy type reference is doing,
+// so whoever finishes the migration can pick between the request and response
+// type instead of guessing. The generated SDK splits types the legacy SDK used
+// for both directions: a value being built and sent is a request, a value read
+// back is a response.
+func ambiguousTypeNote(cur *astutil.Cursor, name string) string {
+	switch parent := cur.Parent().(type) {
+	case *ast.CompositeLit:
+		if parent.Type == cur.Node() {
+			return fmt.Sprintf("built here, so this is the request side: use getstream.%sRequest", name)
+		}
+	case *ast.Field:
+		return fmt.Sprintf("declared type on a field or parameter: use getstream.%sRequest if the value is built and sent here, or getstream.%sResponse if it is read back from a call", name, name)
+	}
+	return fmt.Sprintf("legacy type used for both directions: use getstream.%sRequest where the value is sent, getstream.%sResponse where it is read back", name, name)
 }
 
 // reportedAt reports whether a finding already covers this line, so a call that
