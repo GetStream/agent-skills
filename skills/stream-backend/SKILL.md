@@ -60,10 +60,18 @@ For **Go**, Read [`migrate-go.md`](migrate-go.md) and follow it. It is docs-driv
 
 ---
 
+## Which products this covers
+
+The legacy SDKs are **Chat** SDKs. `stream-chat-go` exposes Chat plus chat-era moderation (ban, mute, moderators, flags, blocklists) and has no Video, Feeds, or Call surface at all. So a migration from it covers Chat and chat moderation, because that is the entire surface there is to migrate.
+
+Video and Feeds in the generated SDK are **new capability, not migration targets**: there is no legacy Go code calling them. If you want to start using Video or Feeds, that is adoption rather than migration, and the product docs are the right starting point. Feeds v2 to v3 is a different move again (the API and the SDKs both differ) and is not handled here.
+
+Within Chat, the migration guide documents the common operations (setup and auth, users, channels, messages and reactions, ban/mute/moderators, devices). It does not yet document the whole legacy surface. Known gaps, which this skill reports rather than guesses at: file and image upload, unread counts, threads, drafts, polls, reminders, blocklists, flags and flag reports, commands, permissions and roles, import and export, and message translation.
+
 ## What this skill does not do (yet)
 
 - **Client / frontend SDK migrations** - those belong in the platform packs listed in Step 0.
 - **Build / integrate from scratch** - this skill migrates an existing integration; it does not scaffold new server code.
 - **Data migration** - it migrates code, not stored data.
 
-These are candidates for future tracks under the same skill, added the same way the Go track is: a `migrate-<lang>.md` procedure plus a row in the language table above.
+Additional languages are added the same way the Go track is: a `migrate-<lang>.md` procedure plus a row in the language table above.

@@ -43,7 +43,9 @@ Same base URL, swap the filename. **Hard gate:** if the guide does not load, sto
 Map each call site from G1 to a section of the guide. Two outcomes only:
 
 1. **Covered** by the guide -> queue the documented transform.
-2. **Not covered** (e.g. Video, Feeds, file/attachment uploads, search, events/webhooks, permissions/roles, blocklists, commands, import/export, and anything else absent from the six topics) -> **do not invent a mapping**. Collect these and either stop for guidance or leave them untouched and list them as manual follow-ups. Flag this explicitly in the report.
+2. **Not covered** -> **do not invent a mapping**. Collect these and either stop for guidance or leave them untouched and list them as manual follow-ups. Flag this explicitly in the report.
+
+`stream-chat-go` is a Chat SDK: every call site you find is Chat or chat moderation, and there is no Video or Feeds code to migrate (the legacy SDK has no such methods). The gaps are therefore *inside* Chat, in the parts of the legacy surface the guide does not document yet: file and image upload (`SendFile`, `SendImage`, `DeleteFile`), unread counts (`UnreadCounts`, `MarkUnread`, `UnreadCountsBatch`), threads, drafts, polls, reminders, blocklists, flags and flag reports (`FlagMessage`, `QueryFlagReports`, `ReviewFlagReport`), commands, permissions and roles (`AssignRole`, `Permissions`), import and export, and `TranslateMessage`.
 
 ## G4: Apply the transforms
 
@@ -90,7 +92,7 @@ State plainly:
 - Module bumped: `stream-chat-go/v8` -> `getstream-go/v5`, and env var renames if the app reads them.
 - Operations migrated, grouped by topic.
 - **Behavioral changes** the user must handle (async delete + `TaskID` polling, any semantics that shifted).
-- **Uncovered call sites** left untouched (Video/Feeds/uploads/search/etc.) with a note that the guide does not cover them yet.
+- **Uncovered call sites** left untouched (uploads, unread counts, threads/drafts/polls, blocklists/flags, permissions, import/export, ...) with a note that the guide does not document them yet.
 - Verification result (`go build` / `go vet` output).
 
 Offer, do not auto-run, the natural next step (e.g. "want me to look at the Video calls the guide did not cover, against the live docs?").
