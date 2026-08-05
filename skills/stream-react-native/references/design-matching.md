@@ -109,6 +109,11 @@ dimension matters. Extract the real numbers off the reference and land them in R
 8. **Land measured numbers in RN theme keys / style values, and reuse the SDK spacing scale** for
    gaps/radius so custom pieces align with un-overridden parts — but tokens are for spacing/radius,
    *not* a license to keep default control/field **sizes**; those come from measurement.
+9. **No magic numbers — a size that represents a real thing anchors to that thing.** Sizes standing for
+   a concrete thing (keyboard, safe area, header, tab bar) anchor to that thing (the SDK default or a
+   measured reference value), never to "what feels roomy." When correcting an over/undershoot, reach for
+   the simplest static approximation (e.g. an SDK default) *before* any runtime measurement hook — don't
+   swing from an arbitrary number to an overwrought measured solution.
 
 ### Weight is its own dimension — measure and match it (separately from color)
 
@@ -125,6 +130,12 @@ Every glyph and text role has a **weight** as well as a size and color, and the 
   that looks "too bold" has too heavy a weight. Fix the one that's actually wrong.
 - **Verify BOTH, by measurement:** the rendered role's **stroke width** ≈ the reference's, AND its
   **dark-core color** ≈ the reference's. Two separate checks.
+- **Verify a glyph's drawn ink, not its declared size.** An SVG's size prop sizes the box, not the
+  paths. Paths that do not reach the viewBox edges render smaller than the box you set, so a size check
+  against the reference passes while the glyph reads undersized. Worse, ink squeezed into less area is
+  proportionally denser, so an ink-ratio check reads it as too heavy at the same time: one cause, two
+  checks, both misleading. Measure the ink bounding box on both sides. If the declared sizes match and
+  the ink boxes do not, the fix is in the path data or the viewBox, not the size prop.
 
 ### Follow EVERY color from the reference — sample it, don't guess (and sample each sub-part)
 
@@ -147,13 +158,42 @@ read-receipt ticks**. Don't assume a "known" brand color; only measuring catches
   approximation.
 - **Verify by re-sampling YOUR render and diffing against the reference** — run the same sampling on a
   screenshot of what you built, per sub-part, and compare the measured values; don't eyeball it.
+- **When you override an accent/brand colour, override EVERY token that cascades from it — and treat any
+  un-rendered state as hiding a stray default until proven otherwise.** Recolouring the common surfaces
+  but leaving the SDK default in a less-common state (voice recording → `accentPrimary` /
+  `chatWaveformBar`, edit, error, overlays, focus rings) is not a finished theme. Set those tokens from
+  the theme even for states the reference never shows — that's a code check, not a reason to drive and
+  screenshot the state.
 
 **Light/dark carve-out - don't pin structural surfaces to a light-mode literal.** The reference is
 almost always a light screenshot. **Pin** the sampled **brand/content** colors (bubble fills,
 glyphs, accent, read-receipt ticks) - they're the same in both modes. But keep **structural
 surfaces** (message-list background, composer/input background, borders) on the theme's semantic
 values so they still adapt; pinning a surface to `white` looks right in light mode and breaks in
-dark. If the app supports dark mode, verify both.
+dark. If the app supports dark mode, verify both (§3.4).
+
+**A pinned brand accent and an adapted brand-tinted surface are different tokens — never mix the two
+inside one element.** A saturated brand fill (outgoing bubble, primary button) pins, and its foreground
+pins with it. A pale brand wash used as a card, banner or sheet is not a brand colour but a *light
+surface with brand character*; its dark counterpart is a dark surface with the same character, so it
+adapts — hold the hue, cut saturation, drop lightness. Pinning a tint keeps the pigment and loses the
+role: a pale card pinned into a dark UI becomes the brightest thing on screen (measured 18.93:1 against
+a near-black screen, versus 1.76:1 adapted). The observed defect on two SDKs was pinning the surface
+while leaving its contents semantic, collapsing label-on-card contrast to 1.03:1 and 1.58:1. When you
+adapt a surface, adapt every nested surface and ink with it, and **preserve the light-mode elevation
+direction** — an inner sheet lighter than its parent in light must stay lighter in dark, or a raised
+sheet reads as a well. Verify by measuring every nested pair in dark: 4.5:1 for text, roughly 1.5:1 for
+surface against surface where no shadow is doing the work.
+
+**A knockout inside a glyph is not a colour, it is the surface behind the glyph showing through.** Set
+it to the token of whatever surface that glyph actually sits on, pinned or adapted, never to a literal.
+A hardcoded white knockout is correct only while the glyph sits on a light surface: when the surface
+adapts and the ink lightens, the cutout disappears into the ink and the glyph reads as a solid blob.
+Measured on one icon, the knockout went from 1.36:1 against its own ink in dark to 13.33:1 once
+resolved, with light unchanged apart from the knockout pixels themselves. This passes every contrast
+pair a theme check measures, because the surface and the ink both adapted correctly and the knockout is
+not one of the pairs. Detect it by sampling the knockout in both modes; an identical hex while the
+surrounding ink changed means it is a literal.
 
 ### Region checklist + routing (walk every row)
 
@@ -164,6 +204,38 @@ standard"; verify it against the default.
 
 The **Route to** column names the *mechanism*; **confirm the exact theme key / slot / prop name** in
 the manifest-selected docs and the installed package, not from memory.
+
+**Reasoning rules for picking the mechanism** - these catch the *class* of mistake a single fact never
+does, so they generalize to regions not yet enumerated:
+
+- **A theme-key / component-slot name is a hint, not a guarantee — confirm the target node in the
+  render tree before using it.** Composer/message keys (`wrapper` vs `container` vs `inputBoxWrapper`,
+  `MessageContent*` vs `MessageFooter`) do **not** map cleanly to "the thing you mean" by name. Two
+  minutes reading the installed component's source beats a name-based guess that half-works.
+- **A theme key that colours only *part* of a region means you hit an *inner* container.** A key that
+  "kind of works" (paints a band around the controls, tints half the surface) is more dangerous than
+  one that does nothing, because partial success doesn't trip the "go investigate" reflex. When styling
+  looks partial, read the component's render tree and apply the value to the **outermost full-bleed
+  `View`**, then verify the whole surface — sample the *margins around* a region, not just its
+  foreground controls.
+- **Fix the structure before the surface — never fake a structural property with a background fill.**
+  If you're reaching for a hardcoded/sampled background colour to make a region "look right" (a
+  translucent fill to fake a floating or blurred pill, a painted strip to fake an overlay), stop: a
+  painted fill masking a structural difference is a defect, not a match. Map the difference to the
+  SDK's structural mechanism first — a prop/flag/slot (e.g. `messageInputFloating` for a floating
+  composer) — then theme the surface. Resolve the structural axis (floating, overlay, slot) *before*
+  cosmetic polish (glass, exact colours), not after.
+- **A large custom build that parallels SDK infrastructure is a red flag — re-read the reference, don't
+  proceed.** A knowledge-backed decision can still rest on a wrong premise (a misread screenshot), and
+  knowing the API makes the wrong path *feel* informed so it never trips the "look this up" reflex.
+  Before choosing a modal / host replacement / from-scratch surface over an SDK slot, **state the SDK's
+  default structure for that region and diff it against the reference**. The SDK almost always has a
+  slot; reinvention usually means you misread the reference.
+- **Idiomatic ≠ matching, in both directions.** Swapping in an SDK component for correct *behaviour*
+  inherits its *appearance* (e.g. the SDK `AttachButton` is a bordered `type="outline"` button) —
+  re-decompose the look after the swap. Re-customizing a slot for *appearance* must **reuse the SDK
+  component's behaviour logic** (read its `onPress` and replicate it, including subtle branches) rather
+  than hand-roll a lossy version.
 
 For every region note the followings: color, background color, border, border radius, padding / gap, typography (font, font weight, font and line size) - save findings to a file called `design-analysis.md`. Unless asked otherwise, remove the `design-analysis.md` after the verification step.
 
@@ -261,9 +333,11 @@ instead of serialising them; and (b) it surfaces native/peer failures immediatel
 - Any throwaway scaffold added to reach a
   screen must be **DELETED before delivery** (remove the branch/flag/import - don't merely disable
   it), then the real path re-verified.
-- After fixing one facet of a region, re-verify the **other** facets of that same region
-  ([`../RULES.md`](../RULES.md) > regression adjacency) - fixes routinely break a neighbour
-  (picker -> attach-button look -> toggle behaviour).
+- **Regression adjacency — re-verify *every* facet of a region after *any* change.** Fixing one facet
+  (structure / appearance / behaviour) routinely breaks a neighbour one layer down (rebuilding the
+  picker breaks the attach button's look; restyling the button breaks its toggle behaviour). After each
+  fix, re-check the region's other facets **and both of its states** before moving on - don't re-verify
+  only the facet you just touched.
 - **Iterate until every region passes.** Fix, re-run, re-compare; never declare done on the first render.
 - If you genuinely cannot run the app, say so plainly and list which regions are
   implemented-but-unverified - never imply a match you did not see.
@@ -365,5 +439,10 @@ Then confirm the **light/dark carve-out** from Step 1 held:
 - [ ] **Pinned brand/content** colours (bubble fills, glyphs, accent, read-receipt ticks) look identical
   to light mode. One that washed out was pinned wrong.
 - [ ] Text and glyphs still have contrast against the flipped surfaces - sample both modes, don't eyeball.
-- [ ] No element mixes a pinned brand accent with an adapted brand-tinted surface
-  ([`../RULES.md`](../RULES.md)).
+- [ ] No element mixes a pinned brand accent with an adapted brand-tinted surface (Step 1) - and every
+  nested pair measures 4.5:1 for text, ~1.5:1 surface-on-surface, with the light-mode elevation
+  direction preserved.
+- [ ] No glyph **knockout** is a literal - sample it in both modes; an identical hex while the
+  surrounding ink changed means it never resolved (Step 1).
+- [ ] Any colour reaching the screen through a `WithComponents` slot override was verified on a
+  **cold launch**, not a runtime flip ([SIMULATOR-VERIFICATION.md](SIMULATOR-VERIFICATION.md) §6).

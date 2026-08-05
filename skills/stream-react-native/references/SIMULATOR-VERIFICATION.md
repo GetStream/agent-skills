@@ -393,6 +393,13 @@ waste a relaunch chasing it). **Check the app's theme-toggle source first:** if 
 context's setter), then relaunch/re-render and screenshot. Don't reach for `simctl ui appearance` on an
 app-state-driven toggle.
 
+**Caveat — a `WithComponents` slot override does NOT re-resolve on a runtime flip.** Whenever a colour
+reaches the screen through a slot override, **cold-launch each mode** (terminate → `simctl ui …
+appearance` → launch) instead of flipping while the app runs: those overrides resolve at first mount, so
+on a runtime flip they stay light while everything around them flips. The frame-hash settle check above
+still passes, because the surfaces that *do* flip change the frame — so this defect survives a green
+verification.
+
 Then confirm the carve-out held: **structural surfaces** (message-list background, composer/input
 background, borders) flipped to their dark values, while **pinned brand/content** colors (bubble
 fills, glyphs, accent, read-receipt ticks) look identical to light mode. A surface that stayed light
@@ -403,6 +410,11 @@ per the color-sampling method in [design-matching.md](design-matching.md).
 
 ## 7. Known environmental limits (don't fight these)
 
+- **A green launch does not prove correctness.** Boot success proves nothing about a version-gated crash
+  (surfaces on worklet/animation paths, not at boot), an unfilled background, or an off-by-a-safe-area
+  size. Verify by the thing that's actually wrong — a version number, a sampled pixel, an on-device
+  check — not by "it ran." Some defects (physical-scale sizing) only read wrong on a device, not on the
+  roomy simulator window.
 - **Screenshots verify appearance, NOT interaction.** `simctl` can't tap, so a screenshot diff never
   exercises `onPress`/`onSelect`/navigation handlers — a broken tap looks identical to a working one.
   Any custom slot with a handler (a custom `ChannelPreview` row, message press, a custom button) must
@@ -437,7 +449,7 @@ per the color-sampling method in [design-matching.md](design-matching.md).
   should ≈ keyboard height), a safe-area gap, a bottom-bar height — can look fine on the large
   simulator window while being visibly oversized/undersized on a phone. Verify these against the thing
   they represent (the SDK default, a measured value), not by eye on the sim (a *green launch ≠ correct*
-  case, [../RULES.md](../RULES.md)); when a size stands for the keyboard/safe area, confirm on a device.
+  case, §7 above); when a size stands for the keyboard/safe area, confirm on a device.
 - **Dev-only overlays — ignore them in screenshots:** the **Expo** dev-client overlays a small
   floating **gear / dev-menu launcher**; the **RN CLI** shows a **LogBox "Open debugger to view
   warnings" toast** at the bottom. Both are dev-only (gone in a release build) and not part of the

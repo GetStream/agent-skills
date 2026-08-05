@@ -221,7 +221,7 @@ with **no** target appearance does not trip this flag - build from the blueprint
 - **Overriding a composite slot drops every sub-feature the default drew** unless you reproduce it (avatar, grouping, reactions, replies, receipts, edited/deleted state).
 - **Setup traps that silently break these builds:** on Expo SDK 57 bump past the crash-prone reanimated pin (≥4.5.1/≥0.10.2), and on Reanimated 4 set `FORCE_REACT_RENDER_FOR_SETTLED_ANIMATIONS: false` in root `package.json` (both in [`RULES.md`](RULES.md) > Required peer setup).
 
-The cross-cutting reasoning rules that catch these (partial-styling → inner container, regression adjacency, name-isn't-the-node, reinvention red flag, no magic numbers, green-launch ≠ correct, assumed-≠-SDK-default, override-every-cascading-token) live in [`RULES.md`](RULES.md) > Design-matching discipline — read them for any design-match request.
+The cross-cutting reasoning rules that catch these live in [`references/design-matching.md`](references/design-matching.md) — read it for any design-match request. Where each one sits: partial-styling → inner container, name-isn't-the-node, reinvention red flag, structure-before-surface and idiomatic-≠-matching in **Step 1 > Region checklist + routing**; no magic numbers and ink-vs-declared-size in **Step 1 > Getting sizes right / Weight**; override-every-cascading-token, pinned-vs-adapted surfaces and glyph knockouts in **Step 1 > Follow EVERY color**; regression adjacency in **Step 3**. Two stay here: *green-launch ≠ correct* in [`references/SIMULATOR-VERIFICATION.md`](references/SIMULATOR-VERIFICATION.md) §7, and *assumed-≠-SDK-default* in [`RULES.md`](RULES.md) > Package version and docs discipline.
 
 ---
 

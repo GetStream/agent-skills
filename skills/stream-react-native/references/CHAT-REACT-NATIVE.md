@@ -235,6 +235,12 @@ Use [DOCS.md](DOCS.md) to fetch the manifest-selected theming/customization page
 
 - **ALL component overrides go through one `WithComponents overrides={{ … }}` provider** placed above navigation so they apply on every screen. **Passing a component as a `<Channel>` prop is silently ignored** — no error, no effect; it reads exactly like a stale bundle during verification. If an override "isn't taking," first confirm it's in `WithComponents`, not a `<Channel>` prop.
 - **The full overridable slot set is the compiled `components` map** in the installed package (`node_modules/stream-chat-react-native-core/.../contexts/componentsContext/defaultComponents.js`) — grep that for real slot names, don't work from memory.
+- **"The host is a direct import" ≠ "the layout is locked" — enumerate every context slot before
+concluding a region can't be restructured.** Before deciding a region isn't overridable, grep the parent
+component for **every** `useComponentsContext()` destructure and list all the slots it resolves; a host
+imported directly in `Channel` does not lock its children. (Example: `AttachmentPicker` resolves both
+`AttachmentPickerContent` and `AttachmentPickerSelectionBar` from context, so its internal layout —
+including a bottom bar — IS overridable.)
 - **Nullable extension slots live in `OptionalComponentOverrides`, not `DEFAULT_COMPONENTS`.** The in-bubble content slots (`MessageContentTopView` / `MessageContentBottomView` / `MessageContentLeading` / `MessageContentTrailing`, `MessageText`, `Input`, …) are in `OptionalComponentOverrides`, so they **won't appear if you only grep the `DEFAULT_COMPONENTS` keys** — "that slot doesn't exist" is usually "I grepped the wrong map." Check both.
 
 ### Composer, attach button, and message-metadata facts
