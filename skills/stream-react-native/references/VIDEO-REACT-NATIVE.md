@@ -6,6 +6,24 @@ Rules: [../RULES.md](../RULES.md) (New Architecture, secrets, runtime lane owner
 
 Manifest-selected docs are the authority. Use [DOCS.md](DOCS.md) before installing packages or making API-specific claims.
 
+## Contents
+
+- **Quick ref** - package + peer matrix per lane, and the first-path step order
+- **App Integration** - Installation · Animation peers · Expo config plugins · Android native setup (RN CLI) · Permissions · **Optional dependency map** · Client setup · Token route pattern
+- **User Authentication** - Static token · Token provider (expiring) · Disconnecting and switching users
+- **Call object** - Lifecycle methods · Audio routing · Call types
+- **Call State** - calling/connection state · Ringing state · Participants · Client-level call routing
+- **React Native Components** - `StreamCall`, `CallContent`, `ParticipantView`, and the rest
+- **Navigation rules** - provider placement and passing call ids between screens
+- **Safe areas and edge-to-edge** - inset ownership for call UI
+- **Customization** - override precedence for call UI
+- **Ringing, push, and notifications** - CallKit / Telecom, ringing vs non-ringing
+- **Chat + Video interop** - provider nesting when both SDKs are present
+- **Single-call concurrency** - one active call at a time
+- **Error handling** · **Device management**
+- **Integration best-practices audit (existing apps)** - How to run it · Output contract · Carve-outs · **Checklist**
+- **Gotchas** · **Troubleshooting** - Connection issues · Ringing call issues · Logs
+
 ---
 
 ## Quick ref

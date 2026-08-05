@@ -4,6 +4,20 @@ Load only the section you are implementing. For `llms.txt` manifest search, see 
 
 Expo lane: change imports from `"stream-chat-react-native"` to `"stream-chat-expo"` unless the symbol comes from React Navigation, React Native, or `stream-chat`.
 
+## Contents
+
+- **Request -> Blueprint section** - routing table; start here to pick the sections below
+- **App Provider and Auth Gate** - `OverlayProvider` / `Chat` / `WithComponents` root, token wiring
+- **Fresh App Scaffold** - new-app file layout and order of assembly
+- **Optional Native Capability Blueprint** - Dependency choice and install flow · Screen wiring
+- **Navigation Shell** - stack/router setup, `channel.cid` params, header ownership
+- **Channel List Screen** - `ChannelList` + custom preview slots
+- **Channel Screen** - `Channel` + `MessageList` + `MessageComposer`, header offsets
+- **Thread Screen** / **Thread List Screen** - replies and the thread inbox
+- **Theming Blueprint** - the `Theme` object, both providers, token structure
+- **Component Override Blueprint** - `WithComponents` slot overrides (the full slot set)
+- **Offline and Sign-out Blueprint** - `enableOfflineSupport`, DB reset order on sign-out
+
 ---
 
 ## Request -> Blueprint section

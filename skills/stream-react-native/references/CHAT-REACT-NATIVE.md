@@ -6,6 +6,17 @@ Rules: [../RULES.md](../RULES.md) (Chat-only, New Architecture, secrets, runtime
 
 Manifest-selected docs are the authority. Use [DOCS.md](DOCS.md) before installing packages or making API-specific claims.
 
+## Contents
+
+- **Quick ref** - package + peer matrix per lane, and the first-path step order
+- **App Integration** - Installation · **Optional dependency map** (capability -> package, per lane) · Babel and entry point · Client setup · Token route pattern
+- **Core components** - what each component and hook is for
+- **Navigation rules** - provider placement, `channel.cid` params, header offsets, threads
+- **Customization** - override precedence · Component override model (v9+, `WithComponents` only) · **Composer, attach button, and message-metadata facts**
+- **Offline support** - opt-in `op-sqlite` setup and its caveats
+- **Expo SDK 55 → 56 changes** - changed defaults and which blueprint to pick
+- **Gotchas** - version pins, `null` client, upload progress, migration leftovers
+
 ---
 
 ## Quick ref
