@@ -14,7 +14,7 @@ getstream skills
 
 With no arguments, `getstream skills` installs the default set - the `stream` router (which includes the CLI layer), `stream-builder`, and `stream-docs`. The web pack (`stream-react`) and platform packs (`stream-swift`, `stream-android`, `stream-react-native`, `stream-flutter`) install on demand via `getstream skills <name>` the first time a task needs them. To set up a project at the same time (auth, org/app selection, credentials), run `getstream init` instead.
 
-Use `/stream` for generic routing, or invoke a skill directly with `/stream-react`, `/stream-builder`, `/stream-docs`, `/stream-swift`, `/stream-android`, `/stream-react-native`, or `/stream-flutter`. Step-by-step instructions are in the [installation guide](https://getstream.io/agent-skills/docs/installation/).
+Use `/stream` for generic routing, or invoke a skill directly with `/stream-react`, `/stream-builder`, `/stream-docs`, `/stream-swift`, `/stream-android`, `/stream-react-native`, `/stream-flutter`, or `/stream-backend`. Step-by-step instructions are in the [installation guide](https://getstream.io/agent-skills/docs/installation/).
 
 ## Skills
 
@@ -30,6 +30,7 @@ Each skill has a reference page on the docs site - the skill names below link to
 | [`/stream-android`](https://getstream.io/agent-skills/docs/skills/stream-android/) | Build or integrate Stream in Android/Jetpack Compose apps | Android, Jetpack Compose, Kotlin, Android Studio, Gradle |
 | [`/stream-react-native`](https://getstream.io/agent-skills/docs/skills/stream-react-native/) | Create, build, or integrate Stream Chat or Stream Video React Native in RN CLI or Expo apps | React Native, Expo, `stream-chat-react-native`, `stream-chat-expo`, `@stream-io/video-react-native-sdk`, video call, livestream, audio room, ringing |
 | [`/stream-flutter`](https://getstream.io/agent-skills/docs/skills/stream-flutter/) | Build or integrate Stream Chat in Flutter apps | Flutter, Dart, `stream_chat_flutter`, `stream_chat_flutter_core` |
+| `/stream-backend` | Migrate a server-side integration from a legacy hand-written SDK to the generated OpenAPI SDK (Go today) | "migrate stream-chat-go to getstream-go", server SDK tokens `stream-chat-go` / `getstream-go` |
 
 The router (`/stream`) owns routing, the CLI layer (queries, app config, onboarding), and the cross-cutting rules in [`skills/stream/RULES.md`](skills/stream/RULES.md) (explained in [Rules Every Skill Follows](https://getstream.io/agent-skills/docs/concepts/skill-rules/)). Platform sub-skills can add their own `RULES.md`.
 
@@ -78,6 +79,7 @@ The `/stream` router classifies intent, runs `getstream` CLI commands itself (qu
 | Audit an existing Video integration | `stream-react` (Track F) |
 | Migrate / upgrade an SDK version | `stream-react` (Track M) |
 | Migrate a web app from Sendbird | `stream-react` (Track S) |
+| Migrate a server-side (backend) SDK to the generated OpenAPI SDK | `stream-backend` |
 | Data queries, app config, and CLI operations | `stream` (CLI, built in) |
 | SDK wiring during scaffold/enhance | `stream-react` + its `sdk.md` and `references/*.md` |
 | Framework-agnostic builds, only when named explicitly | `stream-builder` |
