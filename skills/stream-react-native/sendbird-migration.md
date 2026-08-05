@@ -1,14 +1,5 @@
 # Sendbird -> Stream Chat React Native migration (Track S)
 
-A repeatable procedure for migrating a **React Native app (Expo or bare RN CLI)** from the
-**Sendbird Chat SDK** (`@sendbird/chat` + `@sendbird/uikit-react-native` +
-`@sendbird/uikit-react-native-foundation`) to **Stream Chat** (`stream-chat` +
-**`stream-chat-react-native`** for bare RN, **`stream-chat-expo`** for Expo). It works on *any*
-Sendbird integration shape - UIKit fragment drop-in, custom hooks, a Context+reducer store,
-`MessageCollection`-driven screens, or direct SDK calls - because it **detects the shape first** and
-re-implements each touchpoint in place. This is not a scaffold track: do not enter Track A, Track B,
-or any onboarding step.
-
 This file owns the **procedure**. The cross-SDK knowledge is split in two, and the split is a
 loading rule, not a filing preference:
 
@@ -122,7 +113,7 @@ collection lifecycle). **Optimistic sends are manual here:** `channel.sendMessag
 optimistic (kill-list #1) and there is no `MessageComposer` to insert the pending copy, so add it yourself
 with a client-generated id via `channel.state.addMessageSorted({ id, text, user, status: 'sending', … })`
 before the send, and let the echoed `message.new` dedupe by id. Everything else follows the mapping tables
-as usual; the UIKit-fragment rows (sections 12-13) simply don't apply.
+as usual; the UIKit-fragment rows (notes sections 11-12) simply don't apply.
 
 **Classify every `@sendbird/*` symbol into three tiers** (the anti-hallucination discipline -
 nothing is invisible):
@@ -147,7 +138,7 @@ reply/threads via `ReplyType`, typing, read receipts, ...). One row per feature:
 | Feature | Sendbird source | Plan (port / idiomatic rewrite / GAP) | Spec rows | Status |
 |---|---|---|---|---|
 
-The **Spec rows** column is filled by the §0.5 visual-baseline capture: every feature with a
+The **Spec rows** column is filled by the §1a visual-baseline capture: every feature with a
 visual surface names its [`references/design-matching.md`](references/design-matching.md) Step 1
 region(s) and the captured state(s) that show it (`-` for features with no visual surface). It is
 the bridge verify gate 5 checks - a visual feature cannot close as Ported while its look was never
@@ -161,7 +152,7 @@ vanished and the README kept advertising them.
 
 ---
 
-## 0.5 Design & functional fidelity (read this every time — it's the part that's always wrong)
+## 1. Design & functional fidelity (read this every time — it's the part that's always wrong)
 
 Getting the app to **build, connect, and deliver messages live** is the easy 80%. The migration is
 judged on the **last 20%: does each screen look and behave like the Sendbird original?** That 20% is
@@ -186,7 +177,7 @@ into a resolved build plan (and pre-empts the *reinvention red flag* - if the Pl
 component from scratch", re-check whether an SDK slot already covers it). Confirm each named
 key/slot/prop against the installed package before relying on it.
 
-### The source app IS the benchmark — capture it before you delete it
+### 1a. The source app IS the benchmark — capture it before you delete it
 
 The migrated app must look like the original, so record what "the original" looks like first. Unlike
 web, an RN app has **no DOM to probe** — the reference is **simulator screenshots**, and the one
@@ -235,7 +226,7 @@ into regions)** run against the original, saved to `design-analysis.md`.
 > **contract** the implementation and the §7 verify must satisfy, not a checkbox. Keep it until the
 > §7 verify loop passes, then remove it (unless the user asked to keep it).
 
-### Two screens are NON-NEGOTIABLE
+### 1b. Two screens are NON-NEGOTIABLE
 
 Every region on these two ends `Fixed` or genuinely `Impossible` — never "good enough":
 
@@ -293,23 +284,20 @@ Same-looking ≠ same: read the exact arrangement off the baseline and rebuild t
 either SDK's default (recipes: [`references/design-matching.md`](references/design-matching.md) →
 Composer / reactions rows).
 
-### Verify each screen AS YOU BUILD IT — not in a phase at the end
+---
 
-Deferring the compare to a terminal step reached under completion pressure is the single mechanism
-behind every failure. So a screen is **not built until it is verified**: screenshot the migrated
-screen and diff it region-by-region against the baseline *before you move to the next one*. §6 hands
-each of the two screens to a dedicated per-region subagent; §7's Gate 0 + design gate are the
-**final reconciliation** that it happened, not the first time you look. The instant you are about to
-call design "done" without a per-region baseline↔migrated comparison in hand, stop — that is the
-exact moment every run went wrong.
 
 ---
 
-## 1. Kill list - the traps that bit real migrations
+## 2. Plan & checkpoint - involve the user before the first edit
+
+### 2a. Kill list - the traps that bit real migrations
 
 Verified behavioral differences that produce silent runtime bugs, not build errors. Check every one
 against the app; the full catalog with workarounds is in
-[`references/sendbird-notes.md`](references/sendbird-notes.md) > Kill list and the gaps table.
+[`references/sendbird-notes.md`](references/sendbird-notes.md) > Kill list and the gaps table. **Every
+trap the app actually hits is a plan line below** - a ledger row with a decision, never a mid-migration
+surprise.
 
 | # | Trap | Consequence if ported 1:1 |
 |---|---|---|
@@ -330,18 +318,16 @@ against the app; the full catalog with workarounds is in
 | 15 | **Reconnection is automatic.** Sendbird's `ConnectionHandler` / manual `reconnect()` has no equivalent | Delete the reconnect state machine. Read `isOnline` / `connectionRecovering` from `useChatContext` (or `useIsOnline`); pass a `tokenProvider` so re-auth is silent. |
 | 16 | **SDK mutations echo back as events and update `channel.state` on their own — don't parse-and-cache a mutation's return value in a parallel store.** `translateMessage` / reactions / pins / edits are broadcast back as `message.updated` (etc.) to the channel's watchers — **including the caller** — so the SDK merges the change into `channel.state.messages` and re-renders with no extra work; Sendbird UIKit's handler-driven model nudges you to capture each call's result and stash it in your own `{[msgId]: value}` store | A parallel cache duplicates state, drifts from the live message, and couples you to the response's **exact shape — which the SDK's TS type can misdescribe** (e.g. `translateMessage` nests the message under `.message`, so reading top-level `res.i18n` type-checks but is always `undefined` → the UI silently shows nothing). You don't need the response at all: just read the live `message.i18n` / `channel.state` and let the echoed event drive the re-render. **Do NOT hand-dispatch the event yourself** (`client.dispatchEvent({ type: 'message.updated', … })`) — it already arrives over the socket; dispatching it too just double-applies. Source of truth = channel state, not your cache. |
 
----
+### 2b. Assemble the plan, then checkpoint
 
-## 2. Plan & checkpoint - involve the user before the first edit
-
-Assemble the migration plan from section 0's outputs. It is **not a new document** - it is the
+Assemble the migration plan from section 1's outputs. It is **not a new document** - it is the
 parity ledger plus four strategy lines:
 
 | Plan field | Source | Example |
 |---|---|---|
 | Flavor + integration shape(s) | section 0 classification | "Expo (`stream-chat-expo`); UIKit fragments + a `MessageCollection` hook" |
 | Credentials & token path | section 4's precedence, resolved on paper | "user-provided key; backend token endpoint re-pointed to mint Stream JWTs" |
-| How the reference is obtained | §0.5 baseline capture | "rebuild + capture the original (default)", or "user screenshots". Matching the original is non-negotiable; this row is *how* you'll get the reference, never *whether* to match. |
+| How the reference is obtained | §1a baseline capture | "rebuild + capture the original (default)", or "user screenshots". Matching the original is non-negotiable; this row is *how* you'll get the reference, never *whether* to match. |
 | Gaps + proposed resolutions | ledger GAP rows + [`references/sendbird-notes.md`](references/sendbird-notes.md) section 15 | "FeedChannel -> admin-post-only channel (substitute); scheduled messages -> server-side job" |
 
 For the gaps row: collect every feature with **no Stream equivalent** (`FeedChannel` /
@@ -458,7 +444,7 @@ behavioral prose from [`references/sendbird-notes.md`](references/sendbird-notes
 symbols from the flavor package (`stream-chat-react-native` **or**
 `stream-chat-expo`); the symbol names are identical.
 
-- **UI composition** (sections 12-13): `SendbirdUIKitContainer` -> `useCreateChatClient` +
+- **UI composition** (notes sections 11-12): `SendbirdUIKitContainer` -> `useCreateChatClient` +
   `<OverlayProvider><Chat>`; `createGroupChannelFragment` -> `<Channel channel={c}><MessageList/>
   <MessageComposer/></Channel>`; threads -> `<Channel channel={c} thread={t}><Thread/></Channel>`
   (**there is no `<Window>` in RN** - that is a web-only component); `createGroupChannelListFragment`
@@ -470,25 +456,25 @@ symbols from the flavor package (`stream-chat-react-native` **or**
   [`references/design-matching.md`](references/design-matching.md) Step 2.5 (RN's sub-feature
   inheritance rule - the analog of web's custom-ui contract): fill it, don't silently drop
   reactions/receipts/grouping/attachments. **Any touchpoint that rebuilds a visual region (composer,
-  message row, channel preview) also carries its §0.5 region spec: build to the original's captured
+  message row, channel preview) also carries its §1a region spec: build to the original's captured
   look in this pass** - migrating to SDK defaults and deferring the look to a step-6 reskin is a
   second, avoidable rebuild. **Keep `<ChannelList>` as the query, watch, and real-time owner** - don't
   maintain a parallel `client.queryChannels()` result and re-fetch it on events.
-- **Channels** (sections 2, 7): three Sendbird classes -> one `Channel` + type string;
+- **Channels** (notes sections 2, 7): three Sendbird classes -> one `Channel` + type string;
   `OpenChannel` -> `livestream` type (kill-list #10); distinct channels -> member-set channels with
   no id (kill-list #13); every query cursor -> a stateless call.
-- **Messages & attachments** (sections 3, 4): the message-class hierarchy
+- **Messages & attachments** (notes sections 3, 4): the message-class hierarchy
   (`UserMessage`/`FileMessage`/`MultipleFilesMessage`/`AdminMessage`) -> one `MessageResponse` shape
   discriminated by `message.type` + `message.attachments[]`; `MessageRequestHandler`
   `.onPending/.onSucceeded/.onFailed` -> optimistic send via the UI path + `message.status`
   (kill-list #1); atomic `sendFileMessage` -> upload (`channel.sendImage`/`sendFile`) then
   `channel.sendMessage({ attachments })`, or let `MessageComposer`'s `AttachmentManager` own the
   pipeline.
-- **Events & real-time** (sections 5, 6): keyed handler objects
+- **Events & real-time** (notes sections 5, 6): keyed handler objects
   (`add/removeGroupChannelHandler(key, h)`) -> per-event `client.on()`/`channel.on()` with retained
   `unsubscribe` in effect cleanup; `MessageCollection` + `setMessageCollectionHandler` -> `watch()` +
   reactive `channel.state` + events (golden rule 3 - delete the collection lifecycle);
-  typing/presence/read per section 6 (delete the hand-rolled timers, polls, and manual `markAsRead`).
+  typing/presence/read per notes section 6 (delete the hand-rolled timers, polls, and manual `markAsRead`).
 
 ```tsx
 useEffect(() => {
@@ -501,15 +487,15 @@ useEffect(() => {
 }, [channel]);
 ```
 
-- **Membership & moderation** (section 8): operators -> moderators/roles + capability checks
+- **Membership & moderation** (notes section 8): operators -> moderators/roles + capability checks
   (`useChannelOwnCapabilities`, not a `myRole` string); mute/ban/block/report semantics per the kill
   list. End-user actions only - never build a moderation review UI ([`RULES.md`](RULES.md) - Chat,
   Video, Feeds only; no Moderation review UI).
-- **Offline & sync** (section 6 / offline domain): opt in with `enableOfflineSupport` +
+- **Offline & sync** (notes section 14): opt in with `enableOfflineSupport` +
   `@op-engineering/op-sqlite` if the app relied on Sendbird's cache; delete `onHugeGapDetected` /
   changelog rebuild (recovery is automatic); reset the DB on sign-out (kill-list #11).
 
-When every touchpoint is migrated, finish section 3 step 3: remove the three Sendbird packages and
+When every touchpoint is migrated, finish section 3 step 4: remove the three Sendbird packages and
 confirm zero `@sendbird` imports remain.
 
 Seeding note: Sendbird apps often self-seed demo data by connecting as several users in turn. Stream
@@ -534,7 +520,7 @@ and seed a reaction on **both** an incoming and an outgoing message.
 ## 6. Design parity - re-apply the look, then match it region-by-region
 
 The framing, the two non-negotiable screens, the per-region checklist, and the baseline all live in
-**§0.5** — this section is the *mechanism*. Sendbird's theming levers all die; their Stream RN
+**§1a** — this section is the *mechanism*. Sendbird's theming levers all die; their Stream RN
 replacements are a **JS theme object, not CSS** (there is no DOM / stylesheet on native):
 
 - **Palette & dimensions:** re-author `colorSet` / `createTheme` / `LightUIKitTheme` /
@@ -550,7 +536,7 @@ replacements are a **JS theme object, not CSS** (there is no DOM / stylesheet on
   ([`references/design-matching.md`](references/design-matching.md) > light/dark).
 - **Strings & i18n:** `createBaseStringSet` / `StringSet` overrides -> a `Streami18n` instance
   (`registerTranslation` / `setLanguage`) passed to `<Chat i18nInstance={…}>`
-  ([`references/sendbird-notes.md`](references/sendbird-notes.md) section 14). Stream's keys are
+  ([`references/sendbird-notes.md`](references/sendbird-notes.md) section 13). Stream's keys are
   the English source strings themselves - re-key, don't map 1:1.
 
 **Run the design match as its own first-class task, not a sub-step skimmed under wrap-up pressure —
@@ -575,7 +561,7 @@ sub-elements is verified, not just each element in isolation.
   subagent just to offload effort (a real run did that, got nothing usable back, and clobbered files
   mid-edit). Matching a screen inline is fine; matching it *from memory at wrap-up* is the failure.
 
-Each subagent gets `design-analysis.md` as the reference design (its Step 1 was already run in §0.5);
+Each subagent gets `design-analysis.md` as the reference design (its Step 1 was already run in §1a);
 reuse it rather than re-decomposing, route each region through the three axes, and run design-matching
 Step 3 — its capture-and-compare loop, screenshotting the **migrated** app and comparing region by
 region against the reference crops. **The baseline must be independent ground truth — the original's
@@ -636,7 +622,7 @@ directory prints *"This is not the tsc command you are looking for"*, which read
      the attach menu, called the picker verified, and shipped an image upload that aborted the app with
      `SIGABRT` on the first real tap — a screenshot of an attach menu is identical whether the upload
      works or crashes. Drive the upload, don't photograph the button.
-5. **Design verify — reconciliation, not the first look.** Per §0.5 and §6, each screen was verified
+5. **Design verify — reconciliation, not the first look.** Per §1a and §6, each screen was verified
    *as it was built* by the per-region design-match subagents; this gate **confirms** it and **fails
    if it never happened**. **Hard block: the two non-negotiable screens — the channel list and the
    channel screen (message list + composer) — must have _every_ region `Fixed` or genuinely
@@ -654,7 +640,7 @@ directory prints *"This is not the tsc command you are looking for"*, which read
    - **Confirm every mandatory region is actually ON SCREEN before you compare — a missing region is a
      layout bug, not something to verify around.** A chat screen with **no visible composer** (or a
      clipped message list / header) means a region got pushed off-screen — almost always the
-     header-outside-`<Channel>` trap (§6 / [`RULES.md`](RULES.md)). A mandatory region absent from the
+     header-outside-`<Channel>` trap (gate 0 / [`RULES.md`](RULES.md)). A mandatory region absent from the
      frame = **not done**; fix the layout and re-shoot. (First glance at any chat-screen shot: *is the
      composer even there?*)
    - **Produce the region-diff artifact, don't claim it.** A full-screen glance is NOT a verify. Output
@@ -696,7 +682,7 @@ directory prints *"This is not the tsc command you are looking for"*, which read
 | "The theme was ported, it'll look the same" | Both real runs shipped unverified skins. A match is claimed from a simulator capture, not from theme diffs. |
 | "Good enough on those screens, let's ship" | Not for the two non-negotiable screens. The channel list **and** the channel screen (message list + composer) end every region `Fixed` or genuinely `Impossible` — "good enough" / "close enough" is a FAIL there. And "the list matches" is not "the app matches": the list hides every bubble, avatar, metadata and composer gap on the chat screen, which is exactly where every real run shipped wrong. |
 | "It's stock Sendbird + a palette, so a recolor is enough" | Sendbird's stock UI is **not** Stream's stock UI (bubble tail, metadata placement, avatar, composer buttons, spacing all differ), and a palette carries no layout — so "stock Stream UI + accent" is a **named failure mode**, not a valid outcome. Match the structure, then the colour. |
-| "I screenshotted the original once - baseline done" | A resting shot holds no composer-typing, reaction, or picker detail - exactly where real runs shipped wrong. §0.5 wants driven states in the simulator. |
+| "I screenshotted the original once - baseline done" | A resting shot holds no composer-typing, reaction, or picker detail - exactly where real runs shipped wrong. §1a wants driven states in the simulator. |
 | "That feature was tiny, nobody will miss it" | Silent drops are how READMEs advertise ghosts. It's a ledger row: N/A or GAP, decided, in writing. |
 | "I'll port the MessageCollection faithfully and refactor later" | The mechanical port of hand-rolled machinery IS the bug (lost optimistic sends, stale state, dead handlers). Golden rule 3. |
 | "The gaps were minor, I decided them myself and kept going" | Minor is the user's judgment, not yours. >= 1 GAP row = the section 2 checkpoint - or, non-interactive, a `provisional` default reported loudly. |

@@ -652,7 +652,9 @@ const CustomAttachButton = () => {
 Wiring:
 
 - Prefer the smallest documented override that satisfies the requested customization.
-- Avoid replacing core message components unless required. When you DO replace a composite slot, reproduce every sub-feature the default drew (avatar, grouping, reactions, replies, receipts, edited/deleted state) — see [design-matching.md](design-matching.md#step-25-overriding-a-slot-inherits-all-of-its-sub-features).
+- Avoid replacing core message components unless required. When you DO replace a composite slot, reproduce every sub-feature the default drew (avatar, grouping, reactions, replies, receipts, edited/deleted state)
+- Reusing the SDK's own sub-component is not automatically enough — pass the props its default parent injected.
+- Before overriding a composite slot, read the default component in the installed package, enumerate every sub-view and conditional branch, and for each decide **reproduce it** (reusing the SDK's own sub-component) or **consciously drop it**.
 - If replacing message row structure and still using the long-press overlay, preserve overlay anchor behavior by reading the manifest-selected context docs.
 - Consult the theme object to adjust spacing as necessary. The composer *bar* surface is `messageComposer.wrapper` (not `container` — see [CHAT-REACT-NATIVE.md](CHAT-REACT-NATIVE.md#composer-attach-button-and-message-metadata-facts)).
 - Provide `WithComponents` at root level so overrides apply for all application screens

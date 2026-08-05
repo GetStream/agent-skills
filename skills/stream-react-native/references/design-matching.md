@@ -1,80 +1,12 @@
 # Stream React Native — matching a reference design (Chat · Video · Feeds) (screenshot / Figma / "make it look like X")
 
-When the user gives a **target appearance** - an attached screenshot, a Figma frame, or "make the
-app look like \<app\>" - the job is **not** "set a few
-colors." A reference design is a **checklist of regions**, and real designs differ from Stream's
-defaults in *layout* and *behavior*, not just color: the composer button set, where the timestamp
-and read receipts sit, the bubble shape, the header, the date separators. Changing the bubble color
-and calling it done is the classic failure - do not repeat it.
-
-The region checklist below covers **Chat, Video, and Feeds** surfaces, grouped under a product header
-
 Run this page **before** writing code, in addition to (not instead of) the normal `DOCS.md` lookup
 in [SKILL.md](../SKILL.md). It is the *procedure* + the *routing map*; the exact theme keys and
 component names come from the manifest-selected docs and the installed package, not from memory.
 
-**Implement EVERY region - the composer is first-class, not optional.** Do not deliver a partial
-match and label the rest "known cosmetic gaps." "Risky" or "more effort" is not a reason to skip a
-region; only genuine impossibility is, and then you say exactly what and why. The composer is the
-region most often left at its default and is exactly where users notice the mismatch.
-
 **Banned as a resolution:** the strings *"acceptable approximation", "minor", "difference noted",
 "close enough", "keep default"*. Each decomposed region ends **Fixed** or **Impossible: \<concrete
 reason\>** — nothing in between. (These exact hand-waves shipped ~10 real per-region defects.)
-
-**Screenshots verify appearance, not interaction.** `simctl` can't tap, so a screenshot diff never
-exercises press/`onSelect`/navigation. Any custom slot with a tap handler (custom `ChannelPreview`,
-message press, buttons) must be verified by *driving* it (temp auto-nav / device), not eyeballed — a
-custom `ChannelPreview` that read `onSelect` from props (instead of `useChannelsContext`) silently
-no-op'd channel-tap and was invisible to the screenshot loop.
-
----
-
-## Work in batches - don't let a full match take all day
-
-- **Decompose all regions first**, then read the theme tree and the component slots you'll need in
-  **one** pass (manifest-selected theming + customization pages, plus the installed package's
-  `Theme` type and component names). Pull the theme paths and slot names up front; don't drip-feed
-  lookups while coding.
-- **Implement all differing regions, THEN build/run once.** Don't rebuild-and-screenshot after each
-  tiny edit - batch a round of fixes, run once, compare once.
-- Iterate only on the regions that actually fail.
-
----
-
-## Three axes of customization (internalize this first)
-
-RN Chat gives you three mechanisms. Map each design difference to the cheapest axis that reaches it,
-and preference order: Functional - Theming - Layout / structure.
-
-| Axis | Mechanism | What it changes | What it CANNOT change |
-|---|---|---|---|
-| **Functional** | Documented component props, channel config, and SDK context hooks (`useMessageContext`...) | Which actions/behaviors are enabled, what's interactive, send/edit/reaction/thread behavior. | Pure appearance (that's theming). |
-| **Theming** | The `DeepPartial<Theme>` object passed to **both** `<OverlayProvider value={{ style }}>` **and** `<Chat style={…}>` (see [Theming Blueprint](./CHAT-REACT-NATIVE-blueprints.md#theming-blueprint)) | Colors, fonts, spacing, padding, border-radius, and dimensions - *within the existing layout*. In RN the theme object carries **both** color **and** padding/dimension, so most reskins are theme-only. | The structure - which views render, their arrangement, whether metadata sits inside or below the bubble, which buttons the composer has. |
-| **Layout / structure** | Component overrides via `WithComponents overrides={{ … }}` - see the [Component Override Blueprint](./CHAT-REACT-NATIVE-blueprints.md#component-override-blueprint) | The actual views: extend or override parts of the UI | Colors/fonts/spacing that a theme key already reaches (don't replace a component to change a padding). | 
-
-**A theme key that type-checks is NOT evidence that it renders.** `Theme` is a wide type and several of
-its keys are dead or partly dead at runtime — the component overwrites them after the theme is applied,
-drops them in one of its branches, or never reads them at all. `tsc` is green, the app builds, the
-pixel doesn't move, and the natural (wrong) conclusion is "stale bundle". Across four real runs this
-was the single largest defect class. **Before trusting any theme key for a region that matters, open the
-component in the installed package and confirm the key reaches the rendered style** — and check the
-confirmed-dead list in [`regions-chat.md`](regions-chat.md#dead-theme-keys) first.
-
-**Two recurring mis-routings:**
-- Solving a **structural** difference with a **theming** token. "Read receipts inside the bubble", "a
-  camera button in the composer", "the timestamp overlaid on the image", "an avatar on my own
-  messages" are **structural** -> a component override, not a color key.
-- Solving a **spacing / padding / radius** difference by **overriding a component**. In RN those live
-  in the **theme object** - reach for the theme key first; only override the component when the
-  *arrangement* itself must change.
-
-**RN-specific: the channel header is app-owned.** Unlike other Stream SDKs, RN Chat has no
-`ChannelHeader` slot baked into `Channel` - the nav header is **your** React Navigation
-`Stack.Screen options` / Expo Router header (or a custom view above `MessageList`). Header
-differences route to the **navigation layer**, not the theme. Match its height, title, subtitle, and
-trailing affordances there; drive the title from channel state, never a hardcoded literal (every
-channel would show the same wrong title).
 
 ---
 
@@ -112,9 +44,7 @@ not *verified* — and verification is not optional at any tier.** A colour read
 what the source *meant* to paint, not what the SDK actually renders, and a theme file carries **no
 layout at all**, so a code-derived spec can seed colours but never structure. Confirm colours against
 the running app's render, and treat every structural region as unmatched until an **independent**
-reference (the original's real pixels) confirms it — a spec you authored yourself cannot certify
-"looks like the original," only "recolored." See
-[`../sendbird-migration.md`](../sendbird-migration.md) §0c/§6.
+reference (the original's real pixels) confirms it.
 
 ### Getting sizes right — MEASURE, do not eyeball round numbers
 
@@ -229,14 +159,11 @@ dark. If the app supports dark mode, verify both.
 
 Walk **every row** below, screen group by screen group. For each region: name what the design shows,
 compare it to the Stream RN default, and if it differs, route it to the cheapest **Axis** that
-reaches it (per [Three axes](#three-axes-of-customization-internalize-this-first)). Produce an
-explicit task list - one entry per region that differs. Don't skip a region because it "looks
+reaches it. Produce an explicit task list - one entry per region that differs. Don't skip a region because it "looks
 standard"; verify it against the default.
 
 The **Route to** column names the *mechanism*; **confirm the exact theme key / slot / prop name** in
-the manifest-selected docs and the installed package, not from memory. For the rules behind each axis
-see the [Theming Blueprint](./CHAT-REACT-NATIVE-blueprints.md#theming-blueprint) and the
-[Component Override Blueprint](./CHAT-REACT-NATIVE-blueprints.md#component-override-blueprint).
+the manifest-selected docs and the installed package, not from memory.
 
 For every region note the followings: color, background color, border, border radius, padding / gap, typography (font, font weight, font and line size) - save findings to a file called `design-analysis.md`. Unless asked otherwise, remove the `design-analysis.md` after the verification step.
 
@@ -261,11 +188,11 @@ Applies across all products.
 | Region | What to check | Axis | Route to |
 |---|---|---|---|
 | Fonts, accent color | — | Theming | theme font / color keys |
-| Light/dark behavior | pin brand colors, keep structural surfaces semantic | Theming | Build **two palettes** and select on `useColorScheme()` (from `react-native`); pin brand/content, keep surfaces semantic (light/dark carve-out above). **Verify by flipping the OS appearance** and re-screenshotting — see the dark-mode toggle in [SIMULATOR-VERIFICATION.md](SIMULATOR-VERIFICATION.md); confirm surfaces flip while pinned brand colors hold. |
+| Light/dark behavior | pin brand colors, keep structural surfaces semantic | Theming | Build **two palettes** and select on `useColorScheme()` (from `react-native`); pin brand/content, keep surfaces semantic (light/dark carve-out above). |
 | Spacing | component overrides | Theming | Ensure that overriden components have proper spacing; especially inside a rounded message bubble. |
 | Icons | shape, color, size | Theming or structural | Only create custom icons if the shape is truly different (for example paperclip instead of plus); don't change a mic icon with another, slightly different mic icon |
 
-### When the reference is inconclusive - ask, don't guess
+### Common decision points
 
 **Thread scope decision.** A static screenshot usually does **not** decisively show whether threads
 are in scope: the thread-reply indicator only renders on messages that already *have* replies, and
@@ -294,30 +221,24 @@ theming ones.
 
 ---
 
-## Step 1.5: Map design-implied features to optional native packages
+## Step 2: Map design-implied features to optional native packages
 
-Some regions from Step 1 aren't reachable by theming or a component override alone - they need a
-**native capability package** installed first. A screenshot signals a *capability*, not just a look:
-voice messages, video attachments, a camera button in the composer, a document/file attachment, a
-device photo-library picker, or a share action each imply an optional dependency. If the package
-isn't installed you can style the slot perfectly and the region still won't work - the match fails at
-the behavior level, not the pixel level.
+A screenshot signals a *capability*, not just a look, and some Step-1 regions aren't reachable by
+theming or a component override alone. Voice-recording UI or an audio waveform, inline video with a
+play button, a composer camera button, a device photo grid or attachment sheet, file/document rows, a
+share affordance - each needs a **native capability package** installed first. Style the slot
+perfectly without it and the region still fails, at the behavior level rather than the pixel level.
 
-Walk the Step-1 task list and flag every region whose **capability** (not just its appearance) the
-design requires, then map it to the package in the **Optional dependency map** in
-[CHAT-REACT-NATIVE.md](CHAT-REACT-NATIVE.md#optional-dependency-map). Typical screenshot signals:
+Walk the Step-1 task list, flag every region whose **capability** the design requires, and install
+from the matrix for the product - each lists packages per runtime lane plus permission and re-link
+notes:
 
-- Voice-recording UI / audio waveform, or a voice-message bubble -> voice recording + audio packages
-- Inline video / a video thumbnail with a play button -> video playback packages
-- A camera button in the composer or a "take photo" affordance -> native image picker / camera
-- A photo grid sourced from the device library, or an attachment-picker sheet -> media library packages
-- File / document attachment rows -> document picker
-- A share affordance on an attachment -> sharing packages
+- **Chat** -> [`../builder.md`](../builder.md#chat---optional-packages-by-capability)
+- **Video** -> [`../builder.md`](../builder.md#video---optional-capabilities)
 
-Install only the packages the design actually implies, on the app's runtime lane (RN CLI vs. Expo),
-following that map's install and permission notes - do NOT bulk-install the whole matrix for one
-vague signal. If a region needs a capability package the app doesn't have, install it (or, if you
-can't, flag it) **before** Step 2 - otherwise that region is a `GAP`, not a match.
+Install only what the design actually implies - do NOT bulk-install the whole matrix for one vague
+signal. If a region needs a package the app doesn't have, install it (or flag it if you can't)
+**before implementing that region** - otherwise it is a `GAP`, not a match.
 
 **Kick off the native build NOW - as soon as the Stream packages + peers are installed - don't wait
 for the implementation to finish.** The native build (`npx expo prebuild --clean` + `expo run:ios`, or
@@ -328,96 +249,121 @@ instead of serialising them; and (b) it surfaces native/peer failures immediatel
 
 ---
 
-## Step 2.5: Overriding a slot inherits ALL of its sub-features
-
-The composite slots - the message row, the composer, the channel-list preview - each render **many**
-sub-features. When you override one via `WithComponents`, every sub-feature the default drew
-**disappears unless you reproduce it.** A custom row that handles only the case in front of you (one
-outgoing text bubble) silently drops attachments, quoted replies, reactions, read receipts,
-grouping, and edited/deleted state - and a near-empty test channel hides the loss until the user
-spots it.
-
-**Rule:** before overriding a composite slot, read the default component in the installed package, enumerate every sub-view and conditional branch, and for each
-decide **reproduce it** (reusing the SDK's own sub-component) or **consciously drop it** (and say so).
-Prefer the **narrowest** slot that achieves the change; reach for a full row/composer replacement
-only when the *arrangement* truly needs it. Keep custom rows `memo`-ized and read SDK context hooks
-(`useMessageContext`, `useMessagesContext`) for data and handlers - do not hand-roll business logic.
-
-**Reusing the SDK's own sub-component is not automatically enough — pass the props its default parent injected.** "Reproduce it" often means rendering the SDK's own sub-component, but a sub-component may read only *part* of its data from context and take the rest from **props that only its default parent supplies**. Render it bare and whatever came from those props silently vanishes — the component still mounts (no error, looks fine at a glance), just missing a field. Canonical case: the default `MessageFooter` pulls `alignment`/`message`/`members`/`showMessageStatus` from `useMessageContext()`, but its **timestamp** comes *only* from a `date` prop — `MessageTimestamp` has **no `message.created_at` fallback**, so `date=undefined` → `getDateString(undefined)` → renders `null`. The SDK's parent renders `<MessageFooter date={message.created_at} />` (`MessageItemView.tsx`); a custom footer that renders `<MessageFooter />` shows read receipts + edited + name but **no timestamp**. **Rule:** before reusing an SDK sub-component, open its *default parent* in the installed source, see exactly which props it passes, and replicate them — context alone may not carry the data.
-
-**Completion contract - fill before you ship (do NOT skip rows).** For **each** region you replace,
-list every sub-feature the default rendered and mark it exactly one of:
-- **Reproduce it** - reuse the named SDK piece; don't hand-roll it.
-- **`N/A - <genuine design reason>`** - a real *design* reason the target doesn't need it (e.g. read
-  receipts in an anonymous livestream chat). **"Deferred", "later", "moving fast", "out of scope for
-  now" are NOT design reasons and are NOT valid N/A.** For the **thread-reply indicator**
-  specifically, `N/A` is valid **only** when threads are actually disabled on the channel type
-  (`replies:false`, per the Step 1 thread scope decision); if threads are still enabled server-side
-  but you skipped the indicator, that's a `GAP`, not `N/A`.
-- **`GAP - not implemented`** - if you are knowingly skipping a needed capability, label it in
-  exactly those words so it stays visible. Never relabel a time-skip as `N/A`.
-
-A blank row - or an `N/A` whose real reason is "deferred" - means incomplete.
-
-Typical **custom message row** sub-features to account for: text (markdown/links/mentions/emoji),
-attachments (image/file/video/voice/giphy), reactions (display + add), quoted/replied-to parent,
-thread-reply indicator, read/delivery receipts on own messages, edited/deleted state, actions menu,
-same-author grouping, and error/optimistic-send state. **Custom composer:** text input; attachments
-+ upload (and removal); mentions/slash-command autocomplete; send (+ the at-rest↔typing swap); voice
-recording (if enabled); edit-message mode.
-
----
-
 ## Step 3: Verify against the reference - region by region (mandatory)
 
-A design match is **not done** until the app runs and the result is compared to the reference.
-Presence-and-color is not enough; verify **size, position, and proportion** too.
+**Rules - all of them, every run:**
 
-1. **Seed data that triggers every region.** An empty or one-message channel proves nothing and
-   hides exactly the elements that get dropped. Ensure the test channel has: **an incoming and an
-   outgoing** message; a **run of 3+ consecutive messages from the same author** (so grouping + the
-   avatar rule render); a **photo album**; a message **with reactions**; a **reply / thread**; a
-   **long multi-line** message; and enough history that a **date separator** appears. Mark messages
-   read if the design shows read receipts. (Use the Stream CLI / credentials flow to seed if needed.)
-   **Multi-day date separators ("Yesterday", "May 29") can't be fresh-seeded** — the seed API stamps
-   everything "today", so only a "Today" separator appears. To verify cross-day separators, use a
-   channel that already has multi-day history or import backdated data server-side; otherwise note the
-   dated separators as implemented-but-unverified rather than claiming a match.
-2. **Open the real message screen on its actual navigation path** - channel list -> tap -> message
-   screen - not a one-channel shortcut that never exercises the header/navigation. If you add any
-   throwaway scaffold to reach a screen for a screenshot, **DELETE it before delivery** (remove the
-   branch/flag/import - don't merely disable it) and re-verify on the real path. On the iOS simulator
-   `simctl` can't tap, so reach non-initial screens with temporary in-code navigation and drive
-   composer/picker states via SDK hooks - see the fast loop, stale-bundle trap, and cleanup steps in
-   [SIMULATOR-VERIFICATION.md](SIMULATOR-VERIFICATION.md).
-3. **Build a comparison table.** For each region from `design-analysis.md` target attribute (size / position /
-   color / presence) -> what rendered -> **PASS / FAIL**. Walk the whole checklist; don't stop at the
-   regions that happen to look right. **Numbers alone lie** — a glyph box can "match" (±1 logical px)
-   while the field is too tall, a stroke too heavy, filled instead of outlined or a control off-center. So for the high-detail
-   regions (the composer especially), screenshot on the **same device class** (same `@2x`/`@3x`), crop
-   **both** bars at **native resolution** (same scale → no resizing, so sizes compare 1:1), and stack
-   them to eyeball the real differences:
-   ```bash
-   magick "$REF"  -crop ${W}x210+0+${refY}  +repage ref.png    # reference region
-   magick "$MINE" -crop ${W}x210+0+${mineY} +repage mine.png   # your render (find Y via the field-band script)
-   magick ref.png mine.png -background black -append compare.png  # stack; view it
-   ```
-   On the stack, check what the numbers miss — field height/compactness, stroke weight, vertical
-   centering of each control, overall balance — then re-measure to confirm fixes.
-4. **Re-check the silently-lost ones explicitly, every time:** the **incoming-message avatar** and
-   **grouping**; the **nav header** (height, title, back); the **composer in BOTH states** (at-rest
-   vs. typing - the send/mic swap) — walk the full *composer verification gate* in the composer
-   deep-dive above, including that the **composer background fills edge-to-edge and through the bottom
-   safe area** (sample the margin around the controls, not just the controls — a band = you coloured
-   `container`, not `wrapper`); **metadata placement** (inside the bubble, not clipped, default footer
-   not duplicated); reaction display; attachment rendering. After fixing any one facet of a region,
-   re-verify the **other** facets of that same region ([`../RULES.md`](../RULES.md) > regression
-   adjacency) — fixes routinely break a neighbour (picker → attach-button look → toggle behaviour).
-5. **Iterate until every region passes.** Fix, re-run, re-compare. Don't declare done on the first
-   render.
-6. If you genuinely cannot run the app, say so plainly and list which regions are
-   implemented-but-unverified - never imply a match you did not see.
-7. **Do not deliver with a region left at its default and call it a "known gap."** Every region in
-   the Step-1 checklist - the composer especially - must be implemented to match. Report something as
-   unmatched only when it is genuinely impossible (and say what + why), never merely because it's
-   risky or more effort.
+- A match is **not done** until the app runs and the render is compared to the reference.
+  Presence-and-colour is not enough: verify **size, position, proportion, and structure**.
+- Walk the **whole** Step-1 checklist. Don't stop at the regions that happen to look right.
+- **Numbers alone lie.** A glyph box can match (±1 logical px) while the field is too tall, a stroke
+  too heavy, filled instead of outlined, or a control off-centre. Always compare visually too.
+- Any throwaway scaffold added to reach a
+  screen must be **DELETED before delivery** (remove the branch/flag/import - don't merely disable
+  it), then the real path re-verified.
+- After fixing one facet of a region, re-verify the **other** facets of that same region
+  ([`../RULES.md`](../RULES.md) > regression adjacency) - fixes routinely break a neighbour
+  (picker -> attach-button look -> toggle behaviour).
+- **Iterate until every region passes.** Fix, re-run, re-compare; never declare done on the first render.
+- If you genuinely cannot run the app, say so plainly and list which regions are
+  implemented-but-unverified - never imply a match you did not see.
+- **Never deliver a region left at its default and call it a "known gap."** Report a region unmatched
+  only when it is genuinely impossible (say what + why), never because it is risky or more effort -
+  and prove impossibility by *attempting* it, not by assumption.
+
+**How to run the loop:** [SIMULATOR-VERIFICATION.md](SIMULATOR-VERIFICATION.md) - build + launch
+tap-free (§1), stale-bundle trap (§2), reaching non-initial screens (§3), driving composer/picker
+states (§4), poll-before-screenshot (§5), dark mode (§6). `simctl` cannot tap.
+
+### 3.1 Seed data that triggers every region
+
+An empty or one-message channel proves nothing and hides exactly the elements that get dropped. The
+test channel needs: **an incoming and an outgoing** message; a **run of 3+ consecutive messages from
+the same author** (grouping + the avatar rule); a **photo album**; a message **with reactions**; a
+**reply / thread**; a **long multi-line** message. Mark messages read if the design shows read
+receipts. Seed via the Stream CLI / [`../credentials.md`](../credentials.md).
+
+**Multi-day date separators ("Yesterday", "May 29") can't be fresh-seeded** - the seed API stamps
+everything today, so only a "Today" separator appears.
+
+### 3.2 Screenshot every screen, then check it
+
+Screenshot the **channel list**, the **message screen**, and the **thread screen**. Each region's own
+target attributes live in the Step-1 checklist and the per-product region file; on top of those, check
+the ones that get silently lost - every time:
+
+**All screens**
+- [ ] **Nav header** - height, title, back affordance (app-owned, not the SDK's).
+
+**Channel list**
+- [ ] Preview row: avatar, name, preview text, timestamp, unread badge, row background.
+
+**Message screen**
+- [ ] **Incoming-message avatar** and **grouping** across the 3+ same-author run.
+- [ ] **Metadata placement** - inside the bubble, not clipped, default footer not duplicated.
+- [ ] Reaction display and attachment/album rendering.
+- [ ] Wallpaper/background, date separator.
+
+**Thread screen**
+- [ ] Parent message + reply list render, and the thread's own header/composer match the main screen.
+
+**Composer gate - do NOT leave the composer until all pass (the recurring defect).** Verify
+**structure**, not just presence/colour; a region can render the right pixels and still be
+structurally wrong:
+- [ ] **Floating vs docked matches the reference.** If it floats, `messageInputFloating` is set on
+  `<Channel>` - and the pill is NOT a docked bar with a painted translucent fill faking the float. If
+  it docks, it sits flush to the bottom edge.
+- [ ] **Three states are MANDATORY - at-rest, typing, picker-open**
+  ([SIMULATOR-VERIFICATION.md](SIMULATOR-VERIFICATION.md) §4). At-rest and typing share one slot
+  (`OutputButtons`), and typing is the **only** state that renders the send button - drive it with
+  `useMessageComposer().textComposer.setText('hello')`. Picker-open is where the composer<->sheet
+  spacing and the `+`<->keyboard swap are visible.
+- [ ] **Every OTHER state - keyboard-up, voice-recording, edit mode - only if a reference screenshot
+  shows it** (§4). Don't drive them speculatively: the defects they would catch (unset
+  `audioRecordingEnabled`, a composer pushed off-screen) all show up at rest. If a reference does show
+  one, check its own tokens - the recorder tints from `semantics.accentPrimary` +
+  `semantics.chatWaveformBar`, so overriding `accentPrimary` alone can leave a waveform on the default.
+- [ ] **Background fills EDGE-TO-EDGE and through the bottom safe area** - sample pixels in the
+  *margin around* the controls, not just the controls. A band hugging the buttons = you coloured
+  `container`, not `wrapper`.
+- [ ] **Single-line input is vertically centred** in the pill (grown via `inputBox` padding, not
+  wrapper height).
+- [ ] **Attach button:** correct look (borderless vs bordered) **and** the `+`<->keyboard swap when the
+  picker opens, wired to a `toggleAttachmentPicker` replica.
+- [ ] Each glyph matches the reference's size, weight, fill-vs-outline character (compare ink ratio,
+  not just the box), and colour.
+
+### 3.3 Build the comparison table
+
+For each region from `design-analysis.md`: target attribute (size / position / colour / presence) ->
+what rendered -> **PASS / FAIL**.
+
+For the high-detail regions (the composer especially), back the numbers with a visual stack:
+screenshot on the **same device class** (same `@2x`/`@3x`), crop **both** bars at **native
+resolution** (same scale -> no resizing, so sizes compare 1:1), and stack them:
+
+```bash
+magick "$REF"  -crop ${W}x210+0+${refY}  +repage ref.png    # reference region
+magick "$MINE" -crop ${W}x210+0+${mineY} +repage mine.png   # your render (find Y via the field-band script)
+magick ref.png mine.png -background black -append compare.png  # stack; view it
+```
+
+On the stack, check what the numbers miss - field height/compactness, stroke weight, vertical centring
+of each control, overall balance - then re-measure to confirm fixes.
+
+### 3.4 Check dark mode
+
+If the app supports dark mode, **both modes are verified on the same build** - no rebuild. Flip the OS
+appearance at runtime and re-screenshot per
+[SIMULATOR-VERIFICATION.md](SIMULATOR-VERIFICATION.md) §6 (shoot light first, then poll until the frame
+changes *and* settles - the re-render is not instant).
+
+Then confirm the **light/dark carve-out** from Step 1 held:
+
+- [ ] **Structural surfaces** (message-list background, composer/input background, borders) flipped to
+  their dark values. One that stayed light is a pinned-to-literal bug.
+- [ ] **Pinned brand/content** colours (bubble fills, glyphs, accent, read-receipt ticks) look identical
+  to light mode. One that washed out was pinned wrong.
+- [ ] Text and glyphs still have contrast against the flipped surfaces - sample both modes, don't eyeball.
+- [ ] No element mixes a pinned brand accent with an adapted brand-tinted surface
+  ([`../RULES.md`](../RULES.md)).

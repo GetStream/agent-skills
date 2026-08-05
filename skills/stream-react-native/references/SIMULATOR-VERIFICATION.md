@@ -247,7 +247,7 @@ Stream CLI (`getstream api SendMessage …`), screenshot, then hard-delete
 ## 4. Drive composer & picker states
 
 **Capture at-rest, typing and picker-open on every run; drive any other state only when a reference
-screenshot shows it** ([regions-chat.md](regions-chat.md) > Composer verification gate). `simctl`
+screenshot shows it** ([design-matching.md](design-matching.md#32-screenshot-every-screen-then-check-it) > composer gate). `simctl`
 can't type, so drive a state from a temp child inside `<Channel>` that calls SDK hooks, screenshot it,
 then delete the scaffold (§3 cleanup rules apply).
 

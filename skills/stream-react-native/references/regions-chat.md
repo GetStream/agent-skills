@@ -9,6 +9,40 @@ measure sizes, how to sample colours, and the Step 3 verify loop — lives in
 The **Route to** column names the *mechanism*. Confirm the exact theme key / slot / prop name in
 the manifest-selected docs and the installed package, never from memory.
 
+## Three axes of customization (internalize this first)
+
+RN Chat gives you three mechanisms. Map each design difference to the cheapest axis that reaches it,
+and preference order: Functional - Theming - Layout / structure.
+
+| Axis | Mechanism | What it changes | What it CANNOT change |
+|---|---|---|---|
+| **Functional** | Documented component props, channel config, and SDK context hooks (`useMessageContext`...) | Which actions/behaviors are enabled, what's interactive, send/edit/reaction/thread behavior. | Pure appearance (that's theming). |
+| **Theming** | The `DeepPartial<Theme>` object passed to **both** `<OverlayProvider value={{ style }}>` **and** `<Chat style={…}>` (see [Theming Blueprint](./CHAT-REACT-NATIVE-blueprints.md#theming-blueprint)) | Colors, fonts, spacing, padding, border-radius, and dimensions - *within the existing layout*. In RN the theme object carries **both** color **and** padding/dimension, so most reskins are theme-only. | The structure - which views render, their arrangement, whether metadata sits inside or below the bubble, which buttons the composer has. |
+| **Layout / structure** | Component overrides via `WithComponents overrides={{ … }}` - see the [Component Override Blueprint](./CHAT-REACT-NATIVE-blueprints.md#component-override-blueprint) | The actual views: extend or override parts of the UI | Colors/fonts/spacing that a theme key already reaches (don't replace a component to change a padding). | 
+
+**A theme key that type-checks is NOT evidence that it renders.** `Theme` is a wide type and several of
+its keys are dead or partly dead at runtime — the component overwrites them after the theme is applied,
+drops them in one of its branches, or never reads them at all. `tsc` is green, the app builds, the
+pixel doesn't move, and the natural (wrong) conclusion is "stale bundle". Across four real runs this
+was the single largest defect class. **Before trusting any theme key for a region that matters, open the
+component in the installed package and confirm the key reaches the rendered style** — and check the
+confirmed-dead list in [`regions-chat.md`](regions-chat.md#dead-theme-keys) first.
+
+**Two recurring mis-routings:**
+- Solving a **structural** difference with a **theming** token. "Read receipts inside the bubble", "a
+  camera button in the composer", "the timestamp overlaid on the image", "an avatar on my own
+  messages" are **structural** -> a component override, not a color key.
+- Solving a **spacing / padding / radius** difference by **overriding a component**. In RN those live
+  in the **theme object** - reach for the theme key first; only override the component when the
+  *arrangement* itself must change.
+
+**RN-specific: the channel header is app-owned.** Unlike other Stream SDKs, RN Chat has no
+`ChannelHeader` slot baked into `Channel` - the nav header is **your** React Navigation
+`Stack.Screen options` / Expo Router header (or a custom view above `MessageList`). Header
+differences route to the **navigation layer**, not the theme. Match its height, title, subtitle, and
+trailing affordances there; drive the title from channel state, never a hardcoded literal (every
+channel would show the same wrong title).
+
 ---
 
 **Channel list screen** (if in scope)
@@ -173,14 +207,7 @@ The composer is the region users inspect most closely and the one most often lef
 - **Do not drop in the raw SDK `<AttachButton />` and assume it matches.** It renders as a `Button variant="secondary" type="outline"` — a **bordered/ringed** button with `icons.Plus`. If the reference wants a **borderless** glyph (e.g. a plain `+`), using it inherits the SDK look and discards the styling you matched (an *idiomatic ≠ matching* regression — [`../RULES.md`](../RULES.md)).
 - **Its `onPress` is `toggleAttachmentPicker`, a private helper *inside* the SDK `AttachButton`** — built from `openAttachmentPicker` / `closeAttachmentPicker` / `focusInputOnPickerClose` / `inputBoxRef` + `attachmentPickerStore`. It is **not on any context or hook.** A custom `+` must **replicate it verbatim, including the refocus-input-on-close branch** — do not hand-roll `open ? close() : open()` (a lossy toggle that loses the refocus). Read the current source and copy the logic (also noted in [CHAT-REACT-NATIVE.md](CHAT-REACT-NATIVE.md)).
 
-**Composer verification gate (do NOT leave the composer until all pass — the recurring defect). Verify STRUCTURE, not just presence/colour — a region can render the right pixels and still be structurally wrong:**
-- [ ] **Structure: floating vs docked matches the reference.** If it floats, `messageInputFloating` is set on `<Channel>` — and the pill is NOT a docked bar with a painted translucent fill faking the float. If it docks, it sits flush to the bottom edge.
-- [ ] **Three states are MANDATORY — at-rest, typing, picker-open** ([SIMULATOR-VERIFICATION.md](SIMULATOR-VERIFICATION.md) §4). At-rest and typing share one slot (`OutputButtons`), and typing is the **only** state that renders the send button — drive it with `useMessageComposer().textComposer.setText('hello')`. Picker-open is where the composer↔sheet spacing and the `+`↔keyboard swap are visible.
-- [ ] **Every OTHER state — keyboard-up, voice-recording, edit mode — only if a reference screenshot shows it** (how to drive each: [SIMULATOR-VERIFICATION.md](SIMULATOR-VERIFICATION.md) §4). Don't drive them speculatively: the defects they would catch (unset `audioRecordingEnabled`, a composer pushed off-screen) all show up **at rest**. If a reference does show one, drive it and check its own tokens — the recorder tints from `semantics.accentPrimary` + `semantics.chatWaveformBar`, so overriding `accentPrimary` alone can leave a waveform on the Stream default.
-- [ ] **Background fills EDGE-TO-EDGE and through the bottom safe area** — sample pixels in the *margin around* the controls, not just the controls. A colour band hugging the buttons = you coloured `container`, not `wrapper`.
-- [ ] **Single-line input is vertically centred** in the pill (grew via `inputBox` padding, not wrapper height).
-- [ ] **Attach button:** correct look (borderless vs bordered) **and** the `+`↔keyboard swap when the picker opens, wired to a `toggleAttachmentPicker` replica.
-- [ ] Each glyph matches the reference's size, weight, fill-vs-outline character (compare ink ratio, not just the box), and colour.
+**Verifying the composer:** walk the **composer gate** in [design-matching.md](design-matching.md#32-screenshot-every-screen-then-check-it) — structure (floating vs docked), the three mandatory states, edge-to-edge background, pill centring, and both attach-button facets. Do not leave the composer until all of it passes; this is the recurring defect.
 
 ## Liquid Glass (`GlassView`) — gotchas when a design uses frosted/translucent chrome
 
