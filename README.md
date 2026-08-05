@@ -12,9 +12,9 @@ Install the [Stream CLI](https://getstream.io/agent-skills/docs/installation/), 
 getstream skills
 ```
 
-With no arguments, `getstream skills` installs the default set - the `stream` router (which includes the CLI layer), `stream-builder`, and `stream-docs`. The web pack (`stream-react`) and platform packs (`stream-swift`, `stream-android`, `stream-react-native`, `stream-flutter`) install on demand via `getstream skills <name>` the first time a task needs them. To set up a project at the same time (auth, org/app selection, credentials), run `getstream init` instead.
+With no arguments, `getstream skills` installs the default set - the `stream` router (which includes the CLI layer), `stream-builder`, and `stream-docs`. The web pack (`stream-react`) and platform packs (`stream-swift`, `stream-android`, `stream-react-native`, `stream-flutter`, `stream-unreal`) install on demand via `getstream skills <name>` the first time a task needs them. To set up a project at the same time (auth, org/app selection, credentials), run `getstream init` instead.
 
-Use `/stream` for generic routing, or invoke a skill directly with `/stream-react`, `/stream-builder`, `/stream-docs`, `/stream-swift`, `/stream-android`, `/stream-react-native`, or `/stream-flutter`. Step-by-step instructions are in the [installation guide](https://getstream.io/agent-skills/docs/installation/).
+Use `/stream` for generic routing, or invoke a skill directly with `/stream-react`, `/stream-builder`, `/stream-docs`, `/stream-swift`, `/stream-android`, `/stream-react-native`, `/stream-flutter`, or `/stream-unreal`. Step-by-step instructions are in the [installation guide](https://getstream.io/agent-skills/docs/installation/).
 
 ## Skills
 
@@ -30,6 +30,7 @@ Each skill has a reference page on the docs site - the skill names below link to
 | [`/stream-android`](https://getstream.io/agent-skills/docs/skills/stream-android/) | Build or integrate Stream in Android/Jetpack Compose apps | Android, Jetpack Compose, Kotlin, Android Studio, Gradle |
 | [`/stream-react-native`](https://getstream.io/agent-skills/docs/skills/stream-react-native/) | Create, build, or integrate Stream Chat or Stream Video React Native in RN CLI or Expo apps | React Native, Expo, `stream-chat-react-native`, `stream-chat-expo`, `@stream-io/video-react-native-sdk`, video call, livestream, audio room, ringing |
 | [`/stream-flutter`](https://getstream.io/agent-skills/docs/skills/stream-flutter/) | Build or integrate Stream Chat in Flutter apps | Flutter, Dart, `stream_chat_flutter`, `stream_chat_flutter_core` |
+| [`/stream-unreal`](https://getstream.io/agent-skills/docs/skills/stream-unreal/) | Build or integrate Stream Chat in Unreal Engine 5.7/5.8 projects (C++ and Blueprint) - Chat only | Unreal, Unreal Engine, UE5, `.uproject`, `.uplugin`, UMG, widget blueprint, `UStreamChatClientComponent`, in-game chat |
 
 The router (`/stream`) owns routing, the CLI layer (queries, app config, onboarding), and the cross-cutting rules in [`skills/stream/RULES.md`](skills/stream/RULES.md) (explained in [Rules Every Skill Follows](https://getstream.io/agent-skills/docs/concepts/skill-rules/)). Platform sub-skills can add their own `RULES.md`.
 
@@ -62,6 +63,7 @@ Decline and the builder still runs - Stream reference files cover the SDK wiring
 - **Build and extend Swift apps** - wire Stream into SwiftUI or UIKit Xcode projects with iOS-specific setup patterns (`/stream-swift`)
 - **Build and extend Android apps** - wire Stream into Jetpack Compose Android Studio / Gradle projects with Android-specific setup patterns (`/stream-android`)
 - **Build and extend React Native apps** - wire Stream Chat or Stream Video into Expo or RN CLI projects (`/stream-react-native`)
+- **Build and extend Unreal Engine games** - wire Stream Chat into UE 5.7/5.8 C++ or Blueprint projects, drop in the shipped UMG chat widgets, and package for mobile or desktop (`/stream-unreal`)
 - **Query live data** - "any active calls?", "show flagged messages", "list my channels" - natural language to the `getstream` CLI (`/stream`)
 - **Configure apps and moderation** - channel types, roles, permissions, blocklists, automod - via the `getstream` CLI (`/stream`)
 - **Answer SDK questions** - token patterns, strict mode, client/server instantiation, theme wiring (`/stream-react` or `/stream-docs`)
@@ -86,8 +88,9 @@ The `/stream` router classifies intent, runs `getstream` CLI commands itself (qu
 | Build or integrate a Swift/iOS app | `stream-swift` (docs orchestrator: `docs-map.md` + `setup.md`) |
 | Build or integrate an Android app | `stream-android` + its `builder.md`, `sdk.md`, and `references/*.md` |
 | Build or integrate a Flutter app | `stream-flutter` + its `builder.md`, `sdk.md`, and `references/*.md` |
+| Build or integrate an Unreal Engine project | `stream-unreal` (docs orchestrator: `docs-map.md` + `setup.md` + `widgets.md` + `platforms.md`) |
 
-> **Routing precedence:** when user input contains a platform signal (e.g. `react native`, `expo`, `stream video rn`, `swift`, `ios`, `flutter`), the matching platform peer wins over the web `stream-react` rows. The web pack is the default only when no platform signal is present; `stream-builder` runs only when the user names it explicitly.
+> **Routing precedence:** when user input contains a platform signal (e.g. `react native`, `expo`, `stream video rn`, `swift`, `ios`, `flutter`, `unreal`), the matching platform peer wins over the web `stream-react` rows. The web pack is the default only when no platform signal is present; `stream-builder` runs only when the user names it explicitly.
 
 Cross-cutting rules (secrets, login screen, strict mode, package manager, base UI, moderation Dashboard-only, ...) live once in [`skills/stream/RULES.md`](skills/stream/RULES.md) and apply to every sub-skill - see [Rules Every Skill Follows](https://getstream.io/agent-skills/docs/concepts/skill-rules/) for the rationale behind each.
 
@@ -139,3 +142,10 @@ Cross-cutting rules (secrets, login screen, strict mode, package manager, base U
   - [`RULES.md`](skills/stream-flutter/RULES.md) - Flutter non-negotiable rules
   - [`builder.md`](skills/stream-flutter/builder.md) + [`sdk.md`](skills/stream-flutter/sdk.md) - shared Flutter app integration flow and SDK ownership patterns
   - [`references/`](skills/stream-flutter/references/) - product/framework-specific Flutter references and blueprints
+- [`skills/stream-unreal/`](skills/stream-unreal/) - **Unreal Engine sub-skill** (docs orchestrator; Chat only)
+  - [`SKILL.md`](skills/stream-unreal/SKILL.md) - entrypoint: engine-version / feature-support / C++-vs-Blueprint gates, the `.md` docs convention plus the per-page Unreal-coverage caveat, and the source-of-truth ladder
+  - [`RULES.md`](skills/stream-unreal/RULES.md) - Unreal non-negotiable rules + the pitfalls that fail silently (the `ApiKey`-before-`BeginPlay` trap, `TWeakObjectPtr` callbacks, client on the HUD, module deps)
+  - [`docs-map.md`](skills/stream-unreal/docs-map.md) - intent -> exact official Unreal docs page, annotated with which pages actually carry Unreal code, plus the plugin-header / Doxygen / sample-project fallback
+  - [`setup.md`](skills/stream-unreal/setup.md) - engine-version-aware plugin install, `Build.cs` module deps, CLI credentials, and the verified minimal client wiring
+  - [`widgets.md`](skills/stream-unreal/widgets.md) - the shipped UMG chat widgets (undocumented upstream): `WBP_*` inventory, path-loading, `Setup`-before-`AddToViewport`, context model, theming, cooking
+  - [`platforms.md`](skills/stream-unreal/platforms.md) - iOS/Android/desktop config, signing, build-vs-package, and on-device deploy + log reading

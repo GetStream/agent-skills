@@ -88,6 +88,28 @@ peers:
       - chat flutter
     fallback_on_decline: stream-docs
 
+  - name: stream-unreal
+    glob: "{.agents,.claude}/skills/stream-unreal/SKILL.md"
+    install: getstream skills stream-unreal
+    install_policy: silent
+    purpose: "Build or integrate Stream Chat in Unreal Engine 5.7/5.8 games and apps (C++ and Blueprint). Covers engine-version-aware plugin install, StreamChatClientComponent wiring, the shipped UMG chat widgets, cooking, and iOS/Android/desktop packaging. Chat only - there is no Stream Video or Feeds SDK for Unreal."
+    signals:
+      - unreal
+      - unreal engine
+      - ue5
+      - ue 5.7
+      - ue 5.8
+      - .uproject
+      - .uplugin
+      - Build.cs
+      - umg
+      - widget blueprint
+      - StreamChat plugin
+      - UStreamChatClientComponent
+      - UChatChannel
+      - chat unreal
+      - in-game chat
+
   - name: stream-react-native
     glob: "{.agents,.claude}/skills/stream-react-native/SKILL.md"
     install: getstream skills stream-react-native
