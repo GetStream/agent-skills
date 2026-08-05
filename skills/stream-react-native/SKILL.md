@@ -6,23 +6,31 @@ compatibility: Supports new or existing React Native CLI and Expo apps running S
 metadata:
   author: GetStream
 allowed-tools: >-
-  Read, Write, Edit, Glob, Grep,
+  Read, Write, Edit, Glob, Grep, Task,
   WebFetch(domain:getstream.io),
   WebFetch(domain:raw.githubusercontent.com),
-  Bash(ls *), Bash(find . *), Bash(grep *), Bash(sips *),
+  Bash(ls *), Bash(find . *), Bash(grep *), Bash(awk *), Bash(tail *), Bash(sips *),
   Bash(cat package.json), Bash(cat app.json), Bash(cat app.config.js), Bash(cat app.config.ts),
   Bash(cat babel.config.js), Bash(cat metro.config.js),
   Bash(command -v getstream), Bash(getstream *),
-  Bash(npm view *), Bash(npm install *), Bash(yarn add *), Bash(pnpm add *),
+  Bash(npm view *), Bash(npm install *), Bash(npm uninstall *),
+  Bash(yarn add *), Bash(pnpm add *),
   Bash(curl -Ls https://getstream.io/chat/docs/sdk/react-native/llms.txt),
   Bash(curl -Ls https://getstream.io/chat/docs/react-native/llms.txt),
   Bash(curl -Ls https://getstream.io/video/docs/react-native/llms.txt),
   Bash(curl -Ls https://getstream.io/activity-feeds/docs/react-native/llms.txt),
+  Bash(curl -s http://localhost:*),
   Bash(npx create-expo-app@latest *), Bash(npx create-expo-app *),
   Bash(npx @react-native-community/cli@latest init *),
   Bash(npx expo install *), Bash(npx expo prebuild *), Bash(npx expo start *),
-  Bash(npm run *), Bash(yarn *), Bash(pnpm *),
-  Bash(npx pod-install *), Bash(cd ios && pod install)
+  Bash(npx expo run:*), Bash(npx react-native *), Bash(npx tsc *),
+  Bash(npm run *), Bash(yarn *), Bash(pnpm *), Bash(node -e *),
+  Bash(npx pod-install *), Bash(cd ios && pod install),
+  Bash(xcrun simctl *), Bash(open -a Simulator), Bash(defaults write *),
+  Bash(md5 *), Bash(lsof *),
+  Bash(brew install watchman), Bash(watchman *),
+  Bash(magick *), Bash(python3 *), Bash(.designvenv/bin/pip *),
+  Bash(git worktree *), Bash(git log *), Bash(git status *)
 ---
 
 # Stream React Native - skill router + execution flow
