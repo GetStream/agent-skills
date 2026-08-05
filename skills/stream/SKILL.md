@@ -22,8 +22,9 @@ This skill picks the track from the user's input. Building (web + platform) and 
 ## By task
 
 **Build or integrate Stream in a platform-specific app** -> peer pack from [`peers.yaml`](peers.yaml) (**check peer signals first**)
-- Match user input or cwd against each peer's `signals` (e.g. `swift` / `swiftui` / `.xcodeproj` -> `stream-swift`; `react native` / `expo` / `stream video react native` -> `stream-react-native`)
+- Match user input or cwd against each peer's `signals` (e.g. `swift` / `swiftui` / `.xcodeproj` -> `stream-swift`; `react native` / `expo` / `stream video react native` -> `stream-react-native`; `unreal` / `.uproject` / `umg` -> `stream-unreal`)
 - All peers install on demand - install if missing, then route, no prompt
+- **An SDK/engine signal beats an OS-target signal.** When both appear, the pack that owns the SDK wins: "build an Unreal chat app for iOS" is `stream-unreal` (not `stream-swift`), "an Unreal game on Android" is `stream-unreal` (not `stream-android`). `ios` / `android` / `xcode` / `gradle` describe the *build target*; `unreal` / `.uproject` / `umg` / `flutter` / `react native` describe the *SDK*. Same rule for `flutter` + `ios`.
 - **Peer signals take precedence over the web rows below.** A request like "add a video call to my Expo app" or "scaffold a React Native app with Stream Video" matches `stream-react-native`, not the web packs - the platform token wins.
 
 **Build / enhance / audit / migrate a web app with Stream (React / Next.js)** -> use the `stream-react` skill (the default web pack when no other platform signal is present)
@@ -62,7 +63,7 @@ Scan the user's input for the signals below in order. The classifier is determin
 | Words "docs" or "documentation" (and no build/integrate verb) | `stream-docs` |
 | "How do I {X} in {framework}?", "How does {hook/component/method} work?", "What does {SDK thing} do?" - and **no build/integrate verb**. If the request is "how do I add/build/integrate/scaffold {X} in {framework}" and `{framework}` matches a peer signal, the peer row below wins instead. | `stream-docs` |
 | Operational verbs + Stream noun: "list calls", "show channels", "any flagged", "find users", "check {anything}", or a literal `getstream` command (`getstream api`, `getstream init`, `getstream login`, ...), or "install the CLI" / "set up stream" | **Stream CLI** - handle here (below) |
-| **Build/integration intent + a token matching a peer's `signals` in [`peers.yaml`](peers.yaml)** (e.g. `swift` / `.xcodeproj` -> `stream-swift`; `react native` / `expo` / `stream video react native` / `stream video rn` -> `stream-react-native`). **This row takes precedence over the web `stream-react` rows below whenever a peer signal is present, and also wins over the docs how-to rows above whenever the request contains a build/integrate verb (`add`, `build`, `integrate`, `scaffold`, `wire`, `set up`, `create`, `upgrade`, `migrate`, `bump`, `update`) alongside the peer signal.** Note: `react native` / `react-native` (and `@stream-io/*-react-native-*` tokens) are `stream-react-native` signals and win over the web `react` default - including for upgrade/migrate/update requests, which the RN pack handles itself. | matching peer (installed on demand if missing) |
+| **Build/integration intent + a token matching a peer's `signals` in [`peers.yaml`](peers.yaml)** (e.g. `swift` / `.xcodeproj` -> `stream-swift`; `react native` / `expo` / `stream video react native` / `stream video rn` -> `stream-react-native`; `unreal` / `ue5` / `.uproject` / `umg` -> `stream-unreal`). **This row takes precedence over the web `stream-react` rows below whenever a peer signal is present, and also wins over the docs how-to rows above whenever the request contains a build/integrate verb (`add`, `build`, `integrate`, `scaffold`, `wire`, `set up`, `create`, `upgrade`, `migrate`, `bump`, `update`) alongside the peer signal.** Note: `react native` / `react-native` (and `@stream-io/*-react-native-*` tokens) are `stream-react-native` signals and win over the web `react` default - including for upgrade/migrate/update requests, which the RN pack handles itself. | matching peer (installed on demand if missing) |
 | **Literal mention of `stream-builder` / `/stream-builder`** (the framework-agnostic builder) | `stream-builder` |
 | "Build me a ... app", "scaffold", "create a new ..." + Stream product, OR a React/Next.js token (`stream-chat-react`, `@stream-io/video-react-sdk`, `useCreateChatClient`, ...) + build/integrate verb, **and no peer signal present** | `stream-react` (web/Next.js, the default when no platform signal is given) |
 | "Add Chat/Video/Feeds to this app", "integrate Stream into", "upgrade/migrate ... to vN" - existing project, **and no peer signal present** | `stream-react` (web/Next.js, the default when no platform signal is given) |
@@ -128,6 +129,7 @@ For a bare `/stream` (and whenever the user wants to pick a skill directly), out
 > - `/stream-android` - Android - Jetpack Compose - Kotlin
 > - `/stream-react-native` - React Native - Expo
 > - `/stream-flutter` - Flutter - Dart
+> - `/stream-unreal` - Unreal Engine - C++ - Blueprint (Chat only)
 >
 > Or just ask - query data or run `getstream` commands directly: *"list my channels"*. New to a skill? Just describe the task and I'll install the right one automatically.
 
