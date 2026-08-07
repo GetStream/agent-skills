@@ -6,6 +6,24 @@ Stream Feeds has **no pre-built UI components** - every screen is custom React N
 
 The blueprints use generic React Native primitives (`View`, `Text`, `FlatList`, `Pressable`, `TextInput`). Replace with the host app's themed components as needed.
 
+## Contents
+
+- **Request -> Blueprint section** - routing table; start here to pick the sections below
+- **App Provider and Auth Gate** - `StreamFeeds` root, `useCreateFeedsClient`, token wiring
+- **Fresh App Scaffold** - new-app file layout and order of assembly
+- **Own Feeds Context** - the app-side context wrapping the user's own feed
+- **Activity List Screen** - timeline / for-you list with `useFeedActivities`
+- **Activity Component** - a single activity row: author, content, attachments, counts
+- **Activity Composer** / **Activity Composer with Image** - post composition, with and without uploads
+- **Explore Screen** - discovery feed
+- **Follow Button** - follow/unfollow with own-follow state
+- **Reactions** - reaction toggles on an activity
+- **Comments Modal** - threaded comments surface
+- **Notification Feed** - aggregated notification list
+- **Push Device Registration** - registering and unregistering the device token
+- **Theming / Customization Note** - how theming works with a headless SDK
+- **Sign-out** - teardown order
+
 ---
 
 ## Request -> Blueprint section

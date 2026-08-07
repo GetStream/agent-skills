@@ -3,7 +3,7 @@
 Call screen, participant tiles, controls, livestream surfaces.
 
 Tier 2 of the design-match decomposition. The method that drives it — the three axes, how to
-measure sizes, how to sample colours, and the Step 3 verify loop — lives in
+measure sizes, how to sample colours, and the Step 4 verify loop — lives in
 [`design-matching.md`](design-matching.md); read that first, then walk **every row** below.
 
 The **Route to** column names the *mechanism*. Confirm the exact theme key / slot / prop name in

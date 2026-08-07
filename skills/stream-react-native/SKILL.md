@@ -1,33 +1,48 @@
 ---
 name: stream-react-native
-description: "Use when creating, building, or integrating Stream Chat, Stream Video, or Stream Feeds in React Native Community CLI or Expo apps - new RN/Expo Chat / Video / Feeds apps from scratch, existing-app integration, stream-chat-react-native, stream-chat-expo, @stream-io/video-react-native-sdk, @stream-io/feeds-react-native-sdk, useCreateFeedsClient, StreamFeeds, StreamFeed, activity feed, timeline feed, notification feed, for-you feed, useFeedActivities, useActivityComments, reactions, comments, follows, migration/setup, migrate or upgrade an SDK version, upgrade stream-chat-react-native to v9, v8 to v9, bump Stream version, migrate from Sendbird, replace @sendbird/uikit-react-native / @sendbird/chat with Stream, Sendbird to Stream React Native/Expo migration, channel list, message list, MessageComposer, attachment picker, image/file attachments, media picker, audio messages, threads, thread list, video call, livestream, audio room, ringing, CallContent, ParticipantView, React Navigation, Expo Router, theming, offline support, push notifications, and Chat / Video / Feeds UI customization. Not for Moderation review UI."
+description: "Builds, integrates, migrates, and audits Stream Chat, Stream Video, and Stream Feeds in React Native CLI and Expo apps. Use when scaffolding a new RN/Expo Chat, Video, or Feeds app, adding Stream to an existing RN app, upgrading a Stream SDK version (stream-chat-react-native v8 to v9, Feeds v2 to v3), migrating from Sendbird (@sendbird/chat, @sendbird/uikit-react-native), answering RN/Expo SDK how-to questions, or customizing Stream RN UI. Triggers on React Native, Expo, Expo Router, stream-chat-react-native, stream-chat-expo, @stream-io/video-react-native-sdk, @stream-io/feeds-react-native-sdk, channel list, message list, MessageComposer, threads, attachment picker, audio messages, offline support, push notifications, video call, livestream, audio room, ringing, CallContent, ParticipantView, activity/timeline/notification feed, useCreateFeedsClient, StreamFeeds, comments, reactions, follows, and theming. React Native and Expo only - not web React (use stream-react), not Moderation review UI."
 license: See LICENSE in repository root
 compatibility: Supports new or existing React Native CLI and Expo apps running Stream Chat RN or Stream Video RN with React Native New Architecture. The `getstream` CLI is the default credentials and requested demo-data path; pasted API key and token are accepted as fallback.
 metadata:
   author: GetStream
 allowed-tools: >-
-  Read, Write, Edit, Glob, Grep,
+  Read, Write, Edit, Glob, Grep, Task,
   WebFetch(domain:getstream.io),
   WebFetch(domain:raw.githubusercontent.com),
-  Bash(ls *), Bash(find . *), Bash(grep *), Bash(sips *),
+  Bash(ls *), Bash(find . *), Bash(grep *), Bash(awk *), Bash(tail *), Bash(sips *),
   Bash(cat package.json), Bash(cat app.json), Bash(cat app.config.js), Bash(cat app.config.ts),
   Bash(cat babel.config.js), Bash(cat metro.config.js),
   Bash(command -v getstream), Bash(getstream *),
-  Bash(npm view *), Bash(npm install *), Bash(yarn add *), Bash(pnpm add *),
+  Bash(npm view *), Bash(npm install *), Bash(npm uninstall *),
+  Bash(yarn add *), Bash(pnpm add *),
   Bash(curl -Ls https://getstream.io/chat/docs/sdk/react-native/llms.txt),
   Bash(curl -Ls https://getstream.io/chat/docs/react-native/llms.txt),
   Bash(curl -Ls https://getstream.io/video/docs/react-native/llms.txt),
   Bash(curl -Ls https://getstream.io/activity-feeds/docs/react-native/llms.txt),
+  Bash(curl -s http://localhost:*),
   Bash(npx create-expo-app@latest *), Bash(npx create-expo-app *),
   Bash(npx @react-native-community/cli@latest init *),
   Bash(npx expo install *), Bash(npx expo prebuild *), Bash(npx expo start *),
-  Bash(npm run *), Bash(yarn *), Bash(pnpm *),
-  Bash(npx pod-install *), Bash(cd ios && pod install)
+  Bash(npx expo run:*), Bash(npx react-native *), Bash(npx tsc *),
+  Bash(npm run *), Bash(yarn *), Bash(pnpm *), Bash(node -e *),
+  Bash(npx pod-install *), Bash(cd ios && pod install),
+  Bash(xcrun simctl *), Bash(open -a Simulator), Bash(defaults write *),
+  Bash(md5 *), Bash(lsof *), Bash(xxd *),
+  Bash(brew install watchman), Bash(watchman *),
+  Bash(magick *), Bash(python3 *),
+  Bash(.designvenv/bin/pip *), Bash(.designvenv/bin/python3 *),
+  Bash(bash scripts/*), Bash(bash */scripts/*), Bash(bash *),
+  Bash(git worktree *), Bash(git log *), Bash(git status *)
 ---
 
 # Stream React Native - skill router + execution flow
 
 **Rules:** Read **[`RULES.md`](RULES.md)** once per session. Every non-negotiable React Native Chat, Video, and Feeds rule is stated there.
+
+**Scripts:** [`scripts/`](scripts/README.md) holds the procedures that used to be prose — project probe,
+verification gate, the whole simulator capture loop, region measurement and comparison, analysis
+validation, artifact cleanup. **Execute them; do not read them into context** unless you are changing
+one. They are deterministic and cheap, and each one refuses to report success it cannot stand behind.
 
 This file is the single entrypoint: intent classification, product selection, project detection, and module pointers for Stream Chat React Native, Stream Video React Native, and Stream Feeds React Native work.
 
@@ -114,8 +129,14 @@ For Track A, it is acceptable to scaffold the app first if the runtime or target
 Read-only local probe. Use it to detect empty/new workspace, RN CLI vs Expo, New Architecture hints, navigation setup, and existing Stream packages.
 
 ```bash
-bash -c 'echo "=== PACKAGE ==="; test -f package.json && grep -oE "\"(stream-chat-react-native|stream-chat-expo|@stream-io/video-react-native-sdk|@stream-io/feeds-react-native-sdk|@stream-io/react-native-webrtc|@stream-io/react-native-callingx|react-native|expo|@react-navigation/[^\"]+|expo-router|react-native-reanimated|react-native-worklets|react-native-teleport|@op-engineering/op-sqlite)\": *\"[^\"]*\"" package.json 2>/dev/null; echo "=== EXPO ==="; find . -maxdepth 2 \( -name "app.json" -o -name "app.config.js" -o -name "app.config.ts" -o -path "./app/_layout.*" \) -print 2>/dev/null; echo "=== NATIVE ==="; find . -maxdepth 2 \( -name "ios" -o -name "android" \) -type d -print 2>/dev/null; echo "=== CONFIG ==="; find . -maxdepth 2 \( -name "babel.config.js" -o -name "metro.config.js" \) -print 2>/dev/null; echo "=== EXPO_SDK ==="; node -e "try{console.log(require(\"./node_modules/expo/package.json\").version)}catch(e){try{console.log(require(\"./package.json\").dependencies.expo)}catch(e){console.log(\"-\")}}" 2>/dev/null; echo "=== EMPTY ==="; test -z "$(ls -A 2>/dev/null)" && echo "EMPTY_CWD" || echo "NON_EMPTY"'
+bash scripts/probe.sh <project-dir>        # defaults to cwd
 ```
+
+It prints one labelled block per signal — `PACKAGE`, `EXPO`, `NATIVE`, `CONFIG`, `EXPO_SDK`,
+`PKG_MANAGER`, `NEW_ARCH`, `REANIMATED_FLAG`, `EMPTY` — plus a **`HAZARDS`** block that asserts
+the peer-version traps in [`RULES.md`](RULES.md) (the reanimated/worklets crash pair, a
+Reanimated 4 project missing `FORCE_REACT_RENDER_FOR_SETTLED_ANIMATIONS:false`, Expo 56+ with
+both `expo-router` and `@react-navigation/*`) instead of leaving you to remember them.
 
 Hold the result in conversation context. Do not re-run unless the user changes directory, packages are installed, or the project shape changes.
 
@@ -213,7 +234,7 @@ with **no** target appearance does not trip this flag - build from the blueprint
 - **Overriding a composite slot drops every sub-feature the default drew** unless you reproduce it (avatar, grouping, reactions, replies, receipts, edited/deleted state).
 - **Setup traps that silently break these builds:** on Expo SDK 57 bump past the crash-prone reanimated pin (≥4.5.1/≥0.10.2), and on Reanimated 4 set `FORCE_REACT_RENDER_FOR_SETTLED_ANIMATIONS: false` in root `package.json` (both in [`RULES.md`](RULES.md) > Required peer setup).
 
-The cross-cutting reasoning rules that catch these (partial-styling → inner container, regression adjacency, name-isn't-the-node, reinvention red flag, no magic numbers, green-launch ≠ correct, assumed-≠-SDK-default, override-every-cascading-token) live in [`RULES.md`](RULES.md) > Design-matching discipline — read them for any design-match request.
+The cross-cutting reasoning rules that catch these live in [`references/design-matching.md`](references/design-matching.md) — read it for any design-match request. Where each one sits: partial-styling → inner container, name-isn't-the-node, reinvention red flag, structure-before-surface and idiomatic-≠-matching in **Step 1 > Region checklist + routing**; no magic numbers and ink-vs-declared-size in **Step 1 > Getting sizes right / Weight**; override-every-cascading-token, pinned-vs-adapted surfaces and glyph knockouts in **Step 1 > Follow EVERY color**; regression adjacency in **Step 4**. Two stay here: *green-launch ≠ correct* in [`references/SIMULATOR-VERIFICATION.md`](references/SIMULATOR-VERIFICATION.md) §7, and *assumed-≠-SDK-default* in [`RULES.md`](RULES.md) > Package version and docs discipline.
 
 ---
 

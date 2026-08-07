@@ -354,6 +354,8 @@ No Expo config plugin entries are needed for Feeds. A Feeds-only Expo app can st
 
 After adding native Video optional packages, follow their platform permission steps. For Expo, keep the app in the dev-client/native-build lane and run `npx expo prebuild --clean` when native config changes need to be regenerated.
 
+**Batch capability packages before the first native build.** Each native capability package forces a prebuild + native rebuild (minutes). Decide the *complete* set the app needs up front and install them together **before** the first `expo run:ios` / `pod install`, so you build once — adding one later (e.g. discovering the composer mic needs `expo-audio` only after the app runs) costs a second full rebuild.
+
 ### Chat - optional packages by capability
 
 Optional dependencies are capability packages. They are not required for every Chat app. Install them only when the user asks for that capability, when selected manifest docs require them, or when an implemented blueprint needs native functionality beyond the core Chat UI.
@@ -364,7 +366,7 @@ How to add one:
 2. Pick the package from the matrix for the detected runtime lane.
 3. Install with the project's package manager for RN CLI, or `npx expo install` for Expo.
 4. Add required platform permissions or Expo config plugins from the selected package docs.
-5. Run pods for RN CLI native installs. For Expo, keep the app in the dev-client/native-build lane and run prebuild when native config changes need to be regenerated.
+5. Re-link the native app after native packages change. RN CLI iOS: `npx pod-install`. **RN CLI Android: rebuild with `npx react-native run-android`** — autolinking runs at Gradle build time, so an already-installed Android app will *not* pick up a new native module (e.g. an attachment picker) until it is rebuilt. For Expo, keep the app in the dev-client/native-build lane and run prebuild when native config changes need to be regenerated; if the Expo app has no native projects yet, run `npx expo prebuild --clean`.
 6. Verify the capability in the existing app flow; do not leave unused optional packages installed.
 
 | User asks for | RN CLI packages | Expo packages | Notes |
@@ -384,7 +386,7 @@ How to add one:
 
 After adding native optional packages, follow their platform permission steps. For Expo, keep the app in the dev-client/native-build lane and run `npx expo prebuild` when native config changes need to be regenerated.
 
-**Batch capability packages before the first native build.** Each native capability package forces a prebuild + native rebuild (minutes). Decide the *complete* set the app needs up front and install them together **before** the first `expo run:ios` / `pod install`, so you build once — adding one later (e.g. discovering the composer mic needs `expo-audio` only after the app runs) costs a second full rebuild, the most common avoidable simulator time sink. See [references/SIMULATOR-VERIFICATION.md](references/SIMULATOR-VERIFICATION.md).
+**Batch capability packages before the first native build.** Each native capability package forces a prebuild + native rebuild (minutes). Decide the *complete* set the app needs up front and install them together **before** the first `expo run:ios` / `pod install`, so you build once — adding one later (e.g. discovering the composer mic needs `expo-audio` only after the app runs) costs a second full rebuild.
 
 ---
 
@@ -604,14 +606,18 @@ npx expo start
 Run only commands that exist in the project.
 
 **Running on the iOS simulator (Expo dev-client).** When you actually boot the app to screenshot and
-verify it (especially for a design match), follow the fast loop in
-[references/SIMULATOR-VERIFICATION.md](references/SIMULATOR-VERIFICATION.md): batch all capability
-packages before the first native build, start Metro **not** in CI mode (`npx expo start --dev-client
---clear`) so edits aren't served stale, start Metro separately from `expo run:ios` (which exits and
-can take the bundler down), reach non-initial screens with temporary in-code navigation (`simctl`
-can't tap), and wait for the client to reconnect before trusting a screenshot. Three traps from that
-page that cost real runs the most time: **redirect Metro to a log, never pipe it** (a closing pipe kills
-it — and a piped gate command returns the *pipe's* exit status, so a failing build reads as green);
-**`simctl terminate` before every `simctl launch`** (launch on a running app returns its PID without
-restarting, so you screenshot stale UI); and **`simctl privacy revoke photos`** before launching, since
-*granting* does not reliably suppress iOS 26's un-dismissable photo prompt.
+verify it (especially for a design match), **run the scripts — don't hand-roll the loop**:
+
+```bash
+bash scripts/gate.sh "$P" npx expo run:ios --device "$(bash scripts/sim.sh boot 'iPhone 16 Pro')"
+bash scripts/sim.sh capture <bundleId> <screen>-<state>-1.png --project "$P" --lane expo
+```
+
+`gate.sh` reports the command's **real** exit status (a piped gate command returns the *pipe's*, so a
+failing build reads as green) and recognises `expo run:ios`'s harmless post-build osascript error.
+`sim.sh capture` owns the rest — Metro started separately from `expo run:ios` and redirected to a log,
+`simctl terminate` before every launch, `privacy revoke photos` before the first one, poll-until-settled.
+
+Read [references/SIMULATOR-VERIFICATION.md](references/SIMULATOR-VERIFICATION.md) for what they can't
+do for you: batch all capability packages before the first native build, and reach non-initial screens
+with temporary in-code navigation — **`simctl` cannot tap**.

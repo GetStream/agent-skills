@@ -6,6 +6,26 @@ Rules: [../RULES.md](../RULES.md) (Feeds is bundled alongside Chat and Video; Ne
 
 Manifest-selected docs are the authority. Use [DOCS.md](DOCS.md) before installing packages or making API-specific claims.
 
+## Contents
+
+- **Quick ref** - package + peer matrix per lane, and the first-path step order
+- **App Integration** - Installation · App-side helpers for common Feeds UI · Client setup · Token route pattern
+- **Core contexts, components, and hooks** - `StreamFeeds` / `StreamFeed` and the state hooks
+- **Navigation rules** - provider placement and what to pass between screens
+- **Feeds and feed identifiers** - feed group/id model · For You / Explore prerequisite · one-shot activity queries · Self-follow
+- **Activities** - Post an activity · Read activity data · Update and delete
+- **Attachments and file uploads** - upload flow and attachment shapes
+- **Reactions** - add/remove, own-reaction state
+- **Follow graph** - follow/unfollow · Follow requests · Follow suggestions
+- **Comments** - threaded comments · Activity details (comments modal) · Sort options
+- **Notification feed** - aggregated notifications, seen/read marking
+- **Push notifications** - Dashboard · register the device · Push preferences · backend trigger + tap handling
+- **Search** - querying activities and users
+- **Real-time updates** - what updates reactively and what does not
+- **Error handling** - failure modes and retries
+- **Selector rules (when using `useStateStore`)** - stable selectors, avoiding re-render loops
+- **Gotchas** - the recurring mistakes
+
 ---
 
 ## Quick ref
