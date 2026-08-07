@@ -531,17 +531,6 @@ composite-area subagent owns every checklist region in its area, rebuilds them *
 Run all of these; each catches a failure a real migration shipped. The compiler is the oracle (golden rule
 / trust model).
 
-**Gate 0 — the 30-second floor; do this FIRST, before the region tables and before any styling.** Take
-**one channel-list shot + one channel-screen shot**. On the channel screen, confirm **all four are in
-frame: the header, an incoming bubble, an outgoing bubble, and the composer.** Any one missing = a **broken
-screen — stop and fix it**; do **not** study the regions that *are* visible and let them stand in for the
-screen. The composer especially: a custom header rendered as a **sibling above** `<Channel>` can push the
-composer **entirely off-screen** — render the header **inside** `<Channel>` with
-`keyboardVerticalOffset={0} topInset={0}`
-([`references/regions-chat.md`](references/regions-chat.md#keyboardverticaloffset--topinset-on-channel--and-the-composerpicker-gap)).
-**Presence before appearance**, and *attempted* before *present*: a channel screen whose **message-list
-bubbles you never even tried to match** is not "done" just because the channel list looked right.
-
 **Run every gate from an absolute `cd`, redirected to a log, NEVER piped** — the exit-status trap that made
 a real run report gate 2 green on a broken build, with the command shape to use, is
 [`references/SIMULATOR-VERIFICATION.md`](references/SIMULATOR-VERIFICATION.md) §7.
@@ -563,54 +552,17 @@ a real run report gate 2 green on a broken build, with the command shape to use,
    once** for the sender (kill-list #1/#2), arrives live for the receiver, unread badges and typing
    indicators move, and there are no console errors. If you cannot run the app, say so and have the user
    run this check — do not skip it silently.
-   - **Then drive every interaction the source app has, and confirm its observed effect.** No screenshot
-     exercises any of it (`simctl` can't tap), so a screen that paints correctly can be entirely dead and
-     this gate is the only thing that catches it: send text · **send an attachment through the picker** ·
-     **reply** → quote preview → send → quoted message renders · **edit** → composer prefills → save →
-     edited state shows · **long-press** → actions menu · **react** from the picker · open a **thread** and
-     reply · channel-row tap **and** long-press · **back-nav** (chat → list, thread → chat). A
-     rendered-but-inert affordance is a FAIL.
-   - **This list is not a design check and does not close with the design gate.** A real run screenshotted
-     the attach menu, called the picker verified, and shipped an image upload that aborted the app with
-     `SIGABRT` on the first real tap — a screenshot of an attach menu is identical whether the upload works
-     or crashes. Drive the upload, don't photograph the button.
-5. **Design verify — reconciliation, not the first look.** Per §1a and §6, each screen was verified *as it
-   was built* by the per-area design-match subagents; this gate **confirms** it and **fails if it never
-   happened**. **Coverage precondition, checked first:** `design-analysis.md` has a row for **every** row
-   of the product region table ([`references/regions-chat.md`](references/regions-chat.md) for Chat), or an
-   explicit `N/A - <reason>`. Cannot name the region file you walked? You did not run Step 1 — **FAIL on
-   coverage** before any crop. An unspecced region passes silently as "not applicable"; that is how a run
-   shipped a stock long-press menu it never measured. **Hard block: the two non-negotiable screens (§1b)
-   must have _every_ region `Fixed` or genuinely `Impossible: <reason>`, each citing a baseline↔migrated
-   crop. One "good enough" / "close enough" / un-diffed region on either screen = this gate FAILS, full
-   stop; the migration does not close.** It closes **against the ledger**: every ledger row with a filled
-   Spec-rows cell has a PASS verdict citing a this-round capture of the migrated app compared to its
-   reference, **driven states included** (composer typing, reactions, thread open, attachment picker). A
-   visual feature whose ledger row says Ported but has no verdict row is unverified — treat it as FAIL.
-   - **Seed data so every region actually renders BEFORE you compare** (§5 > Seeding). A region that never
-     rendered is **unverified**, not passed.
-   - **Confirm every mandatory region is actually ON SCREEN before you compare — a missing region is a
-     layout bug, not something to verify around.** A chat screen with **no visible composer** (or a clipped
-     message list / header) means a region got pushed off-screen — almost always the
-     header-outside-`<Channel>` trap (gate 0). A mandatory region absent from the frame = **not done**; fix
-     the layout and re-shoot. (First glance at any chat-screen shot: *is the composer even there?*)
-   - **Produce the region-diff artifact, don't claim it** — design-matching §4.2 (what to check per screen)
-     and §4.3 (the comparison table, the full-width composite crops, the placement question). One row per
-     filled Spec-rows cell, from actual crops; whole-screen "looks close" is how ~10 per-region defects
-     shipped unnoticed. The baseline crop must meet §1a's baseline rule.
-   - **A region you specced but never built is a FAIL, not done.** Cross-check every `design-analysis.md`
-     region against an implemented+verified result (a real run specced the header avatar and add-reaction
-     button, then never built them — no gate caught it).
-   - **Terminal states are `Fixed` or `Impossible: <reason>` only** — every hand-wave banned in
-     design-matching applies here, **and any other qualifier**: a real run slipped past that list by calling
-     an unfinished region a "cosmetic residual".
-   - **Passing this gate says nothing about interaction** — every handler is verified in **gate 4**. A
-     pixel-perfect region can be behaviorally dead.
-6. **Ledger closure:** every parity-ledger row is Ported / Rewritten / N/A / GAP-with-decision. A `GAP -
+5. **Ledger closure:** every parity-ledger row is Ported / Rewritten / N/A / GAP-with-decision. A `GAP -
    provisional` row (section 2 default) closes the gate only if the final report calls it out explicitly as
    a decision the user still owes.
-7. **Docs match reality:** rewrite README/feature lists against what the migrated app actually does,
+6. **Docs match reality:** rewrite README/feature lists against what the migrated app actually does,
    including a "Known gaps vs. the Sendbird original" section from the GAP rows.
+7. **Remove the run's artifacts from the USER'S project — not optional.** Capture folders,
+   `design-analysis.md`, contact sheets and the throwaway venv all live in their repo; two real
+   migrations left ~16 MB behind because the only cleanup instruction named a single file.
+   `bash scripts/cleanup.sh "$P"` dry-runs; confirm the list, then `--yes`. Add `--keep-evidence` if
+   the delivered README links to the diffs (keeps the analysis + sheets, drops raw captures), or
+   `--gitignore` to keep them locally instead. Temporary in-code scaffold is separate — gate 5.
 
 | Excuse | Reality |
 |---|---|

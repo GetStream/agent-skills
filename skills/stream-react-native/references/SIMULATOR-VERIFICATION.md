@@ -22,26 +22,54 @@ The lane differences are called out inline and summarized in **§8**.
 
 ---
 
-## 1. The run loop (boot → build once → launch to Metro → screenshot)
+## 1. The run loop — run `scripts/sim.sh`, don't hand-roll it
+
+**`scripts/sim.sh capture` IS this loop.** One call boots or reuses the device, preps permissions,
+starts Metro (and waits until it *serves*), terminates, launches onto the bundle, gates on the
+bundle actually being served, polls until the frame settles, and writes the PNG:
 
 ```bash
-xcrun simctl list devices          # pick a booted device, or boot one; grab its UDID
-xcrun simctl boot <udid>; open -a Simulator
+# 0) PIN THE DEVICE CLASS to the reference's, BEFORE the build. A 402pt render cannot be
+#    compared 1:1 to a 393pt reference, and compare_regions.py refuses the pair — one real
+#    run discovered that after building and hand-measured everything instead.
+python3 scripts/measure_region.py scale <reference.png>   # prints logical_width
+bash scripts/sim.sh devices 393                           # simulators of that class
+
+# 1) build once (the expensive native step) — gate.sh reports its REAL exit status
+bash scripts/gate.sh "$P" npx expo run:ios --device "$(bash scripts/sim.sh boot --logical-width 393)"
+
+# 2) then one call per screen STATE, repeatable — reuses the device and Metro
+bash scripts/sim.sh capture <bundleId> chat-atrest-1.png --project "$P" --lane expo \
+     --logical-width 393 [--port 8081]
 ```
 
-**Pin that one UDID for the whole verification loop.** Reuse it in every `simctl`/`run:ios` call for the
-task instead of re-picking or re-booting mid-loop — juggling booted simulators is how a screenshot ends up
-on the wrong device or a stale build.
+Granular subcommands for the rare step you need alone:
+`boot [name] · prep <udid> <bundleId> · metro expo|cli <dir> · shot <udid> <bundleId> <out> ·
+appearance <udid> light|dark <out> · reboot <udid> · udid`.
 
-**Start Metro SEPARATELY, in the background, redirected to a log — NEVER pipe it.** A closing pipe
-(`| head`, `| tail`) KILLS Metro; a real run lost its dev server mid-session to `expo start … | head -N`.
-True for both lanes.
+It refuses to hand you a screenshot it cannot stand behind — **each of these was a green capture
+of the wrong screen before it was a check**, so do not work around them:
 
-**Write every capture to a UNIQUE filename** (`<screen>-<state>-<attempt>.png`), and delete the rejects at
-the end. A retry that overwrites its predecessor can be unrecoverable, because the app may not render the
-same state twice — a real run lost the only baseline holding reaction pills (the source SDK's local cache
-dropped reactions on reload) and recovering it cost a `git worktree` rebuild of the original app on a
-second Metro.
+- **No bundle line for this launch → hard failure**, file deleted. The app was not running your JS,
+  and the launcher menu it falls back to is a stable non-splash frame the settle check would accept.
+  (RN CLI on a cached launch may print none — then pass `--no-bundle-gate`.)
+- **Metro must answer `/status`, not merely hold the port.** It binds seconds before it can serve;
+  launching into that gap is what produced the launcher-menu capture above, at exit 0.
+- **`--device <name>` matches the name exactly** before falling back to substring (`iPhone 17` must
+  not resolve to `iPhone 17 Pro`) and lists candidates when ambiguous. Pin one device for the loop —
+  juggling booted simulators is how a screenshot lands on the wrong device or a stale build.
+- **It will not pick between two booted simulators.** With more than one booted and no `--device` /
+  `--logical-width`, it stops and lists them. A real run shot whichever happened to be first and had
+  to report afterwards that landing on the right device "was luck". `--logical-width` additionally
+  **verifies the captured PNG's width**, so a wrong guess about a device's class is caught here rather
+  than at comparison time.
+- **Output filenames are never reused** (`<screen>-<state>-<attempt>.png`). A retry that overwrites
+  its predecessor can be unrecoverable: a real run lost the only baseline holding reaction pills and
+  recovering it cost a `git worktree` rebuild on a second Metro.
+- **It never kills a dev server it did not start** — two real runs silently killed a sibling
+  project's. Metro is redirected to a log, never piped (a closing pipe kills it).
+
+§3–§4 are the states `capture` cannot reach on its own.
 
 ### Photo-library permission — REVOKE it before first launch; do NOT grant it
 
@@ -52,11 +80,13 @@ reboot. **`simctl privacy grant photos` does not reliably suppress it on iOS 26*
 them. **Revoke instead:** a *denied* permission makes the SDK render its in-app *"You have not granted
 access to the photo library — Change in Settings"* panel, an ordinary view with nothing to tap.
 
+**`sim.sh` does this for you** — `capture` calls `prep` on first use per device+bundle, which revokes
+photos, grants the mic, and dismisses the dev-menu onboarding sheet, then records a marker so later
+captures skip it. It deliberately does **not** mark an app that is not installed yet, so the prep
+still happens after the native build rather than being silently skipped forever.
+
 ```bash
-# Run both while the app is NOT running, then cold-launch.
-xcrun simctl privacy <udid> revoke photos <bundleId>
-# Grant the MIC, though — without it expo-audio can't start the recorder (see §4).
-xcrun simctl privacy <udid> grant microphone <bundleId>
+bash scripts/sim.sh prep <udid> <bundleId>          # only if you are driving steps by hand
 ```
 
 Then drive the picker open in code. **Order matters:** the SDK's `reactToIndex` forces
@@ -80,64 +110,40 @@ grid; conversely **an empty or not-granted grid is not a layout bug** — don't 
 let it mask a real gap (verify spacing against the composer, not the grid contents).
 
 If a blocking prompt did fire from an earlier run, a reboot is the only tap-free recovery:
-`xcrun simctl shutdown <udid> && xcrun simctl boot <udid>`.
+`bash scripts/sim.sh reboot <udid>`.
 
-### Expo dev-client lane
+### Both lanes — one command, `--lane` is the only difference
 
 ```bash
-# 1) Metro (background, redirected — see the never-pipe rule above).
-npx expo start --dev-client --clear > /tmp/metro-<proj>.log 2>&1 &
+# Build + install ONCE (the expensive native step). gate.sh reports the REAL exit status and
+# recognises the osascript case below.
+bash scripts/gate.sh "$P" npx expo run:ios --device <udid>       # expo
+bash scripts/gate.sh "$P" npx react-native run-ios --udid <udid> # rn cli
 
-# 2) Build + install the dev-client ONCE (the expensive native build).
-#    BUILD + INSTALL is what you need. expo run:ios also tries to *launch* at the end, and that step
-#    commonly fails with:
-#        Error: osascript -e tell app "System Events" to count processes … exited with non-zero code: 1
-#    That is a macOS Automation-permission error on the Simulator-window activation, NOT a build
-#    failure — the .app is already built and installed. Ignore it and launch yourself in step 4.
-npx expo run:ios --device <udid>
-
-# 3) Dismiss the dev-client onboarding sheet (takes effect now that the app is installed).
-xcrun simctl spawn <udid> defaults write <bundleId> EXDevMenuIsOnboardingFinished -bool YES
-
-# 4) Launch (and RELAUNCH every later iteration) straight onto the Metro bundle — tap-free.
-#    ALWAYS terminate first: launch on a running app returns its PID without restarting (§2).
-xcrun simctl terminate <udid> <bundleId>
-xcrun simctl launch <udid> <bundleId> --initialUrl "http://localhost:8081"
-
-# 5) Screenshot — POLL for readiness first, never `sleep`. Copy the loop from §5.
-xcrun simctl io <udid> screenshot <screen>-<state>-1.png
+# Then every capture, repeatable:
+bash scripts/sim.sh capture <bundleId> <screen>-<state>-1.png --project "$P" --lane expo
+bash scripts/sim.sh capture <bundleId> <screen>-<state>-1.png --project "$P" --lane cli
 ```
+
+**`expo run:ios` commonly exits non-zero AFTER a successful build** with
+`Error: osascript -e tell app "System Events" to count processes … exited with non-zero code: 1`.
+That is a macOS Automation-permission error on the Simulator-window activation, **not** a build
+failure — the `.app` is built and installed. `gate.sh` detects exactly this (Build Succeeded +
+osascript in the log) and says so, so it is not read as a broken build. Then capture normally.
 
 **Why `--initialUrl` and nothing else (Expo):** on a dev client the app must load a JS bundle from Metro.
 A **bare** `simctl launch` (no `--initialUrl`) opens the **expo-dev-launcher menu** ("Development Servers"
 list), and selecting the server needs a **tap** you can't perform. `simctl openurl <udid>
 "<scheme>://…"` triggers an iOS **"Open in <app>?"** confirmation that also needs a tap — **never use it**
-(§3). `--initialUrl "http://localhost:8081"` loads the bundle directly: no menu, no modal. Use the
-**http:// Metro URL**; passing the full `exp+<scheme>://…` deep link to `--initialUrl` re-triggers the
-"Open?" modal.
+(§3). `--initialUrl "http://localhost:<port>"` loads the bundle directly: no menu, no modal. It is a
+plain process argument the dev launcher parses itself (`initialUrlFromProcessInfo`), so use the
+**http:// Metro URL**; passing the full `exp+<scheme>://…` deep link re-triggers the "Open?" modal.
+`sim.sh --lane expo` passes it for you and matches it to `--port`.
 
-### React Native CLI lane
-
-The CLI has **no dev-launcher**, so steps 3 and 4 above **do not apply** — no onboarding sheet, no
-`--initialUrl`, no launcher menu, no "Open?" modal. `react-native run-ios` builds, installs **and
-launches** the app itself, cleanly (no osascript error). The debug binary has the `localhost:8081` bundle
-URL baked in, so it auto-connects to Metro on any launch.
-
-```bash
-# 1) Metro (background, redirected). See §2 for the watchman caveat.
-npx react-native start > /tmp/metro-<proj>.log 2>&1 &
-
-# 2) Build + install + launch ONCE (the expensive native build). This also launches cleanly.
-npx react-native run-ios --udid <udid>
-
-# 3) FAST relaunch every later iteration — bare launch, NO --initialUrl. Auto-connects to Metro.
-#    Terminate first — launch on a running app returns its PID without restarting (§2).
-xcrun simctl terminate <udid> <bundleId>
-xcrun simctl launch <udid> <bundleId>
-
-# 4) Screenshot — POLL for readiness first (§5), never `sleep`.
-xcrun simctl io <udid> screenshot <screen>-<state>-1.png
-```
+**React Native CLI lane:** no dev-launcher, so no onboarding sheet, no `--initialUrl`, no launcher menu,
+no "Open?" modal, and `run-ios` launches cleanly by itself (no osascript error). The debug binary has the
+`localhost:8081` bundle URL baked in and auto-connects on any launch — `--lane cli` issues the bare
+launch. See §2 for the watchman caveat, which is CLI-only.
 
 ---
 
@@ -294,48 +300,30 @@ seven real runs: 138 capture cycles, **86% of their wall time was `sleep`**, ~10
 of the cycles changed nothing** — re-shoots of a frame that came back too early. Poll instead; the app is
 usually ready in 2-8 s.
 
-Two stages, both zero-dependency. The frame captured immediately after `launch` **is** your splash
-reference — no baseline needed:
+**`scripts/sim.sh capture` implements both stages** — you do not write this loop. Two stages, both
+zero-dependency; the frame captured immediately after `launch` **is** the splash reference, so no
+baseline is needed:
 
-```bash
-U=<udid>; B=<bundleId>; LOG=/tmp/metro-<proj>.log; OUT=<screen>-<state>-1.png
+- **Stage A — did THIS relaunch bundle?** It marks the Metro log first (or it matches an older line),
+  then waits for `iOS Bundled` / `metro:bundling:done`. **A missing bundle line is terminal**, not
+  something to fall through: it means the app never loaded your JS, and the dev-launcher menu it falls
+  back to is a stable non-splash frame that Stage B would happily "settle" on and report green.
+- **Stage B — has the frame left the splash and stopped changing?** Two identical consecutive
+  screenshots. This also covers avatars still loading and list entrance animations, because a
+  mid-transition frame never matches its predecessor — a shot fired immediately can catch a
+  placeholder and read as a design mismatch that isn't one.
 
-# Stage A — wait for THIS relaunch's bundle. Mark the log first, or you match an older line.
-MARK=$(wc -l < "$LOG")
-xcrun simctl terminate $U $B 2>/dev/null
-xcrun simctl launch $U $B --initialUrl "http://localhost:8081" >/dev/null   # Expo; bare launch for RN CLI (§1)
-xcrun simctl io $U screenshot /tmp/splash.png                               # ← the splash reference
-for i in $(seq 1 20); do
-  tail -n +$((MARK+1)) "$LOG" | grep -qE 'iOS Bundled|metro:bundling:done' && break
-  sleep 1
-done
-
-# Stage B — poll until the frame LEAVES the splash and then STOPS changing (two identical in a row).
-SPLASH=$(md5 -q /tmp/splash.png); PREV=""; OK=0
-for i in $(seq 1 25); do
-  xcrun simctl io $U screenshot "$OUT" >/dev/null 2>&1
-  H=$(md5 -q "$OUT")
-  [ "$H" = "$SPLASH" ] && { PREV=""; sleep 1; continue; }        # still splash
-  [ "$H" = "$PREV" ] && { OK=1; echo "settled in ${i}s"; break; } # stable → this shoot is good
-  PREV=$H; sleep 1
-done
-# FAIL LOUDLY. A silent timeout leaves a splash frame in $OUT and it looks like a real capture.
-[ $OK -eq 1 ] || { echo "NOT READY — do NOT trust $OUT; diagnose (do NOT raise the cap)"; exit 1; }
-```
-
-On success `$OUT` already holds the settled frame — don't re-shoot it. On failure it holds a splash or
-mid-transition frame; **delete it** rather than leaving it to be mistaken for a capture later.
-
-Stage B's two-identical-frames test also covers avatars still loading and list entrance animations,
-because a mid-transition frame never matches its predecessor — a shot fired immediately can catch a
-placeholder and read as a design mismatch that isn't one.
+On success the output file already holds the settled frame — don't re-shoot it. On failure `sim.sh`
+**deletes** it rather than leaving a splash or mid-transition frame to be mistaken for a capture, and
+prints the diagnosis list below.
 
 `iOS Bundled 1214ms index.ts (745 modules)` is the Expo/RN Metro ready line; a JSON-logging Metro prints
 `{"_e":"metro:bundling:done",…}`. A cached relaunch still prints one (`iOS Bundled 38ms … (1 module)`).
-`packager-status:running` only proves Metro is **up** — it says nothing about whether *your* app finished
-bundling, so don't gate on it.
+`packager-status:running` only proves Metro is **up** — `sim.sh` gates *Metro readiness* on it (§1) but
+never the bundle, because it says nothing about whether *your* app finished bundling.
 
-**The wait is capped, and the cap does NOT grow.** If Stage A or B runs out you have a real defect —
+**The cap does NOT grow.** Stage A allows a generous budget (`BUNDLE_TIMEOUT`, 180 s — a cold Metro cache
+genuinely compiles for 1–2 min) and Stage B 25 s. If either runs out you have a real defect —
 **diagnose it, do not raise the timeout and re-shoot.** In the seven runs the sleep ratcheted 20 s → 40-90
 s and never came back down, because one early frame was read as "too fast" instead of "broken"; that habit
 is where most of the 100 minutes went. When the cap trips, it is one of:
@@ -357,29 +345,28 @@ on the change. **What to check in each mode is
 them.
 
 ```bash
-# iOS simulator (pinned UDID from §1). Shoot light FIRST — it is the reference the flip must move.
-U=<udid>
-xcrun simctl io $U screenshot light.png
-xcrun simctl ui $U appearance dark          # → light to switch back
-# The re-render is NOT instant. Poll until the frame differs from light and settles (§5, Stage B).
-LIGHT=$(md5 -q light.png); PREV=""; OK=0
-for i in $(seq 1 15); do
-  xcrun simctl io $U screenshot dark.png >/dev/null 2>&1
-  H=$(md5 -q dark.png)
-  [ "$H" = "$LIGHT" ] && { PREV=""; sleep 1; continue; }          # flip hasn't landed yet
-  [ "$H" = "$PREV" ] && { OK=1; break; }
-  PREV=$H; sleep 1
-done
-[ $OK -eq 1 ] || { echo "appearance flip never changed the frame — see the caveat below"; rm -f dark.png; }
+# Shoot light FIRST — it is the reference the flip must move.
+bash scripts/sim.sh capture <bundleId> <screen>-light-1.png --project "$P" --lane expo
+bash scripts/sim.sh appearance <udid> dark <screen>-dark-1.png     # 'light' to switch back
 ```
+
+`appearance` flips the OS setting and then polls until the frame settles (§5, Stage B) — the re-render
+is not instant.
+
+**It requires the pixels to actually move, and that check matters.** "The frame changed" is *not*
+evidence the flip landed: transient chrome changes it too. On an app whose dark mode is MMKV-driven,
+the Expo dev-menu bubble collapsed between the two shots, the frame-hash check passed, and the tool
+returned a **light** screenshot named `dark.png` with exit 0. It now measures mean luminance before and
+after and demands a move of ≥25 in the right direction, and when that fails it names the likely cause
+instead of handing you the file.
 
 **Caveat — `simctl ui appearance` only works if the app follows the OS.** The flip assumes
 `useColorScheme()` drives dark mode. If the app drives it from **app state** — a manual toggle persisted
-in MMKV / AsyncStorage / a theme context (common in migrated apps, e.g. a moon/sun button) — then `simctl
-ui appearance dark` is a **no-op** and you'll wrongly conclude dark mode is broken. **Check the app's
-theme-toggle source first:** if it reads a persisted flag, drive dark mode the app's own way — flip the
-flag from temporary scaffold (set the MMKV/AsyncStorage key or call the theme context's setter), then
-re-render and screenshot.
+in MMKV / AsyncStorage / a theme context (common in migrated apps, e.g. a moon/sun button) — then it is a
+**no-op**, and `sim.sh appearance` fails with exactly that diagnosis rather than letting you wrongly
+conclude dark mode is broken. **Check the app's theme-toggle source first:** if it reads a persisted flag,
+drive dark mode the app's own way — flip the flag from temporary scaffold (set the MMKV/AsyncStorage key
+or call the theme context's setter), then re-render and screenshot.
 
 **Caveat — a `WithComponents` slot override does NOT re-resolve on a runtime flip.** Whenever a colour
 reaches the screen through a slot override, **cold-launch each mode** (terminate → `simctl ui … appearance`
@@ -417,14 +404,18 @@ because the surfaces that *do* flip change the frame — so this defect survives
 - The simulator has **no camera or microphone** — video/audio *capture* can only be verified on a real
   device (see the Video reference). But the recorder **UI** is still screenshot-able: grant the mic (§1)
   and drive the state (§4) before concluding otherwise.
-- **A piped command reports the PIPE's exit status, not the command's — never pipe a verification
-  command.** `npx tsc --noEmit | head -5; echo $?` prints `0` on a *failing* typecheck, and `run-ios … |
-  tail` prints tail's success on a build that died with 65. Both happened in one real run, which then
-  reported a passing gate on a broken build. Redirect to a file and read it back: `<cmd> > /tmp/out.log
-  2>&1; echo "EXIT=$?"; tail -20 /tmp/out.log`. (Don't reach for `${PIPESTATUS[0]}` either — this shell is
-  zsh, where it expands to nothing.) Related: run project commands from an **absolute** `cd`, because `npx
-  <tool>` outside a project silently resolves an unrelated registry package — `npx tsc` in the wrong
-  directory prints "This is not the tsc command you are looking for" and looks like a pass.
+- **A piped command reports the PIPE's exit status, not the command's — so run every verification
+  command through `scripts/gate.sh`, which cannot make this mistake.**
+  ```bash
+  bash scripts/gate.sh <abs-project-dir> npx tsc --noEmit
+  ```
+  It absolute-`cd`s, redirects (never pipes), prints `EXIT=<real status>`, and tails the log.
+  `npx tsc --noEmit | head -5; echo $?` prints `0` on a *failing* typecheck, and `run-ios … | tail`
+  prints tail's success on a build that died with 65. Both happened in one real run, which then
+  reported a passing gate on a broken build. (Don't reach for `${PIPESTATUS[0]}` either — this shell
+  is zsh, where it expands to nothing.) The absolute `cd` matters just as much: `npx <tool>` outside a
+  project silently resolves an unrelated registry package — `npx tsc` in the wrong directory prints
+  "This is not the tsc command you are looking for" and looks like a pass.
 - **Dev-only overlays — ignore them in screenshots:** the **Expo** dev-client overlays a small floating
   **gear / dev-menu launcher**; the **RN CLI** shows a **LogBox "Open debugger to view warnings" toast** at
   the bottom. Both are dev-only (gone in a release build) and not part of the app. Never treat either as
@@ -434,16 +425,19 @@ because the surfaces that *do* flip change the frame — so this defect survives
 
 ## 8. Expo vs RN CLI — quick reference
 
-Commands only; the reasoning behind each row is in the section its cell names. Expo Go appears only as a
-**baseline-capture** lane (§1): Metro is that app's own dev server, and you launch with
+**Metro, onboarding, launch/relaunch and screenshot are all `scripts/sim.sh capture --lane expo|cli`** —
+the rows below are what it does per lane, kept so you can read *why*, not so you retype them. Expo Go
+appears only as a **baseline-capture** lane (§1): Metro is that app's own dev server, and you launch with
 `simctl launch host.exp.Exponent --initialUrl "http://127.0.0.1:<port>"`.
 
 | Step | Expo dev-client | React Native CLI |
 |---|---|---|
-| Metro (§1 — never pipe) | `npx expo start --dev-client --clear > log 2>&1 &` | `npx react-native start > log 2>&1 &` (install `watchman` — §2) |
-| Build once (§1) | `npx expo run:ios --device <udid>` (its launch step errors on osascript — harmless; it also fires `openurl`, so a modal may be left on screen) | `npx react-native run-ios --udid <udid>` (builds **and** launches cleanly) |
+| Everything below, in one call | `sim.sh capture <bundleId> <out.png> --project "$P" --lane expo` | `sim.sh capture <bundleId> <out.png> --project "$P" --lane cli` |
+| Metro (§1 — never pipe) | `npx expo start --dev-client > log 2>&1 &`, then wait for `/status` | `npx react-native start > log 2>&1 &` (install `watchman` — §2) |
+| Build once (§1 — via `gate.sh`) | `npx expo run:ios --device <udid>` (its launch step errors on osascript — harmless; it also fires `openurl`, so a modal may be left on screen) | `npx react-native run-ios --udid <udid>` (builds **and** launches cleanly) |
 | Onboarding sheet (§1) | `defaults write <bundleId> EXDevMenuIsOnboardingFinished -bool YES` | n/a (no dev-launcher) |
-| Launch / relaunch (§2) | `simctl terminate` **then** `simctl launch <bundleId> --initialUrl "http://localhost:8081"` | `simctl terminate` **then** `simctl launch <bundleId>` (bare) |
+| Launch / relaunch (§2) | `simctl terminate` **then** `simctl launch <bundleId> --initialUrl "http://localhost:<port>"` | `simctl terminate` **then** `simctl launch <bundleId>` (bare) |
+| Bundle gate (§5) | `iOS Bundled` required | same; pass `--no-bundle-gate` if a cached launch prints none |
 | Dev-launcher menu / "Open?" modal risk (§1, §3) | Yes — avoid via `--initialUrl`, never `openurl` | None |
 | Reload after edit (§2) | relaunch (re-fetches fresh) | Fast Refresh **iff** watchman installed; else `react-native start --reset-cache` + relaunch |
 | Reach non-initial screen (§3) | Expo Router `router.push`, **encode the cid** | React Navigation `navigate('Channel', { channelCid })`, **no encoding** |

@@ -6,7 +6,8 @@ names come from the manifest-selected docs and the installed package, not from m
 
 **Banned as a resolution:** *"acceptable approximation", "minor", "difference noted", "close enough",
 "keep default"*. Each region ends **Fixed** or **Impossible: \<concrete reason\>** — nothing in
-between. (These hand-waves shipped ~10 real per-region defects.)
+between. (These hand-waves shipped ~10 real per-region defects.) **`scripts/check_analysis.py` is the
+gate that enforces this** — run it on `design-analysis.md` before you call a match done (Step 3).
 
 **Don't ship affordances the app can't back.** References and boilerplate often carry buttons the app
 has no feature for — most commonly a **video-call icon** in the header or composer of a chat-only app.
@@ -42,58 +43,49 @@ unmatched until an **independent** reference (the original's real pixels) confir
 Picking `24`, `28`, `44` by eye is the recurring failure, worst in the composer (wrong input height,
 oversized icons, wrong paddings). "Match by proportion" is not enough when an exact dimension matters.
 
-1. **Find the scale, then work in LOGICAL px.** Mobile screenshots are usually `@2x`/`@3x`; RN
-   `StyleSheet` values are **logical px** (density-independent — what iOS calls points).
+1. **Run `scripts/measure_region.py` — do not hand-roll the thresholding.** Every number it prints is
+   **logical px** (screenshots are `@2x`/`@3x`; `StyleSheet` takes logical px), so no device pixel can
+   leak into a style. **Its output is your spec.** Needs Pillow + numpy — install before you start
+   capturing (`scripts/README.md`).
    ```bash
-   sips -g pixelWidth -g pixelHeight <reference.png>   # e.g. 1179 x 2556 → ÷3 = 393x852 (@3x)
+   python3 scripts/measure_region.py scale  <ref.png>                     # pixels → scale → logical
+   python3 scripts/measure_region.py band   <ref.png> [--from-bottom 380] # pill h/w/inset + icon glyphs
+   python3 scripts/measure_region.py colors <ref.png> --box X,Y,W,H       # mean/core hex, flat vs texture
+   python3 scripts/measure_region.py weight <ref.png> --box X,Y,W,H --font-size 15
    ```
-   1179 ÷ 393 = 3 → **@3x**, so `logical = pixels / 3` for everything you measure.
-2. **Extract element sizes AUTOMATICALLY.** `magick`/PIL/numpy are available; threshold the cropped
-   region and read real bounding boxes. Icons are **dark glyphs on a light bar** → threshold dark,
-   project onto columns, cluster into glyphs, measure each box. The input field is the **wide
-   near-white band** → its row-span is the field height, its white-column span the field width. Adapt
-   the crop band + thresholds per design; this prints logical px directly:
-   ```python
-   from PIL import Image; import numpy as np
-   im = Image.open(REF).convert("RGB"); W,H = im.size; S = 3.0      # @3x → ÷3
-   g = np.asarray(im).astype(int).mean(2)
-   band = g[H-380:H, :]                                              # bottom = composer
-   def run(r,t=248):                                                 # longest near-white run in a row
-       b=c=0
-       for v in r:
-           c=c+1 if v>t else 0; b=max(b,c)
-       return b
-   wr = np.array([run(g[y]) for y in range(H-380,H)]); ys=np.where(wr>W*.45)[0]+(H-380)
-   ft,fb = ys.min(),ys.max(); print("field h", (fb-ft+1)/S)         # logical px
-   wc = np.where(g[(ft+fb)//2] > 246)[0]; print("field w", (wc.max()-wc.min())/S)
-   dark = (g[ft-6:fb+6,:] < 110); cols=np.where(dark.sum(0)>2)[0]    # icon glyphs
-   # cluster contiguous columns (gap>8) → each glyph's w/h in logical px
-   ```
-   Each glyph's w/h and the field's h/w **are your spec**.
-3. **Controls are almost always SMALLER than you guess — often smaller than the SDK default.** Match
+   **`scale` first, and act on both things it tells you** — they set up the whole run:
+   - **`logical_width`** is the simulator you must pin, *before* the native build:
+     `bash scripts/sim.sh boot --logical-width 393`. A 402pt render cannot be compared 1:1 to a 393pt
+     reference; `compare_regions.py` refuses the pair, and a run that discovered this after building
+     hand-measured everything instead.
+   - **`source_profile`** is usually **Display P3** for a real-device screenshot, while simulator
+     captures are sRGB. The same paint reads as different numbers (`#E0FCD6` P3 = `#D9FDD3` sRGB), so
+     colour verdicts flip on colour space alone. The tools convert to sRGB on load and say so — take
+     **their** hex values, and never sample a P3 reference by hand into a theme file.
+2. **Controls are almost always SMALLER than you guess — often smaller than the SDK default.** Match
    the measured size; don't fall back to the SDK's default input height or to round numbers. Confirm
    the SDK's actual defaults from the **installed package**, then decide whether the reference is
    smaller.
-4. **The field width is the LEFTOVER** — `total − (leading cluster + trailing cluster + gaps)`.
+3. **The field width is the LEFTOVER** — `total − (leading cluster + trailing cluster + gaps)`.
    Oversized buttons steal it: size buttons to the measured glyph sizes, keep gaps on the theme's
    spacing scale, and the field reclaims its width.
-5. **Centering: verify by MEASUREMENT.** Compare each glyph's center-Y to its container's center-Y
+4. **Centering: verify by MEASUREMENT.** Compare each glyph's center-Y to its container's center-Y
    (from the field's white-band row span); the offset must be ≈ 0. A consistent offset means your
    button frame height ≠ the field's rendered height — frame side buttons to the measured field height
    and center within, rather than hand-tuning one-sided padding.
-6. **Grow the input pill with PADDING, not a fixed height — or the text stops centering.** The pill
+5. **Grow the input pill with PADDING, not a fixed height — or the text stops centering.** The pill
    (`messageComposer.inputBoxWrapper`) lays out **top-down** and does not vertically center the text
    row, so a fixed `minHeight`/`height` on the wrapper drops all the slack **below** the text and it
    hugs the top (the classic "taller composer, input no longer centered" bug). Size the pill from
    **symmetric vertical padding on `messageComposer.inputBox`** (`paddingTop` == `paddingBottom`): a
    single line is centered by construction and still grows for multi-line. Don't zero the input's own
    vertical padding and re-add the height via `minHeight` — that guarantees the off-center result.
-7. **Message bubble spacing** — if you change anything on the bubble, measure its inside padding and
+6. **Message bubble spacing** — if you change anything on the bubble, measure its inside padding and
    the gaps between its parts (text ↔ image etc.) and apply them.
-8. **Land measured numbers in RN theme keys / style values, and reuse the SDK spacing scale** for
+7. **Land measured numbers in RN theme keys / style values, and reuse the SDK spacing scale** for
    gaps/radius so custom pieces align with un-overridden parts — but tokens are for spacing/radius,
    *not* a license to keep default control/field **sizes**; those come from measurement.
-9. **No magic numbers.** A size standing for a concrete thing (keyboard, safe area, header, tab bar)
+8. **No magic numbers.** A size standing for a concrete thing (keyboard, safe area, header, tab bar)
    anchors to that thing (the SDK default or a measured reference value), never to "what feels roomy."
    When correcting an over/undershoot, reach for the simplest static approximation (e.g. an SDK
    default) *before* any runtime measurement hook.
@@ -103,9 +95,11 @@ oversized icons, wrong paddings). "Match by proportion" is not enough when an ex
 - **Different text ROLES usually have different weights — measure each separately.** Sender name,
   message body and timestamp are typically distinct (name heavier, body regular/light); the recurring
   miss is treating "text" as one weight.
-- **Map the stroke ÷ font-size ratio to an RN `fontWeight`**: ≈0.05→`'300'`, ≈0.075→`'400'`,
-  ≈0.09→`'500'`, ≈0.11→`'600'`, ≈0.13+→`'700'`. Set each role independently in the theme's text keys.
-  `'400'` often renders heavier than a reference's light body — re-measure your render and step down.
+- **`measure_region.py weight <img> --box X,Y,W,H --font-size N` does the mapping** — it measures the
+  median stroke width, divides by the font size, and prints the RN `fontWeight` string plus the
+  glyph's dark-core colour. (The ratios it applies: ≈0.05→`'300'`, ≈0.075→`'400'`, ≈0.09→`'500'`,
+  ≈0.11→`'600'`, ≈0.13+→`'700'`.) Set each role independently in the theme's text keys. `'400'` often
+  renders heavier than a reference's light body — re-measure **your own render** and step down if so.
 - **Don't conflate color with weight.** "Too light" may be a wrong base **color** (or a sub-pixel
   stroke antialiasing to gray) rather than a thin weight; "too bold" is weight. Fix the one that's
   actually wrong, and **verify both by measurement**: rendered stroke width ≈ reference's, AND
@@ -119,17 +113,19 @@ oversized icons, wrong paddings). "Match by proportion" is not enough when an ex
 
 ### Follow EVERY color from the reference — sample it, don't guess (and sample each sub-part)
 
-Invented colors are a recurring miss. **Sample every color and apply the measured value** —
+Invented colors are a recurring miss. **Sample every color with
+`python3 scripts/measure_region.py colors <img> --box X,Y,W,H` and apply the measured value** —
 background/wallpaper, bubble fills, composer bar, each glyph, borders, **and the read-receipt ticks**.
-Never assume a "known" brand color.
-- **Multi-part elements have more than one color — sample each part.** A two-tone control (gray circle,
-  white arrow) is easy to invert if you guess.
+Never assume a "known" brand color. It returns the mean and the saturated **core** hex, the per-channel
+std-dev, and a flat-vs-texture verdict.
+- **Multi-part elements have more than one color — sample each part** with its own `--box`. A two-tone
+  control (gray circle, white arrow) is easy to invert if you guess.
 - **Sampling gotcha:** small colored elements get swamped by similar colors in **photo attachments**
-  (blue ticks vs. a blue sky — 200k blue pixels vs. ~800 tick pixels). Restrict the search to the
-  element's context (tick pixels on the bubble rows, not the photo rows) before averaging, and sample
-  the saturated **core**, not the antialiased edges.
-- **A background may be a TEXTURE, not a flat color.** Sample **many** points: uniform (low std-dev) →
-  flat fill → a color key; varying (faint repeated marks, small std-dev, darker mins) → a **pattern** →
+  (blue ticks vs. a blue sky — 200k blue pixels vs. ~800 tick pixels). Restrict `--box` to the
+  element's context (tick pixels on the bubble rows, not the photo rows); the tool already reports the
+  saturated **core** rather than the antialiased edges.
+- **A background may be a TEXTURE, not a flat color** — that is the `verdict` field. Uniform (low
+  std-dev) → flat fill → a color key; varying (faint repeated marks, darker mins) → a **pattern** →
   reproduce it as a tiled background component. The texture is often what separates the chat area from
   a plain composer, so don't flatten it: bundle the asset or a cropped patch and tile it, or
   approximate a faint motif and tell the user it's an approximation.
@@ -316,6 +312,13 @@ each **Reproduced** or **`N/A - <reason>`**: avatar, grouping, sender name, reac
 reply, delivery/read receipts, timestamp, edited/deleted state, attachments, pinned/saved status. A
 dropped sub-feature is a FAIL found at Step 4, not a design choice.
 
+**Validate the file itself — don't re-read it hunting for hand-waves:**
+`python3 scripts/check_analysis.py <project>/design-analysis.md --require-evidence`.
+**Exit 1** = a region with no terminal verdict, a synonym for "good enough", a status opening with a
+deferral, or an `N/A` whose reason is a schedule excuse. Everything else (unmeasured Spec, empty Plan,
+unknown Axis, missing evidence file) warns without blocking, so it converges in one run; `--strict`
+makes warnings fail too. A verdict may carry its evidence — `Fixed - 40.0pt vs 40.3pt, compare-composer.png`.
+
 ## Step 4: Verify against the reference - region by region (mandatory)
 
 **Rules - all of them, every run:**
@@ -338,9 +341,31 @@ dropped sub-feature is a FAIL found at Step 4, not a design choice.
   only when it is genuinely impossible (say what + why), never because it is risky or more effort — and
   prove impossibility by *attempting* it.
 
-**How to run the loop:** [SIMULATOR-VERIFICATION.md](SIMULATOR-VERIFICATION.md) — build + launch
-tap-free (§1), stale-bundle trap (§2), reaching non-initial screens (§3), driving composer/picker states
-(§4), poll-before-screenshot (§5), dark mode (§6). `simctl` cannot tap.
+**How to run the loop — the scripts ARE the loop; don't re-derive them:**
+
+```bash
+# Pin the simulator to the REFERENCE's device class first — Step 1's `scale` printed it.
+bash scripts/gate.sh "$P" npx expo run:ios --device "$(bash scripts/sim.sh boot --logical-width 393)"
+
+# implement ALL differing regions of a screen, THEN capture once per screen STATE
+bash scripts/sim.sh capture "$BUNDLE" chat-atrest-1.png --project "$P" --lane expo --logical-width 393
+
+# every region of that state in ONE call — numeric verdicts + one labelled contact sheet
+python3 scripts/compare_regions.py ref-atrest.png chat-atrest-1.png \
+    --r composer --r header --r row-out:1180 --r row-in:1320
+
+python3 scripts/check_analysis.py "$P/design-analysis.md" --require-evidence
+bash scripts/cleanup.sh "$P" --yes          # at the very end — artifacts live in the USER'S project
+```
+
+**Batch or the scripts cost more than they save.** Turn count, not file size, drives cost: a measured
+pair of runs regressed 30–42% in turns mostly by calling these one region and one step at a time. One
+`capture` per screen *state*, one `compare_regions.py` for **all** its regions, one `check_analysis.py`.
+
+Background for the cases the scripts can't automate:
+[SIMULATOR-VERIFICATION.md](SIMULATOR-VERIFICATION.md) — reaching non-initial screens (§3), driving
+composer/picker states (§4), dark-mode caveats (§6). **`simctl` cannot tap**, so any screen behind the
+first one is reached with temporary in-code scaffold that you delete afterwards.
 
 ### 4.1 Seed data that triggers every region
 
@@ -399,32 +424,43 @@ that get silently lost — every time:
 
 ### 4.3 Build the comparison table
 
-For each region from `design-analysis.md`: target attribute (size / position / colour / presence) ->
-what rendered -> **PASS / FAIL**.
-
-For the high-detail regions (the composer especially), back the numbers with a visual stack: screenshot
-on the **same device class** (same `@2x`/`@3x`), crop **both** bars at **native resolution** (same scale
--> no resizing, so sizes compare 1:1), and stack them:
+**`scripts/compare_regions.py` builds it** — every region of the state in ONE call:
 
 ```bash
-magick "$REF"  -crop ${W}x210+0+${refY}  +repage ref.png    # reference region
-magick "$MINE" -crop ${W}x210+0+${mineY} +repage mine.png   # your render (find Y via the field-band script)
-magick ref.png mine.png -background black -append compare.png  # stack; view it
+python3 scripts/compare_regions.py <ref.png> <mine.png> \
+    --r composer --r header --r row-out:1180 --r row-in:1320
 ```
 
-On the stack, check what the numbers miss — field height/compactness, stroke weight, vertical centring
-of each control, overall balance — then re-measure to confirm fixes.
+`--r` is `name`, `name:refY`, `name:refY:mineY`, or `name:refY:mineY:height`. `composer` and `header`
+self-locate in both images; anything else needs only a **reference** y. It prints a numeric verdict
+table per region, **the edit that closes each failing metric**, and one labelled contact sheet; exit
+non-zero = a region failed. Read the numbers and `fix:` lines first, then open the sheet **once** for
+what numbers can't judge (balance, glyph identity, texture, material). A metric shown `-`/`n/a` was
+**not measured** — treat it as unmeasured, never as passing.
 
-**Crop the whole composite + its container + margins — full-width, never the sub-element you built.** A
-crop framed on the pills or the button alone verifies *contents* but hides *positioning*: a real run
-cropped reactions in isolation, saw "emoji + count + add-button" on both sides, and missed that the
-reference renders them **inside** the bubble while it had built them **below**. Crop **full-width**
-(screen-edge to screen-edge, boundary + both margins in frame) at these composite units: a **whole single
-message row** (bubble + metadata + reactions + avatar; incoming *and* outgoing), the **whole composer bar**
-(at-rest *and* typing — not button-by-button), a **channel-list row** (1:1 *and* group), and the
-**header**. Then answer the **placement question** before any PASS — reactions *inside vs below* the
-bubble, send/mic *inside vs outside* the pill (plus pill *filled vs outlined*, attach *circle vs square*),
-metadata *inside/beside/below*, avatar *silhouette vs initials*.
+What you still have to get right:
+
+- **When it says `AUTO-LOCATION FAILED`, hand it the y — don't work around it.** It refuses when the
+  two images' located bands disagree, or when the geometry is absurd (a pill inset a third of the
+  screen, glyphs under 8pt). Both mean the crops aren't the same region: a real run published a "10pt
+  input pill" that direct measurement put at 30pt, because a mic FAB near the screen edge stopped the
+  *reference* scan 37pt early while the render's ran on. Re-run with `--r 'composer:<refY>'`, or
+  `'composer:<refY>:<mineY>'` for a translucent composer floating over a wallpaper (Telegram-style),
+  where no colour-step anchor exists at all.
+- **Different device classes need `--allow-scale-mismatch`, and then only some rows mean anything.**
+  Heights and sizes in pt stay comparable; absolute x-offsets do not, so insets and widths are judged
+  on the `%W` rows. Prefer fixing the device class instead — this flag is the fallback.
+- **Give it full-width crops of the same device class.** A region framed on the sub-element you built
+  verifies its *contents* and hides its *position*: a real run cropped reactions in isolation, saw
+  "emoji + count + add-button" on both sides, and missed that the reference renders them **inside** the
+  bubble while it had built them **below**. Use composite units — a whole message row (incoming *and*
+  outgoing), the whole composer bar (at-rest *and* typing), a channel-list row (1:1 *and* group), the header.
+- **A differing control count suppresses the per-glyph rows.** Glyph N is a different button on each
+  side once the counts differ, so the tool reports the mismatch and stops there. Fix the count (or
+  compare a state where they match) before reading glyph sizes.
+- **Answer the placement question before any PASS.** The tool reports band counts as a note, not a
+  failure: reactions *inside vs below* the bubble, send/mic *inside vs outside* the pill (pill *filled vs
+  outlined*, attach *circle vs square*), metadata *inside/beside/below*, avatar *silhouette vs initials*.
 
 ### 4.4 Check dark mode
 

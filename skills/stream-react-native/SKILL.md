@@ -27,15 +27,22 @@ allowed-tools: >-
   Bash(npm run *), Bash(yarn *), Bash(pnpm *), Bash(node -e *),
   Bash(npx pod-install *), Bash(cd ios && pod install),
   Bash(xcrun simctl *), Bash(open -a Simulator), Bash(defaults write *),
-  Bash(md5 *), Bash(lsof *),
+  Bash(md5 *), Bash(lsof *), Bash(xxd *),
   Bash(brew install watchman), Bash(watchman *),
-  Bash(magick *), Bash(python3 *), Bash(.designvenv/bin/pip *),
+  Bash(magick *), Bash(python3 *),
+  Bash(.designvenv/bin/pip *), Bash(.designvenv/bin/python3 *),
+  Bash(bash scripts/*), Bash(bash */scripts/*), Bash(bash *),
   Bash(git worktree *), Bash(git log *), Bash(git status *)
 ---
 
 # Stream React Native - skill router + execution flow
 
 **Rules:** Read **[`RULES.md`](RULES.md)** once per session. Every non-negotiable React Native Chat, Video, and Feeds rule is stated there.
+
+**Scripts:** [`scripts/`](scripts/README.md) holds the procedures that used to be prose — project probe,
+verification gate, the whole simulator capture loop, region measurement and comparison, analysis
+validation, artifact cleanup. **Execute them; do not read them into context** unless you are changing
+one. They are deterministic and cheap, and each one refuses to report success it cannot stand behind.
 
 This file is the single entrypoint: intent classification, product selection, project detection, and module pointers for Stream Chat React Native, Stream Video React Native, and Stream Feeds React Native work.
 
@@ -122,8 +129,14 @@ For Track A, it is acceptable to scaffold the app first if the runtime or target
 Read-only local probe. Use it to detect empty/new workspace, RN CLI vs Expo, New Architecture hints, navigation setup, and existing Stream packages.
 
 ```bash
-bash -c 'echo "=== PACKAGE ==="; test -f package.json && grep -oE "\"(stream-chat-react-native|stream-chat-expo|@stream-io/video-react-native-sdk|@stream-io/feeds-react-native-sdk|@stream-io/react-native-webrtc|@stream-io/react-native-callingx|react-native|expo|@react-navigation/[^\"]+|expo-router|react-native-reanimated|react-native-worklets|react-native-teleport|@op-engineering/op-sqlite)\": *\"[^\"]*\"" package.json 2>/dev/null; echo "=== EXPO ==="; find . -maxdepth 2 \( -name "app.json" -o -name "app.config.js" -o -name "app.config.ts" -o -path "./app/_layout.*" \) -print 2>/dev/null; echo "=== NATIVE ==="; find . -maxdepth 2 \( -name "ios" -o -name "android" \) -type d -print 2>/dev/null; echo "=== CONFIG ==="; find . -maxdepth 2 \( -name "babel.config.js" -o -name "metro.config.js" \) -print 2>/dev/null; echo "=== EXPO_SDK ==="; node -e "try{console.log(require(\"./node_modules/expo/package.json\").version)}catch(e){try{console.log(require(\"./package.json\").dependencies.expo)}catch(e){console.log(\"-\")}}" 2>/dev/null; echo "=== EMPTY ==="; test -z "$(ls -A 2>/dev/null)" && echo "EMPTY_CWD" || echo "NON_EMPTY"'
+bash scripts/probe.sh <project-dir>        # defaults to cwd
 ```
+
+It prints one labelled block per signal — `PACKAGE`, `EXPO`, `NATIVE`, `CONFIG`, `EXPO_SDK`,
+`PKG_MANAGER`, `NEW_ARCH`, `REANIMATED_FLAG`, `EMPTY` — plus a **`HAZARDS`** block that asserts
+the peer-version traps in [`RULES.md`](RULES.md) (the reanimated/worklets crash pair, a
+Reanimated 4 project missing `FORCE_REACT_RENDER_FOR_SETTLED_ANIMATIONS:false`, Expo 56+ with
+both `expo-router` and `@react-navigation/*`) instead of leaving you to remember them.
 
 Hold the result in conversation context. Do not re-run unless the user changes directory, packages are installed, or the project shape changes.
 
