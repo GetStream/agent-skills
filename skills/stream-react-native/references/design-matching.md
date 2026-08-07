@@ -28,7 +28,7 @@ list - one entry per region that differs. Do not skip a region because it "looks
 it against the default.
 
 **Front-load the thinking - planning is cheap, UI validation is not.** The build -> run -> screenshot
--> compare loop in Step 3 is by far the most expensive part of a design match. Every region you name,
+-> compare loop in Step 4 is by far the most expensive part of a design match. Every region you name,
 spec, and route now is one you won't rediscover through a costly visual-validation cycle later. Time
 spent decomposing thoroughly up front is repaid many times over in iterations you never have to run.
 
@@ -170,7 +170,7 @@ almost always a light screenshot. **Pin** the sampled **brand/content** colors (
 glyphs, accent, read-receipt ticks) - they're the same in both modes. But keep **structural
 surfaces** (message-list background, composer/input background, borders) on the theme's semantic
 values so they still adapt; pinning a surface to `white` looks right in light mode and breaks in
-dark. If the app supports dark mode, verify both (§3.4).
+dark. If the app supports dark mode, verify both (§4.4).
 
 **A pinned brand accent and an adapted brand-tinted surface are different tokens — never mix the two
 inside one element.** A saturated brand fill (outgoing bubble, primary button) pins, and its foreground
@@ -237,7 +237,7 @@ does, so they generalize to regions not yet enumerated:
   component's behaviour logic** (read its `onPress` and replicate it, including subtle branches) rather
   than hand-roll a lossy version.
 
-For every region note the followings: color, background color, border, border radius, padding / gap, typography (font, font weight, font and line size) - save findings to a file called `design-analysis.md`. Unless asked otherwise, remove the `design-analysis.md` after the verification step.
+For every region note the followings: color, background color, border, border radius, padding / gap, typography (font, font weight, font and line size) - save findings to a file called `design-analysis.md`. Keep it until the Step 4 verify loop passes; unless asked otherwise, remove it after that.
 
 #### Product region tables
 
@@ -276,12 +276,12 @@ dropping them:
 > This design doesn't clearly show message threads. Should the app support threads (reply-in-thread + a thread screen), or keep conversations flat?
 
 - **Threads in scope** -> implement the Thread Screen (and the Thread List / inbox if the design
-  shows one) as routed in the Step 1 **Thread surfaces** table (deep-dive in Step 2).
+  shows one) as routed in the Step 1 region table.
 - **No threads wanted** -> don't merely omit the UI. **Disable thread replies on the `messaging`
   channel type** so the SDK never surfaces a reply-in-thread affordance the design lacks - see
   [credentials.md > disable threads](../credentials.md#disable-threads). With threads disabled at the
-  source, the message-row override doesn't have to reproduce a thread indicator, and Step 2.5 can
-  legitimately mark it `N/A - threads disabled on channel type`.
+  source, the message-row override doesn't have to reproduce a thread indicator, and Step 3's completion
+  contract can legitimately mark it `N/A - threads disabled on channel type`.
 
 **Composer placement decision — derive it from the reference, don't lead with a yes/no question.** Whether the composer **floats** (a pill inset from the screen edges with visible side margin, corner radius, often a shadow, message content visible behind/around it) or **docks** (flush with the bottom edge and safe area) is **structural**: it maps to `messageInputFloating` on `<Channel>`, not a theming tweak, and getting it wrong changes the composer's relationship to the keyboard and the list. **Read the floating cues off the image first** (inset margins, rounded corners, shadow, content behind) and decide from them — do **not** open with a bare "floating or docked?" question, because a one-time answer given wrong short-circuits the region analysis and is hard to unwind (you end up faking the look instead of re-deriving it). Only ask if the cues are genuinely ambiguous *after* you've examined them, and re-verify against the image on every build:
 
@@ -293,7 +293,7 @@ theming ones.
 
 ---
 
-## Step 2: Map design-implied features to optional native packages
+## Step 2: Install the dependencies the design implies
 
 A screenshot signals a *capability*, not just a look, and some Step-1 regions aren't reachable by
 theming or a component override alone. Voice-recording UI or an audio waveform, inline video with a
@@ -321,7 +321,38 @@ instead of serialising them; and (b) it surfaces native/peer failures immediatel
 
 ---
 
-## Step 3: Verify against the reference - region by region (mandatory)
+## Step 3: Commit the plan, and verify every name against the installed package
+
+Step 1 said *what the reference looks like*; this step commits *how you will build it* and proves each
+mechanism exists before you rely on it. Both halves are cheap here and expensive after the build.
+
+**Give `design-analysis.md` a `Plan` column: the exact SDK feature/mechanism each region will use.**
+The region spec captures *what the reference looks like*; the `Plan` column commits *how you will
+reproduce it* before you write any UI - one entry per region naming the concrete mechanism: the theme
+key (`semantics.chatBgOutgoing`, `channelPreview.unreadContainer`, …), the `WithComponents` slot
+(`MessageAuthor`, `ChannelPreviewAvatar`, `MessageContentBottomView`, `MessageComposerLeadingView`, …),
+the `<Channel>` prop (`messageInputFloating`, `audioRecordingEnabled`, …), or a documented hook/config -
+plus the axis (theming / layout / functional) and whether it's an SDK default that already matches.
+Table shape: `Region | Spec (measured) | Plan (SDK feature) | Axis | Status`. This turns the design
+match into a resolved build plan, and pre-empts the *reinvention red flag* above - if the Plan is
+"custom component from scratch", re-check whether an SDK slot already covers it. Confirm each named
+key/slot/prop against the installed package before relying on it.
+
+**Verify every name you just wrote against the installed package.** A theme key, slot or prop that
+type-checks is not evidence that it renders (`Theme` is a wide type and several keys are dead or partly
+dead at runtime), and a prop's default in guidance is not its default in the pinned source. For each row
+of the `Plan` column, open the component in `node_modules` for the pinned version and confirm the value
+reaches the rendered style. A `Plan` full of unverified names is the single largest defect class in real
+runs — `tsc` is green, the app builds, the pixel doesn't move, and it reads like a stale bundle.
+
+**Completion contract — a custom component for a prebuilt region must reproduce every sub-feature the
+default drew.** Overriding a composite slot silently drops what you don't re-render. Before writing one,
+list what the default draws in that region and mark each entry **Reproduced** or **`N/A - <reason>`**:
+avatar, grouping, sender name, reactions, quoted/inline reply, delivery/read receipts, timestamp,
+edited/deleted state, attachments, pinned/saved status. A dropped sub-feature is a FAIL found at Step 4,
+not a design choice — and "the region looks right" is exactly how one gets missed.
+
+## Step 4: Verify against the reference - region by region (mandatory)
 
 **Rules - all of them, every run:**
 
@@ -349,7 +380,7 @@ instead of serialising them; and (b) it surfaces native/peer failures immediatel
 tap-free (§1), stale-bundle trap (§2), reaching non-initial screens (§3), driving composer/picker
 states (§4), poll-before-screenshot (§5), dark mode (§6). `simctl` cannot tap.
 
-### 3.1 Seed data that triggers every region
+### 4.1 Seed data that triggers every region
 
 An empty or one-message channel proves nothing and hides exactly the elements that get dropped. The
 test channel needs: **an incoming and an outgoing** message; a **run of 3+ consecutive messages from
@@ -360,7 +391,7 @@ receipts. Seed via the Stream CLI / [`../credentials.md`](../credentials.md).
 **Multi-day date separators ("Yesterday", "May 29") can't be fresh-seeded** - the seed API stamps
 everything today, so only a "Today" separator appears.
 
-### 3.2 Screenshot every screen, then check it
+### 4.2 Screenshot every screen, then check it
 
 Screenshot the **channel list**, the **message screen**, and the **thread screen**. Each region's own
 target attributes live in the Step-1 checklist and the per-product region file; on top of those, check
@@ -407,7 +438,7 @@ structurally wrong:
 - [ ] Each glyph matches the reference's size, weight, fill-vs-outline character (compare ink ratio,
   not just the box), and colour.
 
-### 3.3 Build the comparison table
+### 4.3 Build the comparison table
 
 For each region from `design-analysis.md`: target attribute (size / position / colour / presence) ->
 what rendered -> **PASS / FAIL**.
@@ -425,7 +456,18 @@ magick ref.png mine.png -background black -append compare.png  # stack; view it
 On the stack, check what the numbers miss - field height/compactness, stroke weight, vertical centring
 of each control, overall balance - then re-measure to confirm fixes.
 
-### 3.4 Check dark mode
+**Crop the whole composite + its container + margins — full-width, never the sub-element you built.** A
+crop framed on the pills or the button alone verifies *contents* but hides *positioning*: a real run
+cropped reactions in isolation, saw "emoji + count + add-button" on both sides, and missed that the
+reference renders them **inside** the bubble while it had built them **below**. Crop **full-width**
+(screen-edge to screen-edge, boundary + both margins in frame) at these composite units: a **whole single
+message row** (bubble + metadata + reactions + avatar; incoming *and* outgoing), the **whole composer bar**
+(at-rest *and* typing — not button-by-button), a **channel-list row** (1:1 *and* group), and the
+**header**. Then answer the **placement question** before any PASS — reactions *inside vs below* the
+bubble, send/mic *inside vs outside* the pill (plus pill *filled vs outlined*, attach *circle vs square*),
+metadata *inside/beside/below*, avatar *silhouette vs initials*.
+
+### 4.4 Check dark mode
 
 If the app supports dark mode, **both modes are verified on the same build** - no rebuild. Flip the OS
 appearance at runtime and re-screenshot per
