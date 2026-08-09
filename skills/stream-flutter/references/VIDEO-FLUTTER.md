@@ -194,7 +194,7 @@ import 'package:stream_video_flutter/stream_video_flutter.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  final client = StreamVideo(
+  StreamVideo(
     'your_api_key',
     user: User.regular(
       userId: 'user-id',
@@ -204,7 +204,7 @@ void main() async {
     userToken: 'your_user_token', // raw JWT string
   );
 
-  runApp(MyApp(client: client));
+  runApp(const MyApp());
 }
 ```
 
