@@ -215,15 +215,28 @@ the last row with the text) is **structural** — no theme key moves metadata in
 Stream RN's default long-press menu is an **in-place floating overlay** (`Message` →
 `showMessageOverlay` → `MessageOverlayWrapper`: the message floats with the reaction picker +
 `MessageActionList` anchored to it). A reference using a **docked bottom sheet** (or any non-overlay
-menu) is a **layout+functional** difference, not theming — and a silent FAIL if left un-decomposed:
+menu) is a **layout+functional** difference, not theming — and a silent FAIL if left un-decomposed.
+
+> Handler names and the `actionHandlers` shape below were read out of the installed
+> **stream-chat-expo 9.7.2** source; re-confirm against your pinned version — the installed package
+> outranks this file.
 
 - Pass **`onLongPressMessage` to `<Channel>`** — providing the prop short-circuits the default overlay
   (verified in `Message.tsx`) — and render your own menu (a plain RN `Modal` + bottom-anchored panel is
   enough for a sheet; no `@gorhom/bottom-sheet` needed).
-- **Reuse the payload's `actionHandlers`** (`{ copyMessage, editMessage, deleteMessage, quotedReply,
-  markUnread, resendMessage, toggleReaction, threadReply, … }`) so each item keeps **exact SDK
-  behavior** (delete confirmation, edit composer state, quoted-reply wiring, reaction toggle). Do NOT
-  re-implement via raw `client`/`channel` calls.
+- **Reuse the payload's `actionHandlers`** (`{ copyMessage, deleteMessage, deleteForMeMessage,
+  quotedReply, markUnread, pinMessage, resendMessage, toggleReaction, toggleBanUser, toggleMuteUser,
+  … }`) so each item keeps **exact SDK behavior** (delete confirmation, quoted-reply wiring, reaction
+  toggle). Do NOT re-implement via raw `client`/`channel` calls. **Two entries in that object are NOT
+  usable as-is — `editMessage` and `threadReply`; both are covered below.**
+- **Read the `actionHandlers` object in the installed source before trusting any entry — its members
+  are not homogeneous.** In `Message.tsx` most keys map to a real internal handler
+  (`copyMessage: handleCopyMessage`, `deleteMessage: handleDeleteMessage`,
+  `quotedReply: handleQuotedReplyMessage`, …), but at least one is a **straight pass-through of an
+  optional `<Channel>` customization prop**, so it is `undefined` unless the integrator supplied it.
+  Two cheap tells: `MessagesContextValue` marks it **optional** (`handleThreadReply?:`), and you find
+  yourself writing `handlers.x?.(…)` — an optional-call on a handler you were told always works is the
+  smell. Grep the object literal; don't pattern-match off this list.
 - **Exception — do NOT call `editMessage` verbatim from inside a `Modal`/sheet; it silently no-ops.**
   It is the one keyboard-gated handler (`useWithPortalKeyboardSafety` →
   `useAfterKeyboardOpenCallback`): `setEditingState` fires only *after* the keyboard opens, which the
@@ -234,6 +247,32 @@ menu) is a **layout+functional** difference, not theming — and a silent FAIL i
   then focus `useMessageInputContext().inputBoxRef.current` **after your container has dismissed**.
   Generally: any payload handler needing the composer focused / keyboard up won't work while your own
   presentation occludes the composer — verify each item **by actually firing it**.
+- **Exception — `actionHandlers.threadReply` is `undefined` by default; calling it does NOTHING.** It is
+  not an internal handler: `Message.tsx` sets `threadReply: handleThreadReply`, the raw **optional
+  `<Channel handleThreadReply>` customization prop** (`MessagesContext`:
+  `handleThreadReply?: (message) => Promise<void>`). The function that actually opens a thread is
+  `onThreadReply` in `useMessageActions` — `if (handleThreadReply) handleThreadReply(message);
+  onOpenThread();` — reachable only as the `action` of the SDK's `threadReply` **message action**, i.e.
+  from the default overlay `onLongPressMessage` just short-circuited. So the sheet row silently closes
+  with no error, while the *other* thread entry point (tapping the reply-count indicator) keeps working.
+  **Replicate `onOpenThread` instead** — your sheet renders inside `<Channel>`, so `ThreadContext` is
+  available:
+  ```tsx
+  const { openThread } = useThreadContext();                 // SDK thread state
+  // onThreadReply is your own nav callback — the SAME one <MessageList onThreadSelect> uses
+  onPress: () => { onClose(); if (message.reply_count) openThread(message); onThreadReply(message); }
+  ```
+  **Guard `openThread` on `reply_count`.** `Channel.openThread` fires
+  `channel.markRead({ thread_id: message.id })` unconditionally and **unguarded**, so on a parent with
+  **zero replies** (the thread doesn't exist server-side yet) it throws an *unhandled* rejection:
+  `ErrorFromResponse: StreamChat error code 16: MarkRead failed with error: "Can't find thread with id
+  …"` — a red LogBox toast in dev. Skipping `openThread` when `reply_count` is 0 loses nothing, because
+  `Thread` also only calls `loadMoreThread()` when `reply_count` is truthy.
+- **Threads have TWO entry points and the
+  [Thread Screen blueprint](CHAT-REACT-NATIVE-blueprints.md) only wires one.** The blueprint's
+  `<MessageList onThreadSelect>` covers the reply-count indicator; a custom long-press menu is a
+  **second, independent** path that must be wired separately. Driving one and crediting the other is a
+  verification hole — fire the sheet row itself.
 - The `messageActions` prop only customizes the overlay's **contents**, not its **presentation**. Use
   `onLongPressMessage` for presentation.
 - Gate the item set by ownership/type to match the reference (e.g. Edit/Delete for own text messages,
@@ -309,6 +348,17 @@ picker is open**. Two recurring misses:
   **replicate it verbatim, including the refocus-input-on-close branch** — a hand-rolled
   `open ? close() : open()` loses the refocus. Read the current source and copy the logic (also in
   [CHAT-REACT-NATIVE.md](CHAT-REACT-NATIVE.md)).
+- **The open-state glyph change is a 45° ROTATION applied by the PARENT, not an icon swap — so the icon
+  you supply must survive being rotated.** `InputButtons` wraps whatever `AttachButton` resolves to in a
+  Reanimated `useAnimatedStyle` that animates `rotate` to `45deg` while `selectedPicker !== undefined`.
+  A bare `+` rotated 45° reads as a close **✕**, which is why the SDK default looks intentional. **Any
+  icon with a visible frame or non-radial symmetry breaks:** a plus-in-a-rounded-**square** (Sendbird's
+  `icon-add`) rotates the square too and renders as a diamond-with-an-✕ — a defect visible only in the
+  picker-open state, never in an at-rest screenshot. If the reference keeps its `+` upright while open,
+  you cannot fix it inside the icon: either replace the picker presentation (see
+  [the modal action-list shape](#the-one-reference-shape-that-is-not-attachmentpicker)) so
+  `selectedPicker` stays `undefined`, or override `MessageComposerLeadingView` to drop the rotating
+  wrapper.
 
 **Verifying the composer:** walk the **composer gate** in
 [design-matching.md](design-matching.md#32-screenshot-every-screen-then-check-it) — structure
@@ -346,6 +396,34 @@ which is `AttachmentPicker`'s default layout. So: **override only `AttachmentPic
 `WithComponents`) and **keep the SDK gallery + the `AttachButton`/`openPicker` lifecycle + the
 attachment preview + permission flow.** Do **NOT** build a standalone `Modal` with your own sheet
 state — that bypasses all of it.
+
+<a id="the-one-reference-shape-that-is-not-attachmentpicker"></a>
+**The one reference shape that is NOT `AttachmentPicker`: a modal action-list sheet with NO gallery.**
+Some apps (Sendbird's UIKit among them) open a **dimmed-backdrop bottom sheet of labelled rows** — "Take
+a photo / Take a video / Photo library / Files" — that each launch the platform's **native** picker, with
+no in-sheet grid at all. Overriding `AttachmentPickerContent` cannot reach that, because the difference is
+the **presentation**, not the contents: `AttachmentPicker` is a *keyboard-replacement* sheet docked under
+a still-lit composer, so you get no dimmed backdrop, no rounded top over the whole screen, the composer
+shifted up by `attachmentPickerBottomSheetHeight`, and the 45° attach-glyph rotation. **The measurable
+tell: sample the backdrop luminance just above the sheet — an overlay sheet dims it (e.g. ~191 over a
+light app), a docked picker leaves it untouched (255).** For that shape, bypass the host from
+`<Channel>`:
+
+```tsx
+<Channel
+  disableAttachmentPicker                              // the SDK sheet never opens →
+  handleAttachButtonPress={() => setSheetOpen(true)}   // no keyboard reservation, no
+>                                                      // composer shift, no rotation
+```
+
+`handleAttachButtonPress` is checked **before** `toggleAttachmentPicker` inside `AttachButton`, and
+`selectedPicker` stays `undefined` so `InputButtons` never rotates the glyph. Then render your own
+`Modal` sheet whose rows call the SDK's **own upload entry points** from `useMessageInputContext()` —
+`takeAndUploadImage('image' | 'video')`, `pickAndUploadImageFromNativePicker()`, `pickFile()` — the same
+functions the SDK's tile buttons call, so compression, previews, permissions and error handling all stay
+SDK-owned. This is **not** the "standalone Modal" anti-pattern above: nothing is re-implemented, only the
+presentation is replaced, and the SDK's gallery is genuinely absent from the reference.
+`AttachmentPickerContent` / `AttachmentPickerSelectionBar` overrides become dead code — delete them.
 
 Moving the bar to the **bottom** also does not require replacing the host: `AttachmentPicker` resolves
 **both** `AttachmentPickerSelectionBar` **and** `AttachmentPickerContent` from `useComponentsContext`
