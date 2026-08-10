@@ -4,6 +4,23 @@ Load only the section you are implementing. For `llms.txt` manifest search, see 
 
 All snippets import from `@stream-io/video-react-native-sdk`. The package name is the same on RN CLI and Expo - there is no separate Expo package for Video.
 
+## Contents
+
+- **Request -> Blueprint section** - routing table; start here to pick the sections below
+- **App Provider and Auth Gate** - `StreamVideo` root, token wiring · Production auth gate (replaces the demo `LoginScreen`)
+- **Home / Join-or-Start Call** - entry screen that creates or joins by call id
+- **Active Call Screen** - `StreamCall` + `CallContent`
+- **Navigation Shell** - stack/router setup and call-id params
+- **Ringing Blueprint** - Surfacing an incoming call from the app shell · Starting an outgoing ringing call · Accepting / rejecting manually
+- **Custom Call Controls Blueprint** - replacing the control bar
+- **Custom Participant Tile Blueprint** - replacing `ParticipantView`
+- **Participant Grid Blueprint** - custom layout of participants
+- **Call Deep-link Blueprint** - joining from a URL
+- **Livestream Blueprint** - Host · Viewer
+- **Audio Room Blueprint** - audio-only rooms
+- **Chat + Video Blueprint** - both SDKs in one app (provider nesting)
+- **Fresh App Scaffold** - new-app file layout and order of assembly
+
 ---
 
 ## Request -> Blueprint section
