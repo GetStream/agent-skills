@@ -134,3 +134,33 @@ peers:
       - video call react native
       - livestream react native
       - audio room react native
+
+  - name: stream-unity
+    glob: "{.agents,.claude}/skills/stream-unity/SKILL.md"
+    install: getstream skills stream-unity
+    install_policy: silent
+    purpose: "Build or integrate Stream Chat and Stream Video in Unity Engine games and apps (C#, MonoBehaviour). Covers the Chat .unitypackage and the Video UPM package, client wiring and lifecycle, channels/messages and calls/participant tracks, building the UI yourself (neither SDK ships components), IL2CPP, and Android/iOS/desktop/WebGL player settings. Chat and Video only - there is no Stream Feeds SDK for Unity."
+    signals:
+      - unity
+      - unity engine
+      - unity 6
+      - unity 2022
+      - unity 2021
+      - monobehaviour
+      - .unitypackage
+      - unitypackage
+      - asmdef
+      - il2cpp
+      - ugui
+      - ui toolkit
+      - webcamtexture
+      - rawimage
+      - StreamChatClient
+      - IStreamChatClient
+      - StreamVideoClient
+      - IStreamVideoClient
+      - IStreamCall
+      - StreamVideoTrack
+      - chat unity
+      - video unity
+      - unity video call

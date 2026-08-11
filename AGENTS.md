@@ -14,6 +14,7 @@ The pack has a generic router (which includes the CLI), core specialists, and pl
 | [`skills/stream-builder/SKILL.md`](skills/stream-builder/SKILL.md) | Framework-agnostic builder - only when named explicitly; web React/Next.js defaults to stream-react |
 | [`skills/stream-swift/SKILL.md`](skills/stream-swift/SKILL.md) | Build or integrate Stream Chat/Video/Feeds in Swift/SwiftUI/UIKit/iOS apps |
 | [`skills/stream-flutter/SKILL.md`](skills/stream-flutter/SKILL.md) | Build or integrate Stream Chat in Flutter apps (stream_chat_flutter and stream_chat_flutter_core) |
+| [`skills/stream-unity/SKILL.md`](skills/stream-unity/SKILL.md) | Build or integrate Stream Chat and Stream Video in Unity Engine projects (C#). Chat + Video - no Feeds SDK for Unity |
 | [`skills/stream-unreal/SKILL.md`](skills/stream-unreal/SKILL.md) | Build or integrate Stream Chat in Unreal Engine 5.7/5.8 projects (C++ and Blueprint). Chat only - no Video or Feeds SDK for Unreal |
 
 (Querying data and running CLI commands is handled by the router itself - see its **Stream CLI** section.)
