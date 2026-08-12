@@ -16,7 +16,30 @@ Start by understanding what kind of Android project is in front of you:
 
 Inspect the app module's `build.gradle.kts` for existing Compose / View System usage before choosing a UI lane.
 
-Do **not** try to scaffold Android Studio projects from the CLI.
+By default, do **not** scaffold an Android Studio project from the CLI. If the directory is `EMPTY_CWD` / has no Gradle project, tell the user to create the app in Android Studio first. **Only when the user explicitly insists you scaffold it anyway**, follow *Scaffold on explicit override* below.
+
+---
+
+## Scaffold on explicit override
+
+Reached **only** when there is no Gradle project **and** the user, after being told to use Android Studio, explicitly asks you to create the project anyway. Do not scaffold under any other condition. Android Studio normally owns the toolchain; when you take that on yourself, derive every version instead of guessing.
+
+**Derive the toolchain - never guess it:**
+
+1. **compileSdk / targetSdk** - do not assume "latest". Prefer the value the user gave, but verify it against the SDK: the app's `compileSdk` must be at least the level the Stream SDK was built against - AGP fails the build and names the exact required level if it is lower, so honor that rather than blindly jumping to the newest API. For `targetSdk`, follow Stream's documented recommendation for this SDK version (getting-started / release notes) instead of the latest platform, since a newer target can enable platform behavior changes the SDK version has not adapted to yet.
+2. **Kotlin** - do not guess a version, and do not hardcode a Maven-Central URL to look one up (fragile). Let the toolchain be the source of truth. Two robust ways, in order:
+   - **Let the build tell you (primary).** Add the Stream dependency, then run a Gradle sync/build. If your Kotlin is older than the SDK's, it fails fast with the exact requirement - `Class '...' was compiled with an incompatible version of Kotlin. The binary version of its metadata is X, expected version is Y` - which *names* the version to move to. Bump the Kotlin plugin (and, since Kotlin 2.0, the bundled Compose plugin moves with it) to satisfy it and re-sync. A compiler more than one minor version behind the SDK is the classic first-build crash.
+   - **Resolve it before building.** Run `./gradlew :app:dependencies` (any configuration that includes the Stream artifact) and read the resolved `org.jetbrains.kotlin:kotlin-stdlib` version Gradle pulls in transitively; set the Kotlin plugin to at least that. This asks Gradle, not a web page.
+3. **Compose compiler** - since Kotlin 2.0 it is the bundled `org.jetbrains.kotlin.plugin.compose` Gradle plugin, applied at the **same version as Kotlin**. There is no separate Compose-compiler version to pick.
+4. **AGP + Gradle** - choose a stable AGP that supports the chosen compileSdk, and the Gradle version that AGP requires. Confirm the pairing against the official table at `developer.android.com/build/releases/gradle-plugin` - do not guess it.
+
+**Set up edge-to-edge, system insets, and the keyboard** in the host Activity - standard Android behavior a sample must get right, and the usual source of "content draws under the status bar" and janky keyboard reports:
+
+- Call `enableEdgeToEdge()` in `onCreate` (requires `androidx.activity` 1.8+).
+- Keep `android:windowSoftInputMode="adjustResize"` on the Activity in the manifest, and apply `Modifier.imePadding()` at the screen / composer root so the keyboard animates smoothly instead of jumping.
+- Consume the system-bar insets on the host container (a `Scaffold`, or `Modifier.windowInsetsPadding(WindowInsets.systemBars)`) so content clears the status and navigation bars - but check [`references/CHAT-COMPOSE.md`](references/CHAT-COMPOSE.md) first, since Stream's Compose screens already apply some insets; do not double-pad.
+
+Then continue with the normal shared wiring in [`sdk.md`](sdk.md) (ChatClient in `Application.onCreate`, auth, ViewModels) and the product reference files below.
 
 ---
 
