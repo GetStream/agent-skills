@@ -217,9 +217,21 @@ class ThreadPage extends StatefulWidget {
 }
 
 class _ThreadPageState extends State<ThreadPage> {
-  late final _composerController = StreamMessageComposerController(
-    message: Message(parentId: widget.parent.id),
-  );
+  late StreamMessageComposerController _composerController =
+      StreamMessageComposerController(
+        message: Message(parentId: widget.parent.id),
+      );
+
+  @override
+  void didUpdateWidget(ThreadPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.parent.id != widget.parent.id) {
+      _composerController.dispose();
+      _composerController = StreamMessageComposerController(
+        message: Message(parentId: widget.parent.id),
+      );
+    }
+  }
 
   @override
   void dispose() {
