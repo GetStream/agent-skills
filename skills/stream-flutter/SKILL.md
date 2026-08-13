@@ -2,7 +2,7 @@
 name: stream-flutter
 description: "Build and integrate Stream Chat, Video, and Feeds in Flutter apps. Use for Flutter/Dart project work with Stream package setup, auth wiring, and widget blueprints. Supports stream_chat_flutter (pre-built Chat UI), stream_chat_flutter_core (custom Chat UI), stream_video_flutter (Video calling and livestreaming), and stream_feed / stream_feed_flutter_core (Activity Feeds, no pre-built UI). Also migrates Flutter apps from the Sendbird Chat SDK (sendbird_chat_sdk / sendbird_uikit) to Stream Chat."
 license: See LICENSE in repository root
-compatibility: Requires a Flutter project (pubspec.yaml). No Stream CLI required.
+compatibility: Works in an existing Flutter project, or scaffolds a new one. No Stream CLI required.
 metadata:
   author: GetStream
 allowed-tools: >-
@@ -12,6 +12,12 @@ allowed-tools: >-
   Bash(find . *),
   Bash(cat pubspec.yaml), Bash(cat pubspec.lock),
   Bash(flutter pub *),
+  Bash(flutter create *),
+  Bash(flutter run *),
+  Bash(flutter analyze *), Bash(flutter analyze),
+  Bash(flutter build *),
+  Bash(flutter devices),
+  Bash(flutter emulators *), Bash(flutter emulators),
   Bash(getstream token *),
   Bash(getstream env *),
   Bash(getstream api *),
@@ -220,7 +226,7 @@ getstream api UpdateUsers --request '{
 
 ```bash
 getstream api GetOrCreateChannel --type messaging --id <channel-id> \
-  --request '{"data": {"custom": {"name": "<Channel Name>"}}}'
+  --request '{"data": {"created_by_id": "<token_user_id>", "custom": {"name": "<Channel Name>"}}}'
 ```
 
 Repeat for each channel (e.g. `general`, `random`, `team-alpha`).
@@ -240,6 +246,17 @@ getstream api UpdateChannel --type messaging --id <channel-id> \
 ```
 
 Generate short memorable channel IDs (e.g. `general`, `random`, `team-alpha`) and use a small set of random usernames (e.g. `alice`, `bob`, `carol`, `dave`). The token user must be added to every channel — the channel list filter is `Filter.in_('members', [tokenUserId])` and will return nothing if the user is absent.
+
+**Sub-step C4 — seed messages.** Attribute the sender server-side with `message.user_id`. Send a couple per channel so the list shows previews and the channel screen isn't empty; set an explicit `message.id` on anything you want to reply to, so a threaded reply can reference it without parsing a response.
+
+```bash
+getstream api SendMessage --type messaging --id <channel-id> \
+  --request '{"message":{"id":"<channel-id>-m1","user_id":"alice","text":"Morning - anyone up for a sync today?"}}'
+
+# Threaded reply into that message
+getstream api SendMessage --type messaging --id <channel-id> \
+  --request '{"message":{"user_id":"bob","text":"I will bring the numbers","parent_id":"<channel-id>-m1"}}'
+```
 
 After seeding, print a brief summary:
 
@@ -290,7 +307,7 @@ Use the result to produce a **one-line status**, for example:
 - `Flutter app detected - stream_video_flutter already in pubspec.yaml`
 - `Flutter app detected - stream_feed already in pubspec.yaml`
 - `Flutter app detected - no Stream dependency yet, ready to install`
-- `No Flutter project found - user needs to run flutter create first`
+- `No Flutter project found - empty directory`
 
 ### Version prerequisite (Chat - existing project)
 

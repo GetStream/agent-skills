@@ -121,6 +121,9 @@ class _ParticipantAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final image = participant.image;
+    final avatar = (image != null && image.isNotEmpty) ? NetworkImage(image) : null;
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -136,10 +139,8 @@ class _ParticipantAvatar extends StatelessWidget {
           ),
           child: CircleAvatar(
             radius: 32,
-            backgroundImage: participant.image != null
-                ? NetworkImage(participant.image!)
-                : null,
-            child: participant.image == null
+            backgroundImage: avatar,
+            child: avatar == null
                 ? Text(participant.name.isNotEmpty ? participant.name[0] : '?')
                 : null,
           ),

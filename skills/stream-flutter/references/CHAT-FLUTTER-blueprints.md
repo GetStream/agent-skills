@@ -207,23 +207,48 @@ class _ChannelPageState extends State<ChannelPage> {
 import 'package:flutter/material.dart';
 import 'package:stream_chat_flutter/stream_chat_flutter.dart';
 
-class ThreadPage extends StatelessWidget {
+class ThreadPage extends StatefulWidget {
   const ThreadPage({super.key, required this.parent});
 
   final Message parent;
 
   @override
+  State<ThreadPage> createState() => _ThreadPageState();
+}
+
+class _ThreadPageState extends State<ThreadPage> {
+  late StreamMessageComposerController _composerController =
+      StreamMessageComposerController(
+        message: Message(parentId: widget.parent.id),
+      );
+
+  @override
+  void didUpdateWidget(ThreadPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.parent.id != widget.parent.id) {
+      _composerController.dispose();
+      _composerController = StreamMessageComposerController(
+        message: Message(parentId: widget.parent.id),
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _composerController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: StreamThreadHeader(parent: parent),
+    appBar: StreamThreadHeader(parent: widget.parent),
     body: Column(
       children: [
         Expanded(
-          child: StreamMessageListView(parentMessage: parent),
+          child: StreamMessageListView(parentMessage: widget.parent),
         ),
         StreamMessageComposer(
-          messageComposerController: StreamMessageComposerController(
-            message: Message(parentId: parent.id),
-          ),
+          messageComposerController: _composerController,
         ),
       ],
     ),
