@@ -30,9 +30,10 @@ breaks both in the same way.
 
 ### 1. Get credentials into the environment
 
-You need the **v2 app's** API key and secret. The secret signs a short-lived
-HS256 JWT locally. It is never written to the sample file, never echoed back,
-and never sent anywhere except as that signature.
+You need the **v2 app's** API key and secret. The secret signs an HS256 JWT
+locally, stamped with `iat`/`exp` so it expires five minutes after it is minted.
+The secret itself is never written to the sample file, never echoed back, and
+never sent anywhere except as that signature.
 
 Per [`../stream/RULES.md`](../stream/RULES.md) > **Secrets**, do not ask the user
 to paste the secret into the chat, and never `cat`, `grep`, or Read a `.env`
@@ -79,9 +80,11 @@ links the pack into one of two places, so it is one of:
 
 Glob `{.agents,.claude}/skills/stream-feeds-migration/SKILL.md` to settle which.
 
-The key and secret are read from `STREAM_API_KEY` and `STREAM_API_SECRET`, which
-keeps both out of the command line and the process list. The sample is written to
-the working directory, which is where you want it.
+The key and secret are read from `STREAM_API_KEY` and `STREAM_API_SECRET`. The
+script takes **no `--secret` flag** by design - a secret passed as an argument
+would land in the process list and the shell history, which is exactly what the
+environment variable avoids. (`--api-key` exists, since the key is not sensitive.)
+The sample is written to the working directory, which is where you want it.
 
 Standard library only - no pip install. It calls two server-side-only endpoints:
 

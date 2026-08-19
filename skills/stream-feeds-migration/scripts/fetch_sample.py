@@ -8,18 +8,19 @@ responses to one JSON file:
     GET {base}/api/v1.0/migration/sample/reactions    -> 5 reactions per kind
 
 Auth is a Stream server-side JWT: HS256 over {"resource":"*","action":"*",
-"feed_id":"*"} signed with the app secret. A user token (one carrying only
-user_id) is rejected by these endpoints by design.
+"feed_id":"*"} signed with the app secret, and stamped with iat/exp so it
+expires minutes after it is minted. A user token (one carrying only user_id)
+is rejected by these endpoints by design.
 
 Only the standard library is used, so this runs anywhere Python 3 does.
 
 Usage:
     fetch_sample.py [--out PATH] [--base-url URL]
 
-Credentials come from the STREAM_API_KEY and STREAM_API_SECRET environment
-variables, which keeps the secret out of the process list and the shell
-history. Both can be overridden with --api-key / --secret when that is not
-practical.
+The secret is read only from the STREAM_API_SECRET environment variable -
+there is deliberately no --secret flag, because a secret passed as a command
+line argument lands in the process list and the shell history. The API key is
+not sensitive and can be overridden with --api-key.
 
 Targets production by default. Pass --base-url for any other deployment
 (EU, dedicated).
@@ -32,12 +33,21 @@ import hmac
 import json
 import os
 import sys
+import time
 import urllib.error
 import urllib.request
 
 DEFAULT_BASE_URL = "https://api.stream-io-api.com"
 
 TIMEOUT_SECONDS = 60
+
+# Long enough for both requests (with their timeouts) plus clock skew, short
+# enough that a leaked token is worthless by the time anyone finds it.
+TOKEN_TTL_SECONDS = 300
+
+# Tolerance for a client clock running ahead of Stream's, which would
+# otherwise make the token look issued in the future.
+CLOCK_SKEW_SECONDS = 60
 
 
 def b64url(raw: bytes) -> str:
@@ -51,9 +61,19 @@ def server_side_token(secret: str) -> str:
     The wildcard resource/action/feed_id claims are what make this a
     server-side token rather than a user token; a token carrying *only* a
     user_id is treated as client-side and refused by these endpoints.
+
+    iat/exp keep the token short-lived: it is valid for TOKEN_TTL_SECONDS,
+    not forever.
     """
+    now = int(time.time())
     header = {"alg": "HS256", "typ": "JWT"}
-    payload = {"resource": "*", "action": "*", "feed_id": "*"}
+    payload = {
+        "resource": "*",
+        "action": "*",
+        "feed_id": "*",
+        "iat": now - CLOCK_SKEW_SECONDS,
+        "exp": now + TOKEN_TTL_SECONDS,
+    }
 
     # Compact separators matter: any extra whitespace changes the signed bytes.
     signing_input = "{}.{}".format(
@@ -96,11 +116,6 @@ def main() -> int:
         help="Stream app API key (defaults to $STREAM_API_KEY)",
     )
     parser.add_argument(
-        "--secret",
-        default=os.environ.get("STREAM_API_SECRET"),
-        help="Stream app secret (defaults to $STREAM_API_SECRET)",
-    )
-    parser.add_argument(
         "--base-url",
         default=None,
         help="API base URL (default: {})".format(DEFAULT_BASE_URL),
@@ -108,15 +123,21 @@ def main() -> int:
     parser.add_argument("--out", default="v3sync-sample.json", help="output file path")
     args = parser.parse_args()
 
+    # Read from the environment only - never a flag. See the module docstring.
+    secret = os.environ.get("STREAM_API_SECRET")
+
     if not args.api_key:
         parser.error("--api-key is required (or set STREAM_API_KEY)")
-    if not args.secret:
-        parser.error("--secret is required (or set STREAM_API_SECRET)")
+    if not secret:
+        parser.error(
+            "STREAM_API_SECRET is not set. Export it in your own shell - it is "
+            "deliberately not accepted as a command line flag."
+        )
 
     if args.base_url is None:
         args.base_url = DEFAULT_BASE_URL
 
-    token = server_side_token(args.secret)
+    token = server_side_token(secret)
 
     activities = get(args.base_url, "/api/v1.0/migration/sample/activities", args.api_key, token)
     reactions = get(args.base_url, "/api/v1.0/migration/sample/reactions", args.api_key, token)
