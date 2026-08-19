@@ -134,3 +134,20 @@ peers:
       - video call react native
       - livestream react native
       - audio room react native
+
+  - name: stream-feeds-migration
+    glob: "{.agents,.claude}/skills/stream-feeds-migration/SKILL.md"
+    install: getstream skills stream-feeds-migration
+    install_policy: silent
+    purpose: "Generate the v2 -> v3 sync mapping for an Activity Feeds app by sampling its live v2 activities and reactions. Covers activity field renames, id sources, reaction-kind classification into comments/bookmarks, and the limits of what a sample can prove. Not a platform pack - it produces a config object, it does not build an app."
+    signals:
+      - v3sync
+      - v2 to v3
+      - v2->v3
+      - feeds migration
+      - activity feeds migration
+      - sync mapping
+      - mapping object
+      - extra_context
+      - feeds v3 migration
+      - migrate feeds to v3
