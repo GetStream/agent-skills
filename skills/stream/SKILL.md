@@ -42,6 +42,11 @@ This skill picks the track from the user's input. Building (web + platform) and 
 - Triggers: "audit/review my video integration", "is my video app production-ready?", "what am I missing before launch?"
 - Routes here even when the request contains "check" - the audit intent takes precedence over the CLI "check {anything}" route below
 
+**Build or review a Feeds v2 -> v3 sync mapping** -> use the `stream-feeds-migration` skill
+- "what mapping do we need?", "set up our v2 to v3 migration", "review our v3sync mapping", "why did the migrated activity lose its text/attachments/comments?"
+- Produces the `mapping` config object by sampling the v2 app's own activities and reactions - it does not build or change an app
+- Needs the **v2** app's API key and secret in the environment; see the skill's Step 1 and [`RULES.md`](RULES.md) > **Secrets**
+
 **Query Stream data or run a CLI command** -> handled here (see **Stream CLI** below)
 - "list calls", "show channels", "any flagged", "find users", a literal `getstream` command, or "install the CLI" / "set up stream"
 
@@ -124,6 +129,7 @@ For a bare `/stream` (and whenever the user wants to pick a skill directly), out
 > - `/stream-react` - scaffold, enhance, audit, or migrate a React / Next.js web app with Stream (the default for web) - e.g. *"build me a chat app"*
 > - `/stream-docs` - search live SDK docs, with citations - e.g. *"how does useChannel work?"*
 > - `/stream-builder` - the framework-agnostic builder (web defaults to `/stream-react`; pick this only if you name it explicitly)
+> - `/stream-feeds-migration` - build the v2 -> v3 Feeds sync mapping from your app's live data - e.g. *"what mapping do we need for our app?"*
 >
 > **Platform SDKs**
 > - `/stream-swift` - Swift - SwiftUI - UIKit - iOS

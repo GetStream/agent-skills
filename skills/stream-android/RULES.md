@@ -81,7 +81,7 @@ Preserve the app's existing architecture:
 - Do **not** ignore the version catalog (`gradle/libs.versions.toml`) when the project already uses one - add Stream entries there instead of hardcoding versions in `build.gradle.kts`.
 - Do **not** flatten an existing Hilt/Koin DI graph, navigation setup, or multi-module structure just to fit a sample.
 
-If there is **no Android project**, do not try to scaffold one from the CLI. Tell the user to create the app in Android Studio first, then continue.
+If there is **no Android project**, the default is to **not** scaffold one - tell the user to create the app in Android Studio first, then continue. Android Studio picks a compatible toolchain; guessing one is not this skill's job. **Only if the user, after that, explicitly insists you scaffold the project anyway**, follow [`builder.md`](builder.md) -> *Scaffold on explicit override*. Even then, never hand-pick a Kotlin/AGP/Gradle version from memory - derive them as that section describes.
 
 ---
 
