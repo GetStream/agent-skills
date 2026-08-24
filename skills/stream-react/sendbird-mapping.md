@@ -1,24 +1,23 @@
-# Sendbird -> Stream Chat React: symbol & behavior mapping (Track S appendix)
+# Sendbird -> Stream Chat React: symbol & behavior mapping
 
-The lookup tables behind [`../sendbird-migration.md`](../sendbird-migration.md). Load this file
-when you migrate a touchpoint whose symbols aren't covered by the runbook's inline tables - then
-migrate from the row, not from memory. **If a symbol isn't in this file either, grep
-[`sendbird-mapping-extended.md`](sendbird-mapping-extended.md)** - the machine-generated long
-tail (~520 more rows, all inferred, covering the APIs no sampled app used) - before falling back
-to the live docs.
+The lookup tables behind [`sendbird-migration.md`](sendbird-migration.md). Load this file
+when migrating a touchpoint whose symbols aren't in the runbook's inline tables - then
+migrate from the row, not from memory. If a symbol isn't here either, **grep
+[`sendbird-mapping-extended.md`](sendbird-mapping-extended.md)** (~520 machine-inferred
+rows for the APIs no sampled app used) before falling back to the local docs.
 
-**Provenance & trust model.** These rows were extracted from the installed type definitions of
+**Provenance & trust.** Rows were extracted from the installed type definitions of
 `@sendbird/chat` 4.21.1 + `@sendbird/uikit-react` 3.18.2 and `stream-chat` 9.x +
-`stream-chat-react` v14, cross-checked against real app usage, and the code recipes compile-verified
-against the real Stream v14 packages. Three rules follow:
+`stream-chat-react` v14, cross-checked against real app usage; the code recipes were
+compile-verified against the real Stream v14 packages. Three rules:
 
-1. **The installed package outranks this file.** If `npx tsc --noEmit` disagrees with a row, the
-   compiler is right - a newer major may have renamed the symbol (see
-   [`RULES.md`](../RULES.md) > Docs-first).
-2. Where a row touches a Stream component's *current* props/hooks rather than the cross-SDK
-   mapping itself, fetch the matching page from [`docs-map.md`](docs-map.md) before building.
-3. Rows marked **(inferred)** were derived from type definitions without a real-app usage sample -
-   treat them as strong hypotheses and verify with the compiler.
+1. **The installed package outranks this file.** If `npx tsc --noEmit` disagrees with a
+   row, the compiler is right - a newer major may have renamed the symbol.
+2. Where a row touches a Stream component's *current* props/hooks rather than the
+   cross-SDK mapping itself, confirm against the local docs (`getstream docs
+   chat-sdk/react`) before building.
+3. Rows marked **(inferred)** were derived from type definitions without a real-app usage
+   sample - strong hypotheses; verify with the compiler.
 
 ---
 
@@ -26,8 +25,8 @@ against the real Stream v14 packages. Three rules follow:
 
 | Sendbird | Stream | Notes / trap |
 |---|---|---|
-| `SendbirdChat.init({ appId, modules })` | `new StreamChat(apiKey)` or `useCreateChatClient` | No modules array - one client exposes everything. **`StreamChat.getInstance(apiKey)` is a bare process-wide singleton NOT keyed by apiKey** - a second call with a different key silently returns the first client. Client-side, use `useCreateChatClient` (strict-mode safe, per [`RULES.md`](../RULES.md) > Strict mode). |
-| `sdk.connect(userId, authToken?)` | `client.connectUser({ id, name, image }, tokenOrProvider)` | **Sendbird's token-less userId-only connect has NO Stream equivalent** - Stream always requires a signed JWT. `client.devToken(id)` works only while "Disable Auth Checks" is ON for the Stream app; otherwise mint real tokens (see runbook > Credentials). |
+| `SendbirdChat.init({ appId, modules })` | `new StreamChat(apiKey)` or `useCreateChatClient` | No modules array - one client exposes everything. **`StreamChat.getInstance(apiKey)` is a bare process-wide singleton NOT keyed by apiKey** - a second call with a different key silently returns the first client. Client-side, use `useCreateChatClient` (strict-mode safe). |
+| `sdk.connect(userId, authToken?)` | `client.connectUser({ id, name, image }, tokenOrProvider)` | **Sendbird's token-less userId-only connect has NO Stream equivalent** - Stream always requires a signed JWT. `client.devToken(id)` works only while "Disable Auth Checks" is ON for the Stream app; otherwise mint real tokens (runbook section 5). |
 | `SendbirdChat.setSessionHandler` + `onSessionTokenRequired(resolve, reject)` | `tokenProvider: () => Promise<string>` passed as `tokenOrProvider` | `resolve(token)` -> `return token`; `reject(err)` -> `throw err`. **A plain string token never refreshes** - anything with expiry needs the function form. |
 | `onSessionRefreshed` / `onSessionClosed` / `onSessionError` | - (gap) | No session-lifecycle callbacks; observe `connection.changed` and token-provider failures. |
 | `ConnectionHandler` (7-callback reconnect state machine) | `client.on('connection.changed' \| 'connection.recovered', cb)` | Reconnection is automatic in both; Stream reports it via events, not a handler object. |
@@ -41,8 +40,8 @@ against the real Stream v14 packages. Three rules follow:
 
 ## 2. Channels: model & queries
 
-Sendbird has three channel **classes**; Stream has **one** `Channel` class whose behavior comes from
-a server-configured **type string** passed to `client.channel(type, id?)`.
+Sendbird has three channel **classes**; Stream has **one** `Channel` class whose behavior
+comes from a server-configured **type string** passed to `client.channel(type, id?)`.
 
 | Sendbird | Stream | Notes / trap |
 |---|---|---|
@@ -53,7 +52,7 @@ a server-configured **type string** passed to `client.channel(type, id?)`.
 | `isSuper` / `isBroadcast` / `isPublic` flags | - | Not per-channel flags: scale/broadcast/discoverability are the channel **type's** server-side config + permission grants. The web client picks a type; it cannot define one. |
 | `GroupChannelModule.createChannel(params)` | `client.channel(type, id?, { members, ...custom })` then `await channel.create()` | `invitedUserIds`/`operatorUserIds` -> one `members` array (+ `assignRoles` for moderators). A client-chosen id makes `create()` idempotent (find-or-create in one call). |
 | `GroupChannelModule.getChannel(url)` | `client.channel(type, id)` | Synchronous handle; `watch()` loads state. |
-| `GroupChannel.refresh()` | explicit `channel.watch()` or `channel.query()` | Both refetch when called explicitly. The trap sits one level up: the React `<Channel>` **component** skips its mount-time `watch()` when `channel.initialized` is already true, so re-mounting `<Channel>` is NOT a refresh - call watch/query yourself. |
+| `GroupChannel.refresh()` | explicit `channel.watch()` or `channel.query()` | Both refetch when called explicitly. The trap sits one level up: the React `<Channel>` **component** skips its mount-time `watch()` when `channel.initialized` is already true - re-mounting `<Channel>` is NOT a refresh; call watch/query yourself. |
 | `GroupChannel.updateChannel(params)` | `channel.updatePartial({ set: { name, image, ... } })` | Or `channel.update(data)` (full replace - wipes unlisted custom fields). |
 | `GroupChannel.delete()` | `channel.delete({ hard_delete: true })` | **Stream soft-deletes by default; Sendbird's delete is permanent** - a 1:1 port silently changes data retention. |
 | `GroupChannel.hide({...})` / `.unhide()` | `channel.hide(userId?, clearHistory?)` / `channel.show()` | `HiddenChannelFilter` -> `queryChannels` filter `{ hidden: true\|false }`. |
@@ -64,22 +63,22 @@ a server-configured **type string** passed to `client.channel(type, id?)`.
 
 ## 3. Messages: sending & state
 
-One Stream message shape replaces Sendbird's class hierarchy (`BaseMessage` / `UserMessage` /
-`FileMessage` / `MultipleFilesMessage` / `AdminMessage`): discriminate via `message.type` and
-`message.attachments`.
+One Stream message shape replaces Sendbird's class hierarchy (`BaseMessage` / `UserMessage`
+/ `FileMessage` / `MultipleFilesMessage` / `AdminMessage`): discriminate via `message.type`
+and `message.attachments`.
 
 | Sendbird | Stream | Notes / trap |
 |---|---|---|
-| `channel.sendUserMessage(params)` -> `MessageRequestHandler` | `await channel.sendMessage({ text, ... })` | Optimistic local message inserted immediately; resolved promise = succeeded, throw = failed. **Do NOT also append on success** - see runbook > Kill list (echo double-add). |
+| `channel.sendUserMessage(params)` -> `MessageRequestHandler` | `await channel.sendMessage({ text, ... })` | Optimistic local message inserted immediately; resolved promise = succeeded, throw = failed. **Do NOT also append on success** - see runbook kill #1 (echo double-add). |
 | `.onPending()` / `.onSucceeded()` / `.onFailed(errorCode)` | `message.status` transitions + try/catch | `'sending' \| 'received' \| 'failed'`. Failure detail is an error object on the local message, not a numeric code. |
-| `SendingStatus` (5 values) | `message.status` (3 values) | `PENDING` -> `'sending'`, `SUCCEEDED` -> `'received'`, `FAILED` -> `'failed'`. **`SCHEDULED` and `CANCELED` have no equivalent** (see Feature gaps). |
+| `SendingStatus` (5 values) | `message.status` (3 values) | `PENDING` -> `'sending'`, `SUCCEEDED` -> `'received'`, `FAILED` -> `'failed'`. **`SCHEDULED` and `CANCELED` have no equivalent** (section 15). |
 | Optimistic identity: `reqId` swapped for `messageId` on success | Stable client-generated UUID | Stream's optimistic message keeps its id - delete any reqId-reconciliation code. |
 | Failed-message queue + `removeFailedMessage(reqId)` | - (gap) | Failed sends live inline in `channel.state.messages` with `status: 'failed'`. |
 | Resend: `channel.resendMessage(failed)` + `isResendable` | `useChannelActionContext().retrySendMessage(localMessage)` (or the `useRetryHandler` hook) | React-layer API - there is no resend method on the core `Channel`; with the raw client, re-call `channel.sendMessage`. No `isResendable` - any `status: 'failed'` message can be retried. |
 | `channel.updateUserMessage(id, params)` | `client.updateMessage` / `client.partialUpdateMessage` | Message edits are client-level in Stream. |
 | `channel.deleteMessage(message)` | `client.deleteMessage(messageId, hard?)` | Client-level; soft by default. |
 | `channel.pinMessage` / `unpinMessage` | `client.pinMessage(message, timeoutOrExpiration?)` / `client.unpinMessage` | Client-level, with optional expiry. |
-| `channel.copyMessage(msg, targetChannel)` | - (gap) | No server copy - read the source and `targetChannel.sendMessage({...content})`; the return shape differs from `MessageRequestHandler`. |
+| `channel.copyMessage(msg, targetChannel)` | - (gap) | No server copy - read the source and `targetChannel.sendMessage({...content})`. |
 | `channel.translateUserMessage(msg, langs)` | `client.translateMessage(messageId, language)` | - |
 | `message.isAdminMessage()` / `AdminMessage` | `message.type === 'system'` | - |
 | Threads: `msg.getThreadedMessagesByTimestamp(ts, params)` | `channel.getReplies(parentId, { limit, id_lt })` | Timestamp anchor -> id cursor; response is `{ messages }` without a bundled parent. Send replies with `parent_id` (+ `show_in_channel`). |
@@ -96,7 +95,7 @@ One Stream message shape replaces Sendbird's class hierarchy (`BaseMessage` / `U
 | `UploadedFileInfo` (per file of a multi-file message) | One `Attachment` | Build from `SendFileAPIResponse`: `url` -> `asset_url`/`image_url`, `fileName` -> `title`, `fileSize` -> `file_size`, plus `mime_type`. |
 | `thumbnailSizes` -> `Thumbnail[]` pre-generated | Single CDN `thumb_url` + resize via URL query params | (inferred) Request sizes at render time instead of send time. |
 | `AppInfo.uploadSizeLimit` client-side check | Server config surfaced as a `'blocked'` upload state | Size/extension limits are app config in Stream, not a client constant. |
-| Voice messages (`useVoicePlayer`, `VoiceMessageItemBody`) | `useAudioPlayer`, `<VoiceRecording attachment>`; recording via `MessageComposer`'s audio recorder | `useVoicePlayerContext` (one-at-a-time playback) -> `useActiveAudioPlayer()`. Fetch the Audio Recorder / Voice Recording Attachment pages from [`docs-map.md`](docs-map.md) before wiring. |
+| Voice messages (`useVoicePlayer`, `VoiceMessageItemBody`) | `useAudioPlayer`, `<VoiceRecording attachment>`; recording via `MessageComposer`'s audio recorder | `useVoicePlayerContext` (one-at-a-time playback) -> `useActiveAudioPlayer()`. Check the Audio Recorder / Voice Recording Attachment pages in the local docs before wiring. |
 | File/media viewer for arbitrary types | - (gap, inferred) | Stream's viewer handles image/video only. |
 
 ## 5. Events & real-time
@@ -105,7 +104,7 @@ One Stream message shape replaces Sendbird's class hierarchy (`BaseMessage` / `U
 |---|---|---|
 | `new GroupChannelHandler({ onMessageReceived, ... })` + `addGroupChannelHandler(key, h)` / `removeGroupChannelHandler(key)` | `client.on(eventType, cb)` / `channel.on(eventType, cb)` -> `{ unsubscribe }` | Keyed registration -> retained unsubscribe handle called in the effect cleanup. Events arrive only for **watched** channels. |
 | Named typed callbacks (`onMessageReceived`, `onMessageUpdated`, `onTypingStatusUpdated`, `onUserMarkedRead`, ...) | One `(event: Event) => void` per string type (`'message.new'`, `'message.updated'`, ...) | Every `event` field is optional - narrow by `event.type`. Granularity differs: one `onTypingStatusUpdated` = `typing.start` + `typing.stop`; one `onReactionUpdated` = `reaction.new`/`.updated`/`.deleted`. |
-| Sendbird does NOT echo your own sent message | Stream DOES (`message.new` fires for your own send, on top of the optimistic insert) | The single most common runtime bug in real migrations - see runbook > Kill list. |
+| Sendbird does NOT echo your own sent message | Stream DOES (`message.new` fires for your own send, on top of the optimistic insert) | The single most common runtime bug in real migrations - runbook kill #1. |
 | `MessageCollection` + `setMessageCollectionHandler` (`onMessagesAdded/Updated/Deleted`) | `channel.watch()` loads `channel.state.messages`; `channel.on('message.new'\|'message.updated'\|'message.deleted')` keeps it live | No collection object. `collection.dispose()` -> call every retained `unsubscribe()`. |
 | `MessageCollectionInitPolicy.CACHE_AND_REPLACE_BY_API` (`onCacheResult` + `onApiResult`) | `await channel.watch()` (resolves once, network-backed) | (gap) No cache-first callback on web - drop the cache branch, render after `watch()`. |
 | `onHugeGapDetected` + changelog APIs | `client.sync()` / reactive recovery on `connection.recovered` | Gap-fill after reconnect is automatic for watched channels. |
@@ -120,14 +119,14 @@ One Stream message shape replaces Sendbird's class hierarchy (`BaseMessage` / `U
 | `typingIndicatorThrottle` (ms) | on/off toggle only; throttling internal | - |
 | `getTypingUsers()` (pull) | `channel.state.typing` + typing events (`useTypingContext().typing` in React) | - |
 | Presence: poll `connectionStatus` on an interval | `client.queryUsers(..., { presence: true })` once, then `user.presence.changed` events | Real-time push replaces the poll loop - delete the interval. |
-| `getUnreadMemberCount(message)` / `getUndeliveredMemberCount` (per-message receipts) | `readBy` / `deliveredTo` on the message (`<MessageStatus>` renders them) | **Stream keeps read data only for the latest own message by default** - set the `returnAllReadData` prop on `<MessageList>` for Sendbird-style per-message receipts. |
+| `getUnreadMemberCount(message)` / `getUndeliveredMemberCount` (per-message receipts) | `readBy` / `deliveredTo` on the message (`<MessageStatus>` renders them) | **Stream keeps read data only for the latest own message by default** - set `returnAllReadData` on `<MessageList>` for Sendbird-style per-message receipts. |
 | `channel.unreadMessageCount` (live property) | `channel.countUnread()` (method) + `channel.state.read` | Global totals live on the own-user object / `notification.mark_read` events. |
 | Read marking on open | `markRead()` is throttled, auto-marked on mount/scroll, and Stream intentionally keeps the unread separator visible | Don't "fix" the separator - it's by design. |
 
 ## 7. Pagination: every stateful cursor dies
 
-Sendbird queries are stateful objects (`.next()` / `.hasNext`); Stream calls are stateless. This is
-the largest mechanical-but-not-codemod-safe transform in the whole migration - convert each:
+Sendbird queries are stateful objects (`.next()` / `.hasNext`); Stream calls are stateless.
+This is the largest mechanical-but-not-codemod-safe transform in the migration:
 
 | Sendbird query | Stream call | Paging |
 |---|---|---|
@@ -143,17 +142,19 @@ the largest mechanical-but-not-codemod-safe transform in the whole migration - c
 | `MessageSearchQuery` | `client.search(channelFilters, queryOrMessageFilters, options)` | `options.next` token or offset. |
 | Member lists | `channel.queryMembers(filter, sort, options)` | - |
 | Thread replies (`getThreadedMessagesByTimestamp`) | `channel.getReplies(parentId, { limit, id_lt })` | id cursor. |
-| `ScheduledMessageListQuery` | - | Feature gap (below). |
+| `ScheduledMessageListQuery` | - | Feature gap (section 15). |
 
-Two behavioral notes: Sendbird's `hasNext` is server-authoritative; Stream's equivalents are a
-count-vs-limit heuristic (a short page = end). And guard reconnect reloads with `<ChannelList>`'s
-`recoveryThrottleIntervalMs` (>= 2000ms) instead of porting hand-rolled refresh throttles (inferred).
+Two behavioral notes: Sendbird's `hasNext` is server-authoritative; Stream's equivalents are
+a count-vs-limit heuristic (a short page = end). Guard reconnect reloads with
+`<ChannelList>`'s `recoveryThrottleIntervalMs` (>= 2000ms) instead of porting hand-rolled
+refresh throttles (inferred).
 
 **Not every Sendbird channel-list filter has a server-side Stream equivalent.**
-`UnreadChannelFilter` (unread-only) and member-name search (`nicknameContainsFilter`) can't be
-expressed in the `queryChannels` filter. In `<ChannelList>`, apply them client-side with
-`channelRenderFilterFn` reading `channel.countUnread()` / `channel.state.members` - not a query
-filter. (`{ hidden: true }` for the archived list *is* a server filter and stays in `queryChannels`.)
+`UnreadChannelFilter` (unread-only) and member-name search (`nicknameContainsFilter`) can't
+be expressed in the `queryChannels` filter. In `<ChannelList>`, apply them client-side with
+`channelRenderFilterFn` reading `channel.countUnread()` / `channel.state.members` - not a
+query filter. (`{ hidden: true }` for the archived list *is* a server filter and stays in
+`queryChannels`.)
 
 ## 8. Membership, roles & moderation
 
@@ -171,8 +172,8 @@ filter. (`{ hidden: true }` for the archived list *is* a server filter and stays
 | `channel.report(category, desc)` | - (gap) | No channel-report endpoint - flag a representative message instead. |
 | `reportMessage` / `reportUser` + `ReportCategory` enum | `client.flagMessage(id, { reason })` / `client.flagUser(id, { reason })` | No category enum - fold the category label into the free-text `reason`. |
 | `channel.freeze()` / `unfreeze()` + built-in `FrozenNotification` banner | `channel.updatePartial({ set: { frozen: true } })` | A data field, not a method; no built-in banner - build one, gated on the acting user's permissions. |
-| `channel.banUser(user, durationSec?, desc?)` / `unbanUserWithUserId` | `channel.banUser(id, { timeout?, reason? })` / `channel.unbanUser(id)` | Pass the user **id**, not the User object, and **convert seconds -> minutes** (`timeout` is minutes - a 1:1 port makes every ban 60x longer). Channel-scoped like Sendbird; Stream adds app-wide ban (`client.banUser`/`unbanUser`) and shadow ban (`removeShadowBan`) - `channel.unbanUser` reverses only the channel-scoped ban. |
-| End-user actions vs. review UI | - | Reminder: [`RULES.md`](../RULES.md) > Moderation is Dashboard-only - port report/block/mute actions, never build a review queue. |
+| `channel.banUser(user, durationSec?, desc?)` / `unbanUserWithUserId` | `channel.banUser(id, { timeout?, reason? })` / `channel.unbanUser(id)` | Pass the user **id**, not the User object, and **convert seconds -> minutes** (a 1:1 port makes every ban 60x longer). Channel-scoped like Sendbird; Stream adds app-wide ban (`client.banUser`/`unbanUser`) and shadow ban (`removeShadowBan`) - `channel.unbanUser` reverses only the channel-scoped ban. |
+| End-user actions vs. review UI | - | Port report/block/mute actions; never build a review queue - moderation review lives in the Stream Dashboard. |
 
 ## 9. Polls
 
@@ -182,7 +183,7 @@ filter. (`{ hidden: true }` for the archived list *is* a server filter and stays
 | `channel.votePoll(pollId, optionIds)` | `client.castPollVote(messageId, pollId, { option_id })` | **One option per call** - loop for multi-select. |
 | `allowMultipleVotes: true` | `enforce_unique_vote: false` | **The boolean inverts.** Both trial migrations flagged this. |
 | `channel.addPollOption` / `closePoll` | `client.createPollOption(pollId, { text })` / `client.closePoll(pollId)` | `PollStatus` enum -> `poll.is_closed` boolean. |
-| Hand-rolled re-fetch on `onPollVoted` / `onPollUpdated` | `client.polls.fromState(pollId)` + `useStateStore` (reactive) | Delete the event-fold machinery - Stream's poll state is first-class reactive. The idiomatic rewrite is smaller than the port. |
+| Hand-rolled re-fetch on `onPollVoted` / `onPollUpdated` | `client.polls.fromState(pollId)` + `useStateStore` (reactive) | Delete the event-fold machinery - poll state is first-class reactive. The idiomatic rewrite is smaller than the port. |
 
 ## 10. Search
 
@@ -193,8 +194,8 @@ filter. (`{ hidden: true }` for the archived list *is* a server filter and stays
 
 ## 11. Push notifications
 
-`stream-chat-react` itself has **no device-push registration** - its "notifications" guidance is
-in-app toasts. Device push is `stream-chat` client calls + your service worker.
+`stream-chat-react` itself has **no device-push registration** - its "notifications"
+guidance is in-app toasts. Device push is `stream-chat` client calls + your service worker.
 
 | Sendbird | Stream | Notes / trap |
 |---|---|---|
@@ -208,31 +209,32 @@ in-app toasts. Device push is `stream-chat` client calls + your service worker.
 ## 12. UI components (UIKit -> stream-chat-react)
 
 UIKit ships drop-in smart modules customized via `renderX` props; Stream is compositional -
-assemble primitives, customize by swapping components. Whenever a row makes you write your own
-component for a prebuilt region, [`RULES.md`](../RULES.md) > Reference authority gates it behind
-[`custom-ui.md`](custom-ui.md) - load it first.
+assemble primitives, customize by swapping components. Whenever a row makes you write your
+own component for a prebuilt region, it owes the completion contract in
+[`design-matching.md`](design-matching.md) (reproduce or mark N/A every sub-feature the
+prebuilt drew).
 
 | Sendbird | Stream | Notes / trap |
 |---|---|---|
 | `<SendbirdProvider appId userId accessToken nickname>` (connects internally) | `<Chat client={client}>` (provider only) | You build + connect the client yourself (`useCreateChatClient`). `colorSet` / `stringSet` / `dateLocale` props -> section 14. |
 | `<App>` (prebuilt full application) | - | No equivalent - hand-compose `<Chat><ChannelList/><Channel>...</Channel></Chat>`. |
-| `<GroupChannel channelUrl>` (module) | `<Channel channel={c}><Window><MessageList/><MessageComposer/></Window><Thread/></Channel>` | The single most-used Sendbird symbol in real apps. **v14 has `MessageComposer`; `MessageInput` was removed in v13->v14** (see [`../migrate.md`](../migrate.md)). |
+| `<GroupChannel channelUrl>` (module) | `<Channel channel={c}><Window><MessageList/><MessageComposer/></Window><Thread/></Channel>` | The single most-used Sendbird symbol in real apps. **v14 has `MessageComposer`; `MessageInput` was removed in v13->v14.** |
 | `<GroupChannelList>` | `<ChannelList filters sort options>` | Driven by props, not a query object. |
 | `renderChannelPreview` | `<WithComponents overrides={{ ChannelListItemUI: Custom }}>` | **`ChannelList` has no `Preview` prop in v14** - the row swap goes through ComponentContext. |
-| `renderMessage` | `<MessageList Message={Custom}/>` (or `WithComponents`) | Replacing the row drops every default sub-feature (reactions, receipts, grouping, ...) - that's the [`custom-ui.md`](custom-ui.md) completion contract. |
+| `renderMessage` | `<MessageList Message={Custom}/>` (or `WithComponents`) | Replacing the row drops every default sub-feature (reactions, receipts, grouping, ...) - that's the completion contract above. |
 | `renderChannelHeader` / `<GroupChannelHeader>` with `renderLeft/Middle/Right` | `<ChannelHeader>` as first child of `<Window>` | **No region-override API and no ComponentContext swap key** - `HeaderStartContent`/`HeaderEndContent` inject content only; to change structure, render your own header component instead. |
 | `<Thread>` module | `<Thread/>` as a sibling of `<Window>` inside `<Channel>` | To open a specific thread programmatically use `<ThreadProvider thread={t}>` - `<Thread>` has no `thread` prop (one is silently ignored). |
 | `<ChannelSettings>` | `stream-chat-react/channel-detail` plugin: `<ChannelDetail>`, `ChannelDetailProvider`, `ChannelMembersView`, `ChannelManagementInfoBody` | Covers info, members browse/add/remove, pinned messages, media, files. No built-in freeze toggle - add via `ChannelManagementActionItem` custom actions. `ChannelSettingsContext` -> `useChannelDetailContext`. |
 | `<CreateChannel>` / `<EditUserProfile>` / `InviteUsers` / `LeaveChannel` | - | No prebuilt equivalents: build forms over `client.channel(...).create()`, `client.partialUpdateUser`, `channel.addMembers`, `channel.removeMembers([me])`. |
-| `<OpenChannel>` module | `<Channel>` on a `livestream`-type channel, with `<VirtualizedMessageList>` | **Livestream / high-message-throughput channels must render `<VirtualizedMessageList>`, not `<MessageList>`** - same `Message`-level props, plus `stickToBottomScrollBehavior` / `additionalVirtuosoProps`; fetch the VirtualizedMessageList page ([`docs-map.md`](docs-map.md)) before wiring. Participant list -> your own list over `channel.state.watchers`. |
+| `<OpenChannel>` module | `<Channel>` on a `livestream`-type channel, with `<VirtualizedMessageList>` | **Livestream / high-throughput channels must render `<VirtualizedMessageList>`, not `<MessageList>`** - same `Message`-level props, plus `stickToBottomScrollBehavior` / `additionalVirtuosoProps`; check its page in the local docs before wiring. Participant list -> your own list over `channel.state.watchers`. |
 | `<MessageSearch>` | section 10 | - |
 | `TypingIndicatorType` enum (text/bubble) | `<TypingIndicator>` | Auto-rendered inside MessageList (which supplies its **required** `scrollToBottom` prop) - don't mount it bare with zero props; style via CSS. |
 | `ui/MessageInput` (atomic textarea) | `TextareaComposer` (inside `MessageComposerUI`) | Match granularity: module-level `MessageInputWrapper` -> `<MessageComposer/>`. |
-| `MessageItemMenu` / `MessageEmojiMenu` | `<MessageActions/>` / `<ReactionSelector/>` | To customize the action list in v14, pass `messageActionSet={[...defaultMessageActionSet, { Component, placement, type }]}` (both exported from the package root; the `.d.ts` marks them experimental) rather than the removed per-boolean props. Built-in read of the current set is `useMessageContext()`. |
+| `MessageItemMenu` / `MessageEmojiMenu` | `<MessageActions/>` / `<ReactionSelector/>` | To customize the action list in v14, pass `messageActionSet={[...defaultMessageActionSet, { Component, placement, type }]}` (both exported from the package root; the `.d.ts` marks them experimental) rather than the removed per-boolean props. |
 | `EmojiReactions` (pill row) | `<MessageReactions/>` | Reads reaction state from MessageContext instead of message/channel props. |
 | `QuoteMessage` / `QuoteMessageInput` | `<QuotedMessage/>` / `QuotedMessagePreviewUI` | `onClose` -> `onRemove`; state comes from the composer context. |
 | `DateSeparator` (via `renderCustomSeparator`) | `<WithComponents overrides={{ DateSeparator }}>` | - |
-| `OutgoingMessageStates` (receipt indicator) | `<MessageStatus/>` + `MessageDeliveredStatus`/`MessageReadStatus` override props | This is the read/delivery indicator, NOT the send-state machine (that's section 3). |
+| `OutgoingMessageStates` (receipt indicator) | `<MessageStatus/>` + `MessageDeliveredStatus`/`MessageReadStatus` override props | This is the read/delivery indicator, NOT the send-state machine (section 3). |
 
 ## 13. Context hooks & selectors
 
@@ -261,9 +263,8 @@ component for a prebuilt region, [`RULES.md`](../RULES.md) > Reference authority
 
 ## 15. Feature gaps - no Stream equivalent, decision required
 
-Each of these needs an explicit user decision (substitute / rebuild app-side / drop) recorded in
-the parity ledger and routed through the plan checkpoint (runbook > Plan & checkpoint - or its
-non-interactive `provisional` fallback). Never leave one as a silent TODO.
+Each needs an explicit user decision (substitute / rebuild app-side / drop) recorded in the
+parity ledger and routed through the runbook's gap checkpoint (section 3) - never a silent TODO.
 
 | Sendbird feature | Status | Closest substitute |
 |---|---|---|
