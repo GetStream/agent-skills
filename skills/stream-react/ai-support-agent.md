@@ -3,7 +3,7 @@
 For "support bot", "help desk", "RAG chat", "AI customer support" requests. An additive
 layer on top of Chat, not a separate product: a support ticket is a `messaging` channel, a
 bot user is a member, and when the customer writes, the bot answers with an LLM. Build the
-Chat scaffold per the SKILL.md flow first; this file adds the agent.
+Chat scaffold per SKILL.md first; this file adds the agent.
 
 The Stream-native wiring is documented - read before building:
 
