@@ -1,0 +1,109 @@
+{
+  "users": [
+    {
+      "user_id": "alice",
+      "nickname": "Alice",
+      "profile_url": "https://example.com/alice.png"
+    },
+    {
+      "user_id": "bob",
+      "nickname": "Bob",
+      "profile_url": ""
+    },
+    {
+      "user_id": "carol",
+      "nickname": "Carol",
+      "profile_url": ""
+    }
+  ],
+  "channels": [
+    {
+      "channel_url": "sendbird_group_channel_123456789_9f8e7d6c5b4a3f2e1d0c9b8a7f6e5d4c3b2a1f0e9d8c7b6a5f4e3d2c1b0a9f8e7d6c",
+      "channel_type": "group",
+      "name": "Design team",
+      "is_distinct": false,
+      "created_at": 1719830400000,
+      "members": [
+        "alice",
+        "bob",
+        "carol"
+      ]
+    },
+    {
+      "channel_url": "sendbird_group_channel_222_dm_alice_bob",
+      "channel_type": "group",
+      "name": "",
+      "is_distinct": true,
+      "created_at": 1719830500000,
+      "members": [
+        "alice",
+        "bob"
+      ]
+    },
+    {
+      "channel_url": "sendbird_open_channel_777_townhall",
+      "channel_type": "open",
+      "name": "Town hall",
+      "created_at": 1719830600000,
+      "members": []
+    }
+  ],
+  "messages": [
+    {
+      "message_id": 1001,
+      "channel_url": "sendbird_group_channel_123456789_9f8e7d6c5b4a3f2e1d0c9b8a7f6e5d4c3b2a1f0e9d8c7b6a5f4e3d2c1b0a9f8e7d6c",
+      "user_id": "alice",
+      "type": "MESG",
+      "message": "Kickoff at 10?",
+      "created_at": 1719830700000,
+      "reactions": [
+        {
+          "key": "thumbsup",
+          "user_ids": [
+            "bob",
+            "carol"
+          ]
+        },
+        {
+          "key": "heart",
+          "user_ids": [
+            "bob"
+          ]
+        }
+      ]
+    },
+    {
+      "message_id": 1002,
+      "channel_url": "sendbird_group_channel_123456789_9f8e7d6c5b4a3f2e1d0c9b8a7f6e5d4c3b2a1f0e9d8c7b6a5f4e3d2c1b0a9f8e7d6c",
+      "user_id": "bob",
+      "type": "MESG",
+      "message": "Works for me",
+      "created_at": 1719830760000,
+      "reactions": []
+    },
+    {
+      "message_id": 1003,
+      "channel_url": "sendbird_group_channel_123456789_9f8e7d6c5b4a3f2e1d0c9b8a7f6e5d4c3b2a1f0e9d8c7b6a5f4e3d2c1b0a9f8e7d6c",
+      "user_id": "carol",
+      "type": "FILE",
+      "message": "",
+      "file": {
+        "url": "https://example.com/spec.pdf",
+        "name": "spec.pdf",
+        "size": 48213,
+        "type": "application/pdf"
+      },
+      "created_at": 1719830820000,
+      "reactions": []
+    },
+    {
+      "message_id": 2001,
+      "channel_url": "sendbird_group_channel_222_dm_alice_bob",
+      "user_id": "alice",
+      "type": "MESG",
+      "message": "hey",
+      "created_at": 1719830900000,
+      "reactions": []
+    }
+  ]
+}

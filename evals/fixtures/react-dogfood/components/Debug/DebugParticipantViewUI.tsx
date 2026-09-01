@@ -1,0 +1,306 @@
+import { useCallback, useEffect, useState } from 'react';
+import clsx from 'clsx';
+import {
+  DefaultParticipantViewUI,
+  GenericMenu,
+  GenericMenuButtonItem,
+  hasAudio,
+  hasInterruptedTrack,
+  hasScreenShare,
+  hasScreenShareAudio,
+  hasVideo,
+  Icon,
+  OwnCapability,
+  ParticipantActionsContextMenu,
+  Restricted,
+  SfuModels,
+  StreamVideoParticipant,
+  useCall,
+  useI18n,
+  useMenuContext,
+  useParticipantViewContext,
+} from '@stream-io/video-react-sdk';
+import { DebugStatsView } from './DebugStatsView';
+import { useIsDebugMode } from './useIsDebugMode';
+import { useIsDemoEnvironment } from '../../context/AppEnvironmentContext';
+
+const InterruptedTrackBadge = ({
+  participant,
+}: {
+  participant: StreamVideoParticipant;
+}) => {
+  const labels: string[] = [];
+  if (hasInterruptedTrack(participant, SfuModels.TrackType.AUDIO))
+    labels.push('audio');
+  if (hasInterruptedTrack(participant, SfuModels.TrackType.VIDEO))
+    labels.push('video');
+  if (hasInterruptedTrack(participant, SfuModels.TrackType.SCREEN_SHARE))
+    labels.push('screen');
+  if (hasInterruptedTrack(participant, SfuModels.TrackType.SCREEN_SHARE_AUDIO))
+    labels.push('screen audio');
+  if (labels.length === 0) return null;
+  return (
+    <div
+      title="Receiver-side track is not currently producing media"
+      style={{
+        position: 'absolute',
+        top: 8,
+        left: 8,
+        padding: '2px 6px',
+        borderRadius: 4,
+        background: 'rgba(220, 38, 38, 0.85)',
+        color: '#fff',
+        fontSize: 11,
+        fontWeight: 600,
+        letterSpacing: 0.2,
+        pointerEvents: 'none',
+        zIndex: 5,
+      }}
+    >
+      {`${labels.join(' + ')} interrupted`}
+    </div>
+  );
+};
+
+export const DebugParticipantViewUI = () => {
+  const call = useCall();
+  const { participant, participantViewElement, trackType } =
+    useParticipantViewContext();
+  const { sessionId, userId } = participant;
+
+  const isDemoEnvironment = useIsDemoEnvironment();
+  const participantContextMenuActions = isDemoEnvironment
+    ? CustomParticipantActionsContextMenu
+    : ParticipantActionsContextMenu;
+
+  const enterFullScreen = useCallback(() => {
+    if (!participantViewElement) return;
+    if (typeof participantViewElement.requestFullscreen === 'undefined') return;
+
+    if (!document.fullscreenElement) {
+      return participantViewElement.requestFullscreen().catch(console.error);
+    }
+    document.exitFullscreen().catch(console.error);
+  }, [participantViewElement]);
+
+  const isDebug = useIsDebugMode();
+  const isScreenShareTrackView = trackType === 'screenShareTrack';
+
+  if (!isDebug) {
+    return (
+      <div
+        className={clsx(
+          'rd__debug__participant-view',
+          isScreenShareTrackView && 'rd__debug__participant-view--screen-share',
+          isDemoEnvironment && 'rd__debug__participant-view--hide-elements',
+        )}
+        onDoubleClick={enterFullScreen}
+      >
+        <DefaultParticipantViewUI
+          ParticipantActionsContextMenu={participantContextMenuActions}
+        />
+      </div>
+    );
+  }
+  return (
+    <>
+      <DefaultParticipantViewUI
+        ParticipantActionsContextMenu={participantContextMenuActions}
+      />
+      <InterruptedTrackBadge participant={participant} />
+      <div className="rd__debug__extra">
+        <DebugStatsView call={call!} sessionId={sessionId} userId={userId} />
+      </div>
+    </>
+  );
+};
+
+const CustomParticipantActionsContextMenu = () => {
+  const call = useCall();
+  const { t } = useI18n();
+
+  const { participant, participantViewElement, videoElement } =
+    useParticipantViewContext();
+  const { pin, sessionId, userId } = participant;
+
+  const hasAudioTrack = hasAudio(participant);
+  const hasVideoTrack = hasVideo(participant);
+  const hasScreenShareTrack = hasScreenShare(participant);
+  const hasScreenShareAudioTrack = hasScreenShareAudio(participant);
+
+  const [fullscreenModeOn, setFullscreenModeOn] = useState(
+    !!document.fullscreenElement,
+  );
+  const [pictureInPictureElement, setPictureInPictureElement] = useState(
+    document.pictureInPictureElement,
+  );
+
+  const blockUser = () => call?.blockUser(userId);
+  const kickUser = () => call?.kickUser({ user_id: userId });
+  const muteAudio = () => call?.muteUser(userId, 'audio');
+  const muteVideo = () => call?.muteUser(userId, 'video');
+  const muteScreenShare = () => call?.muteUser(userId, 'screenshare');
+  const muteScreenShareAudio = () =>
+    call?.muteUser(userId, 'screenshare_audio');
+
+  const toggleParticipantPinnedAt = () => {
+    if (pin) {
+      call?.unpin(sessionId);
+    } else {
+      call?.pin(sessionId);
+    }
+  };
+
+  const pinForEveryone = () => {
+    call
+      ?.pinForEveryone({ user_id: userId, session_id: sessionId })
+      .catch((err) => {
+        console.error(`Failed to pin participant ${userId}`, err);
+      });
+  };
+
+  const unpinForEveryone = () => {
+    call
+      ?.unpinForEveryone({ user_id: userId, session_id: sessionId })
+      .catch((err) => {
+        console.error(`Failed to unpin participant ${userId}`, err);
+      });
+  };
+
+  const toggleFullscreenMode = () => {
+    if (!fullscreenModeOn) {
+      return participantViewElement
+        ?.requestFullscreen()
+        .then(() => setFullscreenModeOn(true))
+        .catch(console.error);
+    }
+
+    document
+      .exitFullscreen()
+      .catch(console.error)
+      .finally(() => setFullscreenModeOn(false));
+  };
+
+  useEffect(() => {
+    if (!videoElement) return;
+
+    const handlePictureInPicture = () => {
+      setPictureInPictureElement(document.pictureInPictureElement);
+    };
+
+    videoElement.addEventListener(
+      'enterpictureinpicture',
+      handlePictureInPicture,
+    );
+    videoElement.addEventListener(
+      'leavepictureinpicture',
+      handlePictureInPicture,
+    );
+
+    return () => {
+      videoElement.removeEventListener(
+        'enterpictureinpicture',
+        handlePictureInPicture,
+      );
+      videoElement.removeEventListener(
+        'leavepictureinpicture',
+        handlePictureInPicture,
+      );
+    };
+  }, [videoElement]);
+
+  const togglePictureInPicture = () => {
+    if (videoElement && pictureInPictureElement !== videoElement) {
+      return videoElement
+        .requestPictureInPicture()
+        .catch(console.error) as Promise<void>;
+    }
+
+    document.exitPictureInPicture().catch(console.error);
+  };
+
+  const { close } = useMenuContext() || {};
+  return (
+    <GenericMenu onItemClick={close}>
+      <GenericMenuButtonItem
+        onClick={toggleParticipantPinnedAt}
+        disabled={pin && !pin.isLocalPin}
+      >
+        <Icon icon="pin" />
+        {pin ? t('Unpin') : t('Pin')}
+      </GenericMenuButtonItem>
+      <Restricted requiredGrants={[OwnCapability.PIN_FOR_EVERYONE]}>
+        <GenericMenuButtonItem
+          onClick={pinForEveryone}
+          disabled={pin && !pin.isLocalPin}
+        >
+          <Icon icon="pin" />
+          {t('Pin for everyone')}
+        </GenericMenuButtonItem>
+        <GenericMenuButtonItem
+          onClick={unpinForEveryone}
+          disabled={!pin || pin.isLocalPin}
+        >
+          <Icon icon="pin" />
+          {t('Unpin for everyone')}
+        </GenericMenuButtonItem>
+      </Restricted>
+      <Restricted requiredGrants={[OwnCapability.BLOCK_USERS]}>
+        <GenericMenuButtonItem onClick={blockUser}>
+          <Icon icon="not-allowed" />
+          {t('Block')}
+        </GenericMenuButtonItem>
+      </Restricted>
+      <Restricted requiredGrants={[OwnCapability.KICK_USER]}>
+        <GenericMenuButtonItem onClick={kickUser}>
+          <Icon icon="kick-user" />
+          {t('Kick')}
+        </GenericMenuButtonItem>
+      </Restricted>
+      <Restricted requiredGrants={[OwnCapability.MUTE_USERS]}>
+        {hasVideoTrack && (
+          <GenericMenuButtonItem onClick={muteVideo}>
+            <Icon icon="camera-off-outline" />
+            {t('Turn off video')}
+          </GenericMenuButtonItem>
+        )}
+        {hasScreenShareTrack && (
+          <GenericMenuButtonItem onClick={muteScreenShare}>
+            <Icon icon="screen-share-off" />
+            {t('Turn off screen share')}
+          </GenericMenuButtonItem>
+        )}
+        {hasAudioTrack && (
+          <GenericMenuButtonItem onClick={muteAudio}>
+            <Icon icon="no-audio" />
+            {t('Mute audio')}
+          </GenericMenuButtonItem>
+        )}
+        {hasScreenShareAudioTrack && (
+          <GenericMenuButtonItem onClick={muteScreenShareAudio}>
+            <Icon icon="no-audio" />
+            {t('Mute screen share audio')}
+          </GenericMenuButtonItem>
+        )}
+      </Restricted>
+      {participantViewElement &&
+        typeof participantViewElement.requestFullscreen !== 'undefined' && (
+          <GenericMenuButtonItem onClick={toggleFullscreenMode}>
+            {t('{{ direction }} fullscreen', {
+              direction: fullscreenModeOn ? t('Leave') : t('Enter'),
+            })}
+          </GenericMenuButtonItem>
+        )}
+      {videoElement && document.pictureInPictureEnabled && (
+        <GenericMenuButtonItem onClick={togglePictureInPicture}>
+          {t('{{ direction }} picture-in-picture', {
+            direction:
+              pictureInPictureElement === videoElement
+                ? t('Leave')
+                : t('Enter'),
+          })}
+        </GenericMenuButtonItem>
+      )}
+    </GenericMenu>
+  );
+};

@@ -1,0 +1,76 @@
+import { useConnectedUser } from '@stream-io/video-react-sdk';
+import { createContext, PropsWithChildren, useContext } from 'react';
+import type { AppEnvironment } from '../lib/environmentConfig';
+
+const environmentOverride =
+  typeof window !== 'undefined' &&
+  new URLSearchParams(window.location.search).get('environment');
+
+const environment: AppEnvironment =
+  environmentOverride || process.env.NEXT_PUBLIC_APP_ENVIRONMENT || 'demo';
+
+const AppEnvironmentContext = createContext(environment);
+
+export const AppEnvironmentProvider = ({ children }: PropsWithChildren) => {
+  return (
+    <AppEnvironmentContext.Provider value={environment}>
+      {children}
+    </AppEnvironmentContext.Provider>
+  );
+};
+
+/**
+ * Returns the current app environment.
+ */
+export const useAppEnvironment = (): AppEnvironment => {
+  const appEnvironment = useContext(AppEnvironmentContext);
+  if (!appEnvironment) {
+    throw new Error(
+      'useAppEnvironment must be used within an AppEnvironmentContext',
+    );
+  }
+  return appEnvironment;
+};
+
+/**
+ * Returns true if the current app environment is 'pronto'.
+ */
+export const useIsProntoEnvironment = () => useAppEnvironment() === 'pronto';
+
+/**
+ * Environments where end-to-end encryption is available. `pronto-staging` is
+ * included alongside `pronto` so encrypted calls (and the Slack `--e2ee` /
+ * `--private` links) work on staging too.
+ */
+export const isE2EEEnvironment = (env: AppEnvironment): boolean =>
+  env === 'pronto' || env === 'pronto-staging';
+
+/**
+ * Returns true when end-to-end encryption is available in the current
+ * environment. See {@link isE2EEEnvironment}.
+ */
+export const useIsE2EEEnvironment = () =>
+  isE2EEEnvironment(useAppEnvironment());
+
+/**
+ * Returns true if the current app environment is 'demo'.
+ */
+export const useIsDemoEnvironment = () => useAppEnvironment() === 'demo';
+
+/**
+ * Returns true if the current app has restricted permissions for regular users.
+ */
+export const useIsRestrictedEnvironment = () => {
+  const user = useConnectedUserSafe();
+  return (
+    useAppEnvironment() === 'pronto-sales' && (!user || user.role === 'user')
+  );
+};
+
+const useConnectedUserSafe = () => {
+  try {
+    return useConnectedUser();
+  } catch {
+    return undefined;
+  }
+};

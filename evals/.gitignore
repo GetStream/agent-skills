@@ -1,0 +1,14 @@
+results/
+fixtures/creds/
+fixtures/designs/
+fixtures/**/.env
+fixtures/**/node_modules/
+fixtures/**/dist/
+fixtures/**/.next/
+fixtures/**/reference.png
+runners/
+__pycache__/
+# react-dogfood runtime assets (27 MB of wasm / jpeg; the transcription case never loads them)
+fixtures/react-dogfood/public/mediapipe/
+fixtures/react-dogfood/public/tf/
+fixtures/react-dogfood/public/backgrounds/

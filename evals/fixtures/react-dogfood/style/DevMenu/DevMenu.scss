@@ -1,0 +1,34 @@
+@use '../breakpoints';
+
+.rd__dev-menu {
+  display: flex;
+  flex-direction: column;
+  text-align: center;
+
+  width: 100vw;
+  padding: var(--str-video__spacing-lg);
+
+  margin: 0;
+  list-style: none;
+
+  gap: var(--str-video__spacing-xs);
+
+  &__item {
+    &--divider {
+      border-bottom: 1px solid var(--str-video__base-color3);
+      margin: var(--str-video__spacing-sm) 0;
+    }
+  }
+}
+
+@include breakpoints.respond-above(sm) {
+  .rd__dev-menu {
+    width: 40vw;
+  }
+}
+
+@include breakpoints.respond-above(md) {
+  .rd__dev-menu {
+    width: 20vw;
+  }
+}

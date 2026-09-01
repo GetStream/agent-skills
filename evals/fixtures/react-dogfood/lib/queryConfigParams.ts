@@ -1,0 +1,104 @@
+import { NextRouter } from 'next/router';
+import {
+  Call,
+  PreferredCodec,
+  EncryptionManager,
+} from '@stream-io/video-react-sdk';
+import { deriveKeyFromPassphrase, SHARED_KEY_INDEX } from './e2ee';
+
+export const getQueryConfigParams = (query: NextRouter['query']) => {
+  return {
+    videoFile: query['video_file'] as string | undefined,
+    videoFileLeaveCallOnEnd: query['video_file_end_call'] === 'true',
+    videoCodecOverride: (query['video_encoder'] || query['video_codec']) as
+      PreferredCodec | undefined,
+    fmtpOverride: query['fmtp'] as string | undefined,
+    bitrateOverride: query['bitrate'] as string | undefined,
+    videoDecoderOverride: query['video_decoder'] as PreferredCodec | undefined,
+    videoDecoderFmtpOverride: query['video_decoder_fmtp'] as string | undefined,
+    maxSimulcastLayers: query['max_simulcast_layers'] as string | undefined,
+    forceCodec: query['force_codec'] as PreferredCodec | undefined,
+    cameraOverride: query['camera'] as string | undefined,
+    microphoneOverride: query['mic'] as string | undefined,
+    encryptionKey: query['encryption_key'] as string | undefined,
+  };
+};
+
+export const applyQueryConfigParams = async (
+  call: Call,
+  query: NextRouter['query'],
+  // The shared key is owned by the lobby (it can change without a URL change),
+  // so it is passed in explicitly rather than read from `query`.
+  options: { allowEncryption?: boolean; encryptionKey?: string } = {},
+) => {
+  const config = getQueryConfigParams(query);
+  const {
+    videoDecoderFmtpOverride,
+    videoCodecOverride,
+    fmtpOverride,
+    videoDecoderOverride,
+    bitrateOverride,
+    forceCodec,
+    maxSimulcastLayers,
+    cameraOverride,
+    microphoneOverride,
+  } = config;
+  const { allowEncryption = false, encryptionKey } = options;
+
+  if (cameraOverride != null) {
+    if (cameraOverride === 'false') {
+      call.camera
+        .disable()
+        .catch((e) => console.error('Failed to disable camera', e));
+    } else {
+      call.camera
+        .enable()
+        .catch((e) => console.error('Failed to enable camera', e));
+    }
+  }
+
+  if (microphoneOverride != null) {
+    if (microphoneOverride === 'false') {
+      call.microphone
+        .disable()
+        .catch((e) => console.error('Failed to disable microphone', e));
+    } else {
+      call.microphone
+        .enable()
+        .catch((e) => console.error('Failed to enable microphone', e));
+    }
+  }
+
+  const preferredBitrate = bitrateOverride
+    ? parseInt(bitrateOverride, 10)
+    : undefined;
+
+  // E2EE must be fully initialized before join() so the RTCPeerConnection can
+  // be configured for E2EE (the legacy Insertable Streams path needs
+  // encodedInsertableStreams).
+  if (
+    allowEncryption &&
+    encryptionKey &&
+    call.currentUserId &&
+    EncryptionManager.isSupported()
+  ) {
+    const rawKey = await deriveKeyFromPassphrase(encryptionKey);
+    const e2ee = await EncryptionManager.create(call.currentUserId);
+    e2ee.setSharedKey(SHARED_KEY_INDEX, rawKey);
+    call.setE2EEManager(e2ee);
+  }
+
+  call.updatePublishOptions({
+    dangerouslyForceCodec: forceCodec,
+    preferredCodec: videoCodecOverride,
+    fmtpLine: fmtpOverride,
+    preferredBitrate,
+    subscriberCodec: videoDecoderOverride,
+    subscriberFmtpLine: videoDecoderFmtpOverride,
+    maxSimulcastLayers: maxSimulcastLayers
+      ? parseInt(maxSimulcastLayers, 10)
+      : undefined,
+  });
+
+  return config;
+};
