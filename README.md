@@ -94,7 +94,7 @@ The `/stream` router classifies intent, runs `getstream` CLI commands itself (qu
 | Build or integrate a Flutter app | `stream-flutter` + its `builder.md`, `sdk.md`, and `references/*.md` |
 | Build or integrate a Unity Engine project | `stream-unity` (docs orchestrator: `docs-map.md` + `setup.md` + `ui.md` + `platforms.md`) |
 | Build or integrate an Unreal Engine project | `stream-unreal` (docs orchestrator: `docs-map.md` + `setup.md` + `widgets.md` + `platforms.md`) |
-| Build or review a Feeds v2 -> v3 sync mapping | `stream-feeds-migration` (`SKILL.md` + `references/mapping-keys.md` + `scripts/fetch_sample.py`) |
+| Build or review a Feeds v2 -> v3 sync mapping | `stream-feeds-migration` (`SKILL.md` + `mapping-keys.md` + `fetch_sample.py`) |
 
 > **Routing precedence:** when user input contains a platform signal (e.g. `react native`, `expo`, `stream video rn`, `swift`, `ios`, `flutter`, `unity`, `unreal`), the matching platform peer wins over the web `stream-react` rows. The web pack is the default only when no platform signal is present; `stream-builder` runs only when the user names it explicitly.
 
@@ -157,8 +157,8 @@ Cross-cutting rules (secrets, login screen, strict mode, package manager, base U
   - [`platforms.md`](skills/stream-unity/platforms.md) - per-target player settings, IL2CPP and managed stripping, the Newtonsoft and WebRTC conflicts, Android/iOS/desktop/WebGL, and what push does and does not do
 - [`skills/stream-feeds-migration/`](skills/stream-feeds-migration/) - **Feeds v2 -> v3 migration sub-skill**
   - [`SKILL.md`](skills/stream-feeds-migration/SKILL.md) - the workflow: credentials into the environment, sample the v2 app, analyze, emit the `mapping` object, and state what the sample could not prove
-  - [`references/mapping-keys.md`](skills/stream-feeds-migration/references/mapping-keys.md) - the full key catalogue with defaults, id-precedence and rename resolution rules, and a worked v2-shape -> mapping-key example for each common case
-  - [`scripts/fetch_sample.py`](skills/stream-feeds-migration/scripts/fetch_sample.py) - stdlib-only sampler; reads credentials from the environment and writes `v3sync-sample.json`
+  - [`mapping-keys.md`](skills/stream-feeds-migration/mapping-keys.md) - the full key catalogue with defaults, id-precedence and rename resolution rules, and a worked v2-shape -> mapping-key example for each common case
+  - [`fetch_sample.py`](skills/stream-feeds-migration/fetch_sample.py) - stdlib-only sampler; reads credentials from the environment and writes `v3sync-sample.json`
 - [`skills/stream-unreal/`](skills/stream-unreal/) - **Unreal Engine sub-skill** (docs orchestrator; Chat only)
   - [`SKILL.md`](skills/stream-unreal/SKILL.md) - entrypoint: engine-version / feature-support / C++-vs-Blueprint gates, the `.md` docs convention plus the per-page Unreal-coverage caveat, and the source-of-truth ladder
   - [`RULES.md`](skills/stream-unreal/RULES.md) - Unreal non-negotiable rules + the pitfalls that fail silently (the `ApiKey`-before-`BeginPlay` trap, `TWeakObjectPtr` callbacks, client on the HUD, module deps)

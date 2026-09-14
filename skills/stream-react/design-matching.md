@@ -143,7 +143,7 @@ and the reference read as the same screen.
    comments, and an image.
    Building a fixture channel: `client.channel('messaging', 'fixture-1')`; stub its
    network methods (`watch`, `query`, `markRead`, `keystroke`, `sendMessage`) to no-ops so
-   nothing hits the backend; set `channel.state.own_capabilities` (the composer and
+   nothing hits the backend; set `channel.data.own_capabilities` (the composer and
    reactions don't render without them); inject messages with
    `channel.state.addMessagesSorted(msgs)` - guarded by
    `if (channel.state.messages.length === 0)`, because `client.channel()` is cached by cid

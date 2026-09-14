@@ -16,7 +16,7 @@ metadata:
 
 ## Docs
 
-Don't write Stream SDK code from memory: APIs change between majors, so your
+Don't write Stream SDK code from memory. APIs change between majors, so your
 memory is stale. Read the docs first, via the `getstream docs` command:
 
 ```bash
@@ -29,56 +29,73 @@ Previous majors are available too (e.g. chat-sdk/react/v13).
 
 ## Setup
 
-- Start with `getstream init` (binds the working dir to a Stream app, existing
-  or new) and `getstream env` (credentials).
-- New apps: Next.js + Tailwind + shadcn with the default theme is a good choice
-  unless the user says otherwise. Latest shadcn uses Base UI, not Radix: no
-  `asChild`, and don't wrap trigger components in `<Button>`.
-- Install only the SDKs the use case needs; if unclear, ask. Chat:
-  `stream-chat stream-chat-react`; Video: `@stream-io/video-react-sdk`; Feeds:
-  `@stream-io/feeds-react-sdk`; server-side: `@stream-io/node-sdk`. Don't bump
-  an already-installed Stream major.
-- Video apps: label the use case once, without asking the user (metadata, no
-  runtime effect):
-  `getstream api UpdateApp --request '{"video_primary_use_case":"livestreaming"}'`.
-  Allowed: `video-calling`, `voice-calling`, `livestreaming`, `audio-rooms`,
-  `ai-agents`, `live-shopping`, `other`. Derive it from what the app is, not
-  from the call type in use (Whatnot runs on the `livestream` call type but is
-  `live-shopping`). Any commerce signal means `live-shopping`; unsure means
-  `other`.
-- Support bot, help desk, AI agent: follow ai-support-agent.md.
-- Product configuration (channel types, feed groups, moderation policies) goes
-  through `getstream api`.
+Start with `getstream init` (binds the working dir to a Stream app, existing or
+new) and `getstream env` (credentials).
+
+For new apps, Next.js + Tailwind + shadcn with the default theme is a good
+choice unless the user says otherwise. Latest shadcn uses Base UI, not Radix: no
+`asChild`, and don't wrap trigger components in `<Button>`.
+
+Install the SDKs:
+
+- Chat: `stream-chat stream-chat-react`
+- Video: `@stream-io/video-react-sdk`
+- Feeds: `@stream-io/feeds-react-sdk`
+- Server-side: `@stream-io/node-sdk`
+
+Don't bump an already-installed Stream major.
+
+For Video apps, label the use case once, without asking the user (metadata, no
+runtime effect):
+
+```sh
+getstream api UpdateApp --request '{"video_primary_use_case":"livestreaming"}'
+```
+
+Allowed values: `video-calling`, `voice-calling`, `livestreaming`,
+`audio-rooms`, `ai-agents`, `live-shopping`, `other`. Derive it from what the
+app is, not from the call type in use (Whatnot runs on the `livestream` call
+type but is `live-shopping`). Any commerce signal means `live-shopping`. Unsure
+means `other`.
+
+Product configuration (channel types, feed groups, moderation policies) goes
+through `getstream api`.
 
 ## Auth and users
 
-- Tokens are minted server-side: a route (e.g. `/api/token`) uses the secret and
-  returns the token with the apiKey; the secret never reaches the client. An app
-  that already has auth or a token endpoint gets it extended, not a second one.
-- Login screen first. The root page asks who you are - no auto-connect, no
-  hardcoded user, no seeded demo users or content; the token route upserts only
-  the requesting user. Keep credentials in React state, not localStorage, so two
-  tabs can be two users.
+Tokens are minted server-side: a route (e.g. `/api/token`) uses the secret and
+returns the token with the apiKey. The secret never reaches the client. An app
+that already has auth or a token endpoint gets it extended, not a second one.
+
+Start with a login screen. Don't auto-connect, don't hardcode user credentials,
+don't seed demo users or content on app load. The token route upserts only the
+requesting user. Keep credentials in React state, not localStorage, so two tabs
+can be two users.
 
 ## Building
 
-- Clients mount once, at the app shell. Don't `disconnectUser()` in a screen's
-  cleanup - it kills the client every other screen shares. Per-screen cleanup is
-  `channel.stopWatching()` or `call.leave()`.
-- React strict mode double-mounts, which breaks naive setup. Chat:
-  `useCreateChatClient()`; Feeds: `useCreateFeedsClient()` - never
-  `getInstance()` client-side. Video: construct `StreamVideoClient` in a
-  `useEffect` with `disconnectUser()` cleanup; the constructor is synchronous,
-  no timer or mounted flag needed. Define the `tokenProvider` inside that
-  effect - an inline provider in the dependency array is a new identity every
-  render and recreates the client. Never use a `useRef` flag as a run-once guard
-  in an effect with cleanup: the ref survives the remount, so the second mount
-  skips setup entirely.
-- Prebuilt components first, customized via documented props and hooks. Feeds
-  has no prebuilt UI - build from its hooks.
-- Hub first: land on a channel list, lobby, or feed - never directly in a call
-  or a camera prompt. Camera/mic permission is requested only on an explicit
-  action (Join, Go Live), behind a preview. Empty states say what to do next.
+Clients mount once, at the app shell. Don't `disconnectUser()` in a screen's
+cleanup - it kills the client every other screen shares. Per-screen cleanup is
+`channel.stopWatching()` or `call.leave()`.
+
+Be careful with client initialization within React Strict Mode. Instead of using
+an effect, use specialized hooks:
+
+- Chat: `useCreateChatClient()`
+- Feeds: `useCreateFeedsClient()`
+- Video: construct `StreamVideoClient` in a `useEffect` with `disconnectUser()`
+  cleanup; the constructor is synchronous, no timer or mounted flag needed.
+  Define the `tokenProvider` inside that effect - an inline provider in the
+  dependency array is a new identity every render and recreates the client.
+  Never use a `useRef` flag as a run-once guard in an effect with cleanup: the
+  ref survives the remount, so the second mount skips setup entirely.
+
+Start with prebuilt Stream SDK components. Customize them via documented props
+and hooks. Feeds has no prebuilt UI - build from its hooks.
+
+Land on a channel list, lobby, or feed by default - never directly in a call or
+a camera prompt. Camera/mic permission is requested only on an explicit action
+(Join, Go Live), behind a preview. Empty states say what to do next.
 
 Chat:
 
@@ -114,7 +131,8 @@ Moderation:
 ## Verify
 
 Type-check and build, run the dev server, and test multi-user flows in two tabs
-as two different users. Report what was verified and what wasn't.
+as two different users through browser integration or automation. Report what
+was verified and what wasn't.
 
 ## Auditing an integration
 
@@ -141,3 +159,7 @@ a look to match. Only explicit design reference warrants design-matching.md.
 For the code migration, follow sendbird-migration.md. When the user also wants
 their existing data moved (users, channels, message history), follow the stream
 skill's sendbird-data-migration.md.
+
+## Support bot, help desk, AI agent
+
+Follow ai-support-agent.md.

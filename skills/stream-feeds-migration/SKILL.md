@@ -1,20 +1,26 @@
 ---
 name: stream-feeds-migration
-description: "Generate the v2 -> v3 sync mapping for a Stream Activity Feeds app by sampling its live v2 activities and reactions. Use when setting up a Feeds v2 to v3 migration, when asked to build, review, or debug a v3 sync mapping, when someone asks 'what mapping do we need for our app?', or when a migrated activity lands in v3 with missing text, missing attachments, comments that are not comments, or bookmarks that went missing. Triggers on v3sync, v2 to v3, feeds migration, activity feeds migration, sync mapping, extra_context, reaction kinds, comments and bookmarks mapping. The same mapping drives both the live syncer and the bulk exporter."
+description:
+  "Generate the v2 -> v3 sync mapping for a Stream Activity Feeds app by
+  sampling its live v2 activities and reactions. Use when setting up a Feeds v2
+  to v3 migration, when asked to build, review, or debug a v3 sync mapping, when
+  someone asks 'what mapping do we need for our app?', or when a migrated
+  activity lands in v3 with missing text, missing attachments, comments that are
+  not comments, or bookmarks that went missing. Triggers on v3sync, v2 to v3,
+  feeds migration, activity feeds migration, sync mapping, extra_context,
+  reaction kinds, comments and bookmarks mapping. The same mapping drives both
+  the live syncer and the bulk exporter."
 license: See LICENSE in repository root
-compatibility: Requires the v2 app's API key and secret, exported as environment variables, plus Python 3 (standard library only - no pip install). Read-only against the v2 app; writes one sample file to the working directory. No project or SDK required.
 metadata:
   author: GetStream
 allowed-tools: >-
-  Read, Glob, Grep,
-  Bash(python3 *),
-  Bash(ls *),
-  Bash(getstream *)
+  Read, Glob, Grep, Bash(python3 *), Bash(ls *), Bash(getstream *)
 ---
 
 # Stream Feeds - v2 to v3 sync mapping
 
-> **Read first (every session):** Glob `../stream/SKILL.md` and Read [`../stream/RULES.md`](../stream/RULES.md) (both ship with this skill). The **Secrets** rule governs every step below: the app secret never enters the conversation. RULES.md also carries the **Peer skills** procedure for installing and invoking any other pack skill on demand.
+For CLI commands or routing to another Stream skill, read
+[`../stream/SKILL.md`](../stream/SKILL.md).
 
 Produce the `mapping` object for an app's v2 -> v3 sync configuration by looking
 at what the app's v2 data actually contains, rather than at what anyone believes
@@ -30,30 +36,13 @@ breaks both in the same way.
 
 ### 1. Get credentials into the environment
 
-You need the **v2 app's** API key and secret. The secret signs an HS256 JWT
-locally, stamped with `iat`/`exp` so it expires five minutes after it is minted.
-The secret itself is never written to the sample file, never echoed back, and
-never sent anywhere except as that signature.
+Use `getstream env` to write the **v2 app's** credentials to an env file. Read
+`getstream env -h` for app selection and output options. Use `--target web` so
+the file contains both `STREAM_API_KEY` and `STREAM_API_SECRET`, which the
+sampler expects.
 
-Per [`../stream/RULES.md`](../stream/RULES.md) > **Secrets**, do not ask the user
-to paste the secret into the chat, and never `cat`, `grep`, or Read a `.env`
-file to find it. Ask them to export it themselves so it stays out of the
-transcript:
-
-```
-! export STREAM_API_KEY=<v2 app key> STREAM_API_SECRET=<v2 app secret>
-```
-
-The `!` prefix runs the command in the user's own session, so the value lands in
-the environment without passing through the conversation. Confirm it took with a
-presence check that never prints the value:
-
-```bash
-test -n "$STREAM_API_SECRET" && echo SECRET_SET || echo SECRET_MISSING
-```
-
-Do not proceed without a real key and secret. There is no useful analysis to do
-against a made-up app, and a wrong secret only produces a 403.
+Load that file when running the sampler below. Do not print its contents or put
+credential values in chat or tool commands.
 
 ### 2. Pick the target
 
@@ -67,8 +56,14 @@ target and the user will say so if they mean otherwise.
 ### 3. Fetch the sample
 
 ```bash
-python3 <skill-dir>/scripts/fetch_sample.py --out v3sync-sample.json
+set -a
+. "<env-file>"
+set +a
+python3 <skill-dir>/fetch_sample.py --out v3sync-sample.json
 ```
+
+`<env-file>` is the absolute path to the file written by `getstream env`. Run
+the block in one shell invocation so Python inherits the credentials.
 
 `<skill-dir>` is the directory holding this `SKILL.md`. Resolve it to an
 absolute path before running - the skill runs from whatever directory the user
@@ -83,8 +78,9 @@ Glob `{.agents,.claude}/skills/stream-feeds-migration/SKILL.md` to settle which.
 The key and secret are read from `STREAM_API_KEY` and `STREAM_API_SECRET`. The
 script takes **no `--secret` flag** by design - a secret passed as an argument
 would land in the process list and the shell history, which is exactly what the
-environment variable avoids. (`--api-key` exists, since the key is not sensitive.)
-The sample is written to the working directory, which is where you want it.
+environment variable avoids. (`--api-key` exists, since the key is not
+sensitive.) The sample is written to the working directory, which is where you
+want it.
 
 Standard library only - no pip install. It calls two server-side-only endpoints:
 
@@ -108,13 +104,13 @@ prove activities exist and point to the second explanation.
 ### 4. Analyze
 
 Read `v3sync-sample.json` and work through the checklist below. Read
-[`references/mapping-keys.md`](references/mapping-keys.md) for the full key
-catalogue, defaults, exact resolution rules, and worked examples of the common
-shapes - **do not guess key names or defaults from memory.**
+[`mapping-keys.md`](mapping-keys.md) for the full key catalogue, defaults, exact
+resolution rules, and worked examples of the common shapes - **do not guess key
+names or defaults from memory.**
 
-The single most common mistake is over-configuring. Every key has a default
-that is right for a conventional v2 app. Only emit a key when the sample shows
-the app deviates from that default. An empty mapping is a valid answer.
+The single most common mistake is over-configuring. Every key has a default that
+is right for a conventional v2 app. Only emit a key when the sample shows the
+app deviates from that default. An empty mapping is a valid answer.
 
 ### 5. Emit the mapping
 
@@ -127,8 +123,8 @@ them with placeholder credentials invites someone deploying a config with a
 
 Explain each key you set by pointing at the evidence in the sample.
 
-Flag explicitly anything you could not determine from the sample - see
-**Limits of the sample** below. Silence there reads as "verified", which it is not.
+Flag explicitly anything you could not determine from the sample - see **Limits
+of the sample** below. Silence there reads as "verified", which it is not.
 
 ---
 
@@ -142,9 +138,9 @@ Look at `activities[].extra_context` across all 100.
   or that should be surfaced at the top level of `custom`, needs a rename entry.
   Fields that are already conventionally named need nothing.
 - **Activity id** - does a field hold a stable external id (`external_id`,
-  `post_id`, `uuid`)? If so, `id` should point at it. If instead `foreign_id`
-  is populated and meaningful across the sample, `foreign_id: "id"` is the
-  simpler answer. If neither, omit both and let the v2 UUID carry over.
+  `post_id`, `uuid`)? If so, `id` should point at it. If instead `foreign_id` is
+  populated and meaningful across the sample, `foreign_id: "id"` is the simpler
+  answer. If neither, omit both and let the v2 UUID carry over.
 - **Reshares / replies** - a field holding an `SA:<uuid>` ref (commonly
   `shared_origin_post`) is the `parent_id` field. Note that `SA:` refs are also
   autodetected, so only configure this when the sample shows the ref buried
@@ -162,41 +158,41 @@ Look at `activities[].extra_context` across all 100.
 
 ### Reactions
 
-Look at `kinds` first - that list is the app's whole reaction vocabulary.
+Look at `kinds` first - that list contains the reaction kinds represented in
+the sample.
 
 - **Classify every kind** into exactly one of: comment, bookmark,
   comment-bookmark, or plain reaction. Then set `comments`, `bookmarks`,
-  `comments_bookmarks` accordingly. A kind you leave out of all three is a
-  plain reaction, which is often correct.
+  `comments_bookmarks` accordingly. A kind you leave out of all three is a plain
+  reaction, which is often correct.
 - Remember the defaults: `comments` already covers `["comment", "reply"]`. If
   those are the app's only comment kinds, do not restate them.
 - **Comment text** - inspect the `data` of a comment-kind reaction. Default is
   `data.message`; if the text lives under `body` or `text`, set `comment_field`.
-- **Replies** - is the parent comment id in the top-level `parent` (the
-  default, no config needed) or nested in `data`? If nested, set
-  `parent_id_field` to that envelope path. Confirm against a **non**-reply too:
-  a top-level comment must leave that path empty, or every comment would be
-  treated as a reply.
+- **Replies** - is the parent comment id in the top-level `parent` (the default,
+  no config needed) or nested in `data`? If nested, set `parent_id_field` to
+  that envelope path. Confirm against a **non**-reply too: a top-level comment
+  must leave that path empty, or every comment would be treated as a reply.
 - **Reactions on comments** - a non-comment reaction carrying a comment id in
   its `data` needs `reaction_comment_id_field`.
 - **Kind renames** - only if the app should use different type names in v3.
 - **Attachments** - `attachments_field` if comment attachments are not under
   `data.attachments`.
 
-Watch for **one kind carrying two incompatible shapes** - e.g. some `like`
-rows holding a comment id at one path and others at a different one. The
-single-path keys (`parent_id_field`, `reaction_comment_id_field`) cannot serve
-both. Say which rows the mapping will not cover instead of picking one silently.
+Watch for **one kind carrying two incompatible shapes** - e.g. some `like` rows
+holding a comment id at one path and others at a different one. The single-path
+keys (`parent_id_field`, `reaction_comment_id_field`) cannot serve both. Say
+which rows the mapping will not cover instead of picking one silently.
 
-Some apps carry **legacy layout flags** - see *Legacy layout flags* in
-[`references/mapping-keys.md`](references/mapping-keys.md). Never set one.
+Some apps carry **legacy layout flags** - see _Legacy layout flags_ in
+[`mapping-keys.md`](mapping-keys.md). Never set one.
 
 ### Users
 
-The sample endpoints return activities and reactions, not users, so **user
-field mapping cannot be inferred from it**. If display name or avatar are stored
-under non-standard keys, ask, then set `name` / `image` - remembering those two
-keys read v3-key-to-v2-source, backwards from every other string key.
+The sample endpoints return activities and reactions, not users, so **user field
+mapping cannot be inferred from it**. If display name or avatar are stored under
+non-standard keys, ask, then set `name` / `image` - remembering those two keys
+read v3-key-to-v2-source, backwards from every other string key.
 
 ---
 
@@ -221,11 +217,10 @@ default already covers the app's shape). That is what tells the reader the
 absence was a decision rather than an oversight.
 
 **The omitted list covers only the general-purpose keys.** Never include a
-legacy layout flag (see [`references/mapping-keys.md`](references/mapping-keys.md))
-in that list, in the mapping, or anywhere else in your response - not as a row,
-not as an aside, not even to say it was considered and rejected. They are
-irrelevant to the app in front of you, so there is nothing to justify: leave
-them out silently.
+legacy layout flag (see [`mapping-keys.md`](mapping-keys.md)) in that list, in
+the mapping, or anywhere else in your response - not as a row, not as an aside,
+not even to say it was considered and rejected. They are irrelevant to the app
+in front of you, so there is nothing to justify: leave them out silently.
 
 Suggest `"debug": true` in the mapping for the initial validation run - it
 stamps the live mapping onto `custom._v3sync_debug` of every synced activity -
@@ -241,36 +236,32 @@ difference between "this mapping is correct" and "this mapping fits the sample":
 - **Activities are the most recent 100.** A field that only older activities
   carry will not appear. Apps whose schema changed over time are exactly the
   ones where this bites.
-- **Reactions are drawn from a bounded recent window.** A kind that has not
-  been used lately can be missing from `kinds` entirely, so the vocabulary may
-  be incomplete on a long-lived app.
+- **Reactions are drawn from a bounded recent window.** A kind that has not been
+  used lately can be missing from `kinds` entirely, so the vocabulary may be
+  incomplete on a long-lived app.
 - **Users are not sampled at all.** Any `name` / `image` mapping has to be
   confirmed separately.
 - **Rare shapes hide in the tail.** A field present on 1% of activities may not
   show up in 100 rows. Where a mapping decision hinges on a field's presence,
   say which sampled rows carried it.
 - **The sample moves.** Re-running later can rotate rows out under the
-  5-per-kind cap and bring new shapes in, so a second run is a cheap way to
-  firm up a decision that rested on a single row.
+  5-per-kind cap and bring new shapes in, so a second run is a cheap way to firm
+  up a decision that rested on a single row.
 
 Before finalizing, check each key you emitted against the worked examples in
-[`references/mapping-keys.md`](references/mapping-keys.md). Matching a documented
-shape is good evidence the path and nesting are right; not matching one is worth
-a second look at the sample.
+[`mapping-keys.md`](mapping-keys.md). Matching a documented shape is good
+evidence the path and nesting are right; not matching one is worth a second look
+at the sample.
 
 ---
 
 ## Hand-off
 
 - **SDK questions about the v3 Feeds API** (what a v3 activity, comment, or
-  bookmark looks like in a given SDK) -> `stream-docs`.
-- **Building or updating the app against v3** once the mapping is settled ->
-  the platform pack for that app (`stream-react`, `stream-swift`,
-  `stream-android`, `stream-react-native`, `stream-flutter`), per
-  [`../stream/peers.yaml`](../stream/peers.yaml).
-
-Offer, do not auto-execute - see [`../stream/RULES.md`](../stream/RULES.md) >
-**Cross-track follow-ups**.
+  bookmark looks like in a given SDK) -> `getstream docs`.
+- **Building or updating the app against v3** once the mapping is settled -> the
+  platform pack for that app (`stream-react`, `stream-swift`, `stream-android`,
+  `stream-react-native`, `stream-flutter`).
 
 ## Support
 

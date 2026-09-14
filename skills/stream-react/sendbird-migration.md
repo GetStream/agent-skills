@@ -23,9 +23,7 @@ file/hook boundary, so callers don't change. The idiomatic rewrite is smaller
 and less buggy than the faithful port.
 
 Symbol lookup: start with sendbird-mapping.md. For the symbols it doesn't have,
-grep sendbird-mapping-extended.md for the exact symbol (don't read this big
-table). Additional sources are local docs with `getstream docs` and the
-installed types.
+use local docs with `getstream docs` and the installed types.
 
 ## 1. Detect & inventory
 

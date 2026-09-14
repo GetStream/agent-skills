@@ -188,11 +188,9 @@ Docs-first applies when the request hits any of these:
 - **Migration / version upgrades.**
 - **Any exact API, prop, hook, or component detail** not already in the bundled blueprints.
 
-Mechanism (mirrors the `stream-react` skill):
+Mechanism:
 
-**match -> run the [`references/DOCS.md`](references/DOCS.md) manifest lookup -> `WebFetch` (or `curl -Ls`) the selected `.md` page -> implement to match.** On fetch failure, hand to the `stream-docs` skill; if neither resolves the API, **stop and ask the user - never build customization, cookbook, or advanced features from memory.**
-
-Enforced by [`RULES.md`](RULES.md) > Package version and docs discipline.
+**Consulting the references/DOCS.md, use `getstream docs` to fetch relevant docs. Never build customization, cookbook, or advanced features from memory.**
 
 ---
 
@@ -291,7 +289,7 @@ Use when the user wants package install and shared wiring more than a full featu
 | Phase | Name | What you do |
 |---|---|---|
 | **M1** | Detect | Run Project signals + read `package.json`/lockfile: which Stream packages, their from -> to versions, runtime lane, package manager, and RN/Expo New-Architecture status. |
-| **M2** | Fetch the guide | From the product manifest ([`references/DOCS.md`](references/DOCS.md)) fetch the matching upgrade guide (known entry point: Chat RN **v8 -> v9**). Hard gate on failure -> `stream-docs` -> stop and ask. |
+| **M2** | Fetch the guide | From the product manifest ([`references/DOCS.md`](references/DOCS.md)) fetch the matching upgrade guide (known entry point: Chat RN **v8 -> v9**). Hard gate on failure -> `getstream docs` -> stop and ask. |
 | **M2.5** | Prerequisites | Clear RN-specific blockers first: New Architecture requirement, new native/peer deps (e.g. `react-native-teleport` for Chat v9), native rebuild. |
 | **M3** | Apply | Bump only the targeted packages (each at its own target; bump the lane's Chat wrapper), apply every documented breaking change, ground each symbol in installed `node_modules/stream-chat-react-native-core` source, grep for renamed symbols, do native config + keyboard cleanup. |
 | **M4** | Verify | `tsc --noEmit` -> Metro bundle -> native build -> simulator/device smoke of the core flow. No `next build`; a green `tsc` is not a render. Run gate commands from an absolute `cd` and **never piped** - a pipe returns the pipe's exit status, not the command's. |
