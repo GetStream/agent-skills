@@ -1,6 +1,6 @@
 # Moderation - CLI setup + end-user actions
 
-Cross-product moderation for Chat, Feeds, and Video. **Moderation review (queue, flagged items, approve/ban) is handled exclusively in the [Stream Dashboard](https://beta.dashboard.getstream.io) - never build review UI in the app** (RULES.md > Moderation is Dashboard-only).
+Cross-product moderation for Chat, Feeds, and Video. **Moderation review (queue, flagged items, approve/ban) is handled exclusively in the [Stream Dashboard](https://dashboard.getstream.io) - never build review UI in the app** (RULES.md > Moderation is Dashboard-only).
 
 Rules: [../RULES.md](../RULES.md) (moderation is Dashboard-only).
 
@@ -47,4 +47,4 @@ No moderation-specific server routes needed - review happens in the Dashboard. T
 - `CreateBlockList` is NOT idempotent - returns 400 if exists. Check with `ListBlockLists` first. Do NOT use `2>/dev/null || true` - it swallows CLI confirmation prompts
 - Generate real profanity for the blocklist - not placeholders like "badword1"
 - Custom rules (`upsert_moderation_rule`) return 403 on free plans - use blocklist + config instead
-- Flagged content review: [Stream Dashboard](https://beta.dashboard.getstream.io) - never in-app
+- Flagged content review: [Stream Dashboard](https://dashboard.getstream.io) - never in-app

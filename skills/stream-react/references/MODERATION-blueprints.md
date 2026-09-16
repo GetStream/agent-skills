@@ -2,7 +2,7 @@
 
 Setup, routes, and gotchas: [MODERATION.md](MODERATION.md). Rules: [`../RULES.md`](../RULES.md) > Moderation is Dashboard-only.
 
-**This file covers end-user moderation actions only** (report, block, mute, blocked-list). Moderation **review** UI - review queue, flagged-item cards, auto-mod status panels - is deliberately not bundled: review happens exclusively in the [Stream Dashboard](https://beta.dashboard.getstream.io), and the builder must never recreate those blueprints ([`../RULES.md`](../RULES.md) > Moderation is Dashboard-only).
+**This file covers end-user moderation actions only** (report, block, mute, blocked-list). Moderation **review** UI - review queue, flagged-item cards, auto-mod status panels - is deliberately not bundled: review happens exclusively in the [Stream Dashboard](https://dashboard.getstream.io), and the builder must never recreate those blueprints ([`../RULES.md`](../RULES.md) > Moderation is Dashboard-only).
 
 The BEM class names below are a structural spec (elements + conditional states) - implement with Shadcn components and Tailwind utilities; do not ship the BEM classes or hand-written CSS.
 

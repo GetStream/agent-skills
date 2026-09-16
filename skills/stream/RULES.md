@@ -95,7 +95,7 @@ Always use **`npm`**. Never use bun. Always **`--legacy-peer-deps`** for Stream 
 
 ## Moderation is Dashboard-only
 
-**Never build a moderation review queue, review panel, or flagged-item UI in the app.** Moderation review always happens in the [Stream Dashboard](https://beta.dashboard.getstream.io). The app's role is limited to:
+**Never build a moderation review queue, review panel, or flagged-item UI in the app.** Moderation review always happens in the [Stream Dashboard](https://dashboard.getstream.io). The app's role is limited to:
 - **CLI setup** during scaffold (blocklists, automod config via `references/MODERATION.md` Setup)
 - **End-user actions** (report, block, mute) if the product needs them
 - Do **not** load Review Queue, Flagged Item, or Auto-Mod Status blueprints from `MODERATION-blueprints.md`
