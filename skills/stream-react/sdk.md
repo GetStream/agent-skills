@@ -87,4 +87,4 @@ See `references/FEEDS.md` for complete type reference.
 
 ## Moderation - CLI setup only
 
-Moderation is configured via CLI during scaffold - NOT built as in-app UI. Review happens in the [Stream Dashboard](https://beta.dashboard.getstream.io). CLI commands: see `references/MODERATION.md` (App Integration -> Setup).
+Moderation is configured via CLI during scaffold - NOT built as in-app UI. Review happens in the [Stream Dashboard](https://dashboard.getstream.io). CLI commands: see `references/MODERATION.md` (App Integration -> Setup).

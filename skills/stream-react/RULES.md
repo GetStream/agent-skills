@@ -137,7 +137,7 @@ The generic onboarding + phase-order discipline lives in [`../stream/RULES.md`](
 
 ## Moderation is Dashboard-only
 
-**Never build a moderation review queue, review panel, or flagged-item UI in the app.** Moderation review always happens in the [Stream Dashboard](https://beta.dashboard.getstream.io). The app's role is limited to:
+**Never build a moderation review queue, review panel, or flagged-item UI in the app.** Moderation review always happens in the [Stream Dashboard](https://dashboard.getstream.io). The app's role is limited to:
 - **CLI setup** during scaffold (blocklists, automod config via [`references/MODERATION.md`](references/MODERATION.md) Setup)
 - **End-user actions** (report, block, mute) if the product needs them
 - `references/MODERATION-blueprints.md` bundles **end-user actions only** (Report Modal, Block/Mute Controls, Blocked Users List); review-queue / flagged-item / auto-mod blueprints are deliberately absent - do **not** recreate them

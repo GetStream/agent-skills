@@ -230,7 +230,7 @@ End with:
 | "WhatsApp", "iMessage", "DM", "messaging" | Direct Messaging | Chat [+ Video] |
 | "Instagram", "Twitter", "social feed", "Reddit" | Social Feed | Feeds + Chat |
 
-**Moderation** is configured via CLI during setup only. **Never build moderation review UI in the app** (RULES.md > Moderation is Dashboard-only) - review happens in the [Stream Dashboard](https://beta.dashboard.getstream.io).
+**Moderation** is configured via CLI during setup only. **Never build moderation review UI in the app** (RULES.md > Moderation is Dashboard-only) - review happens in the [Stream Dashboard](https://dashboard.getstream.io).
 
 ### Use-case recipes
 
@@ -309,7 +309,7 @@ When building apps that combine multiple products, read each relevant `reference
 - **Combined token route:** `/api/token` returns tokens for each product (`{ chatToken, videoToken, feedToken, apiKey }`). Upsert only the requesting user - never seed demo users.
 - **Video + Feeds (Livestreaming):** Feed hub separates `type === "live"` activities as prominent live cards. "Go Live" posts a live activity via `/api/feed/live`. "End Stream" removes it.
 - **Video + Chat (Livestreaming):** Chat alongside video on the watch screen. Use `livestream` channel type - one channel per stream, keyed by call ID. Create the chat channel in the `/api/token` route.
-- **Moderation (all use cases):** Run Moderation CLI setup commands from `references/MODERATION.md` (App Integration -> Setup), adjusting channel type name. **Never build moderation review UI** (RULES.md > Moderation is Dashboard-only) - review happens in the [Stream Dashboard](https://beta.dashboard.getstream.io).
+- **Moderation (all use cases):** Run Moderation CLI setup commands from `references/MODERATION.md` (App Integration -> Setup), adjusting channel type name. **Never build moderation review UI** (RULES.md > Moderation is Dashboard-only) - review happens in the [Stream Dashboard](https://dashboard.getstream.io).
 
 ---
 

@@ -68,7 +68,7 @@ Use Shadcn components, Tailwind utilities, and - if the user approved them in St
 
 ### Moderation
 
-**Never build moderation review UI in the app** (RULES.md > Moderation is Dashboard-only). All review happens in the [Stream Dashboard](https://beta.dashboard.getstream.io). The app's role is **CLI setup only** (blocklists, automod config in Step 3).
+**Never build moderation review UI in the app** (RULES.md > Moderation is Dashboard-only). All review happens in the [Stream Dashboard](https://dashboard.getstream.io). The app's role is **CLI setup only** (blocklists, automod config in Step 3).
 
 ### Reference Blueprints
 
