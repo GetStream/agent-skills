@@ -2,7 +2,7 @@
 
 For upgrading an existing React Native / Expo app's Stream SDK to a newer major/minor - "upgrade `stream-chat-react-native` to v9", "migrate Chat RN to the new SDK", "bump my Stream Video / Feeds version", "Feeds v2 -> v3". **Docs-driven and read-only until you've fetched the guide** - never apply a migration from memory ([`RULES.md`](RULES.md) > Package version and docs discipline).
 
-> **Rules:** [`RULES.md`](RULES.md) (docs authority via [`references/DOCS.md`](references/DOCS.md) manifests, runtime lane ownership, New Architecture, secrets) and the cross-cutting [`../stream/RULES.md`](../stream/RULES.md). This track does **not** scaffold, provision, or authenticate - it edits an existing project, so **skip Step 0.5 credentials and the scaffold path in [`builder.md`](builder.md)**. **Preserve the project's runtime lane, package manager, and lockfile.**
+> **Rules:** [`RULES.md`](RULES.md) (docs authority via [`references/DOCS.md`](references/DOCS.md) manifests, runtime lane ownership, New Architecture, secrets). For CLI commands or routing to another Stream skill, read [`../stream/SKILL.md`](../stream/SKILL.md). This track does **not** scaffold, provision, or authenticate - it edits an existing project, so **skip Step 0.5 credentials and the scaffold path in [`builder.md`](builder.md)**. **Preserve the project's runtime lane, package manager, and lockfile.**
 
 ---
 
@@ -26,7 +26,7 @@ Migrations are where APIs move, so **memory is stale here by definition.** Every
 | "The examples in migrate.md list the changes" | Those are scope illustrations. The fetched AI guide is the authoritative list. |
 | "The guide didn't mention this symbol, but I remember it" | Not in the guide AND not in `node_modules` = it doesn't exist for this version. Drop it or ask. |
 | "The docs page is close enough for the API name" | Confirm the exact export in `node_modules` for the installed version - docs can lag or lead the pinned build. |
-| "WebFetch failed, I'll wire it from memory" | Failure -> `stream-docs`, then stop and ask. Never memory. |
+| "Couldn't fetch the docs, I'll wire it from memory" | If `getstream docs` fails, stop and ask. Never memory. |
 | "It compiled, so it's right" | Compiling is not correctness - a wrong-but-typed symbol still ships a broken migration. |
 
 **Red flags - STOP:**
@@ -34,7 +34,7 @@ Migrations are where APIs move, so **memory is stale here by definition.** Every
 - Reaching for a remembered v8 or v9 name instead of the one in the guide.
 - Applying a change from the examples in this file without re-confirming it against the guide.
 - Adding a native / peer requirement or a version number you did not read from the guide or docs.
-- Continuing after a failed fetch instead of escalating to `stream-docs` or asking.
+- Continuing after a failed `getstream docs` instead of asking.
 
 ---
 
@@ -67,7 +67,7 @@ For **Video RN** or **Feeds RN** (including **Feeds v2 -> v3**), discover the gu
 
 Read the guide(s) in full before touching code; extract every **prerequisite, breaking change, rename, removed export, new peer dependency, native-config change, and theme / token change** into a working checklist you drive from - this checklist, not memory, is what you apply in M3.
 
-**Hard gate ([`RULES.md`](RULES.md)):** if no guide loads, hand the lookup to the `stream-docs` skill. If neither the guide nor `stream-docs` confirms the steps, **stop and tell the user** - report that you could not confirm the upgrade path and ask how to proceed. Do not migrate from memory; a guess that happens to compile is still a guess.
+**Hard gate ([`RULES.md`](RULES.md)):** if no guide loads, use `getstream docs` lookup. If neither the guide nor the docs confirm the steps, **stop and tell the user** - report that you could not confirm the upgrade path and ask how to proceed. Do not migrate from memory; a guess that happens to compile is still a guess.
 
 ## M2.5: Clear the prerequisites gate (RN-specific)
 

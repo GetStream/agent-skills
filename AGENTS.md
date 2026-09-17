@@ -1,43 +1,35 @@
 # AGENTS.md - Codex entrypoint for the Stream skill pack
 
-The pack has a generic router (which includes the CLI), core specialists, and platform peers declared in [`skills/stream/peers.yaml`](skills/stream/peers.yaml).
+This repository contains the Stream skill pack. Skill source lives under `skills/`.
 
-**Router (start here):** [`skills/stream/SKILL.md`](skills/stream/SKILL.md) - classifies intent, dispatches to a sub-skill, and runs `getstream` CLI commands.
-**Rules (read once per session):** [`skills/stream/RULES.md`](skills/stream/RULES.md) - core web, CLI, docs, and peer-pack routing rules. Platform sub-skills can add their own `RULES.md`.
+**Router:** [`skills/stream/SKILL.md`](skills/stream/SKILL.md) - Stream overview, CLI discovery, and routing to platform skills. SDK documentation is available through `getstream docs`. Each platform skill contains its own integration guidance and supporting files.
 
 ## Sub-skills
 
 | Sub-skill | Use for |
 |---|---|
-| [`skills/stream-docs/SKILL.md`](skills/stream-docs/SKILL.md) | Look up SDK documentation through `getstream docs` (needs the CLI binary, no onboarding) |
 | [`skills/stream-react/SKILL.md`](skills/stream-react/SKILL.md) | **Default for web React/Next.js.** Scaffold, enhance, audit, or migrate a React/Next.js app with Chat/Video/Feeds/Moderation |
-| [`skills/stream-builder/SKILL.md`](skills/stream-builder/SKILL.md) | Framework-agnostic builder - only when named explicitly; web React/Next.js defaults to stream-react |
+| [`skills/stream-react-native/SKILL.md`](skills/stream-react-native/SKILL.md) | Build or integrate Stream Chat/Video/Feeds in React Native or Expo apps |
 | [`skills/stream-swift/SKILL.md`](skills/stream-swift/SKILL.md) | Build or integrate Stream Chat/Video/Feeds in Swift/SwiftUI/UIKit/iOS apps |
+| [`skills/stream-android/SKILL.md`](skills/stream-android/SKILL.md) | Build or integrate Stream in Android/Kotlin/Compose apps |
 | [`skills/stream-flutter/SKILL.md`](skills/stream-flutter/SKILL.md) | Build or integrate Stream Chat in Flutter apps (stream_chat_flutter and stream_chat_flutter_core) |
 | [`skills/stream-unity/SKILL.md`](skills/stream-unity/SKILL.md) | Build or integrate Stream Chat and Stream Video in Unity Engine projects (C#). Chat + Video - no Feeds SDK for Unity |
 | [`skills/stream-unreal/SKILL.md`](skills/stream-unreal/SKILL.md) | Build or integrate Stream Chat in Unreal Engine 5.7/5.8 projects (C++ and Blueprint). Chat only - no Video or Feeds SDK for Unreal |
-| [`skills/stream-feeds-migration/SKILL.md`](skills/stream-feeds-migration/SKILL.md) | Generate the v2 -> v3 Activity Feeds sync mapping by sampling the v2 app's live activities and reactions. No CLI and no project required - it emits a config object |
+| [`skills/stream-feeds-migration/SKILL.md`](skills/stream-feeds-migration/SKILL.md) | Generate the v2 -> v3 Activity Feeds sync mapping by sampling the v2 app's live activities and reactions |
 
-(Querying data and running CLI commands is handled by the router itself - see its **Stream CLI** section.)
+For Sendbird data migration, use the shared [`skills/stream/sendbird-data-migration.md`](skills/stream/sendbird-data-migration.md) runbook.
 
 ---
 
-## Codex-specific
+## Working on this repository
 
-- **`getstream` CLI first:** The web/platform build skills need the `getstream` binary. If it is missing, ask the user to install it from https://getstream.io and wait - do not fetch or run an install script. Onboarding (auth, org/app, credentials) runs through `getstream init`. `stream-docs` needs the binary for `getstream docs` but skips onboarding. **No CLI needed** for read-only/local-only tracks - a platform pack's **audit** (e.g. `stream-react` Track F) and **migrate** (e.g. `stream-react` Track M) inspect/edit local files and the live docs only, so they skip onboarding entirely.
-- **Batch shell** commands into single `bash -ce 'set -euo pipefail; ...'` invocations to minimize approval prompts.
-- **Browser sign-in** (`getstream init` / `getstream login`) needs a **separate** terminal invocation so the browser can open.
-- **Network:** scaffold (`npx`, `npm`) needs network - approve **once** per session when prompted.
-- **If terminal is denied:** print commands for the user to run locally; continue with Read/file work only.
-- **Builder flow (web):** for React/Next.js builds, onboard via `getstream init` then immediately execute Steps 0-7 from [`skills/stream-react/SKILL.md`](skills/stream-react/SKILL.md) (the default web pack). Use [`skills/stream-builder/SKILL.md`](skills/stream-builder/SKILL.md) only when the user names it explicitly. No prompts needed.
+- Keep skill instructions focused on workflows, observed integration pitfalls, command/docs pointers, and concrete verification. Use plain wording.
+- Use `getstream -h`, `getstream <command> -h`, and `getstream docs` for CLI and SDK reference details. Avoid duplicating that material in skills.
+- Tool permissions belong to the agent harness; avoid adding approval scripts or permission rules to skill prose.
+- In skill instructions, refer to files within the same skill by raw relative path: "Read migration.md".
+- For a file in another skill, name the skill and path: "Read stream skill's migration.md".
+- For another skill's SKILL.md, name only the skill: "Refer to stream skill".
+- When moving or removing skill files, update their callers and the README, then check local links. Run affected helper scripts when needed to verify behavior and report what was checked.
 - **ASCII only:** all files in this repo must contain ASCII characters only. No em/en dashes, smart quotes, ellipsis chars, arrows, checkmarks, or other non-ASCII glyphs - use plain ASCII equivalents (`-`, `'`, `"`, `...`, `->`, `OK`, etc.).
 
-## Install
-
-Install the `getstream` CLI from [getstream.io](https://getstream.io), then:
-
-```bash
-getstream skills
-```
-
-With no arguments this installs the default set (`stream`, `stream-builder`, `stream-docs`). `getstream init` also sets up your project (auth, org/app, credentials). Other skills install on demand via `getstream skills <name>`.
+Installation instructions are in [`README.md`](README.md#install).

@@ -12,9 +12,9 @@ Install the [Stream CLI](https://getstream.io/agent-skills/docs/installation/), 
 getstream skills
 ```
 
-With no arguments, `getstream skills` installs the default set - the `stream` router (which includes the CLI layer), `stream-builder`, and `stream-docs`. The web pack (`stream-react`) and platform packs (`stream-swift`, `stream-android`, `stream-react-native`, `stream-flutter`, `stream-unity`, `stream-unreal`), and `stream-feeds-migration` install on demand via `getstream skills <name>` the first time a task needs them. To set up a project at the same time (auth, org/app selection, credentials), run `getstream init` instead.
+Use `getstream skills <name>` to install a specific skill, such as `stream-react` or `stream-swift`. Run `getstream skills -h` for installation options. To set up a project (auth, org/app selection, credentials), run `getstream init`.
 
-Use `/stream` for generic routing, or invoke a skill directly with `/stream-react`, `/stream-builder`, `/stream-docs`, `/stream-swift`, `/stream-android`, `/stream-react-native`, `/stream-flutter`, `/stream-unity`, `/stream-feeds-migration`, or `/stream-unreal`. Step-by-step instructions are in the [installation guide](https://getstream.io/agent-skills/docs/installation/).
+Use `/stream` for generic routing, or invoke a skill directly with `/stream-react`, `/stream-swift`, `/stream-android`, `/stream-react-native`, `/stream-flutter`, `/stream-unity`, `/stream-feeds-migration`, or `/stream-unreal`. SDK documentation is available through `getstream docs`. Step-by-step instructions are in the [installation guide](https://getstream.io/agent-skills/docs/installation/).
 
 ## Skills
 
@@ -23,9 +23,7 @@ Each skill has a reference page on the docs site - the skill names below link to
 | Skill | Purpose | When to use |
 |---|---|---|
 | [`/stream`](https://getstream.io/agent-skills/docs/skills/stream/) | **Router + CLI** - classifies intent, dispatches, and runs `getstream` CLI commands | Start here; also handles data queries, app config, and onboarding |
-| [`/stream-docs`](https://getstream.io/agent-skills/docs/skills/stream-docs/) | Look up SDK documentation through the CLI's local docs (`getstream docs`), with citations | Explicit SDK token (Chat React, Video iOS, ...), "docs", "how do I ... in <framework>" |
 | [`/stream-react`](https://getstream.io/agent-skills/docs/skills/stream-react/) | Build, enhance, audit, migrate, or migrate-from-Sendbird a React / Next.js web app - the default for all web React work | "build me a ... app", "add Chat to this app", "audit my video integration", "upgrade stream-chat-react", "migrate from Sendbird", `stream-chat-react`, `@stream-io/video-react-sdk`, `@stream-io/feeds-react-sdk` |
-| [`/stream-builder`](https://getstream.io/agent-skills/docs/skills/stream-builder/) | Framework-agnostic builder - scaffold a new web app, or add Chat/Video/Feeds/Moderation to an existing one | Only when named explicitly ("use stream-builder"); web React work routes to `/stream-react` |
 | [`/stream-swift`](https://getstream.io/agent-skills/docs/skills/stream-swift/) | Build or integrate Stream in Swift/SwiftUI/UIKit/iOS apps | Swift, SwiftUI, UIKit, iOS, Xcode |
 | [`/stream-android`](https://getstream.io/agent-skills/docs/skills/stream-android/) | Build or integrate Stream in Android/Jetpack Compose apps | Android, Jetpack Compose, Kotlin, Android Studio, Gradle |
 | [`/stream-react-native`](https://getstream.io/agent-skills/docs/skills/stream-react-native/) | Create, build, or integrate Stream Chat or Stream Video React Native in RN CLI or Expo apps | React Native, Expo, `stream-chat-react-native`, `stream-chat-expo`, `@stream-io/video-react-native-sdk`, video call, livestream, audio room, ringing |
@@ -34,28 +32,13 @@ Each skill has a reference page on the docs site - the skill names below link to
 | [`/stream-unreal`](https://getstream.io/agent-skills/docs/skills/stream-unreal/) | Build or integrate Stream Chat in Unreal Engine 5.7/5.8 projects (C++ and Blueprint) - Chat only | Unreal, Unreal Engine, UE5, `.uproject`, `.uplugin`, UMG, widget blueprint, `UStreamChatClientComponent`, in-game chat |
 | `/stream-feeds-migration` | Generate the v2 -> v3 Activity Feeds sync mapping from the app's own live data | "what mapping do we need?", v3sync, v2 to v3, feeds migration, sync mapping, `extra_context`, a migrated activity missing its text/attachments/comments |
 
-The router (`/stream`) owns routing, the CLI layer (queries, app config, onboarding), and the cross-cutting rules in [`skills/stream/RULES.md`](skills/stream/RULES.md) (explained in [Rules Every Skill Follows](https://getstream.io/agent-skills/docs/concepts/skill-rules/)). Platform sub-skills can add their own `RULES.md`.
+The router ([`skills/stream/SKILL.md`](skills/stream/SKILL.md)) handles routing and CLI discovery. Each platform skill contains its own integration guidance and supporting files.
+
+For older CLI installations, [`stream-builder`](skills/stream-builder/SKILL.md) and [`stream-docs`](skills/stream-docs/SKILL.md) remain as compatibility entrypoints. They forward to platform-specific skills (React by default for web or generic app work) and `getstream docs`, respectively.
 
 ## What gets installed
 
-The skills are plain markdown. Installation and on-demand skill fetching run through the `getstream` CLI; the only other network touch is the optional frontend-skill packs the builder can add with your consent. The full trust model is documented in [Security and Trust](https://getstream.io/agent-skills/docs/concepts/security/).
-
-| Step | Trigger | What it does | Source |
-|---|---|---|---|
-| `getstream skills <name>` | Agent, on demand (or you) | Fetches a skill's markdown into your skills directory via the `getstream` CLI. | GitHub (`GetStream/agent-skills`) |
-| Frontend skill installs (builder only) | Agent asks first, then runs | Installs three third-party skill packs for UI scaffolding - see below. | GitHub (listed) |
-
-### Frontend skills (builder only)
-
-When you ask the agent to scaffold a new app or enhance an existing one via `/stream-builder`, Step 3 can install three helper skill packs. **The agent surfaces the full list and waits for your confirmation before running any install.** `/stream-react` never installs these - its builds rely on the Stream references plus Shadcn, and it only uses these packs if they are already present in the session.
-
-| Skill | Purpose | Source |
-|---|---|---|
-| `vercel-react-best-practices` | React/Next.js idioms | [`vercel-labs/agent-skills`](https://github.com/vercel-labs/agent-skills) |
-| `web-design-guidelines` | Generic UI design polish | [`vercel-labs/agent-skills`](https://github.com/vercel-labs/agent-skills) |
-| `frontend-design` | Frontend structure | [`anthropics/skills`](https://github.com/anthropics/skills) |
-
-Decline and the builder still runs - Stream reference files cover the SDK wiring; the frontend skills only tune generic UI quality. The docs skill never triggers these installs.
+Skills are Markdown instructions and supporting files, including helper scripts where needed. The `getstream` CLI installs them from this repository. Tool permissions are managed by your agent harness.
 
 ## What your agent can do
 
@@ -70,60 +53,43 @@ Decline and the builder still runs - Stream reference files cover the SDK wiring
 - **Plan a Feeds v2 -> v3 migration** - sample your v2 app's real activities and reactions and get back the sync `mapping` object, with the keys it deliberately left at their defaults (`/stream-feeds-migration`)
 - **Query live data** - "any active calls?", "show flagged messages", "list my channels" - natural language to the `getstream` CLI (`/stream`)
 - **Configure apps and moderation** - channel types, roles, permissions, blocklists, automod - via the `getstream` CLI (`/stream`)
-- **Answer SDK questions** - token patterns, strict mode, client/server instantiation, theme wiring (`/stream-react` or `/stream-docs`)
-- **Look up SDK docs** - ask questions about any Stream SDK, framework, or version; answers come from the CLI's local copy of the docs (`getstream docs`), with citations (`/stream-docs`)
+- **Answer SDK questions** - token patterns, strict mode, client/server instantiation, theme wiring (`/stream` or the relevant platform skill)
+- **Look up SDK docs** - use `getstream docs` for the relevant product, framework, and version
 
 ## How it works
 
-The `/stream` router classifies intent, runs `getstream` CLI commands itself (queries, app config, onboarding), and routes building and docs to dedicated sub-skills. Platform sub-skills such as `/stream-react-native` can also be invoked explicitly.
+The `/stream` router directs app work to platform skills and uses the `getstream` CLI for queries, app config, onboarding, and documentation. Platform skills such as `/stream-react-native` can also be invoked explicitly.
 
 | Intent | Skill |
 |---|---|
-| Build a new web app | `stream-react` (Track A) |
-| Add a product to an existing app | `stream-react` (Track E) |
-| Audit an existing Video integration | `stream-react` (Track F) |
-| Migrate / upgrade an SDK version | `stream-react` (Track M) |
-| Migrate a web app from Sendbird | `stream-react` (Track S) |
+| Build a new web app | `stream-react` |
+| Add a product to an existing web app | `stream-react` |
+| Audit an existing web integration | `stream-react` |
+| Migrate / upgrade a web SDK version | `stream-react` |
+| Migrate a web app from Sendbird | `stream-react` + `sendbird-migration.md` |
 | Data queries, app config, and CLI operations | `stream` (CLI, built in) |
-| SDK wiring during scaffold/enhance | `stream-react` + its `sdk.md` and `references/*.md` |
-| Framework-agnostic builds, only when named explicitly | `stream-builder` |
 | Build or integrate a React Native CLI/Expo app | `stream-react-native` + its `sdk.md` and `references/*.md` |
-| Look up the official SDK documentation (via `getstream docs`) | `stream-docs` (Track D) |
+| Look up SDK documentation | `stream` via `getstream docs` |
 | Build or integrate a Swift/iOS app | `stream-swift` (docs orchestrator: `docs-map.md` + `setup.md`) |
 | Build or integrate an Android app | `stream-android` + its `builder.md`, `sdk.md`, and `references/*.md` |
 | Build or integrate a Flutter app | `stream-flutter` + its `builder.md`, `sdk.md`, and `references/*.md` |
 | Build or integrate a Unity Engine project | `stream-unity` (docs orchestrator: `docs-map.md` + `setup.md` + `ui.md` + `platforms.md`) |
 | Build or integrate an Unreal Engine project | `stream-unreal` (docs orchestrator: `docs-map.md` + `setup.md` + `widgets.md` + `platforms.md`) |
-| Build or review a Feeds v2 -> v3 sync mapping | `stream-feeds-migration` (`SKILL.md` + `references/mapping-keys.md` + `scripts/fetch_sample.py`) |
+| Build or review a Feeds v2 -> v3 sync mapping | `stream-feeds-migration` (`SKILL.md` + `mapping-keys.md` + `fetch_sample.py`) |
 
-> **Routing precedence:** when user input contains a platform signal (e.g. `react native`, `expo`, `stream video rn`, `swift`, `ios`, `flutter`, `unity`, `unreal`), the matching platform peer wins over the web `stream-react` rows. The web pack is the default only when no platform signal is present; `stream-builder` runs only when the user names it explicitly.
-
-Cross-cutting rules (secrets, login screen, strict mode, package manager, base UI, moderation Dashboard-only, ...) live once in [`skills/stream/RULES.md`](skills/stream/RULES.md) and apply to every sub-skill - see [Rules Every Skill Follows](https://getstream.io/agent-skills/docs/concepts/skill-rules/) for the rationale behind each.
+> **Routing precedence:** when user input contains a platform signal (e.g. `react native`, `expo`, `swift`, `ios`, `flutter`, `unity`, `unreal`), use the matching platform skill. For web or generic app work, use `stream-react`. A framework takes precedence over an OS: an Unreal app for iOS uses `stream-unreal`.
 
 ## Contents
 
 - [`skills/stream/`](skills/stream/) - **Router + CLI**
-  - [`SKILL.md`](skills/stream/SKILL.md) - intent classifier, CLI command index, hand-off rules
-  - [`RULES.md`](skills/stream/RULES.md) - non-negotiable rules, stated once
-  - [`peers.yaml`](skills/stream/peers.yaml) - peer manifest (names, install commands, routing signals)
-- [`skills/stream-docs/`](skills/stream-docs/) - **Docs sub-skill**
-  - [`SKILL.md`](skills/stream-docs/SKILL.md) - documentation lookup through `getstream docs`, with cited sources
+  - [`SKILL.md`](skills/stream/SKILL.md) - Stream overview, CLI discovery, and skill routing
+  - [`sendbird-data-migration.md`](skills/stream/sendbird-data-migration.md) - shared Sendbird data export, import, and cutover workflow
 - [`skills/stream-react/`](skills/stream-react/) - **React web sub-skill** (default for web React / Next.js work)
-  - [`SKILL.md`](skills/stream-react/SKILL.md) - five tracks: scaffold (Steps 0-7), enhance, Video audit, SDK migration, Sendbird migration
-  - [`RULES.md`](skills/stream-react/RULES.md) - React/Next.js non-negotiable rules
-  - [`builder.md`](skills/stream-react/builder.md) - provisioning, use-case matching, page flow
-  - [`builder-ui.md`](skills/stream-react/builder-ui.md) - UI shell, login screen, theme, layout/sizing
-  - [`enhance.md`](skills/stream-react/enhance.md) - add Stream to an existing React app
-  - [`migrate.md`](skills/stream-react/migrate.md) - docs-driven SDK version migration (Track M)
-  - [`sendbird-migration.md`](skills/stream-react/sendbird-migration.md) - migrate a Sendbird app to Stream Chat React (Track S)
-  - [`sdk.md`](skills/stream-react/sdk.md) - cross-cutting SDK wiring patterns
-  - [`references/`](skills/stream-react/references/) - per-product setup + blueprints, `docs-map.md`, design-matching, custom-ui, Sendbird mapping tables
-- [`skills/stream-builder/`](skills/stream-builder/) - **Builder sub-skill** (explicit invocation only)
-  - [`SKILL.md`](skills/stream-builder/SKILL.md) - scaffold execution (Steps 0-7)
-  - [`builder-ui.md`](skills/stream-builder/builder-ui.md) - UI shell, login screen, theme
-  - [`enhance.md`](skills/stream-builder/enhance.md) - add Stream to an existing app
-  - [`sdk.md`](skills/stream-builder/sdk.md) - cross-cutting SDK wiring patterns
-  - [`references/`](skills/stream-builder/references/) - per-product setup, gotchas, and component blueprints
+  - [`SKILL.md`](skills/stream-react/SKILL.md) - build and integrate Stream, audit an app, upgrade SDKs, and verify the result
+  - [`design-matching.md`](skills/stream-react/design-matching.md) - implement and verify a reference design
+  - [`sendbird-migration.md`](skills/stream-react/sendbird-migration.md) - migrate a Sendbird app to Stream Chat React
+  - [`sendbird-mapping.md`](skills/stream-react/sendbird-mapping.md) - Sendbird-to-Stream symbol mappings and behavioral differences
+  - [`ai-support-agent.md`](skills/stream-react/ai-support-agent.md) - build an AI support agent with Stream Chat
 - [`skills/stream-swift/`](skills/stream-swift/) - **Swift/iOS sub-skill** (docs orchestrator)
   - [`SKILL.md`](skills/stream-swift/SKILL.md) - entrypoint: the `.md` docs convention, intent classifier, docs-lookup loop
   - [`RULES.md`](skills/stream-swift/RULES.md) - Swift/iOS non-negotiable rules + curated iOS pitfalls
@@ -157,8 +123,8 @@ Cross-cutting rules (secrets, login screen, strict mode, package manager, base U
   - [`platforms.md`](skills/stream-unity/platforms.md) - per-target player settings, IL2CPP and managed stripping, the Newtonsoft and WebRTC conflicts, Android/iOS/desktop/WebGL, and what push does and does not do
 - [`skills/stream-feeds-migration/`](skills/stream-feeds-migration/) - **Feeds v2 -> v3 migration sub-skill**
   - [`SKILL.md`](skills/stream-feeds-migration/SKILL.md) - the workflow: credentials into the environment, sample the v2 app, analyze, emit the `mapping` object, and state what the sample could not prove
-  - [`references/mapping-keys.md`](skills/stream-feeds-migration/references/mapping-keys.md) - the full key catalogue with defaults, id-precedence and rename resolution rules, and a worked v2-shape -> mapping-key example for each common case
-  - [`scripts/fetch_sample.py`](skills/stream-feeds-migration/scripts/fetch_sample.py) - stdlib-only sampler; reads credentials from the environment and writes `v3sync-sample.json`
+  - [`mapping-keys.md`](skills/stream-feeds-migration/mapping-keys.md) - the full key catalogue with defaults, id-precedence and rename resolution rules, and a worked v2-shape -> mapping-key example for each common case
+  - [`fetch_sample.py`](skills/stream-feeds-migration/fetch_sample.py) - stdlib-only sampler; reads credentials from the environment and writes `v3sync-sample.json`
 - [`skills/stream-unreal/`](skills/stream-unreal/) - **Unreal Engine sub-skill** (docs orchestrator; Chat only)
   - [`SKILL.md`](skills/stream-unreal/SKILL.md) - entrypoint: engine-version / feature-support / C++-vs-Blueprint gates, the `.md` docs convention plus the per-page Unreal-coverage caveat, and the source-of-truth ladder
   - [`RULES.md`](skills/stream-unreal/RULES.md) - Unreal non-negotiable rules + the pitfalls that fail silently (the `ApiKey`-before-`BeginPlay` trap, `TWeakObjectPtr` callbacks, client on the HUD, module deps)
