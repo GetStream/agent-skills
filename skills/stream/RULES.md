@@ -58,7 +58,7 @@ The `getstream` CLI owns onboarding, auth, and credentials. Drive it from the **
 
 ## Onboarding & phase order
 
-Onboarding is owned by the CLI: `getstream init` authenticates, selects or creates the org + app, and writes project credentials; `getstream env` provisions the app's server-side secret without exposing it. If `getstream` isn't installed, ask the user to install it from https://getstream.io and wait - never fetch or run an install script. **The `stream-docs` skill skips onboarding entirely** and never runs the CLI except an on-demand read-only probe when the SDK can't be resolved from user input.
+Onboarding is owned by the CLI: `getstream init` authenticates, selects or creates the org + app, and writes project credentials; `getstream env` provisions the app's server-side secret without exposing it. If `getstream` isn't installed, ask the user to install it from https://getstream.io and wait - never fetch or run an install script. **The `stream-docs` skill skips onboarding entirely** - it only runs `getstream docs`, which needs the binary but no `getstream init`.
 
 - Do not load `references/*.md` (in the `stream-builder` skill) until the user names the product(s).
 - Do not load `builder-ui.md` (in the `stream-builder` skill) before Step 4.

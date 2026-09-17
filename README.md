@@ -23,7 +23,7 @@ Each skill has a reference page on the docs site - the skill names below link to
 | Skill | Purpose | When to use |
 |---|---|---|
 | [`/stream`](https://getstream.io/agent-skills/docs/skills/stream/) | **Router + CLI** - classifies intent, dispatches, and runs `getstream` CLI commands | Start here; also handles data queries, app config, and onboarding |
-| [`/stream-docs`](https://getstream.io/agent-skills/docs/skills/stream-docs/) | Search live SDK documentation from getstream.io | Explicit SDK token (Chat React, Video iOS, ...), "docs", "how do I ... in <framework>" |
+| [`/stream-docs`](https://getstream.io/agent-skills/docs/skills/stream-docs/) | Look up SDK documentation through the CLI's local docs (`getstream docs`), with citations | Explicit SDK token (Chat React, Video iOS, ...), "docs", "how do I ... in <framework>" |
 | [`/stream-react`](https://getstream.io/agent-skills/docs/skills/stream-react/) | Build, enhance, audit, migrate, or migrate-from-Sendbird a React / Next.js web app - the default for all web React work | "build me a ... app", "add Chat to this app", "audit my video integration", "upgrade stream-chat-react", "migrate from Sendbird", `stream-chat-react`, `@stream-io/video-react-sdk`, `@stream-io/feeds-react-sdk` |
 | [`/stream-builder`](https://getstream.io/agent-skills/docs/skills/stream-builder/) | Framework-agnostic builder - scaffold a new web app, or add Chat/Video/Feeds/Moderation to an existing one | Only when named explicitly ("use stream-builder"); web React work routes to `/stream-react` |
 | [`/stream-swift`](https://getstream.io/agent-skills/docs/skills/stream-swift/) | Build or integrate Stream in Swift/SwiftUI/UIKit/iOS apps | Swift, SwiftUI, UIKit, iOS, Xcode |
@@ -71,7 +71,7 @@ Decline and the builder still runs - Stream reference files cover the SDK wiring
 - **Query live data** - "any active calls?", "show flagged messages", "list my channels" - natural language to the `getstream` CLI (`/stream`)
 - **Configure apps and moderation** - channel types, roles, permissions, blocklists, automod - via the `getstream` CLI (`/stream`)
 - **Answer SDK questions** - token patterns, strict mode, client/server instantiation, theme wiring (`/stream-react` or `/stream-docs`)
-- **Search live SDK docs** - ask questions about any Stream SDK, framework, or version; answers come verbatim from getstream.io with citations (`/stream-docs`)
+- **Look up SDK docs** - ask questions about any Stream SDK, framework, or version; answers come from the CLI's local copy of the docs (`getstream docs`), with citations (`/stream-docs`)
 
 ## How it works
 
@@ -88,7 +88,7 @@ The `/stream` router classifies intent, runs `getstream` CLI commands itself (qu
 | SDK wiring during scaffold/enhance | `stream-react` + its `sdk.md` and `references/*.md` |
 | Framework-agnostic builds, only when named explicitly | `stream-builder` |
 | Build or integrate a React Native CLI/Expo app | `stream-react-native` + its `sdk.md` and `references/*.md` |
-| Search the official SDK documentation (no CLI needed) | `stream-docs` (Track D) |
+| Look up the official SDK documentation (via `getstream docs`) | `stream-docs` (Track D) |
 | Build or integrate a Swift/iOS app | `stream-swift` (docs orchestrator: `docs-map.md` + `setup.md`) |
 | Build or integrate an Android app | `stream-android` + its `builder.md`, `sdk.md`, and `references/*.md` |
 | Build or integrate a Flutter app | `stream-flutter` + its `builder.md`, `sdk.md`, and `references/*.md` |
@@ -107,7 +107,7 @@ Cross-cutting rules (secrets, login screen, strict mode, package manager, base U
   - [`RULES.md`](skills/stream/RULES.md) - non-negotiable rules, stated once
   - [`peers.yaml`](skills/stream/peers.yaml) - peer manifest (names, install commands, routing signals)
 - [`skills/stream-docs/`](skills/stream-docs/) - **Docs sub-skill**
-  - [`SKILL.md`](skills/stream-docs/SKILL.md) - live documentation lookup with cited sources
+  - [`SKILL.md`](skills/stream-docs/SKILL.md) - documentation lookup through `getstream docs`, with cited sources
 - [`skills/stream-react/`](skills/stream-react/) - **React web sub-skill** (default for web React / Next.js work)
   - [`SKILL.md`](skills/stream-react/SKILL.md) - five tracks: scaffold (Steps 0-7), enhance, Video audit, SDK migration, Sendbird migration
   - [`RULES.md`](skills/stream-react/RULES.md) - React/Next.js non-negotiable rules
