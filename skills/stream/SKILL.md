@@ -53,7 +53,6 @@ This skill picks the track from the user's input. Building (web + platform) and 
 **Search Stream SDK documentation** -> use the `stream-docs` skill
 - "docs", "documentation", explicit SDK token (`Chat React`, `Video iOS`, `Feeds Node`, `Moderation`)
 - "how do I ... in <framework>", "how does <hook/component/method> work?", "what does <SDK thing> do?"
-- No CLI needed - answers come from getstream.io with citations
 
 ---
 
@@ -75,7 +74,7 @@ Scan the user's input for the signals below in order. The classifier is determin
 | "Add Chat/Video/Feeds to this app", "integrate Stream into", "upgrade/migrate ... to vN" - existing project, **and no peer signal present** | `stream-react` (web/Next.js, the default when no platform signal is given) |
 | Operational verb wrapped in how-to phrasing (e.g. "how do I list my calls?" - docs *or* CLI) | **Ask one disambiguator** |
 
-**Onboarding carve-outs.** `stream-docs` answers from documentation only - no shell, no project inspection. **Read-only / local-only tracks also skip onboarding:** a platform pack's **audit** track (e.g. `stream-react` Track F) and **migrate** track (e.g. `stream-react` Track M) only inspect/edit local files and the live docs - they do **not** provision orgs/apps or call `getstream api`, so they need no CLI onboarding. Only **build/integrate** work (scaffold a new app, add a product to an existing one) runs `getstream init` before doing real work.
+**Onboarding carve-outs.** `stream-docs` only runs `getstream docs` - no `getstream init`, no project inspection. **Read-only / local-only tracks also skip onboarding:** a platform pack's **audit** track (e.g. `stream-react` Track F) and **migrate** track (e.g. `stream-react` Track M) only inspect/edit local files and the live docs - they do **not** provision orgs/apps or call `getstream api`, so they need no CLI onboarding. Only **build/integrate** work (scaffold a new app, add a product to an existing one) runs `getstream init` before doing real work.
 
 **Docs vs platform packs.** A pure how-to or method-lookup question about an iOS/Android/etc. SDK symbol stays in `stream-docs` - don't pull in a platform pack for a documentation answer. Platform packs (e.g. `stream-swift`) are for *building or integrating* - scaffolding projects, wiring packages, generating views.
 
@@ -127,7 +126,7 @@ For a bare `/stream` (and whenever the user wants to pick a skill directly), out
 >
 > **Core**
 > - `/stream-react` - scaffold, enhance, audit, or migrate a React / Next.js web app with Stream (the default for web) - e.g. *"build me a chat app"*
-> - `/stream-docs` - search live SDK docs, with citations - e.g. *"how does useChannel work?"*
+> - `/stream-docs` - look up SDK docs via `getstream docs`, with citations - e.g. *"how does useChannel work?"*
 > - `/stream-builder` - the framework-agnostic builder (web defaults to `/stream-react`; pick this only if you name it explicitly)
 > - `/stream-feeds-migration` - build the v2 -> v3 Feeds sync mapping from your app's live data - e.g. *"what mapping do we need for our app?"*
 >

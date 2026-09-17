@@ -9,7 +9,7 @@ The pack has a generic router (which includes the CLI), core specialists, and pl
 
 | Sub-skill | Use for |
 |---|---|
-| [`skills/stream-docs/SKILL.md`](skills/stream-docs/SKILL.md) | Search live SDK documentation from getstream.io (no CLI required) |
+| [`skills/stream-docs/SKILL.md`](skills/stream-docs/SKILL.md) | Look up SDK documentation through `getstream docs` (needs the CLI binary, no onboarding) |
 | [`skills/stream-react/SKILL.md`](skills/stream-react/SKILL.md) | **Default for web React/Next.js.** Scaffold, enhance, audit, or migrate a React/Next.js app with Chat/Video/Feeds/Moderation |
 | [`skills/stream-builder/SKILL.md`](skills/stream-builder/SKILL.md) | Framework-agnostic builder - only when named explicitly; web React/Next.js defaults to stream-react |
 | [`skills/stream-swift/SKILL.md`](skills/stream-swift/SKILL.md) | Build or integrate Stream Chat/Video/Feeds in Swift/SwiftUI/UIKit/iOS apps |
@@ -24,7 +24,7 @@ The pack has a generic router (which includes the CLI), core specialists, and pl
 
 ## Codex-specific
 
-- **`getstream` CLI first:** The web/platform build skills need the `getstream` binary. If it is missing, ask the user to install it from https://getstream.io and wait - do not fetch or run an install script. Onboarding (auth, org/app, credentials) runs through `getstream init`. **No CLI needed** for `stream-docs`, nor for read-only/local-only tracks - a platform pack's **audit** (e.g. `stream-react` Track F) and **migrate** (e.g. `stream-react` Track M) inspect/edit local files and the live docs only, so they skip onboarding entirely.
+- **`getstream` CLI first:** The web/platform build skills need the `getstream` binary. If it is missing, ask the user to install it from https://getstream.io and wait - do not fetch or run an install script. Onboarding (auth, org/app, credentials) runs through `getstream init`. `stream-docs` needs the binary for `getstream docs` but skips onboarding. **No CLI needed** for read-only/local-only tracks - a platform pack's **audit** (e.g. `stream-react` Track F) and **migrate** (e.g. `stream-react` Track M) inspect/edit local files and the live docs only, so they skip onboarding entirely.
 - **Batch shell** commands into single `bash -ce 'set -euo pipefail; ...'` invocations to minimize approval prompts.
 - **Browser sign-in** (`getstream init` / `getstream login`) needs a **separate** terminal invocation so the browser can open.
 - **Network:** scaffold (`npx`, `npm`) needs network - approve **once** per session when prompted.
