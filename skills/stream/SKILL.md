@@ -60,7 +60,9 @@ First match wins:
 3. **Migrate from Sendbird:** use the platform-specific skill to migrate the
    code; to move the data itself (users, channels, message history), read
    sendbird-data-migration.md.
-4. **Docs / "how does X work" questions:** use the `getstream docs` command.
+4. **Docs / "how does X work" questions:** use the `getstream docs` command. In
+   a command substitution like `$(getstream docs <id>)` don't add `2>&1`. The
+   path you need is on stdout.
 5. **Query or mutate app data** ("list channels", "any flagged messages?",
    one-off API calls): use the `getstream api` command.
 6. **Genuinely ambiguous:** ask.
