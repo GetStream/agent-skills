@@ -48,7 +48,7 @@ peers:
     glob: "{.agents,.claude}/skills/stream-swift/SKILL.md"
     install: getstream skills stream-swift
     install_policy: silent
-    purpose: Build, integrate, or migrate Stream Chat/Video/Feeds in Swift/SwiftUI/UIKit/iOS apps. Includes package setup, auth wiring, view blueprints, and a Sendbird -> Stream Chat migration runbook.
+    purpose: Build, integrate, or migrate Stream Chat/Video/Feeds in Swift/SwiftUI/UIKit/iOS apps. Includes package setup, auth wiring, view blueprints, an AI assistant / LLM streaming / agentic runbook (StreamChatAI components), and a Sendbird -> Stream Chat migration runbook.
     signals:
       - swift
       - swiftui

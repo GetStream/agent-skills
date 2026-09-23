@@ -52,7 +52,17 @@ Then tune only what the vertical needs:
 
 Security (non-negotiable): **permission checks apply to client-side calls only - server-side calls (API key + secret) bypass all permissions.** Never rely on client permissions to protect sensitive actions, never give the app the secret or an `admin` role, and never grant elevated permissions to ordinary client users. Customize policies in the Dashboard (Chat > Roles & Permissions) or via the API (`UpdateChannelType`, `CreateRole`) - never from app code. Routes: [`docs-map.md`](docs-map.md) "Permissions and roles".
 
-## Client lifetime
+## AI and LLM integrations
+
+Full runbook: [`ai-integration.md`](ai-integration.md). The non-negotiables:
+
+- **The model runs on a backend agent, never in the app.** No LLM provider key, Stream secret, or admin token in the iOS target, and no "call the LLM from the device, then post the answer" shortcut. Use Stream's server AI SDK (`@stream-io/chat-ai-sdk`) or LangChain SDK, or the user's own agent that follows the same protocol.
+- **Streaming is message updates, not a custom transport.** The bot writes one message and partial-updates it; the app renders it with `StreamingMessageView` via the custom-attachment slot (`ai_generated` / `generating` extra data) and reacts to `ai_indicator.update` / `.clear` events; stop sends `AIIndicatorStopEvent`. Never poll, never send one message per chunk.
+- **The backend must set `ai_generated: true` (on create) and `generating: true/false` (while streaming / on finish, stop, and error) on the bot's messages.** The app cannot infer them; without them replies render as plain bubbles with raw markdown, or never stop "generating". Always tell the developer, and verify with the CLI check in [`ai-integration.md`](ai-integration.md) Step 3 before debugging Swift code.
+- **Stay on the pre-built components.** An AI chat is a messenger surface: `StreamChatSwiftUI` + the `StreamChatAI` package (SwiftUI, iOS 16+), not a hand-built list on the low-level client.
+- **Key everything by channel** (agent start, tool registration, indicator events), and treat client-tool arguments as untrusted model output.
+
+
 
 Initialize Stream clients **once** at app launch or in an owned service object. Never create a client in a SwiftUI `View` body, a computed property that re-runs on redraw, or a transient callback with no owner. Store controllers / view models / SDK helpers as owned state (`@State`, `@StateObject`, `ObservableObject`, or stored properties).
 

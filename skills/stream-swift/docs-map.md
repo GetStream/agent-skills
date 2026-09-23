@@ -162,8 +162,22 @@ Prefix `https://getstream.io/chat/docs/sdk/ios`:
 | Go-live checklist | `.../guides/go-live-checklist.md` |
 | Add video calls to chat | `.../guides/video-integration.md` |
 | Location sharing | `.../guides/location-sharing.md` |
-| AI integrations | `.../ai-integrations/overview.md` |
+| AI integrations (LLM assistants, streaming responses, agents) | see "Chat - AI integrations" below |
 | Migrate 4.x -> 5.x | `.../guides/migrating-from-4-to-5.md` |
+
+### Chat - AI integrations (LLM assistants, streaming, agents)
+
+Run [`ai-integration.md`](ai-integration.md) first - it carries the architecture (the model lives on a backend agent, never in the app), the `ai_indicator.*` / `ai_generated` protocol, and the wiring the docs leave to the sample app. Prefix `https://getstream.io/chat/docs/sdk/ios`:
+
+| Want to ... | Page (.md) |
+|---|---|
+| AI components: install, `StreamingMessageView`, `ComposerView`, `SpeechToTextButton`, `AITypingIndicatorView`, `SuggestionsView`, colors | `.../guides/ai-integrations.md` |
+| Use them inside `StreamChatSwiftUI` (streaming custom attachment, message resolver, thinking indicator via `Styles`) | `.../guides/ai-integrations/swiftui-integration.md` |
+| Client-side MCP tools (agent triggers native actions on the device) | `.../guides/ai-integrations/client-side-tools.md` |
+| Backend agent with the Vercel AI SDK (`@stream-io/chat-ai-sdk`) | `.../guides/ai-integrations/stream-chat-ai-sdk.md` |
+| Backend agent with LangChain (`@stream-io/chat-langchain-sdk`) | `.../guides/ai-integrations/stream-chat-langchain-sdk.md` |
+
+Code: components `GetStream/stream-chat-swift-ai` (`Sources/StreamChatAI`), reference iOS app `GetStream/chat-ai-samples` (`ios/AIComponents`), reference backends `chat-ai-samples/ai-sdk-sample` and `langchain-sample`.
 
 ### Chat - best practices and limits
 
@@ -331,6 +345,7 @@ For a specific UI customization or feature the docs do not cover - an exact `Vie
 | Chat SwiftUI | `stream-chat-swiftui` | `Sources/` | `DemoAppSwiftUI` |
 | Video (SwiftUI + UIKit) | `stream-video-swift` | `Sources/` | `DemoApp` (SwiftUI), `DemoAppUIKit` |
 | Feeds | `stream-feeds-swift` | `Sources/` (StreamFeeds) | `DemoApp` |
+| Chat AI components | `stream-chat-swift-ai` | `Sources/StreamChatAI` | the ChatGPT-style app in `chat-ai-samples` (`ios/AIComponents`) |
 
 How to search (prefer the version-accurate local checkout - no network, matches what the project compiles):
 
