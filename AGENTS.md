@@ -10,7 +10,7 @@ The pack has a generic router (which includes the CLI), core specialists, and pl
 | Sub-skill | Use for |
 |---|---|
 | [`skills/stream-docs/SKILL.md`](skills/stream-docs/SKILL.md) | Look up SDK documentation through `getstream docs` (needs the CLI binary, no onboarding) |
-| [`skills/stream-react/SKILL.md`](skills/stream-react/SKILL.md) | **Default for web React/Next.js.** Scaffold, enhance, audit, or migrate a React/Next.js app with Chat/Video/Feeds/Moderation |
+| [`skills/stream-react/SKILL.md`](skills/stream-react/SKILL.md) | **Default for web React/Next.js.** Scaffold, enhance, audit, or migrate a React/Next.js app with Chat/Video/Feeds/Moderation, including AI assistants and agentic chat (`@stream-io/chat-react-ai`) |
 | [`skills/stream-builder/SKILL.md`](skills/stream-builder/SKILL.md) | Framework-agnostic builder - only when named explicitly; web React/Next.js defaults to stream-react |
 | [`skills/stream-swift/SKILL.md`](skills/stream-swift/SKILL.md) | Build or integrate Stream Chat/Video/Feeds in Swift/SwiftUI/UIKit/iOS apps, including AI assistants and agentic chat (StreamChatAI) |
 | [`skills/stream-flutter/SKILL.md`](skills/stream-flutter/SKILL.md) | Build or integrate Stream Chat in Flutter apps (stream_chat_flutter and stream_chat_flutter_core) |

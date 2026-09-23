@@ -122,6 +122,14 @@ and memory - fetch it.
 - Applying a version upgrade without having read the matching release guide.
 - Implementing after a failed fetch instead of escalating to `stream-docs` or asking the user.
 
+## AI and LLM integrations
+
+Runbook: [`ai-integration.md`](ai-integration.md); shared contract: [`../stream/ai-backend-contract.md`](../stream/ai-backend-contract.md). The non-negotiables:
+
+- **The model runs on a backend agent - a long-lived process, never the browser and never a Next.js route handler / serverless function.** No LLM provider key, Stream secret, or admin token in the client bundle.
+- **Always state the backend contract** (`ai_generated`, one partially-updated message, `ai_indicator.*`, honor stop) to the developer, and run its CLI check before debugging React code.
+- **Stay on the prebuilt components, docs-first** - `stream-chat-react` + `@stream-io/chat-react-ai`, from the AI pages in [`references/docs-map.md`](references/docs-map.md).
+
 ## Package manager
 
 - **Track A scaffold:** always use `npm`, never bun, and pass `--legacy-peer-deps` when installing Stream packages.

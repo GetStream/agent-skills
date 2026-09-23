@@ -101,11 +101,14 @@ First-class prebuilt features the common-path blueprints don't cover. Most need 
 
 ## Chat React - Advanced Guides
 
+For the AI rows (AI assistant, streaming, LangChain, AI SDK), run [`../ai-integration.md`](../ai-integration.md) first - it picks between these pages.
+
 | Trigger keywords (in the user's request) | Topic | Fetch first |
 |---|---|---|
-| AI assistant, AI chat, streaming AI response, typewriter effect, AI bot | AI Integrations | https://getstream.io/chat/docs/sdk/react/guides/ai-integrations.md |
-| LangChain | Stream Chat LangChain SDK | https://getstream.io/chat/docs/sdk/react/guides/ai-integrations/stream-chat-langchain-sdk.md |
-| AI SDK (Vercel), Stream Chat AI SDK | Stream Chat AI SDK | https://getstream.io/chat/docs/sdk/react/guides/ai-integrations/stream-chat-ai-sdk.md |
+| AI assistant, AI chat, ChatGPT clone, LLM, AI bot, `StreamingMessage`, `AIMessageComposer`, `SpeechToTextButton`, AI states | AI Integrations (components) | https://getstream.io/chat/docs/sdk/react/guides/ai-integrations.md |
+| streaming AI response, typewriter effect, `isMessageAIGenerated`, `StreamedMessageText`, `AIStateIndicator`, thinking indicator, stop generating, `StopAIGenerationButton`, AI composer | AI SDK Integration | https://getstream.io/chat/docs/sdk/react/guides/ai-integrations/sdk-integration.md |
+| LangChain, LangChain agent backend | Stream Chat LangChain SDK | https://getstream.io/chat/docs/sdk/react/guides/ai-integrations/stream-chat-langchain-sdk.md |
+| AI SDK (Vercel), Stream Chat AI SDK, AI agent backend, client tools, Mem0, conversation titles | Stream Chat AI SDK | https://getstream.io/chat/docs/sdk/react/guides/ai-integrations/stream-chat-ai-sdk.md |
 | advanced search, message search, search filters | Advanced Search | https://getstream.io/chat/docs/sdk/react/guides/advanced-search.md |
 | multiple channel lists, multiple lists, several channel lists | Multiple Lists | https://getstream.io/chat/docs/sdk/react/guides/multiple-channel-lists.md |
 | channel list infinite scroll, paginate channels, load more channels | Infinite Scroll | https://getstream.io/chat/docs/sdk/react/guides/channel-list-infinite-scroll.md |
