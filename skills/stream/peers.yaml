@@ -36,7 +36,7 @@ peers:
     glob: "{.agents,.claude}/skills/stream-react/SKILL.md"
     install: getstream skills stream-react
     install_policy: silent
-    purpose: "Default web pack: scaffold, enhance, audit, or migrate a React / Next.js app with Stream Chat/Video/Feeds/Moderation. Picked for all web React work unless stream-builder is named explicitly. Routed via SKILL.md prose (the no-platform-signal default), not signal matching - so a bare 'react' token never collides with stream-react-native."
+    purpose: "Default web pack: scaffold, enhance, audit, or migrate a React / Next.js app with Stream Chat/Video/Feeds/Moderation, including AI assistants / LLM streaming / agentic chat (@stream-io/chat-react-ai components). Picked for all web React work unless stream-builder is named explicitly. Routed via SKILL.md prose (the no-platform-signal default), not signal matching - so a bare 'react' token never collides with stream-react-native."
 
   - name: stream-builder
     glob: "{.agents,.claude}/skills/stream-builder/SKILL.md"
@@ -114,7 +114,7 @@ peers:
     glob: "{.agents,.claude}/skills/stream-react-native/SKILL.md"
     install: getstream skills stream-react-native
     install_policy: silent
-    purpose: Create, build, or integrate Stream Chat and Stream Video React Native in React Native CLI and Expo apps. Includes package setup, auth wiring, calling lifecycle, and Chat/Video UI blueprints.
+    purpose: Create, build, or integrate Stream Chat and Stream Video React Native in React Native CLI and Expo apps. Includes package setup, auth wiring, calling lifecycle, Chat/Video UI blueprints, and an AI assistant / LLM streaming / agentic runbook (@stream-io/chat-react-native-ai components).
     signals:
       - react native
       - react-native
@@ -127,6 +127,7 @@ peers:
       - chat react native
       - stream chat rn
       - "@stream-io/video-react-native-sdk"
+      - "@stream-io/chat-react-native-ai"
       - stream video react native
       - stream video rn
       - video rn

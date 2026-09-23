@@ -12,7 +12,7 @@ Pick the manifest set that matches the requested product. Most requests touch on
 
 | Manifest | Use for |
 |---|---|
-| `https://getstream.io/chat/docs/sdk/react-native/llms.txt` | Primary source for Stream Chat React Native UI SDK: installation, packages, components, contexts, theming, customization, UI cookbook, offline, push, New Architecture, native handlers, migration guides. |
+| `https://getstream.io/chat/docs/sdk/react-native/llms.txt` | Primary source for Stream Chat React Native UI SDK: installation, packages, components, contexts, theming, customization, UI cookbook, offline, push, New Architecture, native handlers, migration guides, AI integrations (`ai-integrations` pages: AI components, SDK integration, AI SDK / LangChain backends). |
 | `https://getstream.io/chat/docs/react-native/llms.txt` | Secondary source for low-level Chat API/client topics: tokens, users, channels, messages, query syntax, permissions, events, webhooks, push provider setup, imports/exports. |
 
 ### Video (React Native)

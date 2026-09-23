@@ -167,7 +167,7 @@ Prefix `https://getstream.io/chat/docs/sdk/ios`:
 
 ### Chat - AI integrations (LLM assistants, streaming, agents)
 
-Run [`ai-integration.md`](ai-integration.md) first - it carries the architecture (the model lives on a backend agent, never in the app), the `ai_indicator.*` / `ai_generated` protocol, and the wiring the docs leave to the sample app. Prefix `https://getstream.io/chat/docs/sdk/ios`:
+Run [`ai-integration.md`](ai-integration.md) first - it carries the wiring the docs leave to the sample app and links the shared backend contract (the model lives on a backend agent, never in the app; the `ai_generated` / `generating` / `ai_indicator.*` protocol). Prefix `https://getstream.io/chat/docs/sdk/ios`:
 
 | Want to ... | Page (.md) |
 |---|---|
