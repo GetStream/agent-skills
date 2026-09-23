@@ -39,7 +39,7 @@ Follow the reference app (Step 3). The screen is built on the **low-level client
 
 ### Shape B - a bot inside an existing Stream messenger
 
-**There is no first-party bridge on v7.** The Chat Compose SDK has no AI awareness - no `ai_generated` handling, no typewriter, no stop button - and the AI package cannot supply one because it does not depend on the SDK. Wire it yourself through `ChatComponentFactory` ([`references/CHAT-COMPOSE.md`](references/CHAT-COMPOSE.md), [`design-matching.md`](design-matching.md)):
+The AI components are a separate artifact on every Stream platform, and the Chat Compose SDK carries the `ai_indicator.*` events but no AI rendering - same split as iOS. So the wiring is yours to write, through `ChatComponentFactory` ([`references/CHAT-COMPOSE.md`](references/CHAT-COMPOSE.md), [`design-matching.md`](design-matching.md)):
 
 - **The AI bubble:** override `MessageTextContent(message, currentUser, onLongItemClick, onLinkClick, onUserMentionClick)`. When the message is AI-generated, render `StreamingText(text = message.text, animate = <generating>)`; otherwise delegate to `super`. This is the narrowest slot that works - do **not** take `MessageContainer` or `MessageContent`, which would drop avatars, grouping, reactions, replies, and status ([`RULES.md`](RULES.md) "Matching a reference design").
 - **The stop button:** the default composer has no AI state. Override `MessageComposerTrailingContent` (or `MessageComposerSendButton`) to show a stop control while the indicator state is thinking or generating.
