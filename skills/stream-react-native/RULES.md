@@ -253,11 +253,11 @@ A single RN app may run both `stream-chat-react-native` (or `stream-chat-expo`) 
 
 ## AI and LLM integrations
 
-Runbook: [`ai-integration.md`](ai-integration.md); shared contract: [`../stream/ai-backend-contract.md`](../stream/ai-backend-contract.md). The non-negotiables:
+Runbook: [`ai-integration.md`](ai-integration.md). The non-negotiables:
 
 - **The model runs on a backend agent, never in the app.** No LLM provider key, Stream secret, or admin token in the JS bundle, `app.json`, or native config.
-- **Always state the backend contract** (`ai_generated`, one partially-updated message, `ai_indicator.*`, honor stop) to the developer, and run its CLI check before debugging RN code.
-- **Stay on the prebuilt components, docs-first** - the lane's Chat package + `@stream-io/chat-react-native-ai`, from the manifest's `ai-integrations` pages. The AI package has native code - rebuild after install (no Expo Go).
+- **Always tell the developer what the backend must send** (`ai_generated`, one partially-updated message, `ai_indicator.*`, honor stop, `generating`), and run the CLI check in [`ai-integration.md`](ai-integration.md) Step 3 before debugging RN code.
+- **Stay on the prebuilt components, docs-first** - the lane's Chat package + `@stream-io/chat-react-native-ai`, from the `ai-integrations` pages in `getstream docs chat-sdk/react-native`. The AI package has native code - rebuild after install (no Expo Go).
 
 ---
 

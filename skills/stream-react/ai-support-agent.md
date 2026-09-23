@@ -39,7 +39,7 @@ cat $(getstream docs platform)/webhooks.md               # event_hooks registrat
 
 ```
 customer message -> message.new webhook -> verify, drop bot echoes, return 200 in <3s,
-fire-and-forget the turn -> load channel history -> LLM call (with tools) ->
+run the turn in after() -> load channel history -> LLM call (with tools) ->
 ai_indicator THINKING -> GENERATING -> send message (ai_generated: true) -> clear
 ```
 
@@ -51,13 +51,16 @@ ai_indicator THINKING -> GENERATING -> send message (ai_generated: true) -> clea
 - **The HMAC signature is the authentication.** Don't also gate on `x-api-key` - it's
   redundant with the signature and breaks behind some proxies (the docs' header table
   suggests otherwise; the signature check is what counts).
-- **Return in <3s.** Fire-and-forget the turn; `export const maxDuration = 300` keeps the
-  function alive to finish it.
+- **Return in <3s.** Run the turn in `after()` from `next/server` and return;
+  `export const maxDuration = 300` gives it time to finish. A bare un-awaited promise can
+  be cut off once the response is sent.
 - **Bot-loop guard.** Drop events whose sender is the bot or whose message has
   `ai_generated` - or the bot answers itself forever.
 - **Streaming persists once.** `ephemeralUpdateMessage` broadcasts partials (no DB write);
   exactly one `partialUpdateMessage` persists the final text - and make that final persist
   unconditional: gating it on "text changed" truncates the saved message to the first chunk.
+  Set `generating: true` on partials and `false` on the final update, stop, and error -
+  iOS clients depend on it.
 
 ## Connect the webhook in dev - required, or the bot stays silent
 
@@ -114,10 +117,11 @@ cloud-prefixed (`gcp-us-central1` - a bare `us-east-1` fails with `ENOTFOUND`).
 
 ## Client
 
-`@stream-io/chat-react-ai` renders the streaming message and consumes the `ai_indicator`
-events. Show bot identity as a non-interactive header: name, an "AI agent" badge (a chip,
-not a button), one-line description. Vercel AI SDK v5/v6 tools use
-`tool({ inputSchema })` - not `parameters`; v4 examples compile but never register the tool.
+Follow ai-integration.md for the streaming UI, the fields the client depends on, and the
+CLI check that confirms the bot sets them. Show bot identity as a non-interactive header:
+name, an "AI agent" badge (a chip, not a button), one-line description. Vercel AI SDK
+v5/v6 tools use `tool({ inputSchema })` - not `parameters`; v4 examples compile but never
+register the tool.
 
 ## Reference implementation
 

@@ -5,7 +5,7 @@ description:
   in React / Next.js web apps - the default skill for web work. Scaffold a new
   app, add Stream to an existing project, review an integration, upgrade an SDK
   major, or migrate from Sendbird. Covers team messaging, DMs, video
-  conferencing, livestreaming, and social feeds. Web React only - React Native
+  conferencing, livestreaming, social feeds, and AI assistants. Web React only - React Native
   uses stream-react-native."
 license: See LICENSE in repository root
 metadata:
@@ -160,6 +160,11 @@ For the code migration, follow sendbird-migration.md. When the user also wants
 their existing data moved (users, channels, message history), follow the stream
 skill's sendbird-data-migration.md.
 
-## Support bot, help desk, AI agent
+## AI assistants, support bots, agents
 
-Follow ai-support-agent.md.
+The model runs on a backend agent, never in the browser: no LLM provider key or Stream
+secret in the client bundle.
+
+- Support bot, help desk, RAG chat: follow ai-support-agent.md.
+- ChatGPT-style app, an assistant inside an existing chat, streaming answers, stop
+  generating, client tools: follow ai-integration.md.
