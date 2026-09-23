@@ -52,6 +52,14 @@ Then tune only what the vertical needs:
 
 Security (non-negotiable): **permission checks apply to client-side calls only - server-side calls (API key + secret) bypass all permissions.** Never rely on client permissions to protect sensitive actions, never give the app the secret or an `admin` role, and never grant elevated permissions to ordinary client users. Customize policies in the Dashboard (Chat > Roles & Permissions) or via the API (`UpdateChannelType`, `CreateRole`) - never from app code. Routes: [`docs-map.md`](docs-map.md) "Permissions and roles".
 
+## AI and LLM integrations
+
+Runbook: [`ai-integration.md`](ai-integration.md); shared contract: [`../stream/ai-backend-contract.md`](../stream/ai-backend-contract.md). The non-negotiables:
+
+- **The model runs on a backend agent, never in the app.** No LLM provider key, Stream secret, or admin token in the iOS target.
+- **Always state the backend contract** (`ai_generated`, `generating: true/false`, one partially-updated message, `ai_indicator.*`, honor stop) to the developer, and run its CLI check before debugging Swift code. On iOS a missing `generating` means jumping text or a message that never stops "generating".
+- **Stay on the pre-built components.** An AI chat is a messenger surface: `StreamChatSwiftUI` + the `StreamChatAI` package (SwiftUI, iOS 16+), not a hand-built list on the low-level client.
+
 ## Client lifetime
 
 Initialize Stream clients **once** at app launch or in an owned service object. Never create a client in a SwiftUI `View` body, a computed property that re-runs on redraw, or a transient callback with no owner. Store controllers / view models / SDK helpers as owned state (`@State`, `@StateObject`, `ObservableObject`, or stored properties).
