@@ -41,9 +41,11 @@ Follow the reference app (Step 3). The screen is built on the **low-level client
 
 The AI components are a separate artifact on every Stream platform, and the Chat Compose SDK carries the `ai_indicator.*` events but no AI rendering - same split as iOS. So the wiring is yours to write, through `ChatComponentFactory` ([`references/CHAT-COMPOSE.md`](references/CHAT-COMPOSE.md), [`design-matching.md`](design-matching.md)):
 
-- **The AI bubble:** override `MessageTextContent(message, currentUser, onLongItemClick, onLinkClick, onUserMentionClick)`. When the message is AI-generated, render `StreamingText(text = message.text, animate = <generating>)`; otherwise delegate to `super`. This is the narrowest slot that works - do **not** take `MessageContainer` or `MessageContent`, which would drop avatars, grouping, reactions, replies, and status ([`RULES.md`](RULES.md) "Matching a reference design").
-- **The stop button:** the default composer has no AI state. Override `MessageComposerTrailingContent` (or `MessageComposerSendButton`) to show a stop control while the indicator state is thinking or generating.
-- **The thinking indicator:** place `AITypingIndicator` between the message list and the composer, driven by the events below.
+- **The AI bubble:** override `MessageTextContent(params: MessageTextContentParams)`. When `params.message` is AI-generated, render `StreamingText(text = params.message.text, animate = <generating>)`; otherwise delegate to `super`. This is the narrowest slot that works - do **not** take `MessageContainer` or `MessageContent`, which would drop avatars, grouping, reactions, replies, and status ([`RULES.md`](RULES.md) "Matching a reference design").
+- **The stop button:** the default composer has no AI state. Override `MessageComposerTrailingContent(params)` (or `MessageComposerSendButton(params)`) to show a stop control while the indicator state is thinking or generating.
+- **The thinking indicator:** there is no slot between the message list and the composer - `ChannelScreen`'s `DefaultBottomBarContent` is `internal`. The way in is to override `ChatComponentFactory.MessageComposer(params)`, emit `AITypingIndicator` above it, and call `super.MessageComposer(params)` for the real composer. Additive, and nothing internal gets reimplemented.
+
+**Every `ChatComponentFactory` slot takes a single `params` object in v7** (`MessageTextContentParams`, `MessageComposerTrailingContentParams`, ...), not positional arguments - that changed from v6. Confirm the fields against `ChatComponentFactoryParams.kt` at the version the project resolves.
 - **Keep the app's other overrides.** Add to the existing factory, do not replace it.
 
 Read the AI-generated and generating flags off `Message.extraData` (`"ai_generated"`, `"generating"`), which is what the backend contract puts there.
@@ -108,7 +110,7 @@ internal fun Message.isFromAi(): Boolean {
 ## Pitfalls the docs do not shout about
 
 - **`extraData` values are whatever JSON delivered.** Compare `extraData["generating"] == true`; do not cast to `Boolean` blind, and do not assume the key is present on older messages.
-- **Streamed chunks are message edits.** Expect an "Edited" label on AI replies in the bundled Compose message UI, and suppress it for AI messages in shape B.
+- **Streamed chunks are message edits.** Expect an "Edited" label on AI replies in the bundled Compose message UI. It is driven by `message.messageTextUpdatedAt` inside the message footer, so suppressing it for AI messages means overriding `MessageFooterContent` - there is no flag for it.
 - **`ChatComposer` is not `MessageComposer`.** It is a standalone AI composer with its own state; it does not read the Chat SDK's composer controller, so attachments, commands, and slow mode are yours to wire.
 - **Permissions:** `SpeechToTextButton` needs `RECORD_AUDIO` (the sample declares it in its manifest) and dictation depends on an on-device recognizer - feature-detect and hide the button where it is unavailable rather than failing at tap. Add camera / media permissions only if you enable those composer inputs.
 - **Local backend:** the emulator reaches the host at `10.0.2.2`, a physical device needs the machine's LAN IP or a tunnel. Keep the agent URL in config, never hardcoded.
