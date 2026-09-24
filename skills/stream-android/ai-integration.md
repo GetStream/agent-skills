@@ -69,6 +69,8 @@ chatClient.channel(cid)
 
 The states the server sends are `AI_STATE_THINKING`, `AI_STATE_GENERATING`, `AI_STATE_EXTERNAL_SOURCES`, and `AI_STATE_ERROR`. **Match on those exact strings** - the sample app and the Compose Integration docs page both map `AI_STATE_CHECKING_SOURCES`, which the server never sends, so that state silently renders nothing.
 
+**`ai_indicator.update` must carry a `message_id` on Android, even when no message exists yet.** `AIIndicatorUpdatedEventDto` declares `message_id: String` as required, so an event without it fails Moshi parsing on the socket thread - the event is dropped **and the WebSocket disconnects and reconnects**. Thinking and external-sources events are exactly the ones a correct agent sends before it has created a message, so the symptom is "only Generating ever shows, and the connection looks flaky". iOS declares the same field optional (`messageId: MessageId?`), so a backend that works against iOS can break Android. Until the SDK relaxes it, have the agent send a placeholder (`message_id: ""`) on pre-message states, and tell the developer why.
+
 ## Step 3: Fill the gaps from the reference app
 
 The docs show each component; the **wiring around them** lives only in the reference app. Read the matching file instead of inventing it, and say the pattern came from the sample:
@@ -91,7 +93,7 @@ Component source: `GetStream/stream-chat-android-ai` (`stream-chat-android-ai-co
 
 ## Step 4: State the contract, leave a tripwire
 
-State the backend contract from [`../stream/ai-backend-contract.md`](../stream/ai-backend-contract.md) to the developer and run its CLI check before debugging Android code. Then leave a debug-only tripwire where you decide whether a message is AI-generated, so a missing `ai_generated` shows in Logcat instead of as a silent plain bubble (match your bot's user id):
+State the backend contract from [`../stream/ai-backend-contract.md`](../stream/ai-backend-contract.md) to the developer and run its CLI check before debugging Android code. If the `getstream` CLI is not set up for this project, read the same fields back over the REST API instead - the point is to inspect a real bot message, not to run that exact command. Then leave a debug-only tripwire where you decide whether a message is AI-generated, so a missing `ai_generated` shows in Logcat instead of as a silent plain bubble (match your bot's user id):
 
 ```kotlin
 private val warned = mutableSetOf<String>()
