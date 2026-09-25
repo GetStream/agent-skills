@@ -50,6 +50,16 @@ widget?** — not where the SDK happens to be called from.
   app must look identical before and after** — appearance-wise there should be no difference. Do
   **not** re-skin with `stream_chat_flutter` pre-built widgets; re-implementing a working custom UI is
   wasteful and changes the product against the developer's intent.
+
+  **`stream_chat_flutter_core` is headless, not bare** - it ships the state machines the Sendbird
+  collections gave you, and re-deriving them as a `ChangeNotifier` is the
+  [`RULES.md`](RULES.md) "no wrapper abstractions" anti-pattern *plus* a loss of correctness:
+
+  | Sendbird collection | Use, do not rebuild |
+  |---|---|
+  | `GroupChannelCollection` list + paging | `StreamChannelListController` (a `PagedValueNotifier`) driven by **`PagedValueListView`** - it requests the next page from the **item index**, not a scroll offset, and its trailing row follows the server's `nextPageKey` rather than a page-size guess |
+  | `GroupChannelCollectionHandler` (`onChannelsAdded/Updated/Deleted`) | already wired - `StreamChannelListController` subscribes to `client.on()` with a default `StreamChannelListEventHandler` |
+  | `MessageCollection` paging | `StreamChannel` + `LazyLoadScrollView` (see *Message pagination*) |
 - **Sendbird UI widgets** (anything a Sendbird package renders — `sendbird_uikit`'s `SBU…`
   screens/components, or any UI widget from `sendbird_chat_widget`): these **disappear when the SDK is
   removed**, so you must **replace each with a Stream widget** (§3) and match the Sendbird look
@@ -187,6 +197,12 @@ verified: regions you could not check are reported as **unverified**, never impl
 throwaway verification scaffold before delivery and re-verify on the real navigation path
 ([`RULES.md`](RULES.md) → "Project ownership"). Confirm Sendbird is fully removed
 (`grep -ri sendbird lib/` is empty).
+
+**With `stream_chat_persistence` attached, a hot restart does not clear the cache** - the client
+keeps serving cached channel state (read cursors included), so after a server-side reimport or a
+permissions change the app repaints the old state and a fix you already made looks broken.
+Uninstall/reinstall before concluding anything. And run the region comparison **before** sending a
+test message: it moves `last_message_at`, reordering the list and possibly adding a date divider.
 
 **When this pass applies.** Design fidelity is the default when migrating an existing app. If the user
 instead accepts Stream's defaults, the *look-matching* half of this pass — and
@@ -405,8 +421,12 @@ wouldn't surface this — a custom create/invite screen does):
 |---|---|
 | add / remove members | `channel.addMembers([...])` / `channel.removeMembers([...])` |
 | update channel name / data | `channel.updateName(...)` / `channel.update(...)` |
+
+After a **data migration**, note `Channel.name` resolves from `extraData['name']` (the import's
+custom fields arrive under `custom`), so a bulk-imported channel shows `"name": null` in a raw
+`QueryChannels` dump while rendering correctly in the app - check before re-running an import.
 | `ApplicationUserListQuery` (`.next()` / `hasNext`) — populating a member picker | `client.queryUsers(filter:, sort:, pagination: PaginationParams(offset:, limit:))` — or `StreamUserListController` (below) |
-| exclude members / search | `Filter.notIn('id', [...])`; `Filter.autoComplete('name', text)` — search on `name`, the field Stream autocompletes |
+| exclude members / search | `Filter.notIn('id', [...])`; `Filter.autoComplete('name', text)` - search on `name`, the field Stream autocompletes. **`Filter.or([...])` is rejected server-side with fewer than 2 expressions**, so a conditionally-built clause list must fall back to its single element instead of being wrapped - it only fails for the terms that match one clause, so it survives a happy-path test. |
 
 Prefer the **paged controllers** for list UIs — the same `PagedValue` pattern as the channel list:
 `StreamChannelListController` (channels) and `StreamUserListController` (users) both follow it with
@@ -432,6 +452,13 @@ is **final** (no setter) — to change a channel-list filter at runtime, constru
 | `channel.addReaction(message, key)` / `channel.deleteReaction(message, key)` | `channel.sendReaction(message, Reaction(type: key))` / `channel.deleteReaction(message, Reaction(type: key))` |
 | read `message.reactions` (each `Reaction` carries `.userIds`) | counts per type: `message.reactionGroups` (`Map<String, ReactionGroup>`); the current user's own: `message.ownReactions`; the most recent reactors (with `user`): `message.latestReactions`. There is no full per-type `userIds` list on the message — a "who reacted" sheet needs `latestReactions` or a server-side query. |
 | `AdminMessage` (announcements / system notices) | detect via `message.type == MessageType.system`; render via `StreamMessageListView`'s `builders.systemMessage`. Like Sendbird admin messages, these originate server-side — seed them via the CLI (§7), not the client. |
+| `SendingStatus` + a locally held map of in-flight messages | `message.state` (`isSending` / `isSendingFailed` / `isUpdated` / `isDeleted`). Stream keeps optimistic, failed and synced messages in **one** list, so **delete that merge rather than porting it**; exclude `isDeleted` and `parentId != null` from the channel view yourself, and use `isUpdated` for an "edited" label (not `updatedAt > 0`). |
+| `FileMessage` `progressHandler` | no callback - read `attachment.uploadState` (`Preparing` / `InProgress(uploaded, total)` / `Success` / `Failed`). |
+| voice message (`customType: 'voice/m4a'` + `KEY_VOICE_MESSAGE_DURATION` meta) | `Attachment(type: AttachmentType.voiceRecording, extraData: {'duration': <seconds>})`. **Detect both source conventions** - apps tag voice notes with `custom_type: 'voice/m4a'` *or* a **`KEY_INTERNAL_MESSAGE_TYPE`** meta array, and one app can contain both; match one only and the rest degrade to plain file bubbles. Sendbird stores duration in **ms**, Stream's voice UI reads **seconds**. |
+
+**`Attachment.id` is not stable - never use it as a widget key.** It is `id ?? const Uuid().v4()`
+and server payloads carry no attachment id, so a **fresh UUID is minted on every parse** and anything
+keyed on it loses identity on refetch. Use **`message.id`** (the `messageId` equivalent) instead.
 
 **Custom cards / structured payloads** — one canonical path: define a custom `Attachment(type:
 'my_type', extraData: {...})`, send it in `Message.attachments`, and render it by subclassing
@@ -489,18 +516,44 @@ composer reads `channel.state.members` and sets `Message.mentionedUsers` itself.
 
 ### Message pagination & jump-to-message
 
-Page a watched channel in either direction, and gate whatever triggers the load — a scroll-to-edge
-callback, a manual control, whatever the source used — on whether that end still has messages:
+Page a watched channel in either direction, keeping whatever triggers the load the source used (a
+scroll-to-edge callback, a manual control):
 
 | Sendbird | Stream |
 |---|---|
 | `loadPrevious()` / `loadNext()`, `MessageListParams(previous/nextResultSize)` | `StreamChannel.of(context).queryMessages(direction: QueryDirection.top)` (older) / `QueryDirection.bottom` (newer). Default page 30; `MessageListCore` paginates at 20. |
 | reverse + `startingPoint` (open mid-history) | `StreamChannel.of(context).loadChannelAtMessage(id)` — jump to a message (search result / push deep-link) |
 | `hasNext` (newer exist) | **`hasNewer = !channel.state.isUpToDate`.** After `watch()` you're at the tail (`isUpToDate == true`); it flips false only after a jump into the past (`loadChannelAtMessage`), and back to true once you page forward to the tail. |
-| `hasPrevious` (older exist) | **`hasOlder`: no public flag — derive it from the page size.** A top query returning **fewer messages than the requested limit** means older history is exhausted (the rule the SDK uses internally); until then, assume older may exist. |
+| `hasPrevious` (older exist) | **Do not track this yourself** - see below. |
 
-Derive both from the page size / `isUpToDate` — not from "are there any messages" — so a load-older /
-load-newer affordance turns off once that end is exhausted instead of triggering forever.
+**Never maintain your own "are there older messages" flag.** `StreamChannelState` already keeps a
+private `_topPaginationEnded` (set by the short-page rule) and an in-flight subject, and
+`queryMessages` early-returns on either, so repeat calls are free. Only the `queryTopMessages` /
+`queryBottomMessages` `Stream<bool>` loading flags are public - bind the spinner to the load
+*actually in flight*, never to a prediction:
+
+```dart
+final channelState = StreamChannel.of(context);
+LazyLoadScrollView(
+  // reverse:true list -> the OLDEST end is onEndOfPage, NOT onStartOfPage
+  onEndOfPage: () => channelState.queryMessages(direction: QueryDirection.top),
+  child: StreamBuilder<bool>(
+    stream: channelState.queryTopMessages,
+    initialData: false,
+    builder: (context, snap) => ListView.builder(
+      reverse: true,
+      itemCount: rows.length + ((snap.data ?? false) ? 1 : 0),  // spinner only while loading
+      ...
+    ),
+  ),
+);
+```
+
+Why a predicted flag breaks: a `ScrollController` listener fires **only on movement**, so on any
+channel whose content fits the viewport nothing scrolls, the prediction is never corrected, and the
+sentinel row **spins forever**. `MessageCollection.hasPrevious` was correct from `initialize()`, so
+the source app cannot show you this regression. `LazyLoadScrollView` also de-duplicates in-flight
+calls. Only `hasNewer` still comes from `isUpToDate`.
 
 ### Read receipts / unread counts — the model is inverted
 
@@ -519,7 +572,10 @@ The **app-total badge** (Sendbird's `SendbirdChat.getTotalUnreadMessageCount()`)
 Server-synced Stream `DateTime`s (`message.createdAt`, `channel.createdAt`) are **UTC** —
 `.toString()` renders `…ffffffZ`. (A just-sent message carries a local timestamp until the server
 echo replaces it.) If a preserved widget stringifies a timestamp (Sendbird's were epoch-ms →
-local), call `.toLocal()` so the rendered text matches the source.
+local), call `.toLocal()` so the rendered text matches the source. But a preserved helper taking `int`
+epoch-ms (the common shape, since Sendbird handed out `int`) needs **no** conversion: pass
+`createdAt.millisecondsSinceEpoch` and leave the helpers and their tests alone -
+`fromMillisecondsSinceEpoch` already returns local time.
 
 ---
 
