@@ -62,7 +62,7 @@ peers:
     glob: "{.agents,.claude}/skills/stream-android/SKILL.md"
     install: getstream skills stream-android
     install_policy: silent
-    purpose: Build or integrate Stream Chat/Video/Feeds in Android/Jetpack Compose apps. Includes package setup, auth wiring, and screen blueprints.
+    purpose: Build or integrate Stream Chat/Video/Feeds in Android/Jetpack Compose apps. Includes package setup, auth wiring, screen blueprints, and an AI assistant / LLM streaming / agentic runbook (stream-chat-android-ai-compose components).
     signals:
       - android
       - jetpack compose
@@ -73,6 +73,7 @@ peers:
       - gradle
       - .gradle
       - build.gradle
+      - stream-chat-android-ai-compose
 
   - name: stream-flutter
     glob: "{.agents,.claude}/skills/stream-flutter/SKILL.md"
