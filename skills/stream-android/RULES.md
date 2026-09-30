@@ -17,7 +17,7 @@ For Stream Feeds (V3), target the latest published `io.getstream:stream-feeds-an
 When you need the current Stream artifact version, use one of these sources:
 
 - Maven Central (Sonatype): `https://central.sonatype.com/artifact/io.getstream/stream-chat-android-compose/versions` (or `/stream-chat-android-ui-components/versions`, `/stream-video-android-ui-compose/versions`, `/stream-feeds-android-client/versions`)
-- Maven Central metadata, when you want it scriptable: `https://repo1.maven.org/maven2/io/getstream/<artifact>/maven-metadata.xml` — the `<release>` element is the current version ([`references/DOCS.md`](references/DOCS.md) has ready-made commands)
+- Maven Central metadata, when you want it scriptable: `https://repo1.maven.org/maven2/io/getstream/<artifact>/maven-metadata.xml` - the `<release>` element is the current version ([`references/DOCS.md`](references/DOCS.md) has ready-made commands)
 - GitHub releases: `https://github.com/GetStream/stream-chat-android/releases`, `https://github.com/GetStream/stream-video-android/releases`, `https://github.com/GetStream/stream-feeds-android/releases`
 
 **Do not use `search.maven.org`** — it is deprecated and its index is stale; it will lead you to ship outdated versions by mistake. If a tool result shows `search.maven.org` as the source, discard it and re-query one of the sources above.
