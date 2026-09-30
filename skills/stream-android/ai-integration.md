@@ -13,13 +13,13 @@ Android has two AI component artifacts. Only one is current:
 | Artifact | Status | Use it? |
 |---|---|---|
 | `io.getstream:stream-chat-android-ai-compose` | Separate repo (`GetStream/stream-chat-android-ai`), versioned independently, **0.x** | **Yes - this is the library.** |
-| `io.getstream:stream-chat-android-ai-assistant` | Lived in the main Chat repo, versioned with the SDK, last release **6.44.1**, **removed in v7** | **No.** It does not exist for the v7+ SDK this pack targets. If an existing project already depends on it, say it is a dead end before its next SDK upgrade. |
+| `io.getstream:stream-chat-android-ai-assistant` | Lives in the main Chat repo, versioned with the SDK, **still published on the v6 line only - it does not exist in v7** | **No.** There is no v7 release of it, so a project on it cannot upgrade without replacing it. If an existing project already depends on it, say it is a dead end before its next major upgrade. |
 
 `stream-chat-android-ai-compose` is a **Compose UI toolkit with no dependency on the Chat SDK at all** - it never sees a `ChatClient`, a `Channel`, or a `Message`. That is the fact that shapes everything below: the components render text and collect input; **you** own every line that connects them to Stream.
 
 Components: `StreamingText` (word-by-word reveal, markdown / code / tables / Chart.js), `ChatComposer` (prompt field, attachments, voice, send/stop), `AITypingIndicator`, `SpeechToTextButton` (+ `rememberSpeechToTextButtonState`).
 
-Install with the project's dependency strategy (version catalog if it has one), after checking the current version - [`references/DOCS.md`](references/DOCS.md) "Version lookup before installing". It is a **0.x** artifact: confirm every parameter against the resolved artifact before copying a snippet, and expect renames between versions (`isStreaming` became `isGenerating` after the last release). Snapshots live in the Central snapshot repository and are newer than the release.
+Install with the project's dependency strategy (version catalog if it has one), after checking the current version - [`references/DOCS.md`](references/DOCS.md) "Version lookup before installing". It is a **0.x** artifact: confirm every parameter against the resolved artifact before copying a snippet, and expect renames between versions. Snapshots live in the Central snapshot repository and are newer than the release, so a snapshot's API can differ from any published docs page.
 
 ## Step 2: Classify the shape, then fetch
 
@@ -35,7 +35,7 @@ Pages come from the Chat primary manifest ([`references/DOCS.md`](references/DOC
 
 ### Shape A - the AI-first app
 
-Follow the reference app (Step 3). The screen is built on the **low-level client plus the state layer** (`watchChannelAsState`), not on the Chat Compose SDK's `MessagesScreen` / `MessageList`. That is a deliberate choice, not an oversight: an AI conversation has one bot and one human, no reactions, threads, or read state, so the bundled messenger screens carry weight you then have to remove. Borrow from the Compose SDK only what you need (the sample uses `StorageHelperWrapper` for attachment URIs).
+Follow the reference app (Step 3). The screen is built on the **low-level client plus the state layer** (`watchChannelAsState`), not on the Chat Compose SDK's `MessagesScreen` / `MessageList`. That is a deliberate choice, not an oversight: an AI conversation has one bot and one human, no reactions, threads, or read state, so the bundled messenger screens carry weight you then have to remove. Borrow from the Compose SDK only what you need: for attachment URIs the sample uses `AttachmentStorageHelper` from `stream-chat-android-ui-common`, which is `@InternalStreamChatApi` and needs an opt-in. (On the v6 line the equivalent was the public `StorageHelperWrapper` - do not reach for it on v7, it is gone.)
 
 ### Shape B - a bot inside an existing Stream messenger
 
@@ -67,9 +67,9 @@ chatClient.channel(cid)
     .enqueue()
 ```
 
-The states are `AI_STATE_THINKING`, `AI_STATE_GENERATING`, `AI_STATE_ERROR`, and a fourth for "consulting tools / sources" whose spelling **is not consistent across Stream**: the reference Node agents emit `AI_STATE_EXTERNAL_SOURCES` (so do React, React Native and iOS), while the backend's own constant, `stream-chat-js`, Flutter, and the Android sample and docs page all use `AI_STATE_CHECKING_SOURCES`. `ai_state` arrives as a raw `String` with no SDK enum, so **match both spellings** and map them to one state. Handling only the Android sample's spelling means that state renders nothing against the reference agent - which is what a customer will be running.
+The states are `AI_STATE_THINKING`, `AI_STATE_GENERATING`, `AI_STATE_ERROR`, and a fourth for "consulting tools / sources" whose spelling **is not consistent across Stream**: the reference Node agents emit `AI_STATE_EXTERNAL_SOURCES` (so do React, React Native and iOS), while the backend's own constant, `stream-chat-js` and Flutter use `AI_STATE_CHECKING_SOURCES`. `ai_state` arrives as a raw `String` with no SDK enum, so **match both spellings** and map them to one state. Handling only `AI_STATE_CHECKING_SOURCES` means that state renders nothing against the reference agent - which is what a customer will be running.
 
-**Every `ai_indicator.update` must carry a `message_id` on Android.** `AIIndicatorUpdatedEventDto` declares `message_id: String` as required, so an event without it fails Moshi parsing on the socket thread - the event is dropped **and the WebSocket disconnects and reconnects**. The symptom is "only Generating ever shows, and the connection looks flaky", which points nowhere near the real cause. Stream's reference agents always set it (on pre-message states they send the **triggering user message's** id, not a placeholder), so this only bites a hand-rolled backend. iOS declares the same field optional (`messageId: MessageId?`), so a custom agent that omits it works on iOS and breaks Android - check this first when a customer reports that thinking indicators never appear on Android only.
+**Every `ai_indicator.update` must carry a `message_id` on Android.** `AIIndicatorUpdatedEventDto` declares `message_id: String` as required, so an event without it fails Moshi parsing on the socket thread - the event is dropped **and the WebSocket disconnects and reconnects**. The symptom is "only Generating ever shows, and the connection looks flaky", which points nowhere near the real cause. Stream's reference agents always set it - they create the bot's empty placeholder message first and then send the indicator with **that message's** id - so this only bites a hand-rolled backend. iOS declares the same field optional (`messageId: MessageId?`), so a custom agent that omits it works on iOS and breaks Android - check this first when a customer reports that thinking indicators never appear on Android only.
 
 ## Step 3: Fill the gaps from the reference app
 
