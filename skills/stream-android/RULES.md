@@ -17,6 +17,7 @@ For Stream Feeds (V3), target the latest published `io.getstream:stream-feeds-an
 When you need the current Stream artifact version, use one of these sources:
 
 - Maven Central (Sonatype): `https://central.sonatype.com/artifact/io.getstream/stream-chat-android-compose/versions` (or `/stream-chat-android-ui-components/versions`, `/stream-video-android-ui-compose/versions`, `/stream-feeds-android-client/versions`)
+- Maven Central metadata, when you want it scriptable: `https://repo1.maven.org/maven2/io/getstream/<artifact>/maven-metadata.xml` - the `<release>` element is the current version ([`references/DOCS.md`](references/DOCS.md) has ready-made commands)
 - GitHub releases: `https://github.com/GetStream/stream-chat-android/releases`, `https://github.com/GetStream/stream-video-android/releases`, `https://github.com/GetStream/stream-feeds-android/releases`
 
 **Do not use `search.maven.org`** — it is deprecated and its index is stale; it will lead you to ship outdated versions by mistake. If a tool result shows `search.maven.org` as the source, discard it and re-query one of the sources above.
@@ -35,6 +36,17 @@ Default token model:
 - Never use `ChatClient.devToken(userId)` in production - dev tokens disable token verification and let any client impersonate any user.
 - Never invent or generate fake production credentials.
 - The API secret never leaves the CLI/server side; only the API key and the generated token go into app code.
+
+---
+
+## AI and LLM integrations
+
+Runbook: [`ai-integration.md`](ai-integration.md); shared contract: [`../stream/ai-backend-contract.md`](../stream/ai-backend-contract.md). The non-negotiables:
+
+- **The model runs on a backend agent, never in the app.** No LLM provider key, Stream secret, or admin token in the Android module, and no "call the LLM from the device, then post the answer" shortcut.
+- **Always state the backend contract** (`ai_generated`, one partially-updated message, `ai_indicator.*`, honor stop) to the developer, and run its CLI check before debugging Android code.
+- **`io.getstream:stream-chat-android-ai-compose` is the AI component artifact.** `stream-chat-android-ai-assistant` was removed in v7 - never add it to a v7+ project. The AI artifact is Compose-only and does not depend on the Chat SDK, so wiring it to a channel is always yours to write.
+- **Subscribe to `ai_indicator.*` on the `ChannelClient`**, which filters by `cid`; stop is `sendEvent(EventType.AI_TYPING_INDICATOR_STOP)`, not a helper method.
 
 ---
 
@@ -125,7 +137,7 @@ Load only the product/UI-layer reference files that match the request.
 - `FEEDS-COMPOSE.md` for Feeds + Jetpack Compose (headless data SDK — no pre-built UI)
 - `FEEDS-COMPOSE-blueprints.md` for custom Composable scaffolding driven by `FeedState` / `ActivityState`
 
-Do not invent missing API details for product/UI-layer combinations not listed above. If a requested reference is not bundled yet, say so plainly and fall back to shared guidance from [`sdk.md`](sdk.md) or live docs only when the user wants that.
+Do not invent missing API details for product/UI-layer combinations not listed above. If a requested reference is not bundled yet, say so plainly, then look the topic up through the manifests in [`references/DOCS.md`](references/DOCS.md) and fetch the page before writing code - alongside the shared guidance in [`sdk.md`](sdk.md). Guides and surfaces this pack does not bundle (AI integrations, moderation, location sharing, migration guides) are documented there, not here.
 
 ### Blueprints are mandatory, on every turn
 
