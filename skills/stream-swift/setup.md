@@ -78,7 +78,7 @@ Never put the API **secret** in app code - the CLI uses it server-side only. Nev
 .package(url: "https://github.com/GetStream/stream-chat-swiftui.git", from: "5.0.0"),
 ```
 
-(UIKit-only apps take `stream-chat-swift` alone, product `StreamChatUI`, same `from: "5.0.0"`.) In Xcode's "Add Package Dependencies" dialog set **Dependency Rule → Up to Next Major → 5.0.0** for each.
+(UIKit-only apps take `stream-chat-swift` alone, product `StreamChatUI`, same `from: "5.0.0"`. AI assistants also link the `StreamChatAI` product of `stream-chat-swift`, available from 5.13.0 - pin both Chat packages `from: "5.13.0"` and build with Xcode 27; [`ai-integration.md`](ai-integration.md) Step 0 covers older apps and the standalone fallback.) In Xcode's "Add Package Dependencies" dialog set **Dependency Rule -> Up to Next Major -> 5.0.0** for each.
 
 **This is not the default resolution, so pin it explicitly.** Stream still ships a parallel **4.x** line (GitHub currently even tags a 4.x build as "Latest"), so an unpinned "add package" can silently resolve to v4 and break the code these runbooks generate. **Only use v4 if the customer explicitly asks for it** (a locked older app) - then say so, pin `~> 4.0.0` instead, and route docs through the **v4 tree** ([`docs-map.md`](docs-map.md) "Chat - v4": same paths with `/v4/` inserted after `ios/`), expecting the v5-only APIs to be absent. **Video** and **Feeds** are on their **own** version lines - `stream-video-swift` is currently **1.x**, not 5.x - so pin each to *its* own latest major and never force "5.x" onto them.
 

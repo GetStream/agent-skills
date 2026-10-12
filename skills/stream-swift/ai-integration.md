@@ -1,53 +1,64 @@
 # Stream Swift - AI assistants, LLM chat, and agentic experiences
 
-Use this runbook when the iOS request involves an **LLM or AI agent**: a ChatGPT-style app, an AI assistant / support bot / copilot in chat, streaming the model's answer, thinking indicators, "stop generating", rendering markdown / code from the model, or letting the agent run tools on the device (MCP).
+Use this runbook when the iOS request involves an **LLM or AI agent**: a ChatGPT-style app, an AI assistant / support bot / copilot in chat, streaming the model's answer, thinking indicators, "stop generating", rendering markdown / code from the model, showing the agent's reasoning and tool calls, asking the person before a tool runs (approvals), or letting the agent run tools on the device.
 
-Like the rest of this skill, it is a **router, not a copy of the docs**: it picks the pages to fetch, and adds only what the docs do not say. Fetch the pages live and apply them; cite what you used. **Read [`../stream/ai-backend-contract.md`](../stream/ai-backend-contract.md) first** - where the model runs, what the agent must send (including the `generating` flag iOS depends on), and the CLI check are shared by every platform and live there.
+Like the rest of this skill, it is a **router, not a copy of the docs**: it picks the pages to fetch, and adds only what the docs do not say. Fetch the pages live and apply them; cite what you used. **Read [`../stream/ai-backend-contract.md`](../stream/ai-backend-contract.md) first** - where the model runs, what the agent must send (including the `generating` flag iOS depends on, and the agent-steps format for reasoning / tool calls / approvals), and the CLI check are shared by every platform and live there.
 
 ---
+
+## Step 0: Which StreamChatAI (decide before any code)
+
+**`StreamChatAI` ships in `stream-chat-swift` from 5.13.0** (GetStream/stream-chat-swift#4306, released 2026-10-09), as a library product next to `StreamChat` and `StreamChatCommonUI`. Before that it was the standalone `stream-chat-swift-ai` package (last release 0.12.0), which is now the **fallback**. Both declare a target named `StreamChatAI`, so an app has one or the other, never both: SPM refuses the graph even when the app links only `StreamChat` from 5.13.0+ (`multiple packages ('stream-chat-swift', 'stream-chat-swift-ai') declare targets with a conflicting name: 'StreamChatAI'`).
+
+Read the app's `Package.resolved` (or the project's package references), pick the row, and **tell the developer that `StreamChatAI` needs `stream-chat-swift` 5.13.0 or later**, and which path you took:
+
+| The app has | Do |
+|---|---|
+| no Chat yet, or Chat 5.13.0+ | **Default.** Link `StreamChat` + `StreamChatAI` from `stream-chat-swift` `from: "5.13.0"`, and `StreamChatSwiftUI` from `stream-chat-swiftui` `from: "5.13.0"` (its 5.13.0 requires `stream-chat-swift` 5.13.0+ anyway). |
+| Chat 5.x below 5.13.0 | **Suggest the version update:** raise both Chat packages to `from: "5.13.0"` (Xcode: the package's Dependency Rule, then File > Packages > Update to Latest Package Versions). Per the 5.13.0 changelog, the only source change to check is `Device.createdAt`, now non-optional. If the developer can't update now, take the fallback. |
+| the standalone `stream-chat-swift-ai` | **Suggest migrating with the update:** remove the `stream-chat-swift-ai` package in the same change that raises Chat to 5.13.0, link the `StreamChatAI` product of `stream-chat-swift` instead, then follow the docs' "Migrating from stream-chat-swift-ai" (`.../guides/ai-integrations.md`: rename table, `AIAppearance` instead of `colors:`, `isGenerating` on the view model, `AIClientTool` + `AIClientToolRunner`). If they'd rather not migrate yet, the app stays on the fallback. |
+| Xcode 26 or older, no move to Xcode 27 | **Fallback.** Adding `StreamChatAI` from `stream-chat-swift` with SPM needs Xcode 27 (Xcode 26 rejects the target). |
+
+**The fallback (standalone package).** Pin `stream-chat-swift-ai` to 0.12.0 and keep `stream-chat-swift` and `stream-chat-swiftui` below 5.13.0 (`.upToNextMinor(from: "5.12.0")`), or SPM rejects the graph. 0.12.0 is iOS 16+, depends on the MCP Swift SDK (swift-nio, swift-log, ...), and has the API the docs' migration section lists as the old one: `ComposerView(viewModel:colors:isGenerating:onMessageSend:onStopGenerating:)`, per-view `colors:` arguments, an `AIClientTool` with only `name` + `run`, and tools described with MCP `Tool` through `ClientTool` / `ClientToolRegistry`. It does have the parts, approval, client-tool runner and on-device model types. The docs no longer show its API, so take its signatures from that tag's `Sources/StreamChatAI`. Tell the developer the fallback is a stopgap and updating to 5.13.0 is the way forward.
+
+**The docs are current for 5.13.0** (install, requirements, `Info.plist` keys, migration, appearance, reasoning / tool calls / approvals, client tools, the on-device model). Where the docs and the code disagree, the source at the resolved version wins (`stream-chat-swift` `Sources/StreamChatAI`; the local SPM checkout, see [`docs-map.md`](docs-map.md) "When the docs fall short") - say so. The one known disagreement is the thinking indicator (pitfalls).
 
 ## Step 1: Classify, then fetch
 
 | Shape | Signals | Fetch (prefix `https://getstream.io/chat/docs/sdk/ios/guides/ai-integrations`) |
 |---|---|---|
-| **A. AI-first app** (ChatGPT / Claude / Gemini clone) | one user + one assistant, conversation sidebar, suggestion chips, big prompt composer | `.md` (components + install), `/swiftui-integration.md` |
-| **B. Assistant inside an existing messenger** (support bot, "ask AI", copilot) | humans and a bot in the same channels | `/swiftui-integration.md` only - keep the app's own composer and styling |
-| **C. Agent acts on the device** (open a screen, read calendar / location, show a form) | "the assistant should do X in the app" | A or B, plus `/client-side-tools.md` |
-| **Backend** (no agent yet, "which SDK", memory, titles) | no backend exists, or the question is server-side | `/stream-chat-ai-sdk.md` (Vercel AI SDK) or `/stream-chat-langchain-sdk.md` |
+| **A. AI-first app** (ChatGPT / Claude / Gemini clone) | one user + one assistant, conversation sidebar, suggestion chips, big prompt composer | `.md` (components, install, appearance, and "Best practices": `ai_generated`, indicator events, stop, ephemeral updates), `/swiftui-integration.md` |
+| **B. Assistant inside an existing messenger** (support bot, "ask AI", copilot) | humans and a bot in the same channels | `/swiftui-integration.md` and the `.md` "Best practices" section - keep the app's own composer and styling |
+| **C. Agent that shows its work and asks first** (reasoning, tool calls, "ask before it books / shares / deletes") | approvals, tool use, "search for tools", transparency | A or B, plus `/reasoning-and-tool-calls.md` and the contract's "Agent steps" section |
+| **D. Agent acts on the device** (read location, device settings, copy to clipboard, open a screen) | "the assistant should do X on the phone" | A or B, plus `/client-side-tools.md`: "Run tool calls from agent steps" for an agent that writes `ai_tool_call` steps, "Run tool calls from events" for Stream's AI SDK / LangChain SDK (they send `custom_client_tool_invocation` instead) |
+| **Backend** (no agent yet, "which SDK", memory, titles) | no backend exists, or the question is server-side | `/stream-chat-ai-sdk.md` (Vercel AI SDK) or `/stream-chat-langchain-sdk.md` - and check whether it writes agent steps (contract) |
 
 Decisions the docs leave to you:
 
 - **Stay on the pre-built components.** An AI chat is a messenger surface - `StreamChatSwiftUI` + `StreamChatAI`, not a hand-built list on the low-level client ([`custom-ui.md`](custom-ui.md)). In shape B, keep existing custom attachments and list modifiers when you add the AI ones - overriding the slot replaces the default (composite-slot trap in [`design-matching.md`](design-matching.md)).
-- **UIKit:** `StreamChatAI` is SwiftUI-only (iOS 16+). Host its views with `UIHostingController`, or build the AI screen in SwiftUI.
-- **Install:** run [`setup.md`](setup.md) first (Chat v5). For `stream-chat-swift-ai`, pin the **latest release tag** (`git ls-remote --tags https://github.com/GetStream/stream-chat-swift-ai.git`) - the docs' `from:` version is only a minimum.
+- **Install:** run [`setup.md`](setup.md) first (Chat v5), then add the products from Step 0.
+- **UIKit:** `StreamChatAI` is SwiftUI-only. Host its views with `UIHostingController`, or build the AI screen in SwiftUI.
 
-## Step 2: Fill the gaps from the reference app
+## Step 2: Wire the components (what the docs leave out)
 
-The docs show the components; the **wiring around them** (event handling, starting the agent, the stop button, tool-event decoding) lives only in the reference app. Read the matching file instead of inventing it, and say the pattern came from the sample:
+The docs show each component and the StreamChatSwiftUI wiring. These are the gaps found building a working app on 5.13.0 + StreamChatSwiftUI:
 
-`https://raw.githubusercontent.com/GetStream/chat-ai-samples/main/ios/AIComponents/<file>`
+1. **The reply view.** Conform to `MessageTypeResolving` as the SwiftUI integration page does - `MessageTypeResolver` is `public`, not `open`, so it can't be subclassed. In `makeCustomAttachmentViewType(options:)`, while the reply is generating with no text and no parts, show `AITypingIndicatorView(text: "Thinking")` in the slot: on Chat v5 the indicator events don't arrive (pitfalls), so this is what shows the agent is working. The slot renders bare (no bubble), so the reply is full width. For an AI-first app, set `MessageListConfig(shouldMessagesStartAtTheTop: true)` so a new conversation reads from the top like a document instead of hugging the composer; `MessageListView` applies it itself and still anchors to the newest message once the list fills the screen.
+2. **Approvals.** Hold one `AIToolApprover` per signed-in user and install (the view factory is a good owner); its `decide` closure posts `{tool_call_id, client_id, allowed}` to an authenticated backend endpoint, which checks the caller and updates the step.
+3. **Device tools.** The registration has no display title or approval spec: if the backend should ask before a device tool runs, send those alongside (an `Encodable` wrapper that encodes the SDK registration and then its own keys into the same keyed container). Hand `runner.run(parts)` every agent `MessageNewEvent` / `MessageUpdatedEvent` (a `chatClient.eventsController()` delegate) as well as the reply view's `onAppear` - the view alone runs only while the reply is on screen. Request OS permissions inside `run`.
+4. **Thinking and stop.** The docs' recipe sets `isGenerating` only from `AIIndicatorUpdateEvent(.generating)`, which never arrives on Chat v5 (pitfalls), so the stop button never shows. Set `composerViewModel.isGenerating` from two signals per `cid`: the indicator events (as the docs show, with `chatClient.eventsController()` - a `ChannelEventsController` drops them, their `cid` is optional), **or** an agent message in the channel whose `extraData["generating"]` is still `true` (track it from `MessageNewEvent` / `MessageUpdatedEvent`). Send `AIIndicatorStopEvent(cid:)` through a channel events controller (the client-wide `EventsController` has no `sendEvent`), and keep that controller alive until the completion fires.
+5. **Session.** If the backend issues expiring tokens, connect with `connectUser(userInfo:tokenProvider:)`: `connectUser(userInfo:token:)` rejects a token that has an expiry.
 
-| Need | File |
-|---|---|
-| App init, AI-friendly `MessageListConfig`, message resolver | `AIComponentsApp.swift` |
-| `ViewFactory` + `Styles` for AI messages | `AIComponentsFactory.swift` |
-| Thinking / generating state from `ai_indicator.*`, bot presence, client-tool dispatch | `TypingIndicatorHandler.swift` |
-| Backend calls (start / stop agent, register tools, summarize for titles) | `AgentService.swift` |
-| Decoding the client-tool invocation event | `StreamChatClientTools.swift` |
-| Composer, suggestions, stop generating, new conversation | `ContentView.swift` |
-
-Component source: `GetStream/stream-chat-swift-ai` (`Sources/StreamChatAI`). The event types (`AIIndicatorUpdateEvent`, `AIIndicatorClearEvent`, `AIIndicatorStopEvent`, `AITypingState`) are in `stream-chat-swift` `Sources/StreamChat/WebSocketClient/Events/AITypingEvents.swift`.
-
-**Version-check before copying:** the sample README shows an older multi-argument `makeCustomAttachmentViewType`; the docs use the v5 `options:` form. Confirm against the pinned `stream-chat-swiftui` source.
+The reference app (`https://raw.githubusercontent.com/GetStream/chat-ai-samples/main/ios/AIComponents/<file>`: `AIComponentsApp.swift` init + message resolver, `AIComponentsFactory.swift`, `TypingIndicatorHandler.swift`, `AgentService.swift`, `ContentView.swift`) still imports `MCP` and the standalone package: apply the docs' migration steps when you copy from it.
 
 ## Step 3: State the contract, leave a tripwire
 
-State the backend contract from [`../stream/ai-backend-contract.md`](../stream/ai-backend-contract.md) to the developer - on iOS both `ai_generated` and `generating` are required - and run its CLI check before debugging Swift code. Then leave a debug-only tripwire in the message resolver the docs already have you write, so a missing field shows in the Xcode console instead of as a silent plain bubble (match your bot's user id):
+State the backend contract from [`../stream/ai-backend-contract.md`](../stream/ai-backend-contract.md) to the developer - on iOS both `ai_generated` and `generating` are required, and the agent-steps attachments are what the parts views render - and run its CLI check before debugging Swift code. Then leave a debug-only tripwire in the message resolver, so a missing field shows in the Xcode console instead of as a silent plain bubble (match your agent's user id):
 
 ```swift
 #if DEBUG
-if message.extraData["ai_generated"]?.boolValue != true, message.author.id.hasPrefix("ai-bot") {
-    print("[AI] Bot message \(message.id) has no `ai_generated: true` - the backend agent must set it.")
+if message.extraData["ai_generated"]?.boolValue != true, message.author.id == agentUserID {
+    print("[AI] Agent message \(message.id) has no `ai_generated: true` - the backend agent must set it.")
 }
 #endif
 ```
@@ -56,14 +67,19 @@ if message.extraData["ai_generated"]?.boolValue != true, message.author.id.hasPr
 
 ## Pitfalls the docs do not shout about
 
-- **Filter `ai_indicator.*` by `cid`** in the event handler - otherwise "Thinking" shows in the wrong conversation (the contract's key-by-channel rule, iOS side).
-- **Streamed chunks are edits:** skip the "Edited" label for AI messages (`MessageListConfig.skipEditedMessageLabel`, as in the sample).
-- **Info.plist:** the AI composer's speech and photo / camera inputs crash on first tap without their usage descriptions (microphone, speech recognition, photo library, camera).
-- **Device-side tools:** request OS permissions when the tool first runs (the rest of the client-tool rules are in the contract).
-- **Local backend:** the simulator reaches `localhost`, a physical device does not (use the Mac's LAN IP or a tunnel). Keep the base URL in config.
+- **`ai_indicator.update` doesn't reach Chat v5 apps (5.13.0 included).** Backends send it as a custom event (`sendEvent`, as Stream's AI SDK and the server docs do). The v5 WebSocket (`/api/v2/connect`) delivers custom event data nested under `custom` (`{"type": "ai_indicator.update", "cid": ..., "custom": {"ai_state": ..., "message_id": ...}}`), but the generated `AIIndicatorUpdateEventDTO` requires `ai_state` and `message_id` at the top level. Decoding fails and `EventDecoder` drops the event: a known event type that fails to decode isn't surfaced as an `UnknownChannelEvent` either. `ai_indicator.clear` needs only `cid`, so it still arrives. v4 read these fields from the flat payload, so this is a v5 regression, and the docs' "Drive the AI indicator from events" and "Let users stop the response" assume it works. Until it is fixed, show "Thinking" from the empty generating reply (Step 2.1), drive the stop button from `generating` too (Step 2.4), and don't rely on the thinking / checking-sources states. Recheck on releases after 5.13.0: the events arrive once the DTO reads `custom` (or the server flattens these fields).
+- **A channel the backend created must be synchronized before the first message.** `createNewMessage` on a fresh `ChatChannelController` for a channel that isn't in the local DB yet is dropped; `synchronize()` it first (wrap the completion in a continuation - there is no async variant), and pass a completion to `createNewMessage` to surface errors.
+- **"Conversations with the agent" needs two member filters.** `.containMembers(userIds: [me, agent])` is `members $in [...]` - it matches channels with *either* member and leaks other people's conversations with the agent. Use `.and([.containMembers(userIds: [me]), .containMembers(userIds: [agent])])`.
+- **`ChannelType(rawValue:)` is internal.** Map a channel type string from the backend to `.messaging` / `.team` / ... / `.custom(value)` yourself.
+- **If you clear the composer yourself** (a custom input slot), use `clearAfterSending()`, not `cleanUpData()`: `cleanUpData()` deletes the photos the composer took, which the sent message uploads later.
+- **Xcode 27 app templates turn on `MemberImportVisibility`** (and default MainActor isolation): a file using `localizedDescription` or a `CGFloat` literal needs `import Foundation` even when Stream modules are imported.
+- **Info.plist:** the composer's speech and photo / camera inputs crash on first tap without the usage descriptions the docs list; a location device tool also needs `NSLocationWhenInUseUsageDescription`.
+- **Local backend:** the simulator reaches `localhost`, a physical device does not (use the Mac's LAN IP or a tunnel). Keep the base URL in config. For a location tool in the simulator, set one (`xcrun simctl location booted set <lat>,<lon>`).
 
 ## Verify before stopping
 
-- a prompt gets a streamed, markdown-rendered answer from the bot in the same channel; thinking states appear and clear; stop keeps the partial answer
-- the contract CLI check shows `ai_generated: true` and a final `generating: false` - and the developer was told the contract
-- existing custom attachments still render; AI messages show no "Edited" label
+- `Package.resolved` has `stream-chat-swift` 5.13.0+ and no `stream-chat-swift-ai` (on the fallback: the standalone 0.12.0, with both Chat packages below 5.13.0), and the developer was told that `StreamChatAI` needs 5.13.0 and which path was taken
+- a prompt gets a streamed, markdown-rendered answer from the agent in the same channel; "Thinking" shows until the first token; the stop button shows while the reply generates, and stop keeps the partial answer
+- with agent steps: reasoning folds into "Thought for Ns"; each tool call shows its title, status and duration; an approval card shows on the person's device only, allow continues the call and decline shows "Declined"; a device tool call runs once and its step completes
+- the contract CLI check shows `ai_generated: true`, a final `generating: false`, and the `ai_reasoning` / `ai_tool_call` attachments - and the developer was told the contract
+- existing custom attachments still render; AI messages show no "Edited" label; the conversation list shows only this person's conversations

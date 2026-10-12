@@ -56,9 +56,10 @@ Security (non-negotiable): **permission checks apply to client-side calls only -
 
 Runbook: [`ai-integration.md`](ai-integration.md); shared contract: [`../stream/ai-backend-contract.md`](../stream/ai-backend-contract.md). The non-negotiables:
 
-- **The model runs on a backend agent, never in the app.** No LLM provider key, Stream secret, or admin token in the iOS target.
+- **The model runs on a backend agent, never in the app.** No LLM provider key, Stream secret, or admin token in the iOS target. (The one exception is the optional offline fallback `AIOnDeviceModel`, Apple's on-device model, which needs no key.)
 - **Always state the backend contract** (`ai_generated`, `generating: true/false`, one partially-updated message, `ai_indicator.*`, honor stop) to the developer, and run its CLI check before debugging Swift code. On iOS a missing `generating` means jumping text or a message that never stops "generating".
-- **Stay on the pre-built components.** An AI chat is a messenger surface: `StreamChatSwiftUI` + the `StreamChatAI` package (SwiftUI, iOS 16+), not a hand-built list on the low-level client.
+- **Stay on the pre-built components.** An AI chat is a messenger surface: `StreamChatSwiftUI` + `StreamChatAI`, not a hand-built list on the low-level client. `StreamChatAI` is a product of `stream-chat-swift` **from 5.13.0** (SwiftUI, iOS 15+, composer iOS 16+, Xcode 27 with SPM): say so, and suggest updating Chat to 5.13.0+. The standalone `stream-chat-swift-ai` package is the fallback (Xcode 26, or Chat kept below 5.13.0) and can't be in the same app as Chat 5.13.0+ - see [`ai-integration.md`](ai-integration.md) Step 0.
+- **Don't drive the stop button from `ai_indicator.update` alone.** On Chat v5 (5.13.0 included) that event fails to decode and is dropped, so the docs' event-only recipe never shows the stop button or "Thinking". Also key both on the reply's `generating` flag - see the pitfall in [`ai-integration.md`](ai-integration.md).
 
 ## Client lifetime
 

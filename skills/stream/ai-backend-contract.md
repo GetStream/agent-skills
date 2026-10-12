@@ -20,9 +20,9 @@ If it is unclear whether a backend exists, ask one question:
 The app only renders what the agent writes and emits, and it cannot tell when something is missing - it builds and looks subtly wrong. **Always state this contract to the developer**, and when they bring their own backend, ask them to confirm it before wiring the app:
 
 - `ai_generated: true` on the bot's reply when it is **created**. The app's AI-message check (`isMessageAIGenerated` on React / RN, the message resolver on iOS, an `extraData["ai_generated"]` check on Android) keys on it; missing -> the answer renders as an **ordinary bubble with no typewriter and no AI markdown** (raw markdown on iOS), and a custom agent that does not skip its own `ai_generated` messages can **answer itself in a loop**.
-- **One message, partially updated** as tokens arrive (throttled - batch chunks, do not update per token). A reply posted once, complete, **appears all at once**; one message per chunk floods the list.
+- **One message, partially updated** as tokens arrive (throttled - batch chunks, do not update per token). A reply posted once, complete, **appears all at once**; one message per chunk floods the list. While streaming, prefer `ephemeralUpdateMessage` (server-side only; Node `stream-chat` 9.27.0+, every server SDK has an equivalent): same payload and `message.updated` event, but no database write, so long replies don't hit the message-update rate limits. **The final update must be a regular partial update** (with the final text, any `attachments`, and `generating: false`), and so must the one on stop and error - ephemeral updates are never stored, so otherwise a reload shows the empty placeholder still "generating". Stream's AI SDK and LangChain SDK already do this.
 - `generating: true` on every partial update, and `generating: false` on the final update **and** on stop and error. iOS (`StreamChatAI`) and Android (`StreamingText(animate = ...)`) read it: missing `true` -> the text **jumps** or appears at once instead of animating; missing `false` -> the message **never stops "generating"**. The React and React Native SDKs ignore it (their UI keys on `ai_indicator.*`), but set it anyway so one backend serves every client.
-- `ai_indicator.update` with `ai_state` (`AI_STATE_THINKING`, `AI_STATE_GENERATING`, `AI_STATE_EXTERNAL_SOURCES`, `AI_STATE_ERROR`) while working, and `ai_indicator.clear` when done. Missing -> **no thinking indicator and no stop button** (both key on these states).
+- `ai_indicator.update` with `ai_state` (`AI_STATE_THINKING`, `AI_STATE_GENERATING`, `AI_STATE_EXTERNAL_SOURCES`, `AI_STATE_ERROR`) while working, and `ai_indicator.clear` when done. Missing -> **no thinking indicator and no stop button** (both key on these states). On iOS with Chat v5, `ai_indicator.update` sent as a custom event doesn't decode yet - the iOS runbook works around it.
 - Honor `ai_indicator.stop` (sent by the app's stop button - `channel.stopAIResponse()` on React / RN, `AIIndicatorStopEvent` on iOS, `sendEvent(EventType.AI_TYPING_INDICATOR_STOP)` on Android): abort the model call and keep the partial text. Missing -> **stop does nothing**.
 
 Stream's server SDKs and the sample backends already do all of this; a custom backend must do it by hand. **Plain bubbles, text that appears all at once or jumps, a missing stop button, or a message stuck "generating" are almost always this contract, not the app.**
@@ -37,6 +37,27 @@ getstream api QueryChannels --request '{"filter_conditions":{"cid":"messaging:<c
 ```
 
 `null` for a bot message means the backend is not setting it - fix the agent, and tell the developer. The `ai_indicator.*` events are ephemeral; log them in the app rather than the CLI.
+
+## Agent steps: reasoning, tool calls, approvals, device tools
+
+An agent that shows its work writes each **step** of a reply as a custom attachment on that same reply message, in order; the answer stays in the message text, shown after the steps. iOS renders them with `StreamChatAI` (`AIMessagePart` / `AIMessagePartsView`, in `stream-chat-swift` 5.13.0+); before relying on them on another platform, check that platform's runbook for a renderer. Stream's server SDKs (`@stream-io/chat-ai-sdk`, LangChain) don't write steps today - a backend that wants them writes them itself, by setting the reply's `attachments` in the same throttled partial updates as its text (`set: {text, attachments, generating}`, with `skip_enrich_url: true` so link previews don't join them).
+
+| Attachment `type` | Fields (all snake_case, `v: 1`) |
+|---|---|
+| `ai_reasoning` | `id`, `status` (`streaming` / `completed`), `summary` (one line, once done), `preview` (capped excerpt: the latest thoughts while streaming, the opening once done), `duration_ms` |
+| `ai_tool_call` | `id` (the model provider's call id), `name`, `display_title` ("Checking the weather"), `status`, `executor` (`server` / `client`), `summary` (shareable outcome), `duration_ms`; for calls that wait: `target_user_id`, `target_client_id`, `arguments` (client tools only - every member sees them), `approval` |
+
+- **Statuses:** `running` -> optionally `awaiting_approval` -> optionally `awaiting_client` -> `completed` / `failed` / `cancelled`. End every open step (`completed` reasoning, `cancelled` call) on the final update, on stop and on error, like `generating: false`.
+- **Approvals:** a call that asks first waits in `awaiting_approval` with `approval: {title, message, reason, allow_title, decline_title}` (`reason` is the model's own words, e.g. from a `reason` argument the tool schema asks for) and `target_user_id` (plus `target_client_id` for a client tool). The backend holds the call until the targeted person answers through an authenticated endpoint it exposes - verify the caller is that person (and install) - then sets `approval.decision` (`allowed` / `declined`). Declined -> `cancelled`, and the model gets an error result telling it not to retry. Time out unanswered questions.
+- **Device (client) tools:** the app registers the tools it runs (`name`, `description`, `instructions`, `parameters` as a JSON schema, `showExternalSourcesIndicator` - on iOS exactly `AIClientToolRunner.registrations`; anything the backend needs beyond that, such as an approval question, the app sends alongside) and sends its install id as `client_id` in the custom data of every message. A call to one is `executor: client`, `status: awaiting_client`, `target_user_id` = the person who wrote, `target_client_id` = that message's `client_id`, with `arguments`. The device runs it once and posts `{tool_call_id, client_id, output | failure, summary}` to the backend, which checks the caller and feeds the result to the model. Never expose device tools on a turn whose message has no `client_id`.
+- **Tool search:** with many tools, defer them and let the model search - Claude: `tool_search_tool_bm25_20251119` plus `defer_loading: true` on each tool; OpenAI Responses API (`gpt-5.4` and later): `{type: "tool_search"}` plus `defer_loading: true`. Show the search as a server `ai_tool_call` step whose summary lists what it found.
+
+Check the steps with the CLI after one prompt:
+
+```bash
+getstream api QueryChannels --request '{"filter_conditions":{"cid":"messaging:<channel-id>"},"message_limit":5}' \
+  --jq '.channels[0].messages[] | select((if has("ai_generated") then .ai_generated else .custom.ai_generated end) == true) | {steps: [.attachments[]? | {type, name, status, decision: .approval.decision}]}'
+```
 
 ## Rules for every platform
 
