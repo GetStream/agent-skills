@@ -48,6 +48,9 @@ If the user pastes credentials, take them and skip the CLI steps.
 # Onboard once in the project dir (auth + org/app selection). Required first:
 # env/token/api fail with "stream project is not initialized" otherwise.
 getstream init
+# Run non-interactively (as an agent), init writes .stream/init-<id>.yaml listing
+# your orgs/apps. Uncomment `app_id:` (or the new-app block), then rerun:
+getstream init --command .stream/init-<id>.yaml
 
 # API key -> dart_defines.json (read with String.fromEnvironment('STREAM_API_KEY');
 # run with: flutter run --dart-define-from-file=dart_defines.json). The secret is never written.
@@ -132,7 +135,7 @@ For exact constraints, SDK floors (Dart / Flutter versions) and per-platform req
 Fetch the install page for the standard permissions and `Info.plist` keys, then also apply:
 
 - **Chat (`stream_chat_flutter`) on iOS:** the attachment / camera / voice-recording pickers need `NSPhotoLibraryUsageDescription`, `NSPhotoLibraryAddUsageDescription`, `NSCameraUsageDescription`, `NSMicrophoneUsageDescription` (and `NSDocumentsFolderUsageDescription` for the file picker) in `ios/Runner/Info.plist`. Missing keys crash the picker.
-- **Chat on Android with AGP 9:** if the build fails with `cannot find symbol ... FilePickerPlugin` in `GeneratedPluginRegistrant.java`, the project was scaffolded with AGP 9.x and `file_picker` (a transitive dependency) does not compile under it. This is a toolchain mismatch - `flutter clean` will not help. Pin `com.android.application` to `8.9.1` and `org.jetbrains.kotlin.android` to `2.1.0` in `android/settings.gradle.kts`, and `distributionUrl` to `gradle-8.11.1-all.zip` in `android/gradle/wrapper/gradle-wrapper.properties`; bump again once the plugins support AGP 9.
+- **Chat on Android with AGP 9 (only if you hit this error - recent templates build fine):** if the build fails with `cannot find symbol ... FilePickerPlugin` in `GeneratedPluginRegistrant.java`, the project was scaffolded with AGP 9.x and `file_picker` (a transitive dependency) does not compile under it. This is a toolchain mismatch - `flutter clean` will not help. Pin `com.android.application` to `8.9.1` and `org.jetbrains.kotlin.android` to `2.1.0` in `android/settings.gradle.kts`, and `distributionUrl` to `gradle-8.11.1-all.zip` in `android/gradle/wrapper/gradle-wrapper.properties`; bump again once the plugins support AGP 9.
 - **Chat on web / macOS:** web needs `oncontextmenu="return false;"` on `<body>` in `web/index.html`; macOS needs `com.apple.security.network.client` and `com.apple.security.files.user-selected.read-write` entitlements in both `.entitlements` files.
 - **Video:** the iOS SPM two-step, analyzer exclude, Kotlin-DSL `minSdk`, runtime permissions, and `StreamFlutterActivity` for PiP - all in [`RULES.md`](RULES.md) "Video -> Build blockers".
 - **Feeds:** network only; add the photo-library / camera keys if posts include uploads.

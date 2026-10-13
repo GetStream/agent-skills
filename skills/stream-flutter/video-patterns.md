@@ -120,11 +120,16 @@ Docs: "Custom call data" and "Call events / custom events" in [`docs-map.md`](do
 
 ## 5. Chat + Video in one app
 
-Docs: "Chat app with video calls" in [`docs-map.md`](docs-map.md). Same API key and **one** user JWT for both - do not mint separate tokens.
+Docs: "Chat app with video calls" in [`docs-map.md`](docs-map.md) - but that page still uses **v9** Chat APIs (`StreamMessageInput`, `defaultMessage.copyWith(attachmentBuilders: ...)`, `StreamChannelHeader(actions: ...)`) and never shows its attachment builder. Use the v10 equivalents below (checked against `stream_chat_flutter` 10.5.0). Same API key and **one** user JWT for both - do not mint separate tokens.
 
 - **Alias the imports** - both SDKs export `User`: `import 'package:stream_chat_flutter/stream_chat_flutter.dart' as chat;` and `import 'package:stream_video_flutter/stream_video_flutter.dart' as video;`. Map one app user to `chat.User(id:, name:, image:)` and `video.User(info: video.UserInfo(id:, name:, image:))`.
 - `StreamChatClient` lives in the `StreamChat` widget; `StreamVideo(...)` is its own singleton, typically created at login with the same token. Log out of both: `chatClient.disconnectUser()` and `StreamVideo.reset(disconnect: true)` (guard with `StreamVideo.isInitialized()`).
 - **Call id derived from the channel** (e.g. `'${channel.id}_call<suffix>'`) - unique per call, traceable to the conversation.
-- **Announce a call in the channel** with a custom attachment (`extraData: {'callId': ..., 'callType': ...}`) rendered as a join card by a custom `StreamAttachmentWidgetBuilder`; rebuild the type with `StreamCallType.fromString(callType)`.
+- **Start-call button in the channel header:** `StreamChannelHeader(trailing: ...)` - v10 has no `actions` parameter.
+- **Announce a call in the channel** with a custom attachment (`type: 'video_call'`, `extraData: {'callId': call.id, 'callType': call.type.value}`) rendered as a join card:
+  - A custom `Attachment` with no file needs `uploadState: const UploadState.success()` - the default is `UploadState.preparing()`, which renders it as still uploading.
+  - The card is a class extending `StreamAttachmentWidgetBuilder`: implement `bool canHandle(Message message, Map<String, List<Attachment>> attachments)` (the map is keyed by attachment type, e.g. `attachments.containsKey('video_call')`) and `Widget? build(BuildContext context, Message message, Map<String, List<Attachment>> attachments)`.
+  - Register it globally with `StreamChat(configData: StreamChatConfigurationData(attachmentBuilders: [VideoCallAttachmentBuilder()]))` - custom builders are prepended to `StreamAttachmentWidgetBuilder.defaultBuilders`, so they are checked first and every other type keeps its default rendering.
+  - Rebuild the call type on join with `StreamCallType.fromString(callType)` (`StreamCallType.value` gives the string).
 - **In-call chat:** a `livestream`-type channel whose id equals `call.id`, so both sides land in the same conversation with no bookkeeping.
 - **Ringing variant:** instead of an attachment, ring the channel members - `call.getOrCreate(memberIds: members, ringing: true, video: true)` - and wire [`push.md`](push.md).

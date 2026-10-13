@@ -171,7 +171,7 @@ All page URLs end in `.md` (the Markdown twin - see [`SKILL.md`](SKILL.md)). Fet
 | HLS / RTMP broadcasting | `https://getstream.io/video/docs/flutter/advanced/broadcasting.md` |
 | Recording | `https://getstream.io/video/docs/flutter/advanced/recording.md` |
 | Audio rooms (+ chat) | `https://getstream.io/video/docs/flutter/ui-cookbook/audio-room-with-chat.md` |
-| Chat app with video calls | `https://getstream.io/video/docs/flutter/ui-cookbook/chat-with-video.md` |
+| Chat app with video calls (page still shows v9 Chat APIs - use the v10 equivalents in [`video-patterns.md`](video-patterns.md) section 5) | `https://getstream.io/video/docs/flutter/ui-cookbook/chat-with-video.md` |
 | Multiple simultaneous calls | `https://getstream.io/video/docs/flutter/advanced/multiple-simultaneous-calls-support.md`, `https://getstream.io/video/docs/flutter/ui-cookbook/multicall.md` |
 
 ### Ringing and push (run [`push.md`](push.md))
@@ -259,7 +259,7 @@ How to search (prefer the version-accurate local checkout - no network, matches 
 
    ```bash
    # The resolved versions:
-   grep -A1 -E '^  (stream_[a-z_]+):' pubspec.lock | grep -E 'stream_|version'
+   awk '/^  stream_/{n=$1} /^    version:/{if(n){print n,$2;n=""}}' pubspec.lock
    # The matching source (several versions can coexist - pick the one pubspec.lock names):
    ls -d ~/.pub-cache/hosted/pub.dev/stream_* 2>/dev/null
    grep -rn "class StreamMessageListView" ~/.pub-cache/hosted/pub.dev/stream_chat_flutter-<version>/lib
