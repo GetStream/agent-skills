@@ -2,7 +2,6 @@
 
 Some chat UIs are **not** a messenger. Livestream chat (Twitch / YouTube / Kalshi), live-shopping ticker chat, an overlay on a video, a betting feed, a high-volume "drop" room - these look nothing like channel-list + bubbles + composer, and the pre-built `stream_chat_flutter` widgets fight you the whole way. For these you **drop the pre-built widgets and build your own Flutter widgets on the low-level `StreamChatClient` + the headless `stream_chat_flutter_core` controllers**.
 
-> Docs paths written as `CS/...`, `CD/...`, `V/...`, `F/...` use the URL prefixes defined at the top of [`docs-map.md`](docs-map.md) (Chat SDK, Chat client, Video, Feeds); expand them before fetching.
 
 This page is the procedure for that path - the mirror image of [`design-matching.md`](design-matching.md) (which is for *customizing the pre-built components*). Run it only when the decision in Step 0 lands on "custom". It targets `stream_chat_flutter` / `stream_chat_flutter_core` **v10**; confirm every symbol against the live core docs ([`docs-map.md`](docs-map.md) "Chat") and the project's pinned version (see "Grounding" at the end).
 
@@ -42,7 +41,7 @@ State the decision and the signals that drove it before writing code. If the ans
 
 ## Step 1: Depend on the right packages (custom != `stream_chat_flutter`)
 
-The custom path uses **`stream_chat_flutter_core`** (headless controllers and `*Core` builder widgets) on top of the low-level `stream_chat` client, which it re-exports (`StreamChatClient`, `User`, `Message`, `Channel`, `Filter`, ...). Add it with `flutter pub add stream_chat_flutter_core:^10.0.0` and follow `CS/stream-chat-flutter-core/setup.md` ([`docs-map.md`](docs-map.md)). Keep `stream_chat_flutter` out of this screen - reaching for `StreamChannelListView` / `StreamMessageListView` / `streamChatComponentBuilders` / `StreamChatThemeData` means you have drifted back onto the components path.
+The custom path uses **`stream_chat_flutter_core`** (headless controllers and `*Core` builder widgets) on top of the low-level `stream_chat` client, which it re-exports (`StreamChatClient`, `User`, `Message`, `Channel`, `Filter`, ...). Add it with `flutter pub add stream_chat_flutter_core:^10.0.0` and follow the "Getting started, core / custom UI" docs ([`docs-map.md`](docs-map.md)). Keep `stream_chat_flutter` out of this screen - reaching for `StreamChannelListView` / `StreamMessageListView` / `streamChatComponentBuilders` / `StreamChatThemeData` means you have drifted back onto the components path.
 
 ---
 
@@ -51,7 +50,7 @@ The custom path uses **`stream_chat_flutter_core`** (headless controllers and `*
 `stream_chat_flutter_core` gives you **headless, builder-based** access to Stream data - the `*Core` widgets expose state + pagination through a `builder` callback with **no UI of their own**, so you render every pixel. For a single bespoke channel (a livestream feed, an overlay), the path is:
 
 1. Own one `Channel` and provide it to the subtree with the **`StreamChannel`** inherited widget. `StreamChannel` calls `channel.watch()` on init - it opens the WebSocket and loads the first page for you - and descendants read the channel via `StreamChannel.of(context).channel`.
-2. Render the messages with **`MessageListCore`**, the headless message-list widget (docs: `CS/stream-chat-flutter-core/message-list-core.md`). It reads the channel from the nearest `StreamChannel` and hands you the message list - plus loading / empty / error states and pagination - through builder callbacks:
+2. Render the messages with **`MessageListCore`**, the headless message-list widget (docs: "Custom message list state (core)" in [`docs-map.md`](docs-map.md)). It reads the channel from the nearest `StreamChannel` and hands you the message list - plus loading / empty / error states and pagination - through builder callbacks:
 
 ```dart
 MessageListCore(
@@ -77,9 +76,9 @@ MessageListCore(
 
 ## Step 3: Connect the client - tune it for the vertical, and pick the viewer auth
 
-Initialize the client **once** in an owned place (a service / provider / singleton), never in a widget `build()` ([`RULES.md`](RULES.md) "Client lifetime"), and provide it with `StreamChatCore` (a `builder` around `MaterialApp`) - see `CS/stream-chat-flutter-core/stream-chat-core.md`. Do **not** attach a persistence client: the default in-memory client is exactly right for an ephemeral, high-volume feed.
+Initialize the client **once** in an owned place (a service / provider / singleton), never in a widget `build()` ([`RULES.md`](RULES.md) "Client lifetime"), and provide it with `StreamChatCore` (a `builder` around `MaterialApp`) - see "`StreamChatCore` / reconnect recovery" in [`docs-map.md`](docs-map.md). Do **not** attach a persistence client: the default in-memory client is exactly right for an ephemeral, high-volume feed.
 
-**Viewer auth - match it to whether the viewer posts** (see [`RULES.md`](RULES.md) "Permissions" and `CD/authless-users.md`). All three return a `Future<OwnUser>`:
+**Viewer auth - match it to whether the viewer posts** (see [`RULES.md`](RULES.md) "Permissions" and "Guest / anonymous users" in [`docs-map.md`](docs-map.md)). All three return a `Future<OwnUser>`:
 - Read-only viewers (the majority on a livestream): `await client.connectAnonymousUser();` - no MAU cost, reads `livestream` channels.
 - Pre-account viewers who post a little: `await client.connectGuestUser(User(id: 'guest-123'));`.
 - A signed-in user who posts: `await client.connectUser(User(id: 'alice', name: 'Alice'), token);` with a backend/CLI token.
@@ -90,7 +89,7 @@ Initialize the client **once** in an owned place (a service / provider / singlet
 final channel = client.channel('livestream', id: 'game5');
 ```
 
-Set the per-message throttling knobs (slow mode, read/typing events) on the channel type **server-side** - Stream Dashboard -> Chat -> Channel Types, or the CLI / API - so they apply before the feed scales. Read `CS/guides/livestream-best-practices.md` before scaling.
+Set the per-message throttling knobs (slow mode, read/typing events) on the channel type **server-side** - Stream Dashboard -> Chat -> Channel Types, or the CLI / API - so they apply before the feed scales. Read the "Livestream chat" docs ([`docs-map.md`](docs-map.md)) before scaling.
 
 ---
 
@@ -155,7 +154,7 @@ Pull fields off `Message`: `.text`, `.user` (`User` -> `.name`, `.image`, `.id`)
 
 ## Step 5: Compose + send
 
-Build a plain `TextField` + button, clear the `TextEditingController` optimistically, and post with `channel.sendMessage(Message(text: body))` (`CD/send-message.md`).
+Build a plain `TextField` + button, clear the `TextEditingController` optimistically, and post with `channel.sendMessage(Message(text: body))` ("Send / edit / delete messages" in [`docs-map.md`](docs-map.md)).
 
 **Slow-mode cooldown.** When the design shows it, gate the send button on the per-user cooldown and show a countdown:
 
@@ -233,7 +232,7 @@ A custom UI is not done until it builds, runs against **real seeded data**, and 
 
 ## Grounding (do not guess controller / client signatures)
 
-Per [`RULES.md`](RULES.md) "Docs discipline": confirm every symbol above against the project's **pinned** version - the core-layer and low-level-client APIs move between releases. Fetch the core docs first (`CS/stream-chat-flutter-core/message-list-core.md`, `CS/stream-chat-flutter-core/stream-chat-core.md`, `CD/send-message.md`, `CD/slow-mode.md`), then escalate to the pinned source:
+Per [`RULES.md`](RULES.md) "Docs discipline": confirm every symbol above against the project's **pinned** version - the core-layer and low-level-client APIs move between releases. Fetch the core docs first (the "Custom message list state (core)", "`StreamChatCore` / reconnect recovery", "Send / edit / delete messages" and "Slow mode" rows in [`docs-map.md`](docs-map.md)), then escalate to the pinned source:
 
 ```bash
 # pinned versions from pubspec.lock

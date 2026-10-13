@@ -2,7 +2,6 @@
 
 Run this once per session for integrate, new-app, and Sendbird-migration requests, before feature work. How-to / reference requests skip it and go straight to **Docs lookup** in [`SKILL.md`](SKILL.md). Obey [`RULES.md`](RULES.md) throughout.
 
-> Docs paths written as `CS/...`, `CD/...`, `V/...`, `F/...` use the URL prefixes defined at the top of [`docs-map.md`](docs-map.md) (Chat SDK, Chat client, Video, Feeds); expand them before fetching.
 
 ---
 
@@ -107,7 +106,7 @@ Future<void> _setupFollows(StreamFeedsClient client) async {
 }
 ```
 
-If the pinned `stream_feeds` exposes the idempotent `getOrCreateFollow` (see `F/follows.md` in [`docs-map.md`](docs-map.md)), prefer it over the guard. For posting activities, follow `F/activities.md`.
+If the pinned `stream_feeds` exposes the idempotent `getOrCreateFollow` (see "Follow / unfollow" in [`docs-map.md`](docs-map.md)), prefer it over the guard. For posting activities, follow the "Post / update / partial-update / delete activities" docs.
 
 ---
 
@@ -124,7 +123,7 @@ Use `flutter pub add` so pub resolves the current release; install only what the
 | Video extras | `stream_video_push_notification` (ringing), `stream_video_filters`, `stream_video_noise_cancellation` - same version as `stream_video_flutter` | - |
 | Feeds | `stream_feeds` | never `stream_feed` / `stream_feed_flutter_core` |
 
-For exact constraints, SDK floors (Dart / Flutter versions) and per-platform requirements, fetch the install page from [`docs-map.md`](docs-map.md): Chat `CS/basics/installation.md`, Video `V/basics/installation.md`, Feeds `F/installation.md`.
+For exact constraints, SDK floors (Dart / Flutter versions) and per-platform requirements, fetch the product's install page from [`docs-map.md`](docs-map.md) (Chat "Install packages", Video "Install packages + platform permissions", Feeds "install" in the Feeds intro).
 
 ---
 
@@ -142,7 +141,7 @@ Fetch the install page for the standard permissions and `Info.plist` keys, then 
 
 ## 5. Wire the client
 
-Initialize once before `runApp` (or in the existing DI) and connect the user, following the getting-started page for the product ([`docs-map.md`](docs-map.md): Chat `CS/stream-chat-flutter/introduction.md` or `CS/stream-chat-flutter-core/setup.md`; Video `V/basics/quickstart.md` + `V/guides/client-auth.md`; Feeds `https://getstream.io/activity-feeds/docs/flutter.md`). Honor [`RULES.md`](RULES.md) "Client lifetime". If chat is only one section of a larger app, connect lazily per `CS/guides/initialize-stream-chat-widget-tree.md` instead of blocking `runApp`.
+Initialize once before `runApp` (or in the existing DI) and connect the user, following the getting-started page for the product ([`docs-map.md`](docs-map.md): Chat "Getting started, pre-built UI" or "Getting started, core / custom UI"; Video "First call in minutes" + "Client init, tokens, guest / anonymous users"; Feeds "quick start" in the Feeds intro). Honor [`RULES.md`](RULES.md) "Client lifetime". If chat is only one section of a larger app, connect lazily per "Chat in only part of the widget tree" in the map instead of blocking `runApp`.
 
 If the user only asked for setup, stop here.
 

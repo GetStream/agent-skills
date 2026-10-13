@@ -319,9 +319,8 @@ in `StreamChannel(channel: channel, child: ...)`. The `StreamChat` -> `StreamCha
 Edit / quote / thread silently do nothing until you share one `StreamMessageComposerController`
 (passed as `messageComposerController:`) and wire the list view's `onReplyTap:`
 (-> `controller.quotedMessage = message`), `onEditMessageTap:` (-> `controller.editMessage(message)`),
-and `threadBuilder:` - the canonical recipe is the message-list docs page
-(`https://getstream.io/chat/docs/sdk/flutter/stream-chat-flutter/message-list/stream-message-list-view.md`,
-threads + replies) plus `https://getstream.io/chat/docs/sdk/flutter/stream-chat-flutter/message-list/inline-replies.md`; follow them, don't re-derive it. Assuming a Stream widget "just handles it" is the #1 silent
+and `threadBuilder:` - the canonical recipe is the "Message list" and "Inline replies" rows in
+[`docs-map.md`](docs-map.md); follow them, don't re-derive it. Assuming a Stream widget "just handles it" is the #1 silent
 behavioral drop in a composed screen - these are exactly the interactions section 0.5 habit 3 drives on the
 device: if you didn't drive it, it doesn't work. UIKit also shipped channel-row actions inside its
 screens - wire `onChannelLongPress` for a channel action sheet where the source had one. Keep the

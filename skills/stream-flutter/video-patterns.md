@@ -2,7 +2,6 @@
 
 The docs ([`docs-map.md`](docs-map.md) "Video") cover each API. This file holds the cross-cutting patterns that have no docs page: a TikTok-style livestream feed, a 1:1 call over a live broadcast, sharing state across a call, audio-room "live" listing, and gluing Chat to Video. Obey [`RULES.md`](RULES.md) "Video" throughout. Confirm every symbol against the pinned `stream_video` source before shipping.
 
-> Docs paths written as `CS/...`, `CD/...`, `V/...`, `F/...` use the URL prefixes defined at the top of [`docs-map.md`](docs-map.md) (Chat SDK, Chat client, Video, Feeds); expand them before fetching.
 
 ---
 
@@ -69,13 +68,13 @@ Wiring:
 - Render with `LivestreamPlayer(call: call, onCallDisconnected: (_) {})` - the no-op callback is required, because the default pops the route and would dismiss the whole feed. Use `joinBehaviour: LivestreamJoinBehaviour.manualJoin` if the manager must fully own join timing.
 - Derive "live" from state (`otherParticipants.any((p) => p.isVideoEnabled)` via `PartialCallStateBuilder`, or filter by the `host` role) - never keep a separate flag.
 - With the default `allowMultipleActiveCalls: false`, the SDK also leaves the prior call when the new `join()` lands; the explicit `leave()` just stops old media sooner.
-- Feed viewers never publish. Hosts are a standard livestream host (`V/ui-cookbook/hosting-a-livestream.md`) using the feed item id as the call id. In production, list the feed from `queryCalls` or your backend.
+- Feed viewers never publish. Hosts are a standard livestream host ("Livestream: guide / host / watch" in [`docs-map.md`](docs-map.md)) using the feed item id as the call id. In production, list the feed from `queryCalls` or your backend.
 
 ---
 
 ## 2. Floating 1:1 call over a live broadcast (multicall)
 
-The host is live; a viewer rings them; the host accepts into a small floating window while the broadcast stays connected, then everything resumes when the 1:1 ends. Requires `StreamVideoOptions(allowMultipleActiveCalls: true)`; the default `MultiCallAudioPolicy.suspendExisting` hands audio focus over automatically. Docs: `V/advanced/multiple-simultaneous-calls-support.md`, `V/ui-cookbook/multicall.md`.
+The host is live; a viewer rings them; the host accepts into a small floating window while the broadcast stays connected, then everything resumes when the 1:1 ends. Requires `StreamVideoOptions(allowMultipleActiveCalls: true)`; the default `MultiCallAudioPolicy.suspendExisting` hands audio focus over automatically. Docs: "Multiple simultaneous calls" in [`docs-map.md`](docs-map.md).
 
 Host side:
 
@@ -97,13 +96,13 @@ Decision rule: **must a client that joins later still see it?**
 - **Yes -> custom data** (`call.update(custom: ...)`): durable, stored on the call, re-synced through `CallState.custom` on join. `update(custom:)` **replaces the whole map** - always read, merge, write. Needs the `update-call` capability (granted to `user` on `default`; often not on `audio_room` / `livestream` - grant it or route writes through the host). Read reactively from `call.state` (`StreamBuilder` on `asStream()`); before joining, read once from `(await call.get()).getDataOrNull()?.metadata.details.custom`.
 - **No -> custom event** (`call.sendCustomEvent(eventType: 'raise-hand', custom: {...})`, received with `call.callEvents.on<StreamCallCustomEvent>(...)`): ephemeral, only clients connected at send time get it. If late joiners must know the resulting state, also mirror it into custom data.
 
-Docs: `V/advanced/custom-data.md`, `V/guides/call-events.md`.
+Docs: "Custom call data" and "Call events / custom events" in [`docs-map.md`](docs-map.md).
 
 ---
 
 ## 4. Audio rooms: speak requests and the live lobby
 
-`audio_room` starts in backstage: hosts join and `goLive()`; listeners can join once live, with mic and camera off. Docs: `V/ui-cookbook/audio-room-with-chat.md`, `V/guides/permissions-and-moderation.md`.
+`audio_room` starts in backstage: hosts join and `goLive()`; listeners can join once live, with mic and camera off. Docs: "Audio rooms (+ chat)" and "Roles, permissions, request-to-speak, moderation" in [`docs-map.md`](docs-map.md).
 
 | Step | API |
 |---|---|
@@ -121,7 +120,7 @@ Docs: `V/advanced/custom-data.md`, `V/guides/call-events.md`.
 
 ## 5. Chat + Video in one app
 
-Docs: `V/ui-cookbook/chat-with-video.md`. Same API key and **one** user JWT for both - do not mint separate tokens.
+Docs: "Chat app with video calls" in [`docs-map.md`](docs-map.md). Same API key and **one** user JWT for both - do not mint separate tokens.
 
 - **Alias the imports** - both SDKs export `User`: `import 'package:stream_chat_flutter/stream_chat_flutter.dart' as chat;` and `import 'package:stream_video_flutter/stream_video_flutter.dart' as video;`. Map one app user to `chat.User(id:, name:, image:)` and `video.User(info: video.UserInfo(id:, name:, image:))`.
 - `StreamChatClient` lives in the `StreamChat` widget; `StreamVideo(...)` is its own singleton, typically created at login with the same token. Log out of both: `chatClient.disconnectUser()` and `StreamVideo.reset(disconnect: true)` (guard with `StreamVideo.isInitialized()`).

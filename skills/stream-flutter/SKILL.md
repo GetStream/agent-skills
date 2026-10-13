@@ -56,8 +56,6 @@ Per-product **index** pages list every page with its `.md` URL:
 | Video | `https://getstream.io/cli/docs/video-flutter.md` | `https://getstream.io/video/docs/flutter/...md` |
 | Feeds | `https://getstream.io/cli/docs/activity-feeds-flutter.md` | `https://getstream.io/activity-feeds/docs/flutter/...md` |
 
-The skill's files abbreviate docs paths as `CS/` (Chat SDK), `CD/` (Chat client), `V/` (Video) and `F/` (Feeds); [`docs-map.md`](docs-map.md) defines the full prefixes.
-
 **URL grounding:** only fetch a page URL you got from [`docs-map.md`](docs-map.md) or from a live index fetch in this conversation. Do not invent doc paths from memory - many look guessable but are wrong. If a page is not in the map, fetch the live index and pick from it.
 
 ---

@@ -2,7 +2,6 @@
 
 Every rule below is stated once. Read it before writing code. The docs cover *how* to use each API (route through [`docs-map.md`](docs-map.md)); this file covers what the docs do not shout about and what breaks builds.
 
-> Docs paths written as `CS/...`, `CD/...`, `V/...`, `F/...` use the URL prefixes defined at the top of [`docs-map.md`](docs-map.md) (Chat SDK, Chat client, Video, Feeds); expand them before fetching.
 
 ---
 
@@ -51,7 +50,7 @@ The SDK talks to a rate-limited, billed backend. Read the relevant best-practice
 - **No rendering loops.** A controller or query created in `build` re-fires network calls on every rebuild - the symptom is a list that resets pagination or a screen that reconnects on every appear.
 - **Authenticate once.** For expiring tokens supply a token provider (`tokenOrProvider` / `tokenLoader` / `tokenProvider`) and let the SDK refresh - never poll or reconnect in a loop.
 - **Throttle search-as-you-type**, and back off on errors instead of retrying tightly.
-- **Livestream chat:** use the `livestream` channel type; disable read events, typing indicators, connect events, uploads and custom messages; skip offline persistence; enable slow mode for high traffic. Source: `CS/guides/livestream-best-practices.md`.
+- **Livestream chat:** use the `livestream` channel type; disable read events, typing indicators, connect events, uploads and custom messages; skip offline persistence; enable slow mode for high traffic. Source: the "Livestream chat" row in [`docs-map.md`](docs-map.md).
 
 ## Docs discipline
 
@@ -86,7 +85,7 @@ Permission checks apply to **client-side calls only** - server-side calls (CLI /
 | Leave (`channel.removeMembers([myId])`) | `Remove Own Channel Membership` (`RemoveOwnChannelMembership`) | varies |
 | Create a channel | `Create Channel` (`CreateChannel`) | usually on |
 
-`guest` is stricter than `user` and needs the grants too. Grant them in Dashboard -> Chat -> Roles & Permissions (permissions v2) or via `UpdateChannelType`; verify, don't assume, since defaults depend on the app's history. Pick the channel type to fit the vertical: `messaging` (membership-gated DMs/groups), `team` (workplace), `livestream` (public read/write, guests and anonymous viewers), `ai` (user-to-LLM). Never give the app the secret or an `admin` role. Reference: `CD/permissions-reference.md`.
+`guest` is stricter than `user` and needs the grants too. Grant them in Dashboard -> Chat -> Roles & Permissions (permissions v2) or via `UpdateChannelType`; verify, don't assume, since defaults depend on the app's history. Pick the channel type to fit the vertical: `messaging` (membership-gated DMs/groups), `team` (workplace), `livestream` (public read/write, guests and anonymous viewers), `ai` (user-to-LLM). Never give the app the secret or an `admin` role. Reference: the "Permissions / channel types" row in [`docs-map.md`](docs-map.md).
 
 ### Version
 
@@ -112,7 +111,7 @@ This skill targets **`stream_chat_flutter` / `stream_chat_flutter_core` v10**. v
 
 ### Design fidelity
 
-- **Matching a reference design is not a theming task - there are TWO axes.** When the request carries a target appearance (screenshot, Figma, "make it look like <app>", or a migration's source app), run [`design-matching.md`](design-matching.md) and decompose every region first. Setting the bubble color and wallpaper and stopping is the known failure - the composer button set, metadata placement (author / timestamp / receipts relative to the bubble), bubble tail, header and date-separator pill are **structural** and need widget replacement. The grouped 1/2/3/4+ photo collage is already the default - do not rebuild it. The axes: **theming** (`StreamTheme` for foundations + the message row and every leaf widget; `StreamChatThemeData` for the chat composite widgets only) and **structure** (the component factory - core slots on `StreamComponentBuilders`, chat slots via `streamChatComponentBuilders(...)` - plus per-widget builders). Docs: `CS/stream-chat-flutter/stream-chat-and-theming.md`, `CS/stream-chat-flutter/customizing-widgets.md`.
+- **Matching a reference design is not a theming task - there are TWO axes.** When the request carries a target appearance (screenshot, Figma, "make it look like <app>", or a migration's source app), run [`design-matching.md`](design-matching.md) and decompose every region first. Setting the bubble color and wallpaper and stopping is the known failure - the composer button set, metadata placement (author / timestamp / receipts relative to the bubble), bubble tail, header and date-separator pill are **structural** and need widget replacement. The grouped 1/2/3/4+ photo collage is already the default - do not rebuild it. The axes: **theming** (`StreamTheme` for foundations + the message row and every leaf widget; `StreamChatThemeData` for the chat composite widgets only) and **structure** (the component factory - core slots on `StreamComponentBuilders`, chat slots via `streamChatComponentBuilders(...)` - plus per-widget builders). Docs: the "Theming" and "Component factory" rows in [`docs-map.md`](docs-map.md).
 - **Colors come from `StreamTheme`** (a `ThemeExtension` on `MaterialApp.theme.extensions`, built with `StreamColorScheme.fromSeed(...)` / `.light()` / `.dark()`), not from the Material `ColorScheme`. Fetch the theming page before writing any theme code.
 - **Padding / insets / corner radius are theme VALUES, never a reason to replace a widget.** They live on `StreamTheme.messageItemTheme` (bubble / text / attachment padding, shapes) as content-kind-resolved `StreamMessageLayoutProperty` values - override with `resolveWith(...)`, preserving the branches you are not changing. If a token is not on `StreamChatThemeData`, look on `StreamTheme` before concluding it does not exist.
 - **Overriding a composite slot drops every sub-feature the default rendered.** `messageItem` / `messageBuilder`, `messageComposer` (+ input sub-slots) and `itemBuilder` draw the incoming avatar, grouping, reactions, replies, delivery status - or the composer's send / voice / confirm-edit / slow-mode state machine. Before overriding one, read the default widget's `build()` in the pinned source, enumerate every sub-widget, and reproduce each (reuse the SDK's public sub-widgets) or tell the user what you dropped. **Never return a public widget from its own slot override** (`StreamMessageItem.fromProps`, `StreamMessageBubble`, `StreamMessageComposerInput`) - it re-enters the factory and stack-overflows; wrap the barrel-exported `Default*` widget instead. (`StreamMessageItem.fromProps` is fine inside the per-widget `messageBuilder`.)

@@ -2,12 +2,11 @@
 
 Triggered by requests like "add push notifications for chat", "incoming calls should ring when the app is closed", "CallKit", "FCM ringing", or "missed call notification". The SDK calls are in the docs; this runbook covers the order, the external setup the agent cannot do, and the traps. Obey [`RULES.md`](RULES.md) throughout - the APNs key and Firebase service account go to Stream via the CLI, never into the app or git.
 
-> Docs paths written as `CS/...`, `CD/...`, `V/...`, `F/...` use the URL prefixes defined at the top of [`docs-map.md`](docs-map.md) (Chat SDK, Chat client, Video, Feeds); expand them before fetching.
 
 Docs to fetch as you go ([`docs-map.md`](docs-map.md)):
 
-- Chat: `CS/guides/push-notifications.md`
-- Video: `V/advanced/incoming-calls/overview.md`, and in the same folder `ringing.md`, `providers-configuration.md`, `push-notifications.md`, `callkit-integration.md`, `android-firebase-integration.md`, `customization.md`
+- Chat: the "Push notifications" row under Chat -> Production.
+- Video: the "Ringing and push" section (overview, ringing, providers, push notifications, CallKit, Android FCM + Telecom, customization).
 
 ---
 
@@ -88,7 +87,7 @@ jq -n --rawfile key /path/AuthKey_<KEYID>.p8 \
 - `google-services.json` in `android/app/`; apply `com.google.gms.google-services` in `android/app/build.gradle.kts` (`id("com.google.gms.google-services")`) and declare its version in `android/settings.gradle.kts` (Kotlin DSL - Groovy snippets do not parse).
 - `android:launchMode="singleInstance"` (or `singleTask`) on the main `<activity>` so notification taps do not stack call screens.
 - Manifest: `POST_NOTIFICATIONS` plus the Video permissions from the install page (foreground-service permissions come from the plugin). Request `POST_NOTIFICATIONS` at runtime on Android 13+ and `BLUETOOTH_CONNECT` before calls; on Android 14+ call `StreamVideoPushNotificationManager.ensureFullScreenIntentPermission()` for lock-screen ringing.
-- **Android 17 Telecom:** the ringing flow registers calls with Jetpack Telecom by default on Android 17+ devices (`AndroidPushConfiguration(telecom: TelecomPushConfiguration(...))`). For an app targeting API 37, Android 17 drops the ringtone of a push-started call unless it is in Telecom - so **never set `enabled: false`** unless the app rings some other way. The plugin needs a JDK 17+ Gradle build. Details: the Telecom section of `V/advanced/incoming-calls/android-firebase-integration.md`.
+- **Android 17 Telecom:** the ringing flow registers calls with Jetpack Telecom by default on Android 17+ devices (`AndroidPushConfiguration(telecom: TelecomPushConfiguration(...))`). For an app targeting API 37, Android 17 drops the ringtone of a push-started call unless it is in Telecom - so **never set `enabled: false`** unless the app rings some other way. The plugin needs a JDK 17+ Gradle build. Details: the Telecom section of `https://getstream.io/video/docs/flutter/advanced/incoming-calls/android-firebase-integration.md`.
 
 ---
 
@@ -104,7 +103,7 @@ Wire all push code now, but keep the app compiling and running before Step 1 is 
 
 ### Chat push
 
-Per `CS/guides/push-notifications.md`:
+Per the Chat "Push notifications" docs ([`docs-map.md`](docs-map.md)):
 
 - Register **after** `connectUser` and again on every `FirebaseMessaging.instance.onTokenRefresh`: `client.addDevice(token, PushProvider.firebase, pushProviderName: '<name>')`.
 - On logout, `await client.removeDevice(token)` **before** `disconnectUser()`.
