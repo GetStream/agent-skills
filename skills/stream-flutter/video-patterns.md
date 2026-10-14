@@ -114,7 +114,7 @@ Docs: "Custom call data" and "Call events / custom events" in [`docs-map.md`](do
 
 - Dismissing a request in the host UI does nothing server-side - **deny is not revoke**; call `revokePermissions` to take the mic back.
 - `setMicrophoneEnabled` without `sendAudio` returns a failure `Result` rather than publishing.
-- **Listing live rooms / livestreams:** filter on the documented `backstage` and `ended_at` fields ("Query calls / members" in [`docs-map.md`](docs-map.md)) - e.g. `queryCalls(filterConditions: {'type': 'livestream', 'backstage': false, 'ended_at': {r'$exists': false}}, sorts: [SortParamRequest(field: 'created_at', direction: -1)])`. Verified end to end for `livestream` (backstage calls hidden, live ones shown, ended ones dropped) for a viewer who is not a member; use the same filter with `'type': 'audio_room'`. Keep an app-managed `custom` flag only for states the server fields do not express.
+- **Listing live rooms / livestreams:** filter on the documented `backstage: false` and `ended_at: {r'$exists': false}` fields - see "Finding live streams" in the livestreaming guide and "Query calls / members" in [`docs-map.md`](docs-map.md). Use the same filter with `'type': 'audio_room'`. Keep an app-managed `custom` flag only for states the server fields do not express.
 
 ---
 

@@ -167,7 +167,7 @@ All page URLs end in `.md` (the Markdown twin - see [`SKILL.md`](SKILL.md)). Fet
 
 | Want to ... | Page (.md) |
 |---|---|
-| Livestream: guide / host / watch (host flow - states, `goLive` / `stopLive` / `end`, roles - is in the guide; the hosting page is currently a stub pointing to the tutorial) | `https://getstream.io/video/docs/flutter/guides/livestreaming.md`, `https://getstream.io/video/docs/flutter/ui-cookbook/hosting-a-livestream.md`, `https://getstream.io/video/sdk/flutter/tutorial/livestreaming.md`, `https://getstream.io/video/docs/flutter/ui-cookbook/watching-a-livestream.md` |
+| Livestream: guide (incl. its "Hosting a livestream" and "Finding live streams" sections) / host screen / watch | `https://getstream.io/video/docs/flutter/guides/livestreaming.md`, `https://getstream.io/video/docs/flutter/ui-cookbook/hosting-a-livestream.md`, `https://getstream.io/video/docs/flutter/ui-cookbook/watching-a-livestream.md` |
 | HLS / RTMP broadcasting | `https://getstream.io/video/docs/flutter/advanced/broadcasting.md` |
 | Recording | `https://getstream.io/video/docs/flutter/advanced/recording.md` |
 | Audio rooms (+ chat) | `https://getstream.io/video/docs/flutter/ui-cookbook/audio-room-with-chat.md` |
