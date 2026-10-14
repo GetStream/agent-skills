@@ -151,7 +151,7 @@ This skill targets **`stream_chat_flutter` / `stream_chat_flutter_core` v10**. v
 
 ### Livestream
 
-- Never use `StreamCallContainer` in a livestream flow - use `LivestreamPlayer` for viewers (it handles join, backstage / ended states, PiP) and a custom host view.
+- Never use `StreamCallContainer` in a livestream flow - use `LivestreamPlayer` for viewers (it handles join, backstage / ended states, PiP) and a custom host view. Its default `onCallDisconnected` leaves the call and **pops the route** when the host ends the stream, so the ended view (`livestreamEndedWidgetBuilder`, recordings) never shows - pass your own `onCallDisconnected` if the design has one.
 - Derive live state from `call.state.value.isBackstage`; do not keep a separate `isLive` flag. Guard `join()` against double calls when a screen is re-entered.
 - The creator gets `join-backstage` via `MemberRequest(userId: ..., role: 'host')` at create time; roles and grants are configured server-side.
 - **Backstage is not private when `joinAheadTimeSeconds > 0`:** viewers may join that many seconds before `startsAt` and receive the host's audio/video before `goLive()`. Keep it at 0 unless a pre-show lobby is wanted, or keep the host muted until live.

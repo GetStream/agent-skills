@@ -1,6 +1,6 @@
 # Stream Flutter - Video patterns the docs do not cover
 
-The docs ([`docs-map.md`](docs-map.md) "Video") cover each API. This file holds the cross-cutting patterns that have no docs page: a TikTok-style livestream feed, a 1:1 call over a live broadcast, sharing state across a call, audio-room "live" listing, and gluing Chat to Video. Obey [`RULES.md`](RULES.md) "Video" throughout. Confirm every symbol against the pinned `stream_video` source before shipping.
+The docs ([`docs-map.md`](docs-map.md) "Video") cover each API. This file holds the cross-cutting patterns that have no docs page: a TikTok-style livestream feed, a 1:1 call over a live broadcast, sharing state across a call, listing live audio rooms and livestreams, and gluing Chat to Video. Obey [`RULES.md`](RULES.md) "Video" throughout. Confirm every symbol against the pinned `stream_video` source before shipping.
 
 
 ---
@@ -100,7 +100,7 @@ Docs: "Custom call data" and "Call events / custom events" in [`docs-map.md`](do
 
 ---
 
-## 4. Audio rooms: speak requests and the live lobby
+## 4. Audio rooms and live listings: speak requests and the live lobby
 
 `audio_room` starts in backstage: hosts join and `goLive()`; listeners can join once live, with mic and camera off. Docs: "Audio rooms (+ chat)" and "Roles, permissions, request-to-speak, moderation" in [`docs-map.md`](docs-map.md).
 
@@ -114,7 +114,7 @@ Docs: "Custom call data" and "Call events / custom events" in [`docs-map.md`](do
 
 - Dismissing a request in the host UI does nothing server-side - **deny is not revoke**; call `revokePermissions` to take the mic back.
 - `setMicrophoneEnabled` without `sendAudio` returns a failure `Result` rather than publishing.
-- **Listing live rooms:** `isBackstage` is not a useful lobby filter, so keep an app-managed flag in sync: `call.update(custom: {'live': true})` right after `goLive()` and `{'live': false}` after `stopLive()`, then `queryCalls(filterConditions: {'type': 'audio_room', 'live': true})`. The flag is app-managed - the SDK's source of truth stays `isBackstage`.
+- **Listing live rooms / livestreams:** filter on the documented `backstage` and `ended_at` fields ("Query calls / members" in [`docs-map.md`](docs-map.md)) - e.g. `queryCalls(filterConditions: {'type': 'livestream', 'backstage': false, 'ended_at': {r'$exists': false}}, sorts: [SortParamRequest(field: 'created_at', direction: -1)])`. Verified end to end for `livestream` (backstage calls hidden, live ones shown, ended ones dropped) for a viewer who is not a member; use the same filter with `'type': 'audio_room'`. Keep an app-managed `custom` flag only for states the server fields do not express.
 
 ---
 
