@@ -178,5 +178,8 @@ Full runbook: [`push.md`](push.md). The traps:
 - The built-in feed groups (`user`, `timeline`, `notification`, `foryou`, `story`, `stories`) already exist - do not create them.
 - A user's timeline does not show their own posts unless the timeline follows their own `user` feed - set this up unconditionally on first connect (see [`setup.md`](setup.md)).
 - Comments are a real Comments API (`addComment`, threaded), not a reaction with a text payload.
+- **`feed.addActivity` does not add its own feed id** (through 0.6.1): `FeedAddActivityRequest.feeds` defaults to `[]` and the server rejects it with 400 "feeds is a required field". Always pass `feeds: [feed.fid.rawValue]`, even though the quick start and activities docs omit it.
+- **`state.following` / `followers` / `members` stay empty unless the query asks for them.** Read the feed through `client.feedFromQuery(FeedQuery(fid: ..., followingLimit: / followerLimit: / memberLimit: ...))` before relying on those lists (e.g. to show a Follow / Unfollow button or guard a follow).
+- `StateNotifierBuilder` comes from `flutter_state_notifier`, a separate dependency.
 - **No pre-built UI.** Build every feed screen with Flutter widgets. Default to **Twitter-style** (home timeline, activity card with avatar / name / @handle / time / text / comment + like row, compose, profile with follow button, notifications) without asking; deviate only when the user explicitly asks (Instagram grid, Reddit-style votes, photo-first). The style changes widget composition only - SDK calls are the same.
 - Never trigger `queryMore*` from `itemBuilder` on every rebuild - gate it on scroll position and a loading flag.

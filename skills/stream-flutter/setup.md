@@ -91,16 +91,18 @@ Pick `--type` to match the vertical (`messaging`, `team`, `livestream` - see [`R
 
 ### Feeds: self-follow and seed posts
 
-The CLI has no Feeds seeding commands, so generate two separate helpers called in `main` after `await client.connect()`:
-
-1. **`_setupFollows(client)` - always, unconditionally.** The `timeline` feed only shows feeds it follows; without `timeline:<me>` following `user:<me>` the user never sees their own posts. Never merge it into the seed helper - once data exists the seed guard returns early and the follow never runs.
-2. **`_seedPosts(client)` - only if the user said yes, dev only.** Skip when the user feed already has activities.
+1. **Self-follow - in the app, always, unconditionally.** The `timeline` feed only shows feeds it follows; without `timeline:<me>` following `user:<me>` the user never sees their own posts. Generate a `_setupFollows(client)` helper called in `main` after `await client.connect()`, separate from any seeding (real users need it too):
 
 ```dart
 Future<void> _setupFollows(StreamFeedsClient client) async {
   final userId = client.user.id;
-  final timeline = client.feedFromId(FeedId.timeline(userId));
-  await timeline.getOrCreate(); // populates state.following
+  // followingLimit is required: without it getOrCreate() returns an EMPTY
+  // state.following, the guard is always false, and follow() then fails
+  // with "... already exists in accepted state" on every launch.
+  final timeline = client.feedFromQuery(
+    FeedQuery(fid: FeedId.timeline(userId), followingLimit: 100, watch: false),
+  );
+  await timeline.getOrCreate();
   final already = timeline.state.following
       .any((f) => f.targetFeed.fid == FeedId.user(userId));
   if (!already) {
@@ -109,7 +111,21 @@ Future<void> _setupFollows(StreamFeedsClient client) async {
 }
 ```
 
-If the pinned `stream_feeds` exposes the idempotent `getOrCreateFollow` (see "Follow / unfollow" in [`docs-map.md`](docs-map.md)), prefer it over the guard. For posting activities, follow the "Post / update / partial-update / delete activities" docs.
+`stream_feeds` 0.6.1 has no single-follow `getOrCreateFollow` (the follows docs show it in JavaScript only), so this guard is what runs.
+
+2. **Seed data - via the CLI, only if the user said yes.** `getstream api` has a Feeds group (`GetOrCreateFeed`, `Follow`, `AddActivity`, `AddComment`, `AddActivityReaction`, ...):
+
+```bash
+getstream api GetOrCreateFeed --feed-group-id user --feed-id alice --request '{"user_id":"alice"}'
+getstream api GetOrCreateFeed --feed-group-id timeline --feed-id <token_user_id> --request '{"user_id":"<token_user_id>"}'
+getstream api Follow --request '{"source":"timeline:<token_user_id>","target":"user:alice","create_notification_activity":false}'
+# --jq prints the id WITH quotes - strip them before reusing it
+ID=$(getstream api AddActivity --request '{"type":"post","feeds":["user:alice"],"text":"Hello from Alice","user_id":"alice"}' --jq '.activity.id' | tr -d '"')
+getstream api AddComment --request "{\"object_id\":\"$ID\",\"object_type\":\"activity\",\"comment\":\"Nice!\",\"user_id\":\"bob\"}"
+getstream api AddActivityReaction --activity-id "$ID" --request '{"type":"like","user_id":"<token_user_id>"}'
+```
+
+Seed authors' feeds, have the token user's timeline follow them, then post. For posting from the app, follow the "Post / update / partial-update / delete activities" docs and the `feeds` pitfall in [`RULES.md`](RULES.md) "Feeds".
 
 ---
 
@@ -124,7 +140,7 @@ Use `flutter pub add` so pub resolves the current release; install only what the
 | Chat extras | `stream_chat_persistence` (offline), `stream_chat_localizations` (strings) - both imported separately | - |
 | Video / livestream / audio rooms | `stream_video_flutter` | `stream_video` - re-exported |
 | Video extras | `stream_video_push_notification` (ringing), `stream_video_filters`, `stream_video_noise_cancellation` - same version as `stream_video_flutter` | - |
-| Feeds | `stream_feeds` | never `stream_feed` / `stream_feed_flutter_core` |
+| Feeds | `stream_feeds`, plus `flutter_state_notifier` for `StateNotifierBuilder` (`stream_feeds` only depends on the pure-Dart `state_notifier`) | never `stream_feed` / `stream_feed_flutter_core` |
 
 For exact constraints, SDK floors (Dart / Flutter versions) and per-platform requirements, fetch the product's install page from [`docs-map.md`](docs-map.md) (Chat "Install packages", Video "Install packages + platform permissions", Feeds "install" in the Feeds intro).
 
