@@ -14,6 +14,17 @@ getstream skills
 
 With no arguments, `getstream skills` installs the default set - the `stream` router (which includes the CLI layer), `stream-builder`, and `stream-docs`. The web pack (`stream-react`) and platform packs (`stream-swift`, `stream-android`, `stream-react-native`, `stream-flutter`, `stream-unity`, `stream-unreal`), and `stream-feeds-migration` install on demand via `getstream skills <name>` the first time a task needs them. To set up a project at the same time (auth, org/app selection, credentials), run `getstream init` instead.
 
+### As a plugin
+
+The skills also ship as a plugin for Claude Code and Cursor, together with the Stream MCP server (`https://mcp.getstream.io/mcp`), which signs in with your Stream account and lets the agent list your apps and call the Stream API on them. In Claude Code:
+
+```
+/plugin marketplace add GetStream/agent-skills
+/plugin install stream@getstream
+```
+
+Then run `/mcp` to sign in to the `stream` server.
+
 Use `/stream` for generic routing, or invoke a skill directly with `/stream-react`, `/stream-builder`, `/stream-docs`, `/stream-swift`, `/stream-android`, `/stream-react-native`, `/stream-flutter`, `/stream-unity`, `/stream-feeds-migration`, or `/stream-unreal`. Step-by-step instructions are in the [installation guide](https://getstream.io/agent-skills/docs/installation/).
 
 ## Skills

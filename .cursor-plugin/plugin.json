@@ -2,7 +2,7 @@
   "name": "stream",
   "displayName": "Stream",
   "version": "0.1.0",
-  "description": "Build, query, and manage Stream Chat, Video, Feeds, and Moderation. Scaffold full apps, add products to existing projects, query live data, and configure moderation - all from your editor.",
+  "description": "Build, query, and manage Stream Chat, Video, Feeds, and Moderation. Scaffold full apps, add products to existing projects, and call the Stream API on your apps through the Stream MCP server.",
   "author": {
     "name": "GetStream"
   },
@@ -17,8 +17,14 @@
     "moderation",
     "realtime",
     "messaging",
-    "getstream"
+    "getstream",
+    "mcp"
   ],
   "logo": "assets/logo.png",
-  "skills": "./skills/"
+  "skills": "./skills/",
+  "mcpServers": {
+    "stream": {
+      "url": "https://mcp.getstream.io/mcp"
+    }
+  }
 }

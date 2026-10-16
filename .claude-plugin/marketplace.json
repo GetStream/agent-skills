@@ -1,0 +1,14 @@
+{
+  "name": "getstream",
+  "description": "Stream's plugins for coding agents",
+  "owner": {
+    "name": "GetStream"
+  },
+  "plugins": [
+    {
+      "name": "stream",
+      "source": "./",
+      "description": "Stream agent skills and the Stream MCP server"
+    }
+  ]
+}
