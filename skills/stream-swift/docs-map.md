@@ -167,18 +167,18 @@ Prefix `https://getstream.io/chat/docs/sdk/ios`:
 
 ### Chat - AI integrations (LLM assistants, streaming, agents)
 
-Run [`ai-integration.md`](ai-integration.md) first - it settles 5.13.0 vs the standalone fallback, carries the wiring the docs leave out (including the v5 thinking-indicator workaround), and links the shared backend contract (the model lives on a backend agent, never in the app; the `ai_generated` / `generating` / `ai_indicator.*` protocol). Prefix `https://getstream.io/chat/docs/sdk/ios`:
+Run [`ai-integration.md`](ai-integration.md) first - it settles 5.13.0 vs the standalone fallback, carries the wiring the docs leave out, and links the shared backend contract (the model lives on a backend agent, never in the app; the `ai_generated` / `generating` / `ai_indicator.*` protocol). Prefix `https://getstream.io/chat/docs/sdk/ios`:
 
 | Want to ... | Page (.md) |
 |---|---|
 | AI components (`StreamingMessageView`, `AIComposerView`, `SpeechToTextButton`, `AITypingIndicatorView`, `SuggestionsView`, `StreamingReasoningView`, `SidebarView`, `AIOnDeviceModel`), install from 5.13.0, requirements, `Info.plist` keys, migrating from `stream-chat-swift-ai`, `AIAppearance` + localization, best practices (`ai_generated`, indicator events, stop, ephemeral updates) | `.../guides/ai-integrations.md` |
 | Use them inside `StreamChatSwiftUI` (streaming custom attachment with agent steps, message resolver, thinking indicator via `Styles`) | `.../guides/ai-integrations/swiftui-integration.md` |
-| Agent steps: reasoning, tool calls, approvals (`AIMessagePart`, `AIMessagePartsView`, `AIToolCallView`, `AIToolApprovalView`, `AIToolApprover`), the step format | `.../guides/ai-integrations/reasoning-and-tool-calls.md` |
+| Agent steps: reasoning, tool calls, approvals (`AIMessagePart`, `AIMessagePartsView`, `AIToolCallView`, `AIToolApprovalView`, `AIToolApprovalCard`, `AIToolApprover`), the step format | `.../guides/ai-integrations/reasoning-and-tool-calls.md` |
 | Client-side tools (`AIClientTool`, `AIClientToolDefinition`, `AIClientToolRunner`, registration, `client_id`; from agent steps or `custom_client_tool_invocation` events) | `.../guides/ai-integrations/client-side-tools.md` |
 | Backend agent with the Vercel AI SDK (`@stream-io/chat-ai-sdk`) | `.../guides/ai-integrations/stream-chat-ai-sdk.md` |
 | Backend agent with LangChain (`@stream-io/chat-langchain-sdk`) | `.../guides/ai-integrations/stream-chat-langchain-sdk.md` |
 
-Code: components `GetStream/stream-chat-swift` (`Sources/StreamChatAI`, the `StreamChatAI` product from 5.13.0, added in #4306; the standalone `stream-chat-swift-ai` repo is the fallback for apps below 5.13.0 or on Xcode 26), reference iOS app `GetStream/chat-ai-samples` (`ios/AIComponents`, still on the standalone package - apply the docs' migration steps when copying), reference backends `chat-ai-samples/ai-sdk-sample` and `langchain-sample`. The pages above cover 5.13.0; they no longer show the standalone package's API (take that from its 0.12.0 source).
+Code: components `GetStream/stream-chat-swift` (`Sources/StreamChatAI`, the `StreamChatAI` product from 5.13.0, added in #4306; the standalone `stream-chat-swift-ai` repo is the fallback for apps below 5.13.0 or on Xcode 26), reference iOS app `GetStream/chat-ai-samples` (`ios/AIComponents`, still on the standalone package - apply the docs' migration steps when copying), reference backends `chat-ai-samples/ai-sdk-sample` and `langchain-sample`. The pages above cover 5.13.0 and 5.14.0 (5.14.0 changed nothing in `StreamChatAI`). They no longer show the standalone package's API (take that from its 0.12.0 source).
 
 ### Chat - best practices and limits
 
