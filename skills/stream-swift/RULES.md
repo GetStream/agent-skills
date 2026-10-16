@@ -59,7 +59,7 @@ Runbook: [`ai-integration.md`](ai-integration.md); shared contract: [`../stream/
 - **The model runs on a backend agent, never in the app.** No LLM provider key, Stream secret, or admin token in the iOS target. (The one exception is the optional offline fallback `AIOnDeviceModel`, Apple's on-device model, which needs no key.)
 - **Always state the backend contract** (`ai_generated`, `generating: true/false`, one partially-updated message, `ai_indicator.*`, honor stop) to the developer, and run its CLI check before debugging Swift code. On iOS a missing `generating` means jumping text or a message that never stops "generating".
 - **Stay on the pre-built components.** An AI chat is a messenger surface: `StreamChatSwiftUI` + `StreamChatAI`, not a hand-built list on the low-level client. `StreamChatAI` is a product of `stream-chat-swift` **from 5.13.0** (SwiftUI, iOS 15+, composer iOS 16+, Xcode 27 with SPM): say so, and suggest updating Chat to 5.13.0+. The standalone `stream-chat-swift-ai` package is the fallback (Xcode 26, or Chat kept below 5.13.0) and can't be in the same app as Chat 5.13.0+ - see [`ai-integration.md`](ai-integration.md) Step 0.
-- **Don't drive the stop button from `ai_indicator.update` alone.** On Chat v5 (5.13.0 included) that event fails to decode and is dropped, so the docs' event-only recipe never shows the stop button or "Thinking". Also key both on the reply's `generating` flag - see the pitfall in [`ai-integration.md`](ai-integration.md).
+- **Don't drive the stop button from `ai_indicator.update` alone.** The event isn't replayed to someone who opens the channel mid-reply. On Chat v5 it was also dropped until a server-side fix (2026-10-13; the 5.13.0 / 5.14.0 SDK is unchanged), so an event-only recipe can leave the stop button and "Thinking" hidden. Also key both on the reply's `generating` flag - see the pitfall in [`ai-integration.md`](ai-integration.md).
 
 ## Client lifetime
 
@@ -70,6 +70,22 @@ On account switch, fully disconnect / log out the current user before connecting
 ## UI and concurrency
 
 UI state changes belong on the main actor - hop back to the main actor before mutating SwiftUI or UIKit state from an SDK callback or async task. Match the project's existing concurrency style (async/await vs completion handlers) instead of rewriting unrelated code.
+
+**Don't silence Swift 6 `Sendable` errors with an escape hatch.** That means no `@unchecked Sendable` box, `UncheckedSendable` wrapper, `nonisolated(unsafe)`, or `Task.detached` added just to make a value cross actors. Each one hides the exact data race Swift 6 checking exists to catch. Fix the cause instead:
+- Isolate the state that owns the value (`@MainActor`, or an actor).
+- Pass `Sendable` value types across actors instead of references.
+- Use the framework's `async` API, which does the work on its own threads while the caller only awaits the result. For example, `MTLDevice.makeLibrary(source:options:) async` and `makeRenderPipelineState(descriptor:) async` instead of a detached task.
+- If a framework type is thread-safe but not yet annotated in an older SDK, import that module with `@preconcurrency` only for the toolchains that need it. The iOS 18 SDK doesn't mark `MTLDevice` or `MTLRenderPipelineState` `Sendable`, and every iOS 26 SDK does:
+
+  ```swift
+  #if compiler(>=6.2)
+  import Metal
+  #else
+  @preconcurrency import Metal  // Xcode 16's SDKs don't mark Metal's objects Sendable yet
+  #endif
+  ```
+
+`@unchecked Sendable` is a last resort, only on a type you own whose thread safety you can state, with a comment that says how it is safe. (This came out of the GetStream/stream-chat-swift#4338 review.)
 
 ## Mindful API usage (best practices)
 
