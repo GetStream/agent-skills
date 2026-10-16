@@ -68,7 +68,8 @@ getstream api QueryChannels --request '{"filter_conditions":{"cid":"messaging:<c
 ## Client
 
 Stay on `stream-chat-react` + `@stream-io/chat-react-ai`. It's a 0.x package - check
-props against the installed types. Install `material-symbols` with it.
+props against the installed types. Install `material-symbols` with it. Defaults to keep
+in SKILL.md applies to every override below.
 
 - Pass `isMessageAIGenerated` on `<Chat>`, not per list - the channel list preview uses
   it too.

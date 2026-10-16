@@ -128,11 +128,44 @@ Moderation:
 - Custom moderation rules return 403 on free plans - use blocklist + config
   instead.
 
+## Defaults to keep
+
+The prebuilt components ship features users expect. Keep each one on unless the
+user turns it off by name. A design reference that doesn't show a feature, or
+"keep it minimal", is not turning it off: keep the feature and style it to
+match, or ask.
+
+Override the smallest slot that does the job, and add to existing
+`WithComponents` overrides instead of replacing them. Replacing a whole region
+drops everything it rendered by default:
+
+- A custom `Message` / `VirtualMessage` must put back what the default renders:
+  text, attachments, quoted message, polls, reactions, replies count, actions,
+  timestamp, read status. The full composition is in the docs.
+- A custom `MessageComposerUI` must put back the attachment picker and
+  previews, drag-and-drop upload, link previews, the quoted-message preview,
+  voice recording, and the send button - see the docs.
+
+The defaults, and what usually turns them off:
+
+- Markdown in message text. The default `renderText` renders markdown,
+  mentions, and emoji. Printing `message.text` as a plain string, or a custom
+  `renderText` that doesn't build on the SDK's, turns it off. Check: send
+  `**bold**`, a list, and a code block.
+- Reactions. A custom message without `MessageReactions`, or custom reaction
+  types missing from `reactionOptions`. Check: react, and see the pill.
+- Threads. A layout without `<Thread />`, or a custom message without the
+  replies count button. Check: reply in a thread, and open it from the parent.
+- AI replies: `isMessageAIGenerated` on `<Chat>` (typewriter and markdown), the
+  stop button (replacing the composer drops it), and `AIStateIndicator` inside
+  `<Channel>`. Check: as in ai-integration.md.
+
 ## Verify
 
 Type-check and build, run the dev server, and test multi-user flows in two tabs
-as two different users through browser integration or automation. Report what
-was verified and what wasn't.
+as two different users through browser integration or automation. Run the check
+for each default in Defaults to keep. Report what was verified and what wasn't,
+and list each default that is off with the user's words that turned it off.
 
 ## Auditing an integration
 

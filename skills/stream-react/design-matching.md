@@ -108,6 +108,8 @@ as a flex column, reusing the SDK's textarea/send/attachment pieces.
 
 ## Build
 
+- Defaults to keep in SKILL.md applies: a feature the reference doesn't show (reactions,
+  threads, read status) stays on, styled to match the spec.
 - Reuse SDK pieces inside custom components (`MessageText`, `Attachment`, `Avatar`,
   `ParticipantView`) rather than rebuilding them.
 - **Containers are fluid.** A rail measured at 320px is a proportion at the spec
