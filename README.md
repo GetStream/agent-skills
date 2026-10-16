@@ -29,7 +29,7 @@ Each skill has a reference page on the docs site - the skill names below link to
 | [`/stream-swift`](https://getstream.io/agent-skills/docs/skills/stream-swift/) | Build or integrate Stream in Swift/SwiftUI/UIKit/iOS apps | Swift, SwiftUI, UIKit, iOS, Xcode |
 | [`/stream-android`](https://getstream.io/agent-skills/docs/skills/stream-android/) | Build or integrate Stream in Android/Jetpack Compose apps | Android, Jetpack Compose, Kotlin, Android Studio, Gradle |
 | [`/stream-react-native`](https://getstream.io/agent-skills/docs/skills/stream-react-native/) | Create, build, or integrate Stream Chat or Stream Video React Native in RN CLI or Expo apps | React Native, Expo, `stream-chat-react-native`, `stream-chat-expo`, `@stream-io/video-react-native-sdk`, video call, livestream, audio room, ringing |
-| [`/stream-flutter`](https://getstream.io/agent-skills/docs/skills/stream-flutter/) | Build or integrate Stream Chat in Flutter apps | Flutter, Dart, `stream_chat_flutter`, `stream_chat_flutter_core` |
+| [`/stream-flutter`](https://getstream.io/agent-skills/docs/skills/stream-flutter/) | Build or integrate Stream Chat, Video, and Feeds in Flutter apps | Flutter, Dart, `stream_chat_flutter`, `stream_chat_flutter_core`, `stream_video_flutter`, `stream_feeds` |
 | [`/stream-unity`](https://getstream.io/agent-skills/docs/skills/stream-unity/) | Build or integrate Stream Chat and Stream Video in Unity Engine projects (C#) - Chat + Video, no Feeds | Unity, Unity Engine, Unity 6, MonoBehaviour, `.unitypackage`, `asmdef`, IL2CPP, UGUI, `IStreamChatClient`, `IStreamCall`, in-game chat, unity video call |
 | [`/stream-unreal`](https://getstream.io/agent-skills/docs/skills/stream-unreal/) | Build or integrate Stream Chat in Unreal Engine 5.7/5.8 projects (C++ and Blueprint) - Chat only | Unreal, Unreal Engine, UE5, `.uproject`, `.uplugin`, UMG, widget blueprint, `UStreamChatClientComponent`, in-game chat |
 | `/stream-feeds-migration` | Generate the v2 -> v3 Activity Feeds sync mapping from the app's own live data | "what mapping do we need?", v3sync, v2 to v3, feeds migration, sync mapping, `extra_context`, a migrated activity missing its text/attachments/comments |
@@ -91,7 +91,7 @@ The `/stream` router classifies intent, runs `getstream` CLI commands itself (qu
 | Look up the official SDK documentation (via `getstream docs`) | `stream-docs` (Track D) |
 | Build or integrate a Swift/iOS app | `stream-swift` (docs orchestrator: `docs-map.md` + `setup.md`) |
 | Build or integrate an Android app | `stream-android` + its `builder.md`, `sdk.md`, and `references/*.md` |
-| Build or integrate a Flutter app | `stream-flutter` + its `builder.md`, `sdk.md`, and `references/*.md` |
+| Build or integrate a Flutter app | `stream-flutter` (docs orchestrator: `docs-map.md` + `setup.md` + `push.md`) |
 | Build or integrate a Unity Engine project | `stream-unity` (docs orchestrator: `docs-map.md` + `setup.md` + `ui.md` + `platforms.md`) |
 | Build or integrate an Unreal Engine project | `stream-unreal` (docs orchestrator: `docs-map.md` + `setup.md` + `widgets.md` + `platforms.md`) |
 | Build or review a Feeds v2 -> v3 sync mapping | `stream-feeds-migration` (`SKILL.md` + `references/mapping-keys.md` + `scripts/fetch_sample.py`) |
@@ -143,11 +143,15 @@ Cross-cutting rules (secrets, login screen, strict mode, package manager, base U
   - [`RULES.md`](skills/stream-android/RULES.md) - Android non-negotiable rules
   - [`builder.md`](skills/stream-android/builder.md) + [`sdk.md`](skills/stream-android/sdk.md) - shared Android app integration flow and SDK ownership patterns
   - [`references/`](skills/stream-android/references/) - product/framework-specific Android references and blueprints
-- [`skills/stream-flutter/`](skills/stream-flutter/) - **Flutter sub-skill**
-  - [`SKILL.md`](skills/stream-flutter/SKILL.md) - entrypoint: intent classifier, credentials/token flow, module pointers
-  - [`RULES.md`](skills/stream-flutter/RULES.md) - Flutter non-negotiable rules
-  - [`builder.md`](skills/stream-flutter/builder.md) + [`sdk.md`](skills/stream-flutter/sdk.md) - shared Flutter app integration flow and SDK ownership patterns
-  - [`references/`](skills/stream-flutter/references/) - product/framework-specific Flutter references and blueprints
+- [`skills/stream-flutter/`](skills/stream-flutter/) - **Flutter sub-skill** (docs orchestrator; Chat + Video + Feeds)
+  - [`SKILL.md`](skills/stream-flutter/SKILL.md) - entrypoint: the `.md` docs convention, intent classifier, Chat UI-strategy decision, docs-lookup loop
+  - [`RULES.md`](skills/stream-flutter/RULES.md) - Flutter non-negotiable rules + curated pitfalls (v10 Chat, Video build blockers, Feeds v3)
+  - [`docs-map.md`](skills/stream-flutter/docs-map.md) - intent -> exact official Flutter docs page (Chat UI/core/client, Video, Feeds), plus a pub-cache source / example-app fallback
+  - [`setup.md`](skills/stream-flutter/setup.md) - project detection, v10 check, CLI credentials + seed data, install, platform setup, client wiring
+  - [`push.md`](skills/stream-flutter/push.md) - Chat push + Video ringing runbook: CLI push providers, CallKit / FCM / Telecom, ship-code-defer-config
+  - [`video-patterns.md`](skills/stream-flutter/video-patterns.md) - Video patterns with no docs page (livestream feed, call over a broadcast, shared call state, Chat + Video glue)
+  - [`design-matching.md`](skills/stream-flutter/design-matching.md) + [`custom-ui.md`](skills/stream-flutter/custom-ui.md) - pre-built components vs custom `stream_chat_flutter_core` UI
+  - [`sendbird-migration.md`](skills/stream-flutter/sendbird-migration.md) - Sendbird -> Stream Chat migration runbook
 - [`skills/stream-unity/`](skills/stream-unity/) - **Unity Engine sub-skill** (docs orchestrator; Chat + Video)
   - [`SKILL.md`](skills/stream-unity/SKILL.md) - entrypoint: product / Unity-version-and-target / feature-support gates, the `.md` docs convention plus the per-product coverage caveat (Unity C# vs the .NET server SDK on the same page), and the source-of-truth ladder
   - [`RULES.md`](skills/stream-unity/RULES.md) - Unity non-negotiable rules + the pitfalls that fail silently (the `DontDestroyOnLoad` client runner and duplicate clients, `Dispose()` not disconnecting, unbound video/audio tracks, the 5-participant video cap, IL2CPP stripping)
