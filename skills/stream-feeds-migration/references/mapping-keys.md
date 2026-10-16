@@ -101,8 +101,14 @@ than carrying the literal key name into your response.
 
 | Key | Type | Default | Meaning |
 | --- | --- | --- | --- |
-| `name` | string (dot-path) or `false` | `"name"` | v2 user-data key the v3 user's **name** is read from. |
-| `image` | string (dot-path) or `false` | `"image"` | v2 user-data key the v3 user's **image** is read from. |
+| `name` | string (dot-path), list, or `false` | `"name"`, then `"username"` | v2 user-data key the v3 user's **name** is read from. |
+| `image` | string (dot-path), list, or `false` | `"image"`, then `"profileImage"`, then `"avatar"` | v2 user-data key the v3 user's **image** is read from. |
+
+When a key is not configured, the default source is tried first and then its
+fallbacks, in order; the first non-empty string wins. A fallback's value is
+copied onto `name` / `image` and its own key stays in custom. An explicit
+string uses exactly that source, with no fallbacks. A list sets the sources
+and their order yourself, for example `"image": ["avatar_url", "profileImage"]`.
 
 **These two read in the opposite direction from every other string key**: the
 map key is the *v3* field, the value is the *v2* source. They apply to users
@@ -188,6 +194,16 @@ top-level `parent`:
 { "kind": "like", "data": { "comment_id": "the-comment-fid" } }
 ```
 -> `"reaction_comment_id_field": "data.comment_id"`
+
+**Native v2 child reaction on a comment** (`reactions.addChild`) - a
+non-comment kind with the comment's id in the top-level `parent`. Without the
+key it lands in v3 as a reaction on the activity:
+
+```json
+{ "kind": "like", "parent": "the-comment-fid", "activity_id": "..." }
+```
+-> `"reaction_comment_id_field": "parent"`. A like on the activity itself has
+no `parent`, so it is unaffected.
 
 **Activity id from a nested custom field**, with a fallback to `foreign_id`
 when that field is absent:

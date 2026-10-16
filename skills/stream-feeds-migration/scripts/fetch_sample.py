@@ -4,8 +4,14 @@
 Calls the two server-side-only migration sample endpoints and writes both
 responses to one JSON file:
 
-    GET {base}/api/v1.0/migration/sample/activities   -> last 100 activities
+    GET {base}/api/v1.0/migration/sample/activities   -> up to 100 activities
     GET {base}/api/v1.0/migration/sample/reactions    -> 5 reactions per kind
+
+Recent deployments draw the activity sample from several periods (newest,
+then at or before 7d, 30d, 180d, 1y and 2y ago, by insert time), leave out
+the activities v2 writes for a reaction's target feeds, and report both: the
+count of those reaction references, up to 3 examples, and per-period stats.
+Those fields are kept in the output file when the deployment returns them.
 
 Auth is a Stream server-side JWT: HS256 over {"resource":"*","action":"*",
 "feed_id":"*"} signed with the app secret, and stamped with iat/exp so it
@@ -151,6 +157,11 @@ def main() -> int:
         "kinds": reactions.get("kinds", []),
         "reaction_count": reactions.get("count", 0),
     }
+    # Newer deployments also report what the activity sample left out and how
+    # each period filled. Older ones omit these keys; keep them only when sent.
+    for key in ("reaction_reference_count", "reaction_references", "slices"):
+        if key in activities:
+            sample[key] = activities[key]
 
     with open(args.out, "w") as handle:
         json.dump(sample, handle, indent=2, sort_keys=True)
@@ -161,10 +172,21 @@ def main() -> int:
     print("activities: {}".format(sample["activity_count"]))
     print("reaction kinds: {}".format(", ".join(sample["kinds"]) or "(none)"))
     print("reactions: {}".format(sample["reaction_count"]))
+    if "reaction_reference_count" in sample:
+        print("reaction references left out: {}".format(sample["reaction_reference_count"]))
+    for s in sample.get("slices") or []:
+        print("slice {:<27} scanned {:>4}  posts {:>4}  reaction refs {:>4}{}".format(
+            "newest" if not s.get("before") else "before " + s["before"],
+            s.get("scanned", 0), s.get("posts", 0), s.get("reaction_references", 0),
+            "  (re-read with a larger scan)" if s.get("extended") else ""))
 
     if sample["activity_count"] == 0:
-        print("\nWARNING: no activities returned - the app may be empty, or its "
-              "activity store may not support the sample scan.", file=sys.stderr)
+        if sample.get("reaction_reference_count"):
+            print("\nWARNING: no posts returned, only reaction references - the "
+                  "newest activities are all target-feed copies of reactions.", file=sys.stderr)
+        else:
+            print("\nWARNING: no activities returned - the app may be empty, or its "
+                  "activity store may not support the sample scan.", file=sys.stderr)
 
     return 0
 
