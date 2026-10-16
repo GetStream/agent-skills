@@ -201,3 +201,36 @@ secret in the client bundle.
 - Support bot, help desk, RAG chat: follow ai-support-agent.md.
 - ChatGPT-style app, an assistant inside an existing chat, streaming answers, stop
   generating, client tools: follow ai-integration.md.
+
+## Other skills
+
+This skill covers Stream. For general React and Next.js work, use these skills
+if they're installed:
+
+- vercel-react-best-practices: performance - request waterfalls, bundle size,
+  re-renders, data fetching.
+- vercel-composition-patterns: the app's own component APIs - compound
+  components, context providers, React 19 changes.
+
+For Next.js APIs, read the docs that ship with the installed version in
+`node_modules/next/dist/docs/` (`next dev` on 16.3+ also writes an AGENTS.md
+pointing there), not memory.
+
+Where general advice conflicts with this skill, this skill wins for Stream
+code:
+
+- Stream components and client hooks run in `'use client'` modules. Keep pages
+  and layouts as server components where you can, and put the Stream subtree in
+  a client component.
+- Create clients as described in Building, even if a performance rule suggests
+  restructuring the effect or memoizing differently.
+- Customize Stream UI through its documented overrides (`WithComponents`,
+  props, hooks), not by rebuilding it as your own compound components.
+  Defaults to keep applies.
+
+If these skills aren't installed, carry on without them. Don't install skills
+yourself; mention them once in the final summary:
+
+```bash
+npx skills add vercel-labs/agent-skills --skill vercel-react-best-practices --skill vercel-composition-patterns
+```
