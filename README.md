@@ -23,7 +23,7 @@ The skills also ship as a plugin for Claude Code and Cursor, together with the S
 /plugin install stream@getstream
 ```
 
-Then run `/mcp` to sign in to the `stream` server.
+Then run `/mcp` to sign in to the `stream` server. The plugin also brings the `getstream` CLI: its launcher uses an installed CLI, or fetches one into `~/.stream/bin` the first time a skill runs it.
 
 Use `/stream` for generic routing, or invoke a skill directly with `/stream-react`, `/stream-builder`, `/stream-docs`, `/stream-swift`, `/stream-android`, `/stream-react-native`, `/stream-flutter`, `/stream-unity`, `/stream-feeds-migration`, or `/stream-unreal`. Step-by-step instructions are in the [installation guide](https://getstream.io/agent-skills/docs/installation/).
 
@@ -54,6 +54,7 @@ The skills are plain markdown. Installation and on-demand skill fetching run thr
 | Step | Trigger | What it does | Source |
 |---|---|---|---|
 | `getstream skills <name>` | Agent, on demand (or you) | Fetches a skill's markdown into your skills directory via the `getstream` CLI. | GitHub (`GetStream/agent-skills`) |
+| Plugin `getstream` launcher | First `getstream` command, when the CLI is not installed | Downloads the CLI from Stream's release manifest into `~/.stream/bin`, verifying its checksum; an installed CLI is used instead when there is one. | getstream.io (`/cli/latest.json`) |
 | Frontend skill installs (builder only) | Agent asks first, then runs | Installs three third-party skill packs for UI scaffolding - see below. | GitHub (listed) |
 
 ### Frontend skills (builder only)
