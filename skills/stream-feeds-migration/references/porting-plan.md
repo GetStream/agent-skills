@@ -62,13 +62,18 @@ than just syntax:
 - **Feeds and to-targets.** v2 `to` targets and `addToMany` become one `feeds`
   list on the v3 activity. Removing an activity from one feed while it stays in
   others is an update of that list, not a delete.
+- **Fan-out: feeds list or follow.** When the content decides the feeds (a
+  post's hashtags: `user:<author>`, `hashtag:cooking`), keep them in the
+  activity's `feeds`. When the audience decides them (an announcement to every
+  user, any list that grows with the user count), write once to one feed and
+  have the recipients' feeds follow it. An activity is in at most 25 feeds by
+  default; flag any list that can exceed it.
 - **Feeds that must exist first.** v3 creates a missing feed on write only
   when its id is an existing user's id (`notification:bob`). Feeds keyed by
-  something else (`tag:<hashtag>`, `topic:<name>`) must be created before the
-  first write; name the path that does it, or add one.
-- **Feeds per activity.** An activity is in at most 25 feeds by default. Flag
-  every `addToMany` or `to` list that can exceed it (fan-out to all users,
-  large mention lists) with how it will be split.
+  something else (`hashtag:<tag>`, `announcement:all`) are the app's job to
+  create before the first write; name the path that does it, or add one. Do not
+  recreate them on every write (`createFeedsBatch` overwrites an existing
+  feed's name, custom data and owner).
 - **Ids.** v2 `foreign_id` becomes the v3 `id`. Updates by `foreign_id` +
   `time` become updates by `id`. With an `id`/`foreign_id` mapping, migrated
   activities carry the mapped id (the v2 id moves to `custom.original_id`);
