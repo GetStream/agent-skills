@@ -1,6 +1,6 @@
 {
   "name": "getstream",
-  "description": "Stream's plugins for coding agents",
+  "description": "Official Stream plugins for Claude Code",
   "owner": {
     "name": "GetStream"
   },
@@ -8,7 +8,7 @@
     {
       "name": "stream",
       "source": "./",
-      "description": "Stream agent skills and the Stream MCP server"
+      "description": "Build with Stream Chat, Video, Feeds, and Moderation: scaffold apps, add Stream to existing projects, and query and manage your Stream apps through the Stream MCP server."
     }
   ]
 }

@@ -1,7 +1,7 @@
 {
   "name": "stream",
   "version": "0.1.0",
-  "description": "Build, query, and manage Stream Chat, Video, Feeds, and Moderation. Scaffold full apps, add products to existing projects, and call the Stream API on your apps through the Stream MCP server.",
+  "description": "Build with Stream Chat, Video, Feeds, and Moderation: scaffold apps, add Stream to existing projects, and query and manage your Stream apps through the Stream MCP server.",
   "author": {
     "name": "GetStream"
   },
