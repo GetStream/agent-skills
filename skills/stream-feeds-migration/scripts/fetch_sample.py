@@ -21,7 +21,14 @@ is rejected by these endpoints by design.
 Only the standard library is used, so this runs anywhere Python 3 does.
 
 Usage:
-    fetch_sample.py [--out PATH] [--base-url URL]
+    fetch_sample.py [--out PATH] [--base-url URL] [--feed GROUP:ID ...]
+
+--feed (repeatable) also reads the newest activities of a named feed through
+the regular feed read endpoint, GET {base}/api/v1.0/feed/{group}/{id}/. Use it
+for feed groups the sample did not cover: the sample is app-wide and does not
+say which feed an activity came from. Feed reads return custom fields at the
+top level; they are moved into extra_context so every activity in the output
+file has the same shape as the sample's.
 
 The secret is read only from the STREAM_API_SECRET environment variable -
 there is deliberately no --secret flag, because a secret passed as a command
@@ -50,6 +57,15 @@ TIMEOUT_SECONDS = 60
 # Long enough for both requests (with their timeouts) plus clock skew, short
 # enough that a leaked token is worthless by the time anyone finds it.
 TOKEN_TTL_SECONDS = 300
+
+# Activities read per --feed (the feed read endpoint caps a page at 100).
+FEED_LIMIT_DEFAULT = 25
+
+# Top-level activity fields in a feed read; every other key is custom data
+# (extra_context in the sample's raw shape).
+RESERVED_ACTIVITY_KEYS = {
+    "id", "actor", "verb", "object", "target", "time", "foreign_id", "to", "origin",
+}
 
 # Tolerance for a client clock running ahead of Stream's, which would
 # otherwise make the token look issued in the future.
@@ -114,6 +130,44 @@ def get(base_url: str, path: str, api_key: str, token: str) -> dict:
         raise SystemExit("{} failed: could not reach {} ({})".format(path, base_url, err.reason))
 
 
+def read_feed(base_url: str, feed: str, limit: int, api_key: str, token: str) -> dict:
+    """Read a feed's newest activities, normalised to the sample's shape.
+
+    Returns {"activities": [...]} or {"error": "..."}; a bad feed (unknown
+    group, no access) is recorded rather than aborting the whole run.
+    """
+    group, _, feed_id = feed.partition(":")
+    url = "{}/api/v1.0/feed/{}/{}/?api_key={}&limit={}".format(
+        base_url.rstrip("/"), group, feed_id, api_key, limit)
+    request = urllib.request.Request(url, method="GET")
+    request.add_header("Authorization", token)
+    request.add_header("Stream-Auth-Type", "jwt")
+    try:
+        with urllib.request.urlopen(request, timeout=TIMEOUT_SECONDS) as response:
+            results = json.loads(response.read().decode()).get("results", [])
+    except urllib.error.HTTPError as err:
+        return {"error": "HTTP {}: {}".format(err.code, err.read().decode(errors="replace")[:300])}
+    except urllib.error.URLError as err:
+        return {"error": "could not reach {} ({})".format(base_url, err.reason)}
+
+    # Aggregated and notification feeds return groups that hold the activities;
+    # flat feeds return the activities themselves.
+    raws = []
+    for result in results:
+        if isinstance(result.get("activities"), list):
+            raws.extend(result["activities"])
+        else:
+            raws.append(result)
+
+    activities = []
+    for raw in raws:
+        item = {k: v for k, v in raw.items() if k in RESERVED_ACTIVITY_KEYS and k != "origin"}
+        item["extra_context"] = {k: v for k, v in raw.items() if k not in RESERVED_ACTIVITY_KEYS}
+        item["feed"] = feed
+        activities.append(item)
+    return {"activities": activities}
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -127,7 +181,27 @@ def main() -> int:
         help="API base URL (default: {})".format(DEFAULT_BASE_URL),
     )
     parser.add_argument("--out", default="v3sync-sample.json", help="output file path")
+    parser.add_argument(
+        "--feed",
+        action="append",
+        default=[],
+        metavar="GROUP:ID",
+        help="also read this feed's newest activities (repeatable), e.g. --feed notification:alice",
+    )
+    parser.add_argument(
+        "--feed-limit",
+        type=int,
+        default=FEED_LIMIT_DEFAULT,
+        help="results to read per --feed: activities, or groups for aggregated and notification feeds (1-100, default {})".format(FEED_LIMIT_DEFAULT),
+    )
     args = parser.parse_args()
+
+    for feed in args.feed:
+        group, sep, feed_id = feed.partition(":")
+        if not sep or not group or not feed_id or ":" in feed_id:
+            parser.error("--feed must be GROUP:ID, got {!r}".format(feed))
+    if not 1 <= args.feed_limit <= 100:
+        parser.error("--feed-limit must be between 1 and 100")
 
     # Read from the environment only - never a flag. See the module docstring.
     secret = os.environ.get("STREAM_API_SECRET")
@@ -163,6 +237,12 @@ def main() -> int:
         if key in activities:
             sample[key] = activities[key]
 
+    if args.feed:
+        sample["feed_samples"] = {
+            feed: read_feed(args.base_url, feed, args.feed_limit, args.api_key, token)
+            for feed in args.feed
+        }
+
     with open(args.out, "w") as handle:
         json.dump(sample, handle, indent=2, sort_keys=True)
 
@@ -179,6 +259,11 @@ def main() -> int:
             "newest" if not s.get("before") else "before " + s["before"],
             s.get("scanned", 0), s.get("posts", 0), s.get("reaction_references", 0),
             "  (re-read with a larger scan)" if s.get("extended") else ""))
+    for feed, result in (sample.get("feed_samples") or {}).items():
+        if "error" in result:
+            print("feed {}: FAILED ({})".format(feed, result["error"].splitlines()[0][:120]))
+        else:
+            print("feed {}: {} activities".format(feed, len(result["activities"])))
 
     if sample["activity_count"] == 0:
         if sample.get("reaction_reference_count"):

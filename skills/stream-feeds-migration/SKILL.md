@@ -139,6 +139,30 @@ If these keys are missing, the deployment predates them: the activities are the
 newest 100 and can include reaction references. Leave those out yourself by the
 shape above before analysing.
 
+#### Cover every feed group
+
+The sample is app-wide: it takes the newest activities wherever they were
+written, and does not say which feed group each came from. A feed group with
+little or old traffic can be missing entirely. One mapping serves the whole app,
+so a group whose activities are written differently (a backend job, a
+notification feed, an older client) gets a mapping fitted to the others.
+
+Ask the user which feed groups the app uses, and whether any of them are written
+by a different code path. For each group the sample may have missed, read a feed
+or two of it directly with `--feed` (read-only, repeatable):
+
+```bash
+python3 <skill-dir>/scripts/fetch_sample.py --out v3sync-sample.json \
+  --feed notification:<user-id> --feed timeline:<user-id>
+```
+
+The activities land under `feed_samples` in the same file, normalised to the
+sample's shape (custom fields under `extra_context`, plus a `feed` field), so
+analyse them the same way. Aggregated and notification feeds are unwrapped into
+their activities. They also hold the target-feed copies of reactions; leave
+those out as above. A feed that fails (for example an unknown group) is
+recorded with its error and does not stop the run.
+
 ### 4. Analyze
 
 Read `v3sync-sample.json` and work through the checklist below. Read
@@ -303,6 +327,9 @@ difference between "this mapping is correct" and "this mapping fits the sample":
   be incomplete on a long-lived app.
 - **Users are not sampled at all.** The defaults cover `name`/`username` and
   `image`/`profileImage`/`avatar`; any other key has to be confirmed separately.
+- **Feed groups are not covered evenly.** The sample does not say which group
+  an activity came from. Name the groups you read with `--feed`, and the ones
+  neither the sample nor `--feed` covered.
 - **Rare shapes hide in the tail.** A field present on 1% of activities may not
   show up in 100 rows. Where a mapping decision hinges on a field's presence,
   say which sampled rows carried it.
