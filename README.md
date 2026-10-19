@@ -106,7 +106,7 @@ The `/stream` router classifies intent, runs `getstream` CLI commands itself (qu
 | Build or integrate a Flutter app | `stream-flutter` + its `builder.md`, `sdk.md`, and `references/*.md` |
 | Build or integrate a Unity Engine project | `stream-unity` (docs orchestrator: `docs-map.md` + `setup.md` + `ui.md` + `platforms.md`) |
 | Build or integrate an Unreal Engine project | `stream-unreal` (docs orchestrator: `docs-map.md` + `setup.md` + `widgets.md` + `platforms.md`) |
-| Build or review a Feeds v2 -> v3 sync mapping | `stream-feeds-migration` (`SKILL.md` + `references/mapping-keys.md` + `references/code-inventory.md` + `scripts/fetch_sample.py` + `scripts/scan_v2_calls.py`) |
+| Build or review a Feeds v2 -> v3 sync mapping, and plan the code port | `stream-feeds-migration` (`SKILL.md` + `references/mapping-keys.md` + `references/code-inventory.md` + `references/porting-plan.md` + `scripts/fetch_sample.py` + `scripts/scan_v2_calls.py`) |
 
 > **Routing precedence:** when user input contains a platform signal (e.g. `react native`, `expo`, `stream video rn`, `swift`, `ios`, `flutter`, `unity`, `unreal`), the matching platform peer wins over the web `stream-react` rows. The web pack is the default only when no platform signal is present; `stream-builder` runs only when the user names it explicitly.
 
@@ -172,6 +172,7 @@ Cross-cutting rules (secrets, login screen, strict mode, package manager, base U
   - [`references/mapping-keys.md`](skills/stream-feeds-migration/references/mapping-keys.md) - the full key catalogue with defaults, id-precedence and rename resolution rules, and a worked v2-shape -> mapping-key example for each common case
   - [`scripts/fetch_sample.py`](skills/stream-feeds-migration/scripts/fetch_sample.py) - stdlib-only sampler; reads credentials from the environment and writes `v3sync-sample.json`
   - [`references/code-inventory.md`](skills/stream-feeds-migration/references/code-inventory.md) - reading the app's v2 integration code: finding write paths, building the inventory, and cross-checking it against the sample
+  - [`references/porting-plan.md`](skills/stream-feeds-migration/references/porting-plan.md) - planning the move of the app's code from v2 to v3: the switch-over order, a v2 -> v3 row per path, and the rules for porting when the user asks
   - [`scripts/scan_v2_calls.py`](skills/stream-feeds-migration/scripts/scan_v2_calls.py) - stdlib-only, read-only scanner that lists every v2 write call site in a repository (JS, Python, Ruby, PHP, Go, Java, .NET, REST), with secrets redacted
 - [`skills/stream-unreal/`](skills/stream-unreal/) - **Unreal Engine sub-skill** (docs orchestrator; Chat only)
   - [`SKILL.md`](skills/stream-unreal/SKILL.md) - entrypoint: engine-version / feature-support / C++-vs-Blueprint gates, the `.md` docs convention plus the per-page Unreal-coverage caveat, and the source-of-truth ladder
