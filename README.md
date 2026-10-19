@@ -14,6 +14,17 @@ getstream skills
 
 With no arguments, `getstream skills` installs the default set - the `stream` router (which includes the CLI layer), `stream-builder`, and `stream-docs`. The web pack (`stream-react`) and platform packs (`stream-swift`, `stream-android`, `stream-react-native`, `stream-flutter`, `stream-unity`, `stream-unreal`), and `stream-feeds-migration` install on demand via `getstream skills <name>` the first time a task needs them. To set up a project at the same time (auth, org/app selection, credentials), run `getstream init` instead.
 
+### As a plugin
+
+The skills also ship as a plugin for Claude Code and Cursor, together with the Stream MCP server (`https://mcp.getstream.io/mcp`), which signs in with your Stream account and lets the agent list your apps and call the Stream API on them. In Claude Code:
+
+```
+/plugin marketplace add GetStream/agent-skills
+/plugin install stream@getstream
+```
+
+Then run `/mcp` to sign in to the `stream` server. The plugin also brings the `getstream` CLI: its launcher uses an installed CLI, or fetches one into `~/.stream/bin` the first time a skill runs it.
+
 Use `/stream` for generic routing, or invoke a skill directly with `/stream-react`, `/stream-builder`, `/stream-docs`, `/stream-swift`, `/stream-android`, `/stream-react-native`, `/stream-flutter`, `/stream-unity`, `/stream-feeds-migration`, or `/stream-unreal`. Step-by-step instructions are in the [installation guide](https://getstream.io/agent-skills/docs/installation/).
 
 ## Skills
@@ -43,6 +54,7 @@ The skills are plain markdown. Installation and on-demand skill fetching run thr
 | Step | Trigger | What it does | Source |
 |---|---|---|---|
 | `getstream skills <name>` | Agent, on demand (or you) | Fetches a skill's markdown into your skills directory via the `getstream` CLI. | GitHub (`GetStream/agent-skills`) |
+| Plugin `getstream` launcher | First `getstream` command, when the CLI is not installed | Downloads the CLI from Stream's release manifest into `~/.stream/bin`, verifying its checksum; an installed CLI is used instead when there is one. | getstream.io (`/cli/latest.json`) |
 | Frontend skill installs (builder only) | Agent asks first, then runs | Installs three third-party skill packs for UI scaffolding - see below. | GitHub (listed) |
 
 ### Frontend skills (builder only)
