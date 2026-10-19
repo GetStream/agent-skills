@@ -11,6 +11,7 @@ Recent deployments draw the activity sample from several periods (newest,
 then at or before 7d, 30d, 180d, 1y and 2y ago, by insert time), leave out
 the activities v2 writes for a reaction's target feeds, and report both: the
 count of those reaction references, up to 3 examples, and per-period stats.
+They also list the app's feed groups (name and type).
 Those fields are kept in the output file when the deployment returns them.
 
 Auth is a Stream server-side JWT: HS256 over {"resource":"*","action":"*",
@@ -233,7 +234,7 @@ def main() -> int:
     }
     # Newer deployments also report what the activity sample left out and how
     # each period filled. Older ones omit these keys; keep them only when sent.
-    for key in ("reaction_reference_count", "reaction_references", "slices"):
+    for key in ("reaction_reference_count", "reaction_references", "slices", "feed_groups"):
         if key in activities:
             sample[key] = activities[key]
 
@@ -259,6 +260,9 @@ def main() -> int:
             "newest" if not s.get("before") else "before " + s["before"],
             s.get("scanned", 0), s.get("posts", 0), s.get("reaction_references", 0),
             "  (re-read with a larger scan)" if s.get("extended") else ""))
+    if "feed_groups" in sample:
+        print("feed groups: {}".format(", ".join(
+            "{} ({})".format(g.get("name"), g.get("type")) for g in sample["feed_groups"]) or "(none)"))
     for feed, result in (sample.get("feed_samples") or {}).items():
         if "error" in result:
             print("feed {}: FAILED ({})".format(feed, result["error"].splitlines()[0][:120]))

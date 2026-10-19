@@ -147,9 +147,12 @@ little or old traffic can be missing entirely. One mapping serves the whole app,
 so a group whose activities are written differently (a backend job, a
 notification feed, an older client) gets a mapping fitted to the others.
 
-Ask the user which feed groups the app uses, and whether any of them are written
-by a different code path. For each group the sample may have missed, read a feed
-or two of it directly with `--feed` (read-only, repeatable):
+Recent deployments list the app's feed groups in `feed_groups` (name and
+type); on older ones, ask the user which groups the app uses. Either way the
+sample does not say which group each activity came from, so ask whether any
+group is written by a different code path. For each group the sample may have
+missed, read a feed or two of it directly with `--feed` (read-only,
+repeatable):
 
 ```bash
 python3 <skill-dir>/scripts/fetch_sample.py --out v3sync-sample.json \
