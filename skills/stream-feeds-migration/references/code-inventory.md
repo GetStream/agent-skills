@@ -52,7 +52,13 @@ The scanner finds calls, not meaning. Feed groups and reaction kinds built at
 runtime, a client reached through more than one module, and Java's positional
 arguments (`reactions().add(userId, kind, ...)`) show up without a value: read
 those call sites. Calls through the app's own wrapper functions are listed as
-`wrapper_call`; the payload is usually built there.
+`wrapper_call` (`wraps` names the function); the payload is built either inside
+the wrapper or at these call sites, so read both.
+
+The output JSON holds `calls` (each with `file`, `line`, `kinds`,
+`feed_groups_nearby`, `reaction_kinds`, `snippet`, and `sdk_via` when the file
+reaches the SDK through another module), plus `sdk_files`,
+`sdk_files_indirect`, `feed_group_constants` and `feed_helpers`.
 
 Method names by SDK, for searching by hand:
 

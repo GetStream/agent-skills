@@ -1,8 +1,8 @@
 ---
 name: stream-feeds-migration
-description: "Generate the v2 -> v3 sync mapping for a Stream Activity Feeds app by sampling its live v2 activities and reactions and, when the app's v2 integration code is available, reading its write paths. Use when setting up a Feeds v2 to v3 migration, when asked to build, review, or debug a v3 sync mapping, when someone asks 'what mapping do we need for our app?', or when a migrated activity lands in v3 with missing text, missing attachments, comments that are not comments, or bookmarks that went missing. Triggers on v3sync, v2 to v3, feeds migration, activity feeds migration, sync mapping, extra_context, reaction kinds, comments and bookmarks mapping. The same mapping drives both the live syncer and the bulk exporter."
+description: "Generate the v2 -> v3 sync mapping for a Stream Activity Feeds app by sampling its live v2 activities and reactions and, when the app's v2 integration code is available, reading its write paths, and, from that code, plan how the app's code moves from v2 to v3. Use when setting up a Feeds v2 to v3 migration, when asked to build, review, or debug a v3 sync mapping, when someone asks 'what mapping do we need for our app?', when asked how to port an app's v2 Feeds code to v3, or when a migrated activity lands in v3 with missing text, missing attachments, comments that are not comments, or bookmarks that went missing. Triggers on v3sync, v2 to v3, feeds migration, activity feeds migration, sync mapping, extra_context, reaction kinds, comments and bookmarks mapping, porting plan. The same mapping drives both the live syncer and the bulk exporter."
 license: See LICENSE in repository root
-compatibility: Requires the v2 app's API key and secret, exported as environment variables, plus Python 3 (standard library only - no pip install). Read-only against the v2 app; writes one sample file to the working directory. No project or SDK required; when the app's repository is available, its v2 integration code is read (never modified) to cover what a sample cannot.
+compatibility: Requires the v2 app's API key and secret, exported as environment variables, plus Python 3 (standard library only - no pip install). Read-only against the v2 app; writes one sample file to the working directory. No project or SDK required; when the app's repository is available, its v2 integration code is read to cover what a sample cannot and to write a porting plan. The skill never modifies the code; porting it is a follow-up done only when the user asks.
 metadata:
   author: GetStream
 allowed-tools: >-
@@ -178,7 +178,7 @@ it is available; the skill works without it.
 
 Follow [`references/code-inventory.md`](references/code-inventory.md):
 
-1. Run `scripts/scan_v2_calls.py --root <repo>` to list every v2 write call
+1. Run `scripts/scan_v2_calls.py --root <repo> --out v2-code-scan.json` to list every v2 write call
    site (read-only; secrets in snippets are redacted - never quote one from the
    code yourself).
 2. Read the call sites and build the **inventory**: one row per write path,
@@ -218,6 +218,20 @@ code alone.
 
 Flag explicitly anything you could not determine from the sample - see
 **Limits of the sample** below. Silence there reads as "verified", which it is not.
+
+### 7. Plan the code port (when you read the code)
+
+If you read the integration code in step 4, also write a **porting plan**,
+following [`references/porting-plan.md`](references/porting-plan.md): one row
+per write and read path with its v2 call, its v3 call, the switch-over step it
+belongs to (reads move first, every write moves together last), and the
+behaviour that changes. Take the v3 calls from the **V2 to V3 Code Migration**
+guide (through `stream-docs`), not from memory.
+
+The plan is a document: do not edit the app's code. Offer to port it; if the
+user asks, follow **Porting the code** in that reference (v3 read paths behind a
+read flag, every write path behind one write flag, never writing to both
+versions).
 
 ---
 
@@ -383,6 +397,8 @@ a second look at the sample.
 
 - **SDK questions about the v3 Feeds API** (what a v3 activity, comment, or
   bookmark looks like in a given SDK) -> `stream-docs`.
+- **Porting the app's existing v2 code** -> the porting plan (step 7); edit
+  code only when the user asks, following the plan.
 - **Building or updating the app against v3** once the mapping is settled ->
   the platform pack for that app (`stream-react`, `stream-swift`,
   `stream-android`, `stream-react-native`, `stream-flutter`), per
