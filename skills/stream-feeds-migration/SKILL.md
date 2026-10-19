@@ -88,7 +88,9 @@ The sample is written to the working directory, which is where you want it.
 
 Standard library only - no pip install. It calls two server-side-only endpoints:
 
-- `GET /api/v1.0/migration/sample/activities` - the last 100 activities
+- `GET /api/v1.0/migration/sample/activities` - up to 100 activities, drawn
+  from several periods (the newest, then at or before 7d, 30d, 180d, 1y and
+  2y ago)
 - `GET /api/v1.0/migration/sample/reactions` - 5 reactions per distinct kind
 
 Both return **raw** stored payloads: unflattened `extra_context`, unmodified
@@ -104,6 +106,65 @@ An empty `activities` array alongside a `200` is worth calling out rather than
 working around: the app is either genuinely empty or its activity store cannot
 serve this scan. Reactions carry an `activity_id`, so reactions in the sample
 prove activities exist and point to the second explanation.
+
+#### Read what the activity sample left out
+
+Recent deployments also return `reaction_reference_count`,
+`reaction_references` and `slices`, and the script keeps them in the sample
+file. Read them before the activities, because they say how representative the
+activities are:
+
+- **`reaction_reference_count`** - how many target-feed copies of reactions
+  the sample left out. v2 writes one of these when a reaction has
+  `target_feeds`. You can recognise them by a `foreign_id` of `reaction:<id>`
+  and an `extra_context.reaction` holding an `SR:` ref. They carry no post
+  fields, so they say nothing about the mapping; up to 3 are in
+  `reaction_references` for reference.
+- **`slices`** - one entry per period, with `scanned`, `posts` and
+  `reaction_references`. `before` is the period's cutoff; the newest slice has
+  none. `extended` means the period was re-read with a larger scan because
+  reaction references crowded it.
+  - A slice whose `posts` is small next to `scanned` was crowded: posts from
+    that period are under-represented. Say so.
+  - A slice with `scanned: 0` held no activities **inserted** in that window.
+    Periods are by insert time, not by the activity's `time`, so data imported
+    into v2 recently all lands in the newest slice.
+
+When the older slices are empty on an app that has existed for a while, the
+sample cannot show what older posts look like. Ask whether the post format ever
+changed (different field names for text, media or ids), and say the mapping only
+covers the shape the sample shows.
+
+If these keys are missing, the deployment predates them: the activities are the
+newest 100 and can include reaction references. Leave those out yourself by the
+shape above before analysing.
+
+#### Cover every feed group
+
+The sample is app-wide: it takes the newest activities wherever they were
+written, and does not say which feed group each came from. A feed group with
+little or old traffic can be missing entirely. One mapping serves the whole app,
+so a group whose activities are written differently (a backend job, a
+notification feed, an older client) gets a mapping fitted to the others.
+
+Recent deployments list the app's feed groups in `feed_groups` (name and
+type); on older ones, ask the user which groups the app uses. Either way the
+sample does not say which group each activity came from, so ask whether any
+group is written by a different code path. For each group the sample may have
+missed, read a feed or two of it directly with `--feed` (read-only,
+repeatable):
+
+```bash
+python3 <skill-dir>/scripts/fetch_sample.py --out v3sync-sample.json \
+  --feed notification:<user-id> --feed timeline:<user-id>
+```
+
+The activities land under `feed_samples` in the same file, normalised to the
+sample's shape (custom fields under `extra_context`, plus a `feed` field), so
+analyse them the same way. Aggregated and notification feeds are unwrapped into
+their activities. They also hold the target-feed copies of reactions; leave
+those out as above. A feed that fails (for example an unknown group) is
+recorded with its error and does not stop the run.
 
 ### 4. Analyze
 
@@ -136,7 +197,7 @@ Flag explicitly anything you could not determine from the sample - see
 
 ### Activities
 
-Look at `activities[].extra_context` across all 100.
+Look at `activities[].extra_context` across the whole sample.
 
 - **Custom field names** - any field whose name collides with a v3 reserved key,
   or that should be surfaced at the top level of `custom`, needs a rename entry.
@@ -145,6 +206,11 @@ Look at `activities[].extra_context` across all 100.
   `post_id`, `uuid`)? If so, `id` should point at it. If instead `foreign_id`
   is populated and meaningful across the sample, `foreign_id: "id"` is the
   simpler answer. If neither, omit both and let the v2 UUID carry over.
+  Before recommending `foreign_id: "id"`, check that no two sampled activities
+  share a `foreign_id`. v2 allows several activities with the same foreign_id
+  (they differ by `time`), but as v3 ids they collide and only one survives. If
+  any repeat, or the sample is too small to tell, ask whether foreign_ids are
+  unique in the app, and keep the v2 UUID when they are not.
 - **Reshares / replies** - a field holding an `SA:<uuid>` ref (commonly
   `shared_origin_post`) is the `parent_id` field. Note that `SA:` refs are also
   autodetected, so only configure this when the sample shows the ref buried
@@ -177,8 +243,16 @@ Look at `kinds` first - that list is the app's whole reaction vocabulary.
   `parent_id_field` to that envelope path. Confirm against a **non**-reply too:
   a top-level comment must leave that path empty, or every comment would be
   treated as a reply.
-- **Reactions on comments** - a non-comment reaction carrying a comment id in
-  its `data` needs `reaction_comment_id_field`.
+- **Reactions on comments** - a non-comment reaction that targets a comment
+  needs `reaction_comment_id_field`. Two shapes are common:
+  - the comment id in its `data` (for example `data.comment_id`)
+  - v2's native child reaction, created with `reactions.addChild`: a
+    non-comment kind, often `like`, whose top-level `parent` is set. This needs
+    `"reaction_comment_id_field": "parent"`.
+
+  Without it, a like on a comment lands in v3 as a like on the activity.
+  Reactions with no parent and no comment id are unaffected, so a sample mixing
+  both is fine.
 - **Kind renames** - only if the app should use different type names in v3.
 - **Attachments** - `attachments_field` if comment attachments are not under
   `data.attachments`.
@@ -194,9 +268,15 @@ Some apps carry **legacy layout flags** - see *Legacy layout flags* in
 ### Users
 
 The sample endpoints return activities and reactions, not users, so **user
-field mapping cannot be inferred from it**. If display name or avatar are stored
-under non-standard keys, ask, then set `name` / `image` - remembering those two
-keys read v3-key-to-v2-source, backwards from every other string key.
+field mapping cannot be inferred from it**. The defaults already cover the
+common v2 conventions:
+- **name:** `name`, then `username`
+- **image:** `image`, then `profileImage`, then `avatar`
+
+So only ask when display name or avatar may be stored under some other key.
+Then set `name` / `image`, remembering those two keys read v3-key-to-v2-source,
+backwards from every other string key. A list (`"image": ["avatar_url",
+"profileImage"]`) tries each source in order.
 
 ---
 
@@ -238,14 +318,21 @@ and remind the user to remove it once the mapping is confirmed.
 State whichever of these apply alongside the generated mapping. They are the
 difference between "this mapping is correct" and "this mapping fits the sample":
 
-- **Activities are the most recent 100.** A field that only older activities
-  carry will not appear. Apps whose schema changed over time are exactly the
-  ones where this bites.
+- **Activities are at most 100, by insert time.** The sample reaches back up to
+  2 years, but a field that only older activities carry can still be missing:
+  when older periods are empty or crowded (see `slices`), or when data was
+  bulk-loaded recently. One mapping serves one post format. If older posts
+  store text or media under other fields, they arrive in v3 with that content
+  in `custom` instead. Apps whose schema changed over time are exactly the ones
+  where this bites.
 - **Reactions are drawn from a bounded recent window.** A kind that has not
   been used lately can be missing from `kinds` entirely, so the vocabulary may
   be incomplete on a long-lived app.
-- **Users are not sampled at all.** Any `name` / `image` mapping has to be
-  confirmed separately.
+- **Users are not sampled at all.** The defaults cover `name`/`username` and
+  `image`/`profileImage`/`avatar`; any other key has to be confirmed separately.
+- **Feed groups are not covered evenly.** The sample does not say which group
+  an activity came from. Name the groups you read with `--feed`, and the ones
+  neither the sample nor `--feed` covered.
 - **Rare shapes hide in the tail.** A field present on 1% of activities may not
   show up in 100 rows. Where a mapping decision hinges on a field's presence,
   say which sampled rows carried it.
