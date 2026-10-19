@@ -1,14 +1,15 @@
 ---
 name: stream-feeds-migration
-description: "Generate the v2 -> v3 sync mapping for a Stream Activity Feeds app by sampling its live v2 activities and reactions. Use when setting up a Feeds v2 to v3 migration, when asked to build, review, or debug a v3 sync mapping, when someone asks 'what mapping do we need for our app?', or when a migrated activity lands in v3 with missing text, missing attachments, comments that are not comments, or bookmarks that went missing. Triggers on v3sync, v2 to v3, feeds migration, activity feeds migration, sync mapping, extra_context, reaction kinds, comments and bookmarks mapping. The same mapping drives both the live syncer and the bulk exporter."
+description: "Generate the v2 -> v3 sync mapping for a Stream Activity Feeds app by sampling its live v2 activities and reactions and, when the app's v2 integration code is available, reading its write paths. Use when setting up a Feeds v2 to v3 migration, when asked to build, review, or debug a v3 sync mapping, when someone asks 'what mapping do we need for our app?', or when a migrated activity lands in v3 with missing text, missing attachments, comments that are not comments, or bookmarks that went missing. Triggers on v3sync, v2 to v3, feeds migration, activity feeds migration, sync mapping, extra_context, reaction kinds, comments and bookmarks mapping. The same mapping drives both the live syncer and the bulk exporter."
 license: See LICENSE in repository root
-compatibility: Requires the v2 app's API key and secret, exported as environment variables, plus Python 3 (standard library only - no pip install). Read-only against the v2 app; writes one sample file to the working directory. No project or SDK required.
+compatibility: Requires the v2 app's API key and secret, exported as environment variables, plus Python 3 (standard library only - no pip install). Read-only against the v2 app; writes one sample file to the working directory. No project or SDK required; when the app's repository is available, its v2 integration code is read (never modified) to cover what a sample cannot.
 metadata:
   author: GetStream
 allowed-tools: >-
   Read, Glob, Grep,
   Bash(python3 *),
   Bash(ls *),
+  Bash(git log *),
   Bash(getstream *)
 ---
 
@@ -166,7 +167,32 @@ their activities. They also hold the target-feed copies of reactions; leave
 those out as above. A feed that fails (for example an unknown group) is
 recorded with its error and does not stop the run.
 
-### 4. Analyze
+### 4. Read the integration code (when you have it)
+
+The sample shows what is stored; the app's v2 integration code shows every way
+it gets written - including the paths the sample is weakest on: low-traffic
+feed groups, rarely used reaction kinds, child reactions, how users are
+created, and whether `foreign_id` is unique. If the user's repository is in the
+working directory (or they point you at it), read it. If not, ask once whether
+it is available; the skill works without it.
+
+Follow [`references/code-inventory.md`](references/code-inventory.md):
+
+1. Run `scripts/scan_v2_calls.py --root <repo>` to list every v2 write call
+   site (read-only; secrets in snippets are redacted - never quote one from the
+   code yourself).
+2. Read the call sites and build the **inventory**: one row per write path,
+   with its feed group(s), to-targets, fields, `foreign_id` construction,
+   reaction kinds and data shape, child reactions, and user fields.
+3. Check history for fields that changed (`git log -S'<field>'`): older
+   activities still carry the old format.
+4. Cross-check the inventory against the sample. Agreement confirms a key;
+   code-only evidence is a rare or new path (map it, say so, and read a feed of
+   it with `--feed`); sample-only evidence is another writer or an older
+   version (ask). The sample stays the source of truth - the code is rarely
+   the only writer.
+
+### 5. Analyze
 
 Read `v3sync-sample.json` and work through the checklist below. Read
 [`references/mapping-keys.md`](references/mapping-keys.md) for the full key
@@ -177,7 +203,7 @@ The single most common mistake is over-configuring. Every key has a default
 that is right for a conventional v2 app. Only emit a key when the sample shows
 the app deviates from that default. An empty mapping is a valid answer.
 
-### 5. Emit the mapping
+### 6. Emit the mapping
 
 Produce **only** the `mapping` object, ready to paste into the app's existing
 sync configuration. Do not emit the surrounding configuration (`enabled`,
@@ -186,7 +212,9 @@ are deployment concerns, they are not derived from the sample, and restating
 them with placeholder credentials invites someone deploying a config with a
 `<v3 app key>` still in it.
 
-Explain each key you set by pointing at the evidence in the sample.
+Explain each key you set by pointing at the evidence: rows in the sample, and,
+when you read the code, the call sites (`file:line`). Say which keys rest on
+code alone.
 
 Flag explicitly anything you could not determine from the sample - see
 **Limits of the sample** below. Silence there reads as "verified", which it is not.
@@ -330,6 +358,10 @@ difference between "this mapping is correct" and "this mapping fits the sample":
   be incomplete on a long-lived app.
 - **Users are not sampled at all.** The defaults cover `name`/`username` and
   `image`/`profileImage`/`avatar`; any other key has to be confirmed separately.
+- **Code is not the only writer.** When the mapping used the integration code,
+  say which keys rest on code alone, and that other services, mobile clients
+  writing with user tokens, scripts and older app versions may write shapes the
+  code does not show.
 - **Feed groups are not covered evenly.** The sample does not say which group
   an activity came from. Name the groups you read with `--feed`, and the ones
   neither the sample nor `--feed` covered.
