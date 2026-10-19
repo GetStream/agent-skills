@@ -17,9 +17,9 @@ repository (read-only, standard library only, writes one JSON file):
 python3 <skill-dir>/scripts/scan_v2_calls.py --root <repo> --out v2-code-scan.json
 ```
 
-It lists every v2 write call site with its file, line, call kind, nearby feed
-group literals (`feed_groups_nearby`), the reaction kind when it is a literal,
-and a short snippet. Long key-like tokens and string literals on lines that
+It lists every v2 write call site with its file, line, call kind, the feed
+groups named near it (`feed_groups_nearby`), the reaction kind when it is a
+literal, and a short snippet. Long key-like tokens and string literals on lines that
 mention a secret are replaced with `<redacted>`. Never copy a secret out of the
 code into the conversation, even if the scanner missed one.
 
@@ -39,10 +39,20 @@ Call kinds:
 | `collection_write` | collection entries |
 | `rest_call` | raw REST calls to the v2 API |
 
+Most apps create the client in one module (`lib/stream.js`,
+`StreamService.java`) and import it everywhere else. The scanner follows that
+one level: a file that imports the SDK module counts as SDK code
+(`sdk_files_indirect` names the module it came through). Feed groups kept in
+constants (`FeedGroup = { USER: 'user' }`, `USER_FEED = "user"`) and helpers
+that return one feed (`userFeed = (id) => client.feed('user', id)`) are read
+from those modules (`feed_group_constants`, `feed_helpers`), and a reference
+to either near a call counts as that group.
+
 The scanner finds calls, not meaning. Feed groups and reaction kinds built at
-runtime, calls made through the app's own wrapper functions, and Java's
-positional arguments (`reactions().add(userId, kind, ...)`) show up without a
-literal: read those call sites.
+runtime, a client reached through more than one module, and Java's positional
+arguments (`reactions().add(userId, kind, ...)`) show up without a value: read
+those call sites. Calls through the app's own wrapper functions are listed as
+`wrapper_call`; the payload is usually built there.
 
 Method names by SDK, for searching by hand:
 
