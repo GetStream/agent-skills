@@ -276,10 +276,14 @@ Look at `kinds` first - that list is the app's whole reaction vocabulary.
   comment-bookmark, or plain reaction. Then set `comments`, `bookmarks`,
   `comments_bookmarks` accordingly. A kind you leave out of all three is a
   plain reaction, which is often correct.
-- Remember the defaults: `comments` already covers `["comment", "reply"]`. If
-  those are the app's only comment kinds, do not restate them.
-- **Comment text** - inspect the `data` of a comment-kind reaction. Default is
-  `data.message`; if the text lives under `body` or `text`, set `comment_field`.
+- Remember the defaults: `comments` already covers `["comment", "reply"]`.
+  Kind matching is case-insensitive, so `COMMENT` and `REPLY` are those same
+  kinds. If those are the app's only comment kinds, do not restate them.
+- **Comment text** - inspect the `data` of every comment-kind reaction. The
+  default is `data.message`. If that field is missing and the text is under
+  `text` or `body`, set `comment_field` to that key (`"text"`, not
+  `"data.text"`). A comment kind with no text at the configured field is
+  dropped. It is not kept as a reaction.
 - **Replies** - is the parent comment id in the top-level `parent` (the
   default, no config needed) or nested in `data`? If nested, set
   `parent_id_field` to that envelope path. Confirm against a **non**-reply too:
