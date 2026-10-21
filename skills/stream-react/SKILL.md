@@ -5,8 +5,9 @@ description:
   in React / Next.js web apps - the default skill for web work. Scaffold a new
   app, add Stream to an existing project, review an integration, upgrade an SDK
   major, or migrate from Sendbird. Covers team messaging, DMs, video
-  conferencing, livestreaming, social feeds, and AI assistants. Web React only - React Native
-  uses stream-react-native."
+  conferencing, livestreaming, social feeds, AI assistants, and apps built on
+  Stream Agents (voice and text agents, @stream-io/calypso). Web React only -
+  React Native uses stream-react-native."
 license: See LICENSE in repository root
 metadata:
   author: GetStream
@@ -25,6 +26,7 @@ cat $(getstream docs chat-sdk/react)/INDEX.md
 
 Client and UI: chat-sdk/react, video/react, activity-feeds/react. Node.js
 backend (e.g. Next.js routes): chat/node, activity-feeds/node, moderation/node.
+Stream Agents (sessions, voice, tools): agents/javascript.
 Previous majors are available too (e.g. chat-sdk/react/v13).
 
 ## Setup
@@ -41,6 +43,8 @@ Install the SDKs:
 - Chat: `stream-chat stream-chat-react`
 - Video: `@stream-io/video-react-sdk`
 - Feeds: `@stream-io/feeds-react-sdk`
+- Stream Agents: `@stream-io/calypso`, plus the Chat and Video packages above
+  for its UI (stream-agents.md)
 - Server-side: `@stream-io/node-sdk`
 
 Don't bump an already-installed Stream major.
@@ -196,11 +200,19 @@ skill's sendbird-data-migration.md.
 ## AI assistants, support bots, agents
 
 The model runs on a backend agent, never in the browser: no LLM provider key or Stream
-secret in the client bundle.
+secret in the client bundle. There are two kinds of backend; pick by what the user
+names:
 
-- Support bot, help desk, RAG chat: follow ai-support-agent.md.
-- ChatGPT-style app, an assistant inside an existing chat, streaming answers, stop
-  generating, client tools: follow ai-integration.md.
+- **Stream Agents** - the agent and its models run on Stream (`getstream agents`, an
+  `agents/<name>/` folder, `@stream-io/calypso`). Any voice agent is this kind. Follow
+  stream-agents.md.
+- **Your own agent process** answering in a Chat channel (`@stream-io/chat-ai-sdk`,
+  LangChain, a webhook turn):
+  - Support bot, help desk, RAG chat: follow ai-support-agent.md.
+  - ChatGPT-style app, an assistant inside an existing chat, streaming answers, stop
+    generating, client tools: follow ai-integration.md.
+
+If the request fits both and the user hasn't said, ask which backend they want.
 
 ## Other skills
 

@@ -31,9 +31,10 @@ cat $(getstream docs platform)/webhooks.md               # event_hooks registrat
    (needs persistence + email), OpenAPI lookup tools, real auth (Clerk - keep the
    name-based login as a dev fallback so chat works before Clerk keys exist), and
    voice + screenshare. Auto-include persistence when the dashboard or escalation is
-   checked. Voice is a **separate Vision Agents service** - never scaffold it into the web
-   app; if ticked, say "not built here - separate service" in the final summary and point
-   at the vision-agents skill.
+   checked. Voice is a **Stream Agents voice agent**, a different backend from this
+   runbook's webhook bot - don't graft it onto the webhook. If ticked, build it as its own
+   agent with stream-agents.md. Only if the beta CLI can't be installed, skip it and say
+   "voice not built - needs the beta CLI" in the final summary.
 
 ## The loop
 
