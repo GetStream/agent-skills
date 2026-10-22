@@ -68,6 +68,23 @@ The backend source is github.com/GetStream/Vision-Agents.
   voice is on. Join its call with the Video React SDK (`<StreamCall>`, and
   `<ParticipantsAudio>` to play the agent - check its props in video/react) instead of
   binding `<audio>` elements by hand.
+- **Pacing on voice:** the channel gets a reply's text as it is generated, so the
+  default `StreamedMessageText` (about 65 chars/s) runs well ahead of the voice (about
+  15). Check the installed packages: `@stream-io/calypso` has `session.speech` (grep
+  `speech` in its `dist/*.d.ts`) and `stream-chat-react` exports `useHeardText` from
+  `stream-chat-react/ai-components` (14.14.1+). With both, replace the
+  `StreamedMessageText` slot on voice sessions with the `SpokenMessageText` recipe from
+  chat-sdk/react's Voice Agents and Live Transcripts guide ("Pace replies to the agent's
+  voice"). If the guide isn't in the docs yet, the recipe is:
+  - `useHeardText({ text, heard: (now) => session.speech.heard(message, now),
+    subscribe: (l) => session.speech.subscribe(l), generating, live })`, with `live` =
+    the message was created under 10 s before mount and `generating` the message's
+    custom field;
+  - render `heardText` with `MessageText` (keep `renderText`), and the stock
+    `StreamedMessageText` when `!isPaced`;
+  - the session reaches the component through a React context the app provides.
+  Text sessions keep `StreamedMessageText`. If either API is missing, keep the default
+  and say so in the summary; don't hand-roll pacing from `session.events()`.
 - **Status:** `session.events()` drives status UI, not the transcript. Map `event.kind`:
   `hearing` / `heard` (listening), `responding` (thinking), `interrupted` and `turn`
   (back to listening; `turn` also carries timings), and `left` (the agent left - show
@@ -125,6 +142,7 @@ fields the UI depends on; `null` means the backend didn't set it.
 
 - Text: a message sent from the composer gets a streamed, markdown-rendered reply in `MessageList`.
 - Voice: the agent is heard after the user joins, both sides' turns appear in `MessageList` as they are said, the agent's replies render as AI messages, and `turn` events report timings.
+- Voice with pacing: a reply's text stays empty until its audio starts and then keeps pace with the voice instead of appearing at once.
 - No component renders transcript lines from `session.events()`.
 - Stop, pressed while a reply streams, ends that reply (`session.interrupt()`).
 - The composer is hidden or disabled while voice is on.
