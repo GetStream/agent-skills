@@ -1,0 +1,75 @@
+#!/usr/bin/env bash
+# Runs the Stream CLI for the plugin: a getstream installed elsewhere on PATH
+# when there is one, else the plugin's own copy in ~/.stream/bin, fetched on
+# first use from the release manifest and verified against its checksum, as
+# the CLI's install.sh does. The copy updates itself with `getstream update`.
+set -euo pipefail
+
+MANIFEST_URL="${STREAM_CLI_LATEST_URL:-https://getstream.io/cli/latest.json}"
+BIN="$HOME/.stream/bin/getstream"
+
+die() { echo "getstream (plugin): $*" >&2; exit 1; }
+
+self_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+
+# A launcher another plugin put on PATH would hand back to this one, so only
+# the first launcher looks for an installed CLI.
+if [[ -z "${STREAM_PLUGIN_LAUNCHER:-}" ]]; then
+  export STREAM_PLUGIN_LAUNCHER=1
+  IFS=: read -r -a dirs <<<"${PATH:-}"
+  for dir in "${dirs[@]}"; do
+    [[ -n "$dir" && "$dir" != "$self_dir" ]] || continue
+    if [[ -x "$dir/getstream" && ! "$dir/getstream" -ef "$BIN" ]]; then
+      exec "$dir/getstream" "$@"
+    fi
+  done
+fi
+
+if [[ ! -x "$BIN" ]]; then
+  case "$(uname -s)/$(uname -m)" in
+    Darwin/arm64)  platform=darwin_arm64 ;;
+    Darwin/x86_64) platform=darwin_amd64 ;;
+    Linux/x86_64)  platform=linux_amd64  ;;
+    Linux/aarch64) platform=linux_arm64  ;;
+    *) die "the Stream CLI has no build for $(uname -s)/$(uname -m)" ;;
+  esac
+
+  tmp=$(mktemp -d "${TMPDIR:-/tmp}/getstream.XXXXXXXX")
+  trap 'rm -rf "$tmp"' EXIT
+  curl -fsSL "$MANIFEST_URL" -o "$tmp/latest.json" || die "could not fetch the release manifest $MANIFEST_URL"
+
+  # The manifest is pretty-printed, one field per line.
+  version=$(sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$tmp/latest.json" | head -1)
+  read -r url sha <<EOF
+$(awk -v key="$platform" '
+  index($0, "\"" key "\"") { inblk = 1; next }
+  inblk && /"url"/    { v = $0; sub(/.*"url"[[:space:]]*:[[:space:]]*"/, "", v);    sub(/".*/, "", v); url = v }
+  inblk && /"sha256"/ { v = $0; sub(/.*"sha256"[[:space:]]*:[[:space:]]*"/, "", v); sub(/".*/, "", v); print url, v; exit }
+' "$tmp/latest.json")
+EOF
+  [[ -n "$version" && -n "$url" && -n "$sha" ]] || die "the release manifest has no $platform build"
+  case "$url" in
+    http://*|https://*) ;;
+    /*) url="$(printf '%s' "$MANIFEST_URL" | sed -E 's#^([a-zA-Z][a-zA-Z0-9+.-]*://[^/]+).*#\1#')$url" ;;
+    *)  url="${MANIFEST_URL%/*}/$url" ;;
+  esac
+
+  echo "Installing the Stream CLI $version into $BIN..." >&2
+  curl -fsSL "$url" -o "$tmp/getstream" || die "could not download $url"
+  if command -v shasum >/dev/null 2>&1; then
+    got=$(shasum -a 256 "$tmp/getstream" | awk '{print $1}')
+  elif command -v sha256sum >/dev/null 2>&1; then
+    got=$(sha256sum "$tmp/getstream" | awk '{print $1}')
+  else
+    die "need shasum or sha256sum to verify the download"
+  fi
+  [[ "$(printf '%s' "$got" | tr 'A-Z' 'a-z')" == "$(printf '%s' "$sha" | tr 'A-Z' 'a-z')" ]] \
+    || die "checksum mismatch for $url (got $got, want $sha)"
+
+  mkdir -p "$(dirname "$BIN")"
+  chmod 0755 "$tmp/getstream"
+  mv -f "$tmp/getstream" "$BIN.$$" && mv -f "$BIN.$$" "$BIN"
+  echo "The CLI may send anonymous telemetry events; opt out with \`telemetry: off\` in ~/.stream/config.yaml or DO_NOT_TRACK=1." >&2
+fi
+
+exec "$BIN" "$@"

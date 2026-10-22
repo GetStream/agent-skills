@@ -1,6 +1,6 @@
 ---
 name: stream-android
-description: "Build and integrate Stream Chat, Video, and Feeds in Android apps. Use for Jetpack Compose, Android Studio, and Gradle project work — including Stream package setup, auth and token wiring, screen blueprints, and any follow-up Stream UI work such as adding screens, navigating between channel list and channel/message screens, channel tap handling, deep links, push routing, theming, custom channel/message UI, video calling flows (joining/starting calls, ringing, custom call controls and participant tiles), and Feeds surfaces (timeline, activity composer, threaded comments, follow graph / profile, notification feed, stories)."
+description: "Build and integrate Stream Chat, Video, and Feeds in Android apps. Use for Jetpack Compose, Android Studio, and Gradle project work - including Stream package setup, auth and token wiring, screen blueprints, AI assistants and LLM chat (ChatGPT-style apps, streaming replies, thinking indicators, stop generating) with stream-chat-android-ai-compose, and any follow-up Stream UI work such as adding screens, navigating between channel list and channel/message screens, channel tap handling, deep links, push routing, theming, custom channel/message UI, video calling flows (joining/starting calls, ringing, custom call controls and participant tiles), and Feeds surfaces (timeline, activity composer, threaded comments, follow graph / profile, notification feed, stories)."
 license: See LICENSE in repository root
 compatibility: Requires an Android Studio / Gradle project (Kotlin). The `getstream` CLI (binary name `getstream`) is the default path for the credentials flow (API key fetch, token mint, and any product-specific setup - see `credentials.md`); only optional when the user pastes the API key and token themselves.
 metadata:
@@ -45,6 +45,7 @@ Before any tool call, decide the **track** from the user's input alone - no prob
 | "Build me a new Android app", "create a Compose app", "new Android app" + Stream product | **A - New app** |
 | "Add/integrate Stream into this app", "wire Chat/Video/Feeds into my Android project" | **B - Existing app** |
 | "Install Stream packages", "set up Stream in Android Studio", "wire auth/token flow" with no broader feature request | **D - Bootstrap / setup** |
+| "Build a ChatGPT-style app", "add an AI assistant / support bot / copilot", "stream the LLM response", "thinking indicator", "stop generating", "voice input to the AI", LangChain, Vercel AI SDK, `stream-chat-android-ai-compose` | **A** (new app) or **B** (existing app), then run [`ai-integration.md`](ai-integration.md) for the integration step; **C** if the user only asks how one AI component works |
 | Request carries a **target appearance** - a screenshot, a Figma frame, or "make the chat look like WhatsApp / Telegram / Slack / \<app\>" | **B (or A)** + the **styling-depth flag** below -> [`design-matching.md`](design-matching.md) |
 | "Migrate from Sendbird", "replace the Sendbird Chat SDK with Stream", "we're switching off Sendbird / SendbirdUIKit / uikit-compose" | **B** + the **migration flag** below -> [`sendbird-migration.md`](sendbird-migration.md) |
 | Bare `/stream-android` with no args | List the tracks briefly and wait |
@@ -116,6 +117,8 @@ Use the result to produce a **one-line status**, for example:
 
 ## Reference layout
 
+Live documentation is looked up through the `llms.txt` manifests in **[`references/DOCS.md`](references/DOCS.md)** - the entrypoint for guides and surfaces this pack does not bundle. The AI runbook (LLM assistants, streaming replies, agents) lives in **[`ai-integration.md`](ai-integration.md)**, on top of the shared backend contract in [`../stream/ai-backend-contract.md`](../stream/ai-backend-contract.md).
+
 Shared Android/Kotlin patterns live in **[`sdk.md`](sdk.md)**. The curated procedure for reproducing a
 **reference design** with the pre-built Compose components (the region -> `ChatComponentFactory`-slot map
 and the build/verify loop) lives in **[`design-matching.md`](design-matching.md)** - loaded via the
@@ -180,6 +183,8 @@ Load only the relevant files for the requested product and UI layer.
 - Video Compose call/screen structure -> [`references/VIDEO-COMPOSE-blueprints.md`](references/VIDEO-COMPOSE-blueprints.md)
 - Feeds Compose SDK patterns -> [`references/FEEDS-COMPOSE.md`](references/FEEDS-COMPOSE.md)
 - Feeds Compose blueprints -> [`references/FEEDS-COMPOSE-blueprints.md`](references/FEEDS-COMPOSE-blueprints.md)
+- AI assistants, LLM chat, streaming replies -> [`ai-integration.md`](ai-integration.md)
+- Anything not bundled above -> the manifests in [`references/DOCS.md`](references/DOCS.md); fetch the page before answering
 
 If the user asks for a product/UI-layer combo that is not bundled (e.g. Video XML, Feeds XML), say that clearly instead of inventing API details.
 
