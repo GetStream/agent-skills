@@ -10,11 +10,11 @@ disagree, the disagreement is the finding.
 
 ## 1. Find the write paths
 
-Run the scanner from the skill's `scripts/` directory against the app's
+Run the scanner from the skill's directory against the app's
 repository (read-only, standard library only, writes one JSON file):
 
 ```bash
-python3 <skill-dir>/scripts/scan_v2_calls.py --root <repo> --out v2-code-scan.json
+python3 <skill-dir>/scan_v2_calls.py --root <repo> --out v2-code-scan.json
 ```
 
 It lists every v2 write call site with its file, line, call kind, the feed

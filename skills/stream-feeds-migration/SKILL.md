@@ -15,7 +15,8 @@ allowed-tools: >-
 
 # Stream Feeds - v2 to v3 sync mapping
 
-> **Read first (every session):** Glob `../stream/SKILL.md` and Read [`../stream/RULES.md`](../stream/RULES.md) (both ship with this skill). The **Secrets** rule governs every step below: the app secret never enters the conversation. RULES.md also carries the **Peer skills** procedure for installing and invoking any other pack skill on demand.
+For CLI commands or routing to another Stream skill, read
+[`../stream/SKILL.md`](../stream/SKILL.md).
 
 Produce the `mapping` object for an app's v2 -> v3 sync configuration by looking
 at what the app's v2 data actually contains, rather than at what anyone believes
@@ -31,30 +32,13 @@ breaks both in the same way.
 
 ### 1. Get credentials into the environment
 
-You need the **v2 app's** API key and secret. The secret signs an HS256 JWT
-locally, stamped with `iat`/`exp` so it expires five minutes after it is minted.
-The secret itself is never written to the sample file, never echoed back, and
-never sent anywhere except as that signature.
+Use `getstream env` to write the **v2 app's** credentials to an env file. Read
+`getstream env -h` for app selection and output options. Use `--target web` so
+the file contains both `STREAM_API_KEY` and `STREAM_API_SECRET`, which the
+sampler expects.
 
-Per [`../stream/RULES.md`](../stream/RULES.md) > **Secrets**, do not ask the user
-to paste the secret into the chat, and never `cat`, `grep`, or Read a `.env`
-file to find it. Ask them to export it themselves so it stays out of the
-transcript:
-
-```
-! export STREAM_API_KEY=<v2 app key> STREAM_API_SECRET=<v2 app secret>
-```
-
-The `!` prefix runs the command in the user's own session, so the value lands in
-the environment without passing through the conversation. Confirm it took with a
-presence check that never prints the value:
-
-```bash
-test -n "$STREAM_API_SECRET" && echo SECRET_SET || echo SECRET_MISSING
-```
-
-Do not proceed without a real key and secret. There is no useful analysis to do
-against a made-up app, and a wrong secret only produces a 403.
+Load that file when running the sampler below. Do not print its contents or put
+credential values in chat or tool commands.
 
 ### 2. Pick the target
 
@@ -68,8 +52,14 @@ target and the user will say so if they mean otherwise.
 ### 3. Fetch the sample
 
 ```bash
-python3 <skill-dir>/scripts/fetch_sample.py --out v3sync-sample.json
+set -a
+. "<env-file>"
+set +a
+python3 <skill-dir>/fetch_sample.py --out v3sync-sample.json
 ```
+
+`<env-file>` is the absolute path to the file written by `getstream env`. Run
+the block in one shell invocation so Python inherits the credentials.
 
 `<skill-dir>` is the directory holding this `SKILL.md`. Resolve it to an
 absolute path before running - the skill runs from whatever directory the user
@@ -84,8 +74,9 @@ Glob `{.agents,.claude}/skills/stream-feeds-migration/SKILL.md` to settle which.
 The key and secret are read from `STREAM_API_KEY` and `STREAM_API_SECRET`. The
 script takes **no `--secret` flag** by design - a secret passed as an argument
 would land in the process list and the shell history, which is exactly what the
-environment variable avoids. (`--api-key` exists, since the key is not sensitive.)
-The sample is written to the working directory, which is where you want it.
+environment variable avoids. (`--api-key` exists, since the key is not
+sensitive.) The sample is written to the working directory, which is where you
+want it.
 
 Standard library only - no pip install. It calls two server-side-only endpoints:
 
@@ -156,7 +147,7 @@ missed, read a feed or two of it directly with `--feed` (read-only,
 repeatable):
 
 ```bash
-python3 <skill-dir>/scripts/fetch_sample.py --out v3sync-sample.json \
+python3 <skill-dir>/fetch_sample.py --out v3sync-sample.json \
   --feed notification:<user-id> --feed timeline:<user-id>
 ```
 
@@ -176,9 +167,9 @@ created, and whether `foreign_id` is unique. If the user's repository is in the
 working directory (or they point you at it), read it. If not, ask once whether
 it is available; the skill works without it.
 
-Follow [`references/code-inventory.md`](references/code-inventory.md):
+Follow [`code-inventory.md`](code-inventory.md):
 
-1. Run `scripts/scan_v2_calls.py --root <repo> --out v2-code-scan.json` to list every v2 write call
+1. Run `<skill-dir>/scan_v2_calls.py --root <repo> --out v2-code-scan.json` to list every v2 write call
    site (read-only; secrets in snippets are redacted - never quote one from the
    code yourself).
 2. Read the call sites and build the **inventory**: one row per write path,
@@ -195,13 +186,13 @@ Follow [`references/code-inventory.md`](references/code-inventory.md):
 ### 5. Analyze
 
 Read `v3sync-sample.json` and work through the checklist below. Read
-[`references/mapping-keys.md`](references/mapping-keys.md) for the full key
-catalogue, defaults, exact resolution rules, and worked examples of the common
-shapes - **do not guess key names or defaults from memory.**
+[`mapping-keys.md`](mapping-keys.md) for the full key catalogue, defaults, exact
+resolution rules, and worked examples of the common shapes - **do not guess key
+names or defaults from memory.**
 
-The single most common mistake is over-configuring. Every key has a default
-that is right for a conventional v2 app. Only emit a key when the sample shows
-the app deviates from that default. An empty mapping is a valid answer.
+The single most common mistake is over-configuring. Every key has a default that
+is right for a conventional v2 app. Only emit a key when the sample shows the
+app deviates from that default. An empty mapping is a valid answer.
 
 ### 6. Emit the mapping
 
@@ -216,17 +207,17 @@ Explain each key you set by pointing at the evidence: rows in the sample, and,
 when you read the code, the call sites (`file:line`). Say which keys rest on
 code alone.
 
-Flag explicitly anything you could not determine from the sample - see
-**Limits of the sample** below. Silence there reads as "verified", which it is not.
+Flag explicitly anything you could not determine from the sample - see **Limits
+of the sample** below. Silence there reads as "verified", which it is not.
 
 ### 7. Plan the code port (when you read the code)
 
 If you read the integration code in step 4, also write a **porting plan**,
-following [`references/porting-plan.md`](references/porting-plan.md): one row
+following [`porting-plan.md`](porting-plan.md): one row
 per write and read path with its v2 call, its v3 call, the switch-over step it
 belongs to (reads move first, every write moves together last), and the
 behaviour that changes. Take the v3 calls from the **V2 to V3 Code Migration**
-guide (through `stream-docs`), not from memory.
+guide (through `getstream docs`), not from memory.
 
 The plan is a document: do not edit the app's code. Offer to port it; if the
 user asks, follow **Porting the code** in that reference (v3 read paths behind a
@@ -270,7 +261,8 @@ Look at `activities[].extra_context` across the whole sample.
 
 ### Reactions
 
-Look at `kinds` first - that list is the app's whole reaction vocabulary.
+Look at `kinds` first - that list contains the reaction kinds represented in
+the sample.
 
 - **Classify every kind** into exactly one of: comment, bookmark,
   comment-bookmark, or plain reaction. Then set `comments`, `bookmarks`,
@@ -303,13 +295,13 @@ Look at `kinds` first - that list is the app's whole reaction vocabulary.
 - **Attachments** - `attachments_field` if comment attachments are not under
   `data.attachments`.
 
-Watch for **one kind carrying two incompatible shapes** - e.g. some `like`
-rows holding a comment id at one path and others at a different one. The
-single-path keys (`parent_id_field`, `reaction_comment_id_field`) cannot serve
-both. Say which rows the mapping will not cover instead of picking one silently.
+Watch for **one kind carrying two incompatible shapes** - e.g. some `like` rows
+holding a comment id at one path and others at a different one. The single-path
+keys (`parent_id_field`, `reaction_comment_id_field`) cannot serve both. Say
+which rows the mapping will not cover instead of picking one silently.
 
-Some apps carry **legacy layout flags** - see *Legacy layout flags* in
-[`references/mapping-keys.md`](references/mapping-keys.md). Never set one.
+Some apps carry **legacy layout flags** - see _Legacy layout flags_ in
+[`mapping-keys.md`](mapping-keys.md). Never set one.
 
 ### Users
 
@@ -347,11 +339,10 @@ default already covers the app's shape). That is what tells the reader the
 absence was a decision rather than an oversight.
 
 **The omitted list covers only the general-purpose keys.** Never include a
-legacy layout flag (see [`references/mapping-keys.md`](references/mapping-keys.md))
-in that list, in the mapping, or anywhere else in your response - not as a row,
-not as an aside, not even to say it was considered and rejected. They are
-irrelevant to the app in front of you, so there is nothing to justify: leave
-them out silently.
+legacy layout flag (see [`mapping-keys.md`](mapping-keys.md)) in that list, in
+the mapping, or anywhere else in your response - not as a row, not as an aside,
+not even to say it was considered and rejected. They are irrelevant to the app
+in front of you, so there is nothing to justify: leave them out silently.
 
 Suggest `"debug": true` in the mapping for the initial validation run - it
 stamps the live mapping onto `custom._v3sync_debug` of every synced activity -
@@ -387,29 +378,25 @@ difference between "this mapping is correct" and "this mapping fits the sample":
   show up in 100 rows. Where a mapping decision hinges on a field's presence,
   say which sampled rows carried it.
 - **The sample moves.** Re-running later can rotate rows out under the
-  5-per-kind cap and bring new shapes in, so a second run is a cheap way to
-  firm up a decision that rested on a single row.
+  5-per-kind cap and bring new shapes in, so a second run is a cheap way to firm
+  up a decision that rested on a single row.
 
 Before finalizing, check each key you emitted against the worked examples in
-[`references/mapping-keys.md`](references/mapping-keys.md). Matching a documented
-shape is good evidence the path and nesting are right; not matching one is worth
-a second look at the sample.
+[`mapping-keys.md`](mapping-keys.md). Matching a documented shape is good
+evidence the path and nesting are right; not matching one is worth a second look
+at the sample.
 
 ---
 
 ## Hand-off
 
 - **SDK questions about the v3 Feeds API** (what a v3 activity, comment, or
-  bookmark looks like in a given SDK) -> `stream-docs`.
+  bookmark looks like in a given SDK) -> `getstream docs`.
 - **Porting the app's existing v2 code** -> the porting plan (step 7); edit
   code only when the user asks, following the plan.
 - **Building or updating the app against v3** once the mapping is settled ->
   the platform pack for that app (`stream-react`, `stream-swift`,
-  `stream-android`, `stream-react-native`, `stream-flutter`), per
-  [`../stream/peers.yaml`](../stream/peers.yaml).
-
-Offer, do not auto-execute - see [`../stream/RULES.md`](../stream/RULES.md) >
-**Cross-track follow-ups**.
+  `stream-android`, `stream-react-native`, `stream-flutter`).
 
 ## Support
 

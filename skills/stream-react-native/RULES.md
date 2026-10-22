@@ -253,11 +253,11 @@ A single RN app may run both `stream-chat-react-native` (or `stream-chat-expo`) 
 
 ## AI and LLM integrations
 
-Runbook: [`ai-integration.md`](ai-integration.md); shared contract: [`../stream/ai-backend-contract.md`](../stream/ai-backend-contract.md). The non-negotiables:
+Runbook: [`ai-integration.md`](ai-integration.md). The non-negotiables:
 
 - **The model runs on a backend agent, never in the app.** No LLM provider key, Stream secret, or admin token in the JS bundle, `app.json`, or native config.
-- **Always state the backend contract** (`ai_generated`, one partially-updated message, `ai_indicator.*`, honor stop) to the developer, and run its CLI check before debugging RN code.
-- **Stay on the prebuilt components, docs-first** - the lane's Chat package + `@stream-io/chat-react-native-ai`, from the manifest's `ai-integrations` pages. The AI package has native code - rebuild after install (no Expo Go).
+- **Always tell the developer what the backend must send** (`ai_generated`, one partially-updated message, `ai_indicator.*`, honor stop, `generating`), and run the CLI check in [`ai-integration.md`](ai-integration.md) Step 3 before debugging RN code.
+- **Stay on the prebuilt components, docs-first** - the lane's Chat package + `@stream-io/chat-react-native-ai`, from the `ai-integrations` pages in `getstream docs chat-sdk/react-native`. The AI package has native code - rebuild after install (no Expo Go).
 
 ---
 
@@ -284,13 +284,3 @@ This applies on **every turn**, not just the first time the skill is invoked in 
 Use the **Request -> Blueprint section** table at the top of each blueprints file. If no section matches, say so before improvising. Do not rely on a blueprint read earlier in the session; re-read the relevant section before each Stream screen edit.
 
 **When two skill docs disagree, stop and reconcile before coding — RULES.md is the source of truth.** Do not silently follow the more specific or more design-focused file; surface the conflict and resolve it against this file first.
-
----
-
-## CLI and shell discipline
-
-Credentials and requested demo data use the `getstream` binary. If the binary is missing, ask the user to install it from https://getstream.io and wait - never run an install script or introduce a new installer flow.
-
-For `getstream api` calls, follow [`../stream/RULES.md`](../stream/RULES.md) > CLI safety: confirm endpoints with `getstream api -h` before running them, and only run mutating demo-data calls after the user explicitly asks for demo data.
-
-Do not read or print `.env` files. Do not use `bash -ce` in probes.

@@ -53,7 +53,7 @@ response decide which v3 fields replace them.
 
 The authoritative table of v2 -> v3 calls is the **V2 to V3 Code Migration**
 guide (`/activity-feeds/docs/<sdk>/v2-to-v3-code-migration/`, through
-`stream-docs`). Read it for each call; do not rely on memory of either API.
+`getstream docs`). Read it for each call; do not rely on memory of either API.
 The SDK reference pages it links to hold the exact request fields.
 
 Things the plan must call out per path, because they change behaviour rather
