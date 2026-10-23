@@ -172,13 +172,14 @@ Run [`ai-integration.md`](ai-integration.md) first - it settles 5.13.0 vs the st
 | Want to ... | Page (.md) |
 |---|---|
 | AI components (`StreamingMessageView`, `AIComposerView`, `SpeechToTextButton`, `AITypingIndicatorView`, `SuggestionsView`, `StreamingReasoningView`, `SidebarView`, `AIOnDeviceModel`), install from 5.13.0, requirements, `Info.plist` keys, migrating from `stream-chat-swift-ai`, `AIAppearance` + localization, best practices (`ai_generated`, indicator events, stop, ephemeral updates) | `.../guides/ai-integrations.md` |
-| Use them inside `StreamChatSwiftUI` (streaming custom attachment with agent steps, message resolver, thinking indicator via `Styles`) | `.../guides/ai-integrations/swiftui-integration.md` |
+| Show the conversation - the primary way, for AI chats and voice agent transcripts (`AIConversationView`, `AIMessage`, messages from Stream Chat, thinking, pending messages, older messages, `AIConversationViewFactory`, reply actions, attachments), from 5.15.0. A voice transcript also runs [`ai-integration.md`](ai-integration.md) shape E | `.../guides/ai-integrations/conversation-view.md` |
+| The alternative: the components inside the `StreamChatSwiftUI` message list (streaming custom attachment with agent steps, message resolver, thinking indicator via `Styles`) - for an assistant inside an existing messenger, or a conversation that needs messenger features | `.../guides/ai-integrations/swiftui-integration.md` |
 | Agent steps: reasoning, tool calls, approvals (`AIMessagePart`, `AIMessagePartsView`, `AIToolCallView`, `AIToolApprovalView`, `AIToolApprovalCard`, `AIToolApprover`), the step format | `.../guides/ai-integrations/reasoning-and-tool-calls.md` |
 | Client-side tools (`AIClientTool`, `AIClientToolDefinition`, `AIClientToolRunner`, registration, `client_id`; from agent steps or `custom_client_tool_invocation` events) | `.../guides/ai-integrations/client-side-tools.md` |
 | Backend agent with the Vercel AI SDK (`@stream-io/chat-ai-sdk`) | `.../guides/ai-integrations/stream-chat-ai-sdk.md` |
 | Backend agent with LangChain (`@stream-io/chat-langchain-sdk`) | `.../guides/ai-integrations/stream-chat-langchain-sdk.md` |
 
-Code: components `GetStream/stream-chat-swift` (`Sources/StreamChatAI`, the `StreamChatAI` product from 5.13.0, added in #4306; the standalone `stream-chat-swift-ai` repo is the fallback for apps below 5.13.0 or on Xcode 26), reference iOS app `GetStream/chat-ai-samples` (`ios/AIComponents`, still on the standalone package - apply the docs' migration steps when copying), reference backends `chat-ai-samples/ai-sdk-sample` and `langchain-sample`. The pages above cover 5.13.0 and 5.14.0 (5.14.0 changed nothing in `StreamChatAI`). They no longer show the standalone package's API (take that from its 0.12.0 source).
+Code: components `GetStream/stream-chat-swift` (`Sources/StreamChatAI`, the `StreamChatAI` product from 5.13.0, added in #4306; the standalone `stream-chat-swift-ai` repo is the fallback for apps below 5.13.0 or on Xcode 26), reference iOS app `GetStream/chat-ai-samples` (`ios/AIComponents`, the message-list path, still on the standalone package - apply the docs' migration steps when copying), reference backends `chat-ai-samples/ai-sdk-sample` and `langchain-sample`. The pages above cover 5.13.0 through 5.15.0 (5.15.0 added `AIConversationView`, `AIToolAuthorizationView` and the voice visualizations). They no longer show the standalone package's API (take that from its 0.12.0 source).
 
 ### Chat - best practices and limits
 
@@ -288,6 +289,8 @@ For setup, follow the runbook [`push.md`](push.md) (it automates the Stream CLI 
 | Troubleshooting calls | `.../advanced/troubleshooting-calls.md` |
 | Video / audio filters | `.../advanced/apply-video-filters.md` |
 | Background modes | `.../advanced/background-modes.md` |
+| Closed captions: start / stop, `call.state.closedCaptions`, a caption band. A voice agent's transcript shown as a conversation is `AIConversationView` instead, see [`ai-integration.md`](ai-integration.md) shape E | `.../ui-cookbook/closed-captions.md` |
+| Transcriptions (the transcript files of a call) | `.../ui-cookbook/transcriptions.md` |
 
 (Prefix every Video row with `https://getstream.io/video/docs/ios`.)
 
@@ -346,7 +349,7 @@ For a specific UI customization or feature the docs do not cover - an exact `Vie
 | Chat SwiftUI | `stream-chat-swiftui` | `Sources/` | `DemoAppSwiftUI` |
 | Video (SwiftUI + UIKit) | `stream-video-swift` | `Sources/` | `DemoApp` (SwiftUI), `DemoAppUIKit` |
 | Feeds | `stream-feeds-swift` | `Sources/` (StreamFeeds) | `DemoApp` |
-| Chat AI components | `stream-chat-swift` 5.13.0+ (fallback: `stream-chat-swift-ai`) | `Sources/StreamChatAI`, tests in `Tests/StreamChatAITests` | the ChatGPT-style app in `chat-ai-samples` (`ios/AIComponents`) |
+| Chat AI components | `stream-chat-swift` 5.13.0+ (fallback: `stream-chat-swift-ai`) | `Sources/StreamChatAI`, tests in `Tests/StreamChatAITests` | the ChatGPT-style app in `chat-ai-samples` (`ios/AIComponents`, the message-list path) |
 
 How to search (prefer the version-accurate local checkout - no network, matches what the project compiles):
 
