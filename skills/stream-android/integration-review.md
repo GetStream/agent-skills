@@ -9,7 +9,8 @@ chat/android`. The go-live checklist is `guides/go-live-checklist.md`.
 Video pages are under `getstream docs video/android`; ringing and push are in
 `advanced/incoming-calls/`. Video has no go-live checklist or best-practices
 page on Android, so the Video bullets below cite those pages or the SDK code.
-Video bullets start with "Video:"; in a Video-only app the others are N/A.
+Bullets that start with "Video", and the whole Calls section, are Video
+checks; in a Video-only app the other bullets are N/A.
 
 ## Measure, don't guess
 
@@ -53,7 +54,9 @@ Docs: `basics/debugging.md`, `basics/troubleshooting.md`.
   a failed fetch, is dropped with "StreamVideo is not initialised", so
   ringing never reaches a killed app. An app that keeps the user only in
   memory fails this too: the device stays registered, but nothing is built
-  after the process dies. Docs:
+  after the process dies. `build()` throws on a blank key or token, so the
+  startup build is guarded and the session is saved only after a successful
+  build; otherwise one bad session crashes every launch. Docs:
   `advanced/incoming-calls/push-providers/firebase.md`; source: SDK code.
 - Video: the builder gets a `tokenProvider` backed by the app's server.
   Without one the SDK keeps reusing the static token, and expired tokens are
@@ -160,7 +163,9 @@ Docs: `basics/debugging.md`, `basics/troubleshooting.md`.
   `call.leave()` itself. For 1:1 calls, check that the screen closes when the
   other side leaves (`leaveWhenLastInCall`). Source: SDK code.
 - `join`, `accept`, `reject`, `ring`, and `create` return `Result`: a
-  `Failure` is shown, not ignored.
+  `Failure` is shown, not ignored. With the prebuilt `StreamCallActivity`,
+  a failure closes the screen (`closeScreenOnError`), which passes; showing
+  the reason through an `onFailed` override is Worth doing at most.
 - Permissions are granted before `join`: `LaunchCallPermissions`,
   `rememberCallPermissionsState`, or the app's own request. A
   `StreamCallActivity` call screen checks them itself. An audio-only app
@@ -191,7 +196,10 @@ Docs: `basics/debugging.md`, `basics/troubleshooting.md`.
   opens.
 - Expected behavior, not bugs: no push while connected
   (`ignorePushMessageWhenUserOnline`), and `POST_NOTIFICATIONS` requested on
-  launch unless `requestPermissionOnAppLaunch` returns false.
+  launch unless `requestPermissionOnAppLaunch` returns false. Video's
+  `NotificationConfig` does the same by default.
+- Video: link 5 of the push chain is the Initialization `tokenProvider`
+  check; Video's `NotificationConfig` has no token provider of its own.
 - Intermittent push: check the merged manifest for a dependency declaring
   `WAKE_LOCK` with a low `maxSdkVersion`. A `success` in the dashboard push log
   only means FCM accepted it.
