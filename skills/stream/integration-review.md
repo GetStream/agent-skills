@@ -4,6 +4,11 @@ A read-only review of an existing app's Stream integration, before it goes live
 or before the live integration review with Stream. The output is a checklist
 the developer can act on. Change code only if asked, after the report.
 
+The check sections follow the agenda of Stream's live review, so the report
+maps onto that call: initialization, a typical session, disconnecting,
+fetching channels and calls, search, rendering and customization, push, unread
+counts, and scale.
+
 This file holds the procedure and the checks that apply on every platform. Each
 platform skill adds its own pitfalls on top; run both.
 
@@ -25,8 +30,8 @@ ask, record the answer as unknown and continue:
   job, so more checks apply.
 - Features shipped: 1:1, groups, livestream, support inbox, calls, feeds.
 - Scale: channels per user, members in the largest channel, messages per day
-  in the busiest channel, expected growth. Several findings only matter at
-  scale, so record the answers in the report.
+  in the busiest channel, concurrent call participants, expected growth.
+  Several findings only matter at scale, so record the answers in the report.
 
 ## 2. Locate the integration
 
@@ -36,10 +41,17 @@ Before judging anything, find and read:
 - every connect and disconnect call site, and the logout and account-switch
   paths
 - the token provider and where tokens come from
-- every channel, feed, or call query, with its literal filter, sort, and limits
+- every channel, call, or feed query, with its literal filter, sort, and limits
+- the screens that render Stream data, and how each is customized
 - push: the client-side registration, any custom push service, and the
   provider name per build variant
 - dependency declarations for every Stream package
+
+Then trace one typical session through the code: app start, login, the channel
+or call list, opening a channel or joining a call, sending a message,
+backgrounding and returning, logout. List every Stream API call each step
+makes, and where it's made. Calls repeated at a step, or made on every screen
+visit, are findings under the section they belong to.
 
 Review what ships. Name the build type and flavor that go to users (a flavor
 called `demo` can be the shipping one), and tag a finding that affects only
@@ -58,30 +70,35 @@ record: PASS, FAIL, or N/A, the evidence (file:line), and the fix.
 A check that needs the dashboard, the CLI, or a running app you don't have is
 listed as unverified, with any in-code hint (a comment, a KDoc) as the lead.
 
-### Auth and secrets
+### Initialization
 
+- The client is built once per process, at app start. Building it lazily when
+  chat opens delays push registration; building it twice drops state, and
+  anything that cached the old instance keeps using it.
 - The API secret is nowhere in the app, its build config, or source control.
   Anyone holding it can act as any user.
 - No tokens bundled in the app, development or signed: anyone unpacking it can
   act as those users. Tokens expire and come from a token provider backed by
   the app's server.
 - The provider can't hang or crash on network errors. The SDKs retry it.
-- A failed connect (invalid or revoked token) is handled: the user is sent back
-  to login and stored credentials are cleared, not left on an empty screen.
 
 Docs: `tokens-and-authentication.md` in `getstream docs chat/<platform>`, and
 the SDK's go-live checklist (its path is in the platform file).
 
-### Client and session lifetime
+### Typical session
 
-- The client is built once per process, at app start. Building it lazily when
-  chat opens delays push registration; building it twice drops state, and
-  anything that cached the old instance keeps using it.
 - The user connects once per session, from the app's session or login code,
   not from a chat screen. One connection per user, guarded against races and
   repeated calls on resume.
+- A failed connect (invalid or revoked token) is handled: the user is sent back
+  to login and stored credentials are cleared, not left on an empty screen.
 - The app doesn't manage the socket by hand on background and foreground. The
   SDKs already do, and a manual disconnect usually stops reconnection.
+- The session trace from step 2 makes no call the SDK already makes, and
+  nothing is re-fetched on every screen visit.
+
+### Disconnecting
+
 - Logout disconnects the user and removes the push device, and the app waits
   for the disconnect before clearing its session or showing login. Otherwise
   the next person on the device gets the previous user's notifications and
@@ -89,7 +106,7 @@ the SDK's go-live checklist (its path is in the platform file).
 - App-wide services (location, sync, calls) can start again after a logout and
   login in the same process.
 
-### Querying channels
+### Fetching channels
 
 - Every channel list filters on membership plus type, and sorts on
   `last_message_at` or `last_updated`. Type alone is slow and pages unstably.
@@ -103,17 +120,31 @@ the SDK's go-live checklist (its path is in the platform file).
 - Channels are created when the user commits (first message, confirm), not on
   every selection change in a picker. Throwaway channels pile up in members'
   lists and force extra filter clauses to hide them. Source: the app code.
-- A custom event handler that adds channels to a list checks the list's
-  filter first; otherwise channels outside it appear.
 - `limit` stays within the documented maximum, and nothing pages past the
   maximum offset. For older data, add a time filter instead.
 - Queries aren't re-issued on navigation, resume, or reconnect. The socket
   keeps watched channels current.
-- Several lists (tabs, archived, per type) each filter incoming events to
-  their own filter. Events aren't filtered server-side.
+- Each list filters incoming events to its own filter before adding a channel.
+  Events aren't filtered server-side, so with a default handler channels
+  outside the filter appear, and with several lists they land in the wrong
+  one.
 
 Docs: `api-budget.md`, `query-channels.md` (filter best practices, pagination,
 performance), and `rate-limits.md` in `getstream docs chat/<platform>`.
+
+### Fetching calls
+
+- Call lists are scoped to the user (`members`, `created_by_user_id`) and
+  bounded in time (`starts_at`, `ended_at`), not an unfiltered query over the
+  app's calls.
+- Sorting uses a field the docs list as sortable, and paging uses `next` /
+  `prev` with a bounded `limit`.
+- `watch` is set only where the list shows live state, such as who is in the
+  call, and the list isn't re-queried on every visit.
+- A `Call` object lives in an owned scope for as long as the call screen, not
+  recreated on each render.
+
+Docs: `guides/querying-calls.md` in `getstream docs video/<platform>`.
 
 ### Search
 
@@ -128,16 +159,23 @@ Docs: `search.md` (paging) and `api-budget.md` (operators) in
 `getstream docs chat/<platform>`. Debouncing is general practice: cite the
 code.
 
-### Unread counts
+### Rendering and customization
 
-- Badges come from the server's counts over the socket, not summed from loaded
-  channels.
-- The app doesn't poll the REST unread endpoint while connected. Without a
-  connection, such as a notification badge, the endpoint is the right tool.
-- A custom message list marks the channel read when the user sees the newest
-  message, not on every incoming message.
+What matters is how the app customized, not how much: ask what its next SDK
+upgrade will cost.
 
-Docs: `unread.md` in `getstream docs chat/<platform>`.
+- Customization goes through the SDK's extension points: theming, component
+  overrides or factories, and the documented customization hooks.
+- No SDK source copied into the app. Record which extension point was missing
+  under "Ask Stream".
+- Message and channel actions are gated on the channel's own capabilities,
+  not hardcoded roles that drift from dashboard permissions.
+- Prebuilt screens get their state from the SDK's own view models or hooks.
+  A custom UI watches the channel or call for updates instead of a one-off
+  fetch plus polling, and releases listeners when the screen goes away.
+
+Docs: the SDK's customization or theming pages under
+`getstream docs chat-sdk/<platform>`.
 
 ### Push
 
@@ -155,6 +193,17 @@ Check the chain in order. Every broken link looks the same to the user:
 If the CLI is already set up for the app, check the user's device list with
 `getstream api`: no device means the cause is in the app. Otherwise list it as
 unverified.
+
+### Unread counts
+
+- Badges come from the server's counts over the socket, not summed from loaded
+  channels.
+- The app doesn't poll the REST unread endpoint while connected. Without a
+  connection, such as a notification badge, the endpoint is the right tool.
+- A custom message list marks the channel read when the user sees the newest
+  message, not on every incoming message.
+
+Docs: `unread.md` in `getstream docs chat/<platform>`.
 
 ### Scale and release
 
@@ -175,9 +224,9 @@ the SDK's go-live checklist.
 
 ### Video and Feeds
 
-For Video, read the SDK's "Integration best practices" page when it exists,
-otherwise its go-live and troubleshooting pages, and check client and call
-lifetime, device permissions, and error handling the same way. For Feeds, read
+For Video, also read the SDK's "Integration best practices" page when it
+exists, otherwise its go-live and troubleshooting pages, and check device
+permissions and error handling against it. For Feeds, read
 `getstream docs activity-feeds/<platform>` best practices.
 
 ## 4. Report
@@ -194,7 +243,9 @@ Lead with the checklist, grouped by urgency:
 - **Ask Stream:** index or filter-performance questions, missing extension
   points, docs gaps, suspected SDK bugs.
 
-One line per FAIL: check, evidence, fix, docs page, and the variant if it isn't
-every variant. PASS checks get a one-line list with evidence, and N/A checks a
-one-line reason, so the reader sees they were considered. End with the scale
-answers from step 1 and anything you couldn't verify from the code.
+One line per FAIL: the check section, check, evidence, fix, docs page, and the
+variant if it isn't every variant. PASS checks get a one-line list with
+evidence, and N/A checks a one-line reason, so the reader sees they were
+considered. Then the session trace from step 2, as one line per step with the
+Stream calls it makes. End with the scale answers from step 1 and anything you
+couldn't verify from the code.
