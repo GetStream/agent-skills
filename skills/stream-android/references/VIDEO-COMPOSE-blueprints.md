@@ -153,8 +153,8 @@ fun LoginScreen(onConnected: () -> Unit) {
                 runCatching {
                     // Demo wiring only. In production, fetch the token from your backend and pass
                     // a tokenProvider into StreamVideoBuilder instead of a static string.
-                    // Ringing apps: SessionStore(context).save(...) and
-                    // StreamSession.connect(...) from the Ringing with Push Blueprint instead.
+                    // Ringing apps: StreamSession.connect(...), then SessionStore(context).save(...)
+                    // from the Ringing with Push Blueprint instead.
                     StreamVideoBuilder(
                         context = context,
                         apiKey = BuildConfig.STREAM_API_KEY,
@@ -537,21 +537,44 @@ object StreamSession {
 class App : Application() {
     override fun onCreate() {
         super.onCreate()
-        SessionStore(this).load()?.let { StreamSession.connect(this, it) }
+        val store = SessionStore(this)
+        val session = store.load() ?: return
+        // build() throws on a blank key or token; don't crash every launch on a bad session.
+        runCatching { StreamSession.connect(this, session) }.onFailure { store.clear() }
     }
 }
 ```
 
-At login, save the session and connect: `SessionStore(context).save(session)` then `StreamSession.connect(context, session)` (see [Login / Connect User Blueprint](#login--connect-user-blueprint)). At logout, delete the device, remove the client, and clear the session:
+At login, connect first and save the session only once `build()` returned: `StreamSession.connect(context, session)` then `SessionStore(context).save(session)` (see [Login / Connect User Blueprint](#login--connect-user-blueprint)).
+
+`build()` connects in the background and only logs a failure, so watch the connection and send the user back to login when it fails (for example an invalid or revoked token):
 
 ```kotlin
+import io.getstream.video.android.core.ConnectionState
+
+// inside a coroutine scoped to the signed-in UI
+StreamVideo.instance().state.connection.collect { state ->
+    if (state is ConnectionState.Failed) {
+        logout(context) // below
+        showLogin(state.error.message)
+    }
+}
+```
+
+At logout, delete the device, remove the client, and clear the session. Don't tear down on a failed delete: the device would stay registered to this user and keep ringing for them.
+
+```kotlin
+import io.getstream.result.Result
 import kotlinx.coroutines.flow.first
 
-// inside a coroutine
-val streamVideo = StreamVideo.instance()
-streamVideo.getDevice().first()?.let { streamVideo.deleteDevice(it) }
-StreamVideo.removeClient()
-SessionStore(context).clear()
+suspend fun logout(context: Context): Boolean {
+    val streamVideo = StreamVideo.instanceOrNull() ?: return true
+    val device = streamVideo.getDevice().first()
+    if (device != null && streamVideo.deleteDevice(device) is Result.Failure) return false
+    StreamVideo.removeClient()
+    SessionStore(context).clear()
+    return true
+}
 ```
 
 **4. Incoming-call screen.** The Compose SDK registers `ComposeStreamCallActivity` for the incoming, accept, and outgoing call actions, with `showWhenLocked` and `turnScreenOn`, so a push opens it with no manifest changes. It handles accept, reject, permissions, and leaving. Use it as the only incoming UI: don't also render `RingingCallContent` from `state.ringingCall` in an app shell, or the app shows two incoming screens while it's open. Start outgoing calls through it too:
