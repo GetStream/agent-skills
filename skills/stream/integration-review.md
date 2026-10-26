@@ -91,7 +91,8 @@ under "Ask Stream" in the report.
   Anyone holding it can act as any user.
 - No tokens bundled in the app, development or signed: anyone unpacking it can
   act as those users. Tokens expire and come from a token provider backed by
-  the app's server.
+  the app's server. A constant or config file meant for pasted tokens counts
+  as bundled, even while it holds placeholders.
 - The provider can't hang or crash on network errors. The SDKs retry it.
 - Every login type the app offers (account, guest, anonymous, SSO) builds
   every client its screens use. A screen that reaches a client that was never
