@@ -184,7 +184,8 @@ break on the next SDK upgrade is a finding.
 - Customization goes through the SDK's extension points: theming, component
   overrides or factories, and the documented customization hooks.
 - No SDK source copied into the app. Look for Stream copyright headers, files
-  named like SDK components, or packages mirroring the SDK's. Record which
+  named like SDK components, or packages mirroring the SDK's; in Stream's own
+  samples every file has the header, so compare contents with the SDK file. Record which
   extension point was missing under "Ask Stream".
 - An override of a composite component falls back to the SDK default for the
   cases it doesn't handle. Otherwise those messages or rows lose what the
@@ -214,9 +215,12 @@ Docs: the platform file names the customization pages.
 - A caller cancelling rejects and then leaves; a callee declining does the
   same. Reject notifies the others, but only leave cleans up locally.
 
-Docs: `guides/joining-and-creating-calls.md` and the incoming-calls pages in
-`getstream docs video/<platform>`; the React and React Native "Integration
-best practices" pages cover the same ground in more detail.
+Docs: the React and React Native "Integration best practices" pages in
+`getstream docs video/<platform>` (leaving, errors, permissions, concurrency),
+and each platform's ringing or incoming-calls pages (members, reject then
+leave). The once-per-ID rule is in the iOS and Flutter troubleshooting pages
+and the React and React Native ringing pages; cite one of those on platforms
+whose docs don't state it.
 
 ### Push
 

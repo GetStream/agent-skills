@@ -9,6 +9,7 @@ chat/android`. The go-live checklist is `guides/go-live-checklist.md`.
 Video pages are under `getstream docs video/android`; ringing and push are in
 `advanced/incoming-calls/`. Video has no go-live checklist or best-practices
 page on Android, so the Video bullets below cite those pages or the SDK code.
+Video bullets start with "Video:"; in a Video-only app the others are N/A.
 
 ## Measure, don't guess
 
@@ -24,6 +25,11 @@ can be run:
   whether the app is connected as the right user.
 
 Docs: `basics/debugging.md`, `basics/troubleshooting.md`.
+
+- Video: `loggingLevel = LoggingLevel(priority = Priority.VERBOSE,
+  httpLoggingLevel = HttpLoggingLevel.BODY)` for a debug run. A ringing push
+  dropped because the client wasn't built logs "StreamVideo is not
+  initialised". Source: SDK code.
 
 ## Initialization
 
@@ -45,8 +51,13 @@ Docs: `basics/debugging.md`, `basics/troubleshooting.md`.
   from the stored user and token, with no network call first: refreshing is
   the `tokenProvider`'s job. A push that arrives before the build, or after
   a failed fetch, is dropped with "StreamVideo is not initialised", so
-  ringing never reaches a killed app. Docs:
+  ringing never reaches a killed app. An app that keeps the user only in
+  memory fails this too: the device stays registered, but nothing is built
+  after the process dies. Docs:
   `advanced/incoming-calls/push-providers/firebase.md`; source: SDK code.
+- Video: the builder gets a `tokenProvider` backed by the app's server.
+  Without one the SDK keeps reusing the static token, and expired tokens are
+  never refreshed. Docs: `guides/client-auth.md`.
 - Video: a second `build()` throws while a client exists. Switching users
   calls `StreamVideo.removeClient()` first; turning off
   `ensureSingleInstance` to get past the error is a finding. Source: SDK
@@ -66,6 +77,10 @@ Docs: `basics/debugging.md`, `basics/troubleshooting.md`.
 - No `disconnectSocket()` on background: it drops the lifecycle observer and
   the SDK stops reconnecting on foreground ("messages stop arriving after a
   while"). Docs: `client/guides/handling-user-connection.md`.
+- Video: `build()` connects in the background and only logs a failed
+  connect. The app watches `StreamVideo.instance().state.connection` for
+  `ConnectionState.Failed` and sends the user back to login on an auth
+  error. Source: SDK code.
 
 ## Disconnecting
 
@@ -77,8 +92,9 @@ Docs: `basics/debugging.md`, `basics/troubleshooting.md`.
 - Logout awaits `disconnect(...)` before navigating, not
   `GlobalScope.launch` with a delay.
 - Account switch uses `switchUser`.
-- Video logout deletes the device (`getDevice().first()`, then
-  `deleteDevice(it)`) and then calls `StreamVideo.removeClient()`.
+- Video logout deletes the device (for example `getDevice().first()`, then
+  `deleteDevice(it)`; any `Device` whose id is the registered token works),
+  handles a failed delete, and then calls `StreamVideo.removeClient()`.
   `StreamVideo.logOut()` only clears the local token cache: the device stays
   registered to the old user, so their calls keep reaching the phone until
   someone else logs in on it, and after that too if the app allows
@@ -145,9 +161,11 @@ Docs: `basics/debugging.md`, `basics/troubleshooting.md`.
   other side leaves (`leaveWhenLastInCall`). Source: SDK code.
 - `join`, `accept`, `reject`, `ring`, and `create` return `Result`: a
   `Failure` is shown, not ignored.
-- Permissions come from `LaunchCallPermissions` or
-  `rememberCallPermissionsState` before `join`. An audio-only app requests
-  only `RECORD_AUDIO`. Read references/VIDEO-COMPOSE.md, Permissions.
+- Permissions are granted before `join`: `LaunchCallPermissions`,
+  `rememberCallPermissionsState`, or the app's own request. A
+  `StreamCallActivity` call screen checks them itself. An audio-only app
+  requests only `RECORD_AUDIO`. Read references/VIDEO-COMPOSE.md,
+  Permissions.
 - A custom accept path leaves `state.activeCall` first (docs:
   `advanced/incoming-calls/ringing.md`), or the builder sets
   `rejectCallWhenBusy` (source: SDK code). `StreamCallActivity` already
@@ -189,9 +207,11 @@ Docs: `basics/debugging.md`, `basics/troubleshooting.md`.
   `FOREGROUND_SERVICE_PHONE_CALL`, and `POST_NOTIFICATIONS`. A
   `tools:node="remove"` on them is fine only in an app that never rings.
   Source: SDK manifest.
-- Video: custom incoming-call activities declare the SDK's intent actions
-  (`INCOMING_CALL`, `ACCEPT_CALL`, and the rest) and `showWhenLocked`.
-  Without them the push arrives but no screen opens. Docs:
+- Video: the activity that resolves the SDK's intent actions
+  (`INCOMING_CALL`, `ACCEPT_CALL`, and the rest), whether the app's own or
+  the SDK's `ComposeStreamCallActivity`, declares them and
+  `showWhenLocked`. Without them the push arrives but no screen opens. A
+  subclass that is never launched is dead code, not a push break. Docs:
   `advanced/incoming-calls/push-notifications.md`.
 
 ## Unread counts
@@ -219,8 +239,9 @@ Docs: `basics/debugging.md`, `basics/troubleshooting.md`.
   code.
 - The base network security config doesn't permit cleartext, and release
   signing doesn't fall back to the debug keystore.
-- Video release builds don't pass a `loggingLevel` at `DEBUG` or `VERBOSE`.
-  Docs: `guides/client-auth.md`.
+- Video release builds don't pass a `loggingLevel` at `DEBUG` or `VERBOSE`
+  (the default is `ERROR`), and don't opt into `InternalStreamVideoApi`.
+  Source: SDK code.
 - All `stream-chat-android-*` artifacts are on one version, and so are all
   `stream-video-android-*` artifacts. Crashes or missing
   classes only in minified builds mean the consumer R8 rules aren't applied.
