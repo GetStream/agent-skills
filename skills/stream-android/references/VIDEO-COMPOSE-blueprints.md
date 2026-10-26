@@ -18,6 +18,7 @@ Use this table to resolve a user request to the section(s) you must read before 
 | "join a call", "call lobby", "enter call ID", join-or-create flow | [Home / Join-or-Start Call Blueprint](#home--join-or-start-call-blueprint) |
 | "active call screen", `CallContent`, in-call UI, layout switcher | [Active Call Blueprint (CallContent)](#active-call-blueprint-callcontent) |
 | "ringing", incoming call, outgoing call, accept/decline, `RingingCallContent` | [Ringing Call Blueprint](#ringing-call-blueprint) |
+| ring when the app is closed or in the background, call push notifications, "phone doesn't ring", Firebase for calls | [Ringing with Push Blueprint](#ringing-with-push-blueprint) |
 | "custom controls", mic/camera/leave bar, replace control buttons | [Custom Call Controls Blueprint](#custom-call-controls-blueprint) |
 | "custom participant tile", custom video renderer, participant overlay | [Custom Participant Tile Blueprint](#custom-participant-tile-blueprint) |
 | "participant grid", custom layout, local PiP | [Participant Grid Blueprint](#participant-grid-blueprint) |
@@ -161,7 +162,7 @@ fun LoginScreen(onConnected: () -> Unit) {
 
 **Wiring:**
 - For an expiring token, swap the `token` argument for both an initial token and a `tokenProvider` (see [VIDEO-COMPOSE.md - User Authentication](VIDEO-COMPOSE.md#user-authentication)).
-- Auto-reconnect across app launches: check `StreamVideo.instanceOrNull() != null` before showing the login screen.
+- Skipping login on the next launch needs a saved session that `Application.onCreate` builds the client from: in a new process `StreamVideo.instanceOrNull()` is `null` until something calls `build()`. If the app rings with push, it needs this anyway - save the session and connect through `StreamSession.connect` from the [Ringing with Push Blueprint](#ringing-with-push-blueprint) instead of calling the builder here.
 - To switch users, delete the push device (`getDevice().first()?.let { deleteDevice(it) }`), then call `StreamVideo.removeClient()` before the new `build()`. `logOut()` only clears the local token cache and leaves the device registered.
 
 ---
@@ -419,6 +420,166 @@ Button(onClick = { scope.launch { call.reject(); call.leave() } }) { Text("Rejec
 - `call.reject()` rejects the call for the current user; pair with `leave()` to drop any local references.
 - `RingingCallContent` exposes `onIncomingContent` and `onOutgoingContent` slots if you want to fully replace the default ringing UIs — match the lambda signatures defined in the SDK source.
 - `onAcceptedContent` is **required** (no default).
+- This section rings only while the app is open and connected. For calls that ring with the app in the background or killed, also follow the [Ringing with Push Blueprint](#ringing-with-push-blueprint).
+
+---
+
+## Ringing with Push Blueprint
+
+Calls that ring when the app is in the background or killed. Four pieces must all be in place, and a missing one fails silently - the phone just doesn't ring:
+
+1. a Firebase push provider in the Stream dashboard
+2. the Firebase push artifact and a `FirebasePushDeviceGenerator` on the builder
+3. a saved session, so `Application.onCreate` can build the client before the push is handled
+4. an incoming-call screen that can open over the lock screen
+
+**1. Dashboard push provider.** It needs the Firebase service-account JSON (Firebase console -> Project settings -> Service accounts). Create a Firebase provider named `firebase` in the dashboard (Push Notifications -> New Configuration), or with `getstream api UpsertPushProvider` (`--schema` prints the body). The JSON and the app's `google-services.json` come from the user - never invent them.
+
+**2. Gradle.** Releases of the push artifact are on Stream's Maven repository, so `settings.gradle.kts` needs it under `dependencyResolutionManagement.repositories`:
+
+```kotlin
+// settings.gradle.kts
+dependencyResolutionManagement {
+    repositories {
+        google()
+        mavenCentral()
+        maven("https://stream-io-repo.com")
+    }
+}
+```
+
+```kotlin
+// app/build.gradle.kts
+plugins {
+    id("com.google.gms.google-services")
+}
+
+dependencies {
+    implementation("io.getstream:stream-video-android-ui-compose:<latest>")
+    implementation("io.getstream:stream-android-push-firebase:<latest>")
+}
+```
+
+Put `google-services.json` in the app module. Look the push version up on `https://github.com/GetStream/stream-android-push/releases`; the Google services plugin version goes in the root `plugins` block with `apply false`.
+
+**3. Session and client.** Save the user and last token at login, and build the client from them in `Application.onCreate` - no network call there. A push that arrives before `build()` is dropped ("StreamVideo is not initialised"). The token is a credential: keep it in app-private storage, as below.
+
+```kotlin
+package com.example.streamvideo
+
+import android.app.Application
+import android.content.Context
+import io.getstream.android.push.firebase.FirebasePushDeviceGenerator
+import io.getstream.video.android.core.StreamVideo
+import io.getstream.video.android.core.StreamVideoBuilder
+import io.getstream.video.android.core.notifications.NotificationConfig
+import io.getstream.video.android.core.socket.common.token.TokenProvider
+import io.getstream.video.android.model.User
+
+data class Session(val userId: String, val name: String, val token: String)
+
+class SessionStore(context: Context) {
+    private val prefs = context.getSharedPreferences("stream_session", Context.MODE_PRIVATE)
+
+    fun load(): Session? {
+        val userId = prefs.getString("user_id", null) ?: return null
+        val token = prefs.getString("token", null) ?: return null
+        return Session(userId, prefs.getString("name", userId) ?: userId, token)
+    }
+
+    fun save(session: Session) {
+        prefs.edit()
+            .putString("user_id", session.userId)
+            .putString("name", session.name)
+            .putString("token", session.token)
+            .apply()
+    }
+
+    fun saveToken(token: String) = prefs.edit().putString("token", token).apply()
+
+    fun clear() = prefs.edit().clear().apply()
+}
+
+object StreamSession {
+    // Must match the provider name in the Stream dashboard.
+    private const val PUSH_PROVIDER_NAME = "firebase"
+
+    fun connect(context: Context, session: Session) {
+        if (StreamVideo.isInstalled) return
+        val store = SessionStore(context)
+        StreamVideoBuilder(
+            context = context.applicationContext,
+            apiKey = "your_api_key",
+            user = User(id = session.userId, name = session.name),
+            token = session.token,
+            tokenProvider = object : TokenProvider {
+                // Called when the token expires: fetch a fresh one from your backend.
+                override suspend fun loadToken(): String =
+                    yourAuthService.fetchVideoToken(session.userId).also(store::saveToken)
+            },
+            notificationConfig = NotificationConfig(
+                pushDeviceGenerators = listOf(
+                    FirebasePushDeviceGenerator(
+                        providerName = PUSH_PROVIDER_NAME,
+                        context = context.applicationContext,
+                    ),
+                ),
+            ),
+        ).build()
+    }
+}
+
+class App : Application() {
+    override fun onCreate() {
+        super.onCreate()
+        SessionStore(this).load()?.let { StreamSession.connect(this, it) }
+    }
+}
+```
+
+At login, save the session and connect: `SessionStore(context).save(session)` then `StreamSession.connect(context, session)` (see [Login / Connect User Blueprint](#login--connect-user-blueprint)). At logout, delete the device, remove the client, and clear the session:
+
+```kotlin
+import kotlinx.coroutines.flow.first
+
+// inside a coroutine
+val streamVideo = StreamVideo.instance()
+streamVideo.getDevice().first()?.let { streamVideo.deleteDevice(it) }
+StreamVideo.removeClient()
+SessionStore(context).clear()
+```
+
+**4. Incoming-call screen.** The Compose SDK registers `ComposeStreamCallActivity` for the incoming, accept, and outgoing call actions, with `showWhenLocked` and `turnScreenOn`, so a push opens it with no manifest changes. It handles accept, reject, permissions, and leaving. Start outgoing calls through it too:
+
+```kotlin
+import android.content.Context
+import io.getstream.video.android.compose.ui.ComposeStreamCallActivity
+import io.getstream.video.android.core.notifications.NotificationHandler
+import io.getstream.video.android.model.StreamCallId
+import io.getstream.video.android.ui.common.StreamCallActivity
+import java.util.UUID
+
+fun startOutgoingCall(context: Context, calleeIds: List<String>) {
+    context.startActivity(
+        StreamCallActivity.callIntent(
+            context = context,
+            // A new ID per ringing call: a call ID rings only once.
+            cid = StreamCallId(type = "default", id = UUID.randomUUID().toString()),
+            members = calleeIds,
+            leaveWhenLastInCall = true,
+            action = NotificationHandler.ACTION_OUTGOING_CALL,
+            clazz = ComposeStreamCallActivity::class.java,
+        ),
+    )
+}
+```
+
+**Wiring:**
+- The SDK asks for `POST_NOTIFICATIONS` on launch (`NotificationConfig.requestPermissionOnAppLaunch`); without it no ringing notification shows on Android 13+.
+- Don't remove `USE_FULL_SCREEN_INTENT`, `FOREGROUND_SERVICE_PHONE_CALL`, or `POST_NOTIFICATIONS` from the merged manifest with `tools:node="remove"`.
+- A custom `FirebaseMessagingService` must forward to `FirebaseMessagingDelegate.handleRemoteMessage` and register new tokens with `FirebaseMessagingDelegate.registerFirebaseToken` - see `getstream docs video/android`, `advanced/incoming-calls/push-providers/firebase.md`.
+- To replace the SDK call screen, subclass `ComposeStreamCallActivity` and give the subclass the same intent actions, `showWhenLocked`, and `turnScreenOn` - see `advanced/incoming-calls/push-notifications.md`.
+- Test on a physical device with the app swiped away: ring it from a second device or user.
 
 ---
 

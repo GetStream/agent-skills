@@ -133,7 +133,7 @@ Token generation: `getstream token <user_id>` (same CLI as Chat - see [`credenti
 `TokenProvider` has a single `suspend` method. The SDK invokes it automatically when the token expires:
 
 ```kotlin
-import io.getstream.video.android.core.TokenProvider
+import io.getstream.video.android.core.socket.common.token.TokenProvider
 
 val tokenProvider = object : TokenProvider {
     override suspend fun loadToken(): String =
@@ -492,7 +492,7 @@ A failed WebSocket connection prevents calls from being established.
 ### Ringing call issues
 
 - **App in foreground:** ringing UI shows via the active socket. Fix connection issues first.
-- **App in background or killed:** requires push notification + a foreground service. The SDK ships a default service config in `NotificationConfig` — don't strip it from the merged manifest.
+- **App in background or killed:** requires a dashboard push provider, a push device generator on the builder, and a client built in `Application.onCreate` from a saved session - see the [Ringing with Push Blueprint](VIDEO-COMPOSE-blueprints.md#ringing-with-push-blueprint). Don't strip the SDK's call permissions or service from the merged manifest.
 - **Calling yourself** — caller and callee must be different users; a user cannot ring themselves.
 - **Unknown member** — the callee must have connected to Stream at least once so the platform knows their device token.
 - **Reused call ID** — ringing fires only once per call ID. Use a fresh `UUID().toString()` (or a server-issued id) for every ringing call.
