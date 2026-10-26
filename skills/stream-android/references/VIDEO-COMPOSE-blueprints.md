@@ -92,11 +92,17 @@ Register it in `AndroidManifest.xml`:
 Stream Video's "connect user" is `StreamVideoBuilder(... user = ..., token = ...).build()` — there is no separate `connectUser` call like Chat. To support a login screen, defer the `build()` until after the user picks an identity.
 
 ```kotlin
+import android.content.Intent
+import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 import io.getstream.video.android.compose.theme.VideoTheme
 import io.getstream.video.android.core.StreamVideo
 import io.getstream.video.android.core.StreamVideoBuilder
@@ -120,6 +126,7 @@ class LoginActivity : ComponentActivity() {
 
 @Composable
 fun LoginScreen(onConnected: () -> Unit) {
+    val context = LocalContext.current.applicationContext
     var userId by remember { mutableStateOf("") }
     var name by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
@@ -146,11 +153,13 @@ fun LoginScreen(onConnected: () -> Unit) {
                 runCatching {
                     // Demo wiring only. In production, fetch the token from your backend and pass
                     // a tokenProvider into StreamVideoBuilder instead of a static string.
+                    // Ringing apps: SessionStore(context).save(...) and
+                    // StreamSession.connect(...) from the Ringing with Push Blueprint instead.
                     StreamVideoBuilder(
-                        context = applicationContext,
-                        apiKey = "your_api_key",
+                        context = context,
+                        apiKey = BuildConfig.STREAM_API_KEY,
                         user = User(id = userId, name = name.ifBlank { userId }),
-                        token = "your_static_token_here",
+                        token = Config.USER_TOKEN,
                     ).build()
                     onConnected()
                 }.onFailure { error = it.message }
@@ -435,18 +444,7 @@ Calls that ring when the app is in the background or killed. Four pieces must al
 
 **1. Dashboard push provider.** It needs the Firebase service-account JSON (Firebase console -> Project settings -> Service accounts). Create a Firebase provider named `firebase` in the dashboard (Push Notifications -> New Configuration), or with `getstream api UpsertPushProvider` (`--schema` prints the body). The JSON and the app's `google-services.json` come from the user - never invent them.
 
-**2. Gradle.** Releases of the push artifact are on Stream's Maven repository, so `settings.gradle.kts` needs it under `dependencyResolutionManagement.repositories`:
-
-```kotlin
-// settings.gradle.kts
-dependencyResolutionManagement {
-    repositories {
-        google()
-        mavenCentral()
-        maven("https://stream-io-repo.com")
-    }
-}
-```
+**2. Gradle.** Add the Firebase push artifact and the Google services plugin:
 
 ```kotlin
 // app/build.gradle.kts
@@ -455,12 +453,14 @@ plugins {
 }
 
 dependencies {
-    implementation("io.getstream:stream-video-android-ui-compose:<latest>")
-    implementation("io.getstream:stream-android-push-firebase:<latest>")
+    implementation("io.getstream:stream-video-android-ui-compose:<video-version>")
+    implementation("io.getstream:stream-android-push-firebase:<push-version>")
 }
 ```
 
-Put `google-services.json` in the app module. Look the push version up on `https://github.com/GetStream/stream-android-push/releases`; the Google services plugin version goes in the root `plugins` block with `apply false`.
+- `<push-version>`: the `stream-android-push` version the Video SDK already pulls in (`./gradlew :app:dependencies --configuration debugRuntimeClasspath | grep stream-android-push`), so the push modules stay on one version. Versions newer than Maven Central's are only on Stream's Maven repository (`maven("https://stream-io-repo.com")` under `dependencyResolutionManagement.repositories`).
+- Google services plugin: declare it in the root `plugins` block with `apply false`; the current version is the `<release>` in `https://dl.google.com/dl/android/maven2/com/google/gms/google-services/maven-metadata.xml`.
+- `google-services.json` goes in the app module. The build fails without it: until the user adds theirs, leave the plugin unapplied and tell them the app won't ring until it's there.
 
 **3. Session and client.** Save the user and last token at login, and build the client from them in `Application.onCreate` - no network call there. A push that arrives before `build()` is dropped ("StreamVideo is not initialised"). The token is a credential: keep it in app-private storage, as below.
 
@@ -475,6 +475,8 @@ import io.getstream.video.android.core.StreamVideoBuilder
 import io.getstream.video.android.core.notifications.NotificationConfig
 import io.getstream.video.android.core.socket.common.token.TokenProvider
 import io.getstream.video.android.model.User
+
+// BuildConfig.STREAM_API_KEY comes from `getstream env` (see credentials.md).
 
 data class Session(val userId: String, val name: String, val token: String)
 
@@ -505,15 +507,18 @@ object StreamSession {
     private const val PUSH_PROVIDER_NAME = "firebase"
 
     fun connect(context: Context, session: Session) {
+        // Already built for this process. Logout (below) removes the client
+        // before a different user connects.
         if (StreamVideo.isInstalled) return
         val store = SessionStore(context)
         StreamVideoBuilder(
             context = context.applicationContext,
-            apiKey = "your_api_key",
+            apiKey = BuildConfig.STREAM_API_KEY,
             user = User(id = session.userId, name = session.name),
             token = session.token,
+            // With expiring tokens from your backend: called when the token
+            // expires. Omit it for a never-expiring `getstream token`.
             tokenProvider = object : TokenProvider {
-                // Called when the token expires: fetch a fresh one from your backend.
                 override suspend fun loadToken(): String =
                     yourAuthService.fetchVideoToken(session.userId).also(store::saveToken)
             },
@@ -549,7 +554,7 @@ StreamVideo.removeClient()
 SessionStore(context).clear()
 ```
 
-**4. Incoming-call screen.** The Compose SDK registers `ComposeStreamCallActivity` for the incoming, accept, and outgoing call actions, with `showWhenLocked` and `turnScreenOn`, so a push opens it with no manifest changes. It handles accept, reject, permissions, and leaving. Start outgoing calls through it too:
+**4. Incoming-call screen.** The Compose SDK registers `ComposeStreamCallActivity` for the incoming, accept, and outgoing call actions, with `showWhenLocked` and `turnScreenOn`, so a push opens it with no manifest changes. It handles accept, reject, permissions, and leaving. Use it as the only incoming UI: don't also render `RingingCallContent` from `state.ringingCall` in an app shell, or the app shows two incoming screens while it's open. Start outgoing calls through it too:
 
 ```kotlin
 import android.content.Context
@@ -579,7 +584,7 @@ fun startOutgoingCall(context: Context, calleeIds: List<String>) {
 - Don't remove `USE_FULL_SCREEN_INTENT`, `FOREGROUND_SERVICE_PHONE_CALL`, or `POST_NOTIFICATIONS` from the merged manifest with `tools:node="remove"`.
 - A custom `FirebaseMessagingService` must forward to `FirebaseMessagingDelegate.handleRemoteMessage` and register new tokens with `FirebaseMessagingDelegate.registerFirebaseToken` - see `getstream docs video/android`, `advanced/incoming-calls/push-providers/firebase.md`.
 - To replace the SDK call screen, subclass `ComposeStreamCallActivity` and give the subclass the same intent actions, `showWhenLocked`, and `turnScreenOn` - see `advanced/incoming-calls/push-notifications.md`.
-- Test on a physical device with the app swiped away: ring it from a second device or user.
+- Test on two physical devices. Both users log in once first, which registers their devices; a user who never logged in has nothing to ring. Then swipe the app away on one and ring it from the other.
 
 ---
 

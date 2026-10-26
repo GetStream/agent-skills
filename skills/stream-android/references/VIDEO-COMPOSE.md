@@ -52,6 +52,8 @@ dependencies {
 }
 ```
 
+The SDK brings Compose in only at runtime, so the app's own Composables need the Compose BOM plus `androidx.compose.foundation:foundation` and `androidx.compose.material3:material3` in the app module; without them `Column`, `Text`, and `MaterialTheme` don't resolve.
+
 If you don't know the latest version, look it up via the sources listed in [`RULES.md` -> Version lookup](../RULES.md#version-lookup) (Maven Central / GitHub releases). Never use `search.maven.org`.
 
 Mandatory permissions are declared in the SDK's library manifest and merged automatically — you do **not** need to add them to your app manifest. You **do** need to request `CAMERA` / `RECORD_AUDIO` at runtime before joining a call (see [Permissions](#permissions)).
@@ -63,6 +65,7 @@ Build the `StreamVideo` client **once** at app launch via `StreamVideoBuilder(..
 ```kotlin
 import android.app.Application
 import android.content.pm.ApplicationInfo
+import io.getstream.log.Priority
 import io.getstream.video.android.core.StreamVideo
 import io.getstream.video.android.core.StreamVideoBuilder
 import io.getstream.video.android.core.logging.LoggingLevel
