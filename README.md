@@ -36,7 +36,7 @@ Each skill has a reference page on the docs site - the skill names below link to
 | [`/stream`](https://getstream.io/agent-skills/docs/skills/stream/) | **Router + CLI** - classifies intent, dispatches, and runs `getstream` CLI commands | Start here; also handles data queries, app config, and onboarding |
 | [`/stream-react`](https://getstream.io/agent-skills/docs/skills/stream-react/) | Build, enhance, audit, migrate, or migrate-from-Sendbird a React / Next.js web app, including AI assistants, support bots, and Stream Agents voice and text agents - the default for all web React work | "build me a ... app", "add Chat to this app", "audit my video integration", "upgrade stream-chat-react", "migrate from Sendbird", "add an AI assistant", `stream-chat-react`, `@stream-io/video-react-sdk`, `@stream-io/feeds-react-sdk`, `@stream-io/chat-react-ai`, "voice agent", `@stream-io/calypso` |
 | [`/stream-swift`](https://getstream.io/agent-skills/docs/skills/stream-swift/) | Build or integrate Stream in Swift/SwiftUI/UIKit/iOS apps | Swift, SwiftUI, UIKit, iOS, Xcode |
-| [`/stream-android`](https://getstream.io/agent-skills/docs/skills/stream-android/) | Build or integrate Stream in Android/Jetpack Compose apps | Android, Jetpack Compose, Kotlin, Android Studio, Gradle |
+| [`/stream-android`](https://getstream.io/agent-skills/docs/skills/stream-android/) | Build, integrate, or review Stream in Android/Jetpack Compose apps | Android, Jetpack Compose, Kotlin, Android Studio, Gradle |
 | [`/stream-react-native`](https://getstream.io/agent-skills/docs/skills/stream-react-native/) | Create, build, or integrate Stream Chat or Stream Video React Native in RN CLI or Expo apps | React Native, Expo, `stream-chat-react-native`, `stream-chat-expo`, `@stream-io/video-react-native-sdk`, video call, livestream, audio room, ringing |
 | [`/stream-flutter`](https://getstream.io/agent-skills/docs/skills/stream-flutter/) | Build or integrate Stream Chat in Flutter apps | Flutter, Dart, `stream_chat_flutter`, `stream_chat_flutter_core` |
 | [`/stream-unity`](https://getstream.io/agent-skills/docs/skills/stream-unity/) | Build or integrate Stream Chat and Stream Video in Unity Engine projects (C#) - Chat + Video, no Feeds | Unity, Unity Engine, Unity 6, MonoBehaviour, `.unitypackage`, `asmdef`, IL2CPP, UGUI, `IStreamChatClient`, `IStreamCall`, in-game chat, unity video call |
@@ -95,6 +95,7 @@ The `/stream` router directs app work to platform skills and uses the `getstream
 - [`skills/stream/`](skills/stream/) - **Router + CLI**
   - [`SKILL.md`](skills/stream/SKILL.md) - Stream overview, CLI discovery, and skill routing
   - [`sendbird-data-migration.md`](skills/stream/sendbird-data-migration.md) - shared Sendbird data export, import, and cutover workflow
+  - [`integration-review.md`](skills/stream/integration-review.md) - read-only integration review: procedure, cross-platform checks, and the report format
 - [`skills/stream-react/`](skills/stream-react/) - **React web sub-skill** (default for web React / Next.js work)
   - [`SKILL.md`](skills/stream-react/SKILL.md) - build and integrate Stream, audit an app, upgrade SDKs, and verify the result
   - [`design-matching.md`](skills/stream-react/design-matching.md) - implement and verify a reference design
@@ -119,6 +120,7 @@ The `/stream` router directs app work to platform skills and uses the `getstream
   - [`SKILL.md`](skills/stream-android/SKILL.md) - entrypoint: intent classifier, local project detection, module pointers
   - [`RULES.md`](skills/stream-android/RULES.md) - Android non-negotiable rules
   - [`builder.md`](skills/stream-android/builder.md) + [`sdk.md`](skills/stream-android/sdk.md) - shared Android app integration flow and SDK ownership patterns
+  - [`integration-review.md`](skills/stream-android/integration-review.md) - Android checks for an integration review
   - [`references/`](skills/stream-android/references/) - product/framework-specific Android references and blueprints
 - [`skills/stream-flutter/`](skills/stream-flutter/) - **Flutter sub-skill**
   - [`SKILL.md`](skills/stream-flutter/SKILL.md) - entrypoint: intent classifier, credentials/token flow, module pointers

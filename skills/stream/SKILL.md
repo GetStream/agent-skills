@@ -68,6 +68,10 @@ First match wins:
    - stream-unity (Chat and Video)
    - stream-unreal (Chat only)
 
+   For a review or audit of an existing integration ("is this ready for
+   production?", "prepare for the integration review"), read
+   integration-review.md together with the platform skill.
+
    Install a missing skill with `getstream skills <name>`, then follow it. For a
    web app, or a generic app, pick stream-react. A framework beats an OS: "an
    Unreal chat app for iOS" is stream-unreal.
