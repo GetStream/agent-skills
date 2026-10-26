@@ -10,7 +10,9 @@ fetching channels and calls, search, rendering and customization, push, unread
 counts, and scale.
 
 This file holds the procedure and the checks that apply on every platform. Each
-platform skill adds its own pitfalls on top; run both.
+platform skill adds its own pitfalls on top; run both. Platform files use the
+same section names, and a platform bullet replaces the generic bullet on the
+same topic, so check each topic once.
 
 | Platform | Platform checks |
 |---|---|
@@ -48,10 +50,15 @@ Before judging anything, find and read:
 - dependency declarations for every Stream package
 
 Then trace one typical session through the code: app start, login, the channel
-or call list, opening a channel or joining a call, sending a message,
-backgrounding and returning, logout. List every Stream API call each step
-makes, and where it's made. Calls repeated at a step, or made on every screen
-visit, are findings under the section they belong to.
+or call list, starting a new conversation (user search, channel creation),
+opening a channel or joining a call, sending a message, receiving a push and
+opening it, backgrounding and returning, logout. For each step list the Stream
+calls the app makes and where. For a prebuilt screen, name the component and
+what it requests; don't walk the SDK's internals.
+
+A call the code makes repeatedly (on every resume, keystroke, or selection) is
+a finding under its section. How many requests actually go out at runtime
+needs a running app; without one, list it as unverified.
 
 Review what ships. Name the build type and flavor that go to users (a flavor
 called `demo` can be the shipping one), and tag a finding that affects only
@@ -94,15 +101,17 @@ the SDK's go-live checklist (its path is in the platform file).
   to login and stored credentials are cleared, not left on an empty screen.
 - The app doesn't manage the socket by hand on background and foreground. The
   SDKs already do, and a manual disconnect usually stops reconnection.
-- The session trace from step 2 makes no call the SDK already makes, and
-  nothing is re-fetched on every screen visit.
+- The session trace from step 2 makes no call the SDK already makes, and the
+  code re-fetches nothing on every screen visit.
 
 ### Disconnecting
 
-- Logout disconnects the user and removes the push device, and the app waits
-  for the disconnect before clearing its session or showing login. Otherwise
-  the next person on the device gets the previous user's notifications and
-  offline data. Treat this as a privacy finding.
+- Logout disconnects the user and removes the push device. Otherwise the next
+  person on the device gets the previous user's notifications and offline
+  data: a privacy finding, Fix now.
+- The app waits for the disconnect before clearing its session or showing
+  login, so a quick re-login doesn't race it. A worth-doing finding when the
+  device is still removed.
 - App-wide services (location, sync, calls) can start again after a logout and
   login in the same process.
 
@@ -139,12 +148,11 @@ performance), and `rate-limits.md` in `getstream docs chat/<platform>`.
   app's calls.
 - Sorting uses a field the docs list as sortable, and paging uses `next` /
   `prev` with a bounded `limit`.
-- `watch` is set only where the list shows live state, such as who is in the
-  call, and the list isn't re-queried on every visit.
-- A `Call` object lives in an owned scope for as long as the call screen, not
-  recreated on each render.
+- The list isn't re-queried on every visit, and `watch` is on only where the
+  list shows live state. Source: the app code.
 
-Docs: `guides/querying-calls.md` in `getstream docs video/<platform>`.
+Docs: `guides/querying-calls.md` in `getstream docs video/<platform>` (filter
+fields, sort fields, paging).
 
 ### Search
 
@@ -161,21 +169,26 @@ code.
 
 ### Rendering and customization
 
-What matters is how the app customized, not how much: ask what its next SDK
-upgrade will cost.
+What matters is how the app customized, not how much: anything that will
+break on the next SDK upgrade is a finding.
 
 - Customization goes through the SDK's extension points: theming, component
   overrides or factories, and the documented customization hooks.
-- No SDK source copied into the app. Record which extension point was missing
-  under "Ask Stream".
+- No SDK source copied into the app. Look for Stream copyright headers, files
+  named like SDK components, or packages mirroring the SDK's. Record which
+  extension point was missing under "Ask Stream".
+- An override of a composite component falls back to the SDK default for the
+  cases it doesn't handle. Otherwise those messages or rows lose what the
+  default drew.
 - Message and channel actions are gated on the channel's own capabilities,
   not hardcoded roles that drift from dashboard permissions.
 - Prebuilt screens get their state from the SDK's own view models or hooks.
   A custom UI watches the channel or call for updates instead of a one-off
   fetch plus polling, and releases listeners when the screen goes away.
+- A call object lives as long as the call screen, not recreated on each
+  render.
 
-Docs: the SDK's customization or theming pages under
-`getstream docs chat-sdk/<platform>`.
+Docs: the platform file names the customization pages.
 
 ### Push
 
@@ -198,8 +211,9 @@ unverified.
 
 - Badges come from the server's counts over the socket, not summed from loaded
   channels.
-- The app doesn't poll the REST unread endpoint while connected. Without a
-  connection, such as a notification badge, the endpoint is the right tool.
+- The app doesn't poll the REST unread endpoint on a timer while connected:
+  the socket already delivers counts. One fetch at app load, or a badge
+  without a connection, is what the endpoint is for.
 - A custom message list marks the channel read when the user sees the newest
   message, not on every incoming message.
 
@@ -225,8 +239,9 @@ the SDK's go-live checklist.
 ### Video and Feeds
 
 For Video, also read the SDK's "Integration best practices" page when it
-exists, otherwise its go-live and troubleshooting pages, and check device
-permissions and error handling against it. For Feeds, read
+exists (React, React Native). Otherwise use the platform skill's Video
+reference and the SDK's `guides/joining-and-creating-calls.md`, and check
+device permissions and error handling against them. For Feeds, read
 `getstream docs activity-feeds/<platform>` best practices.
 
 ## 4. Report
@@ -235,7 +250,8 @@ Lead with the checklist, grouped by urgency:
 
 - **Fix now:** anything that blocks a release. Broken push, the previous
   user's data or notifications leaking, exposed secrets or bundled tokens,
-  users stuck after a failed connect.
+  users stuck after a failed connect, release builds that allow cleartext
+  traffic or can be signed with a debug key.
 - **Fix before scaling:** redundant queries, oversized payloads, filters that
   won't hold.
 - **Worth doing:** lifecycle leaks, release hygiene, upgrades, config tuning,
@@ -243,9 +259,10 @@ Lead with the checklist, grouped by urgency:
 - **Ask Stream:** index or filter-performance questions, missing extension
   points, docs gaps, suspected SDK bugs.
 
-One line per FAIL: the check section, check, evidence, fix, docs page, and the
-variant if it isn't every variant. PASS checks get a one-line list with
-evidence, and N/A checks a one-line reason, so the reader sees they were
-considered. Then the session trace from step 2, as one line per step with the
+Within each group, order findings by check section, in the agenda order
+above. One line per FAIL: the check section, check, evidence, fix, docs page,
+and the variant if it isn't every variant. PASS checks get a one-line list per
+section with evidence, and N/A checks a one-line reason, so the reader sees
+they were considered. Then the session trace from step 2, as one line per step with the
 Stream calls it makes. End with the scale answers from step 1 and anything you
 couldn't verify from the code.

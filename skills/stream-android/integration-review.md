@@ -1,11 +1,14 @@
 # Stream Android - integration review
 
-Android checks for a read-only integration review. Run the procedure and the
-generic checks in stream skill's integration-review.md first; this file adds
-what's specific to the Chat Android SDK. Each check names the docs page to
-confirm it against: SDK pages are under `getstream docs chat-sdk/android`, API
-pages under `getstream docs chat/android`. The go-live checklist is
-`guides/go-live-checklist.md`.
+Android checks for a read-only integration review. Run the procedure in stream
+skill's integration-review.md; this file uses the same section names, and each
+bullet here replaces the generic bullet on the same topic. SDK pages are under
+`getstream docs chat-sdk/android`, API pages under `getstream docs
+chat/android`. The go-live checklist is `guides/go-live-checklist.md`.
+
+For Video on Android there is no best-practices page: use
+references/VIDEO-COMPOSE.md and RULES.md, and
+`guides/joining-and-creating-calls.md` in `getstream docs video/android`.
 
 ## Measure, don't guess
 
@@ -22,41 +25,44 @@ can be run:
 
 Docs: `basics/debugging.md`, `basics/troubleshooting.md`.
 
-## Setup
+## Initialization
 
-- New releases are on Stream's own Maven repository, not Maven Central. If
-  `dependencyResolutionManagement.repositories` in `settings.gradle(.kts)`
-  lacks `maven("https://stream-io-repo.com")`, the build works but can't
-  resolve newer versions. An entry under `pluginManagement` doesn't count.
-  When the SDK is a project or composite dependency, this only affects the
-  helper libraries. Docs: `basics/installation.md`.
 - `ChatClient.Builder.build()` runs in `Application.onCreate`. It opens no
-  socket, so it's cheap. Built lazily, push stays broken until the user opens
-  chat; built twice, the singleton is replaced and in-memory state lost.
+  socket, so it's cheap. Built twice, the singleton is replaced: look for
+  components that captured `ChatClient.instance()` earlier.
 - Flag builder options left over from testing or tuning in release:
   `disableDistinctApiCalls()` (docs: `client/guides/optimizations.md`),
   `forceInsecureConnection()`, a custom `baseUrl`, a custom `OkHttpClient` with
   aggressive timeouts or interceptors rewriting Stream requests.
+- Skip this one when the SDK is a project or composite dependency. New
+  releases are on Stream's own Maven repository, not Maven Central:
+  `dependencyResolutionManagement.repositories` in `settings.gradle(.kts)`
+  needs `maven("https://stream-io-repo.com")`, or the build can't resolve
+  newer versions. An entry under `pluginManagement` doesn't count. Docs:
+  `basics/installation.md`.
 
-## Session
+## Typical session
 
-- `connectUser` runs from the session layer, guarded with
-  `getCurrentUser() == null` or `clientState.initializationState`. Push
-  devices register on connect, so connecting only on a chat screen means no
-  push for users who never open chat.
+- `connectUser` is guarded with `getCurrentUser() == null` or
+  `clientState.initializationState`. Push devices register on connect.
 - A failed connect is handled from the `connectUser` result or a token-error
   connection state. `initializationState` becomes `COMPLETE` before the socket
   authenticates, so routing on it alone never sees an invalid token. Source:
   SDK code.
-- No `disconnectSocket()` on background. It drops the lifecycle observer and
+- No `disconnectSocket()` on background: it drops the lifecycle observer and
   the SDK stops reconnecting on foreground ("messages stop arriving after a
   while"). Docs: `client/guides/handling-user-connection.md`.
+
+## Disconnecting
+
 - Logout calls `disconnect(flushPersistence = true)`. `deleteDevice` defaults
   to `flushPersistence`, so `disconnect(flushPersistence = false)` leaves the
-  device registered (SDK source; the docs don't cover `deleteDevice`).
-  Account switch uses `switchUser`.
+  device registered. Source: SDK code; the docs don't cover `deleteDevice`.
+- Logout awaits `disconnect(...)` before navigating, not
+  `GlobalScope.launch` with a delay.
+- Account switch uses `switchUser`.
 
-## Channel lists
+## Fetching channels
 
 - Lists come from `ChannelListViewModel` or `queryChannelsAsState` held in a
   ViewModel, not `queryChannels(...).enqueue {}` in `onResume`.
@@ -66,11 +72,10 @@ Docs: `basics/debugging.md`, `basics/troubleshooting.md`.
 - Sorting uses `QuerySortByField`, not `QuerySortByReflection`, on hot lists.
 - Paging uses the ViewModel's load-more or
   `QueryChannelsState.nextPageRequest`.
-- With several lists, each passes its own `chatEventHandlerFactory`: extend
-  `DefaultChatEventHandler` and return `Skip` for events outside the list's
-  filter. The default adds any member channel to every list ("channels show up
-  in the wrong tab"). `WatchAndAdd` costs a request per event, so keep the
-  condition before it tight. Docs: `client/channels.md`.
+- Event filtering: each list passes a `chatEventHandlerFactory` whose handler
+  extends `DefaultChatEventHandler` and returns `Skip` for channels outside
+  the list's filter. `WatchAndAdd` costs a request per event. Docs:
+  `client/channels.md`.
 
 ## Search
 
@@ -78,35 +83,35 @@ Docs: `basics/debugging.md`, `basics/troubleshooting.md`.
   debounce lives in `SearchInputView`, so a custom UI on `SearchViewModel` must
   debounce itself.
 
-## UI and customization
+## Rendering and customization
 
-- Customization goes through `ChatTheme` and `ChatComponentFactory` (Compose)
-  or `ChatUI` and style transformers (XML). Copied SDK source is a finding:
-  record which extension point was missing under "Ask Stream". Docs:
+- Extension points are `ChatTheme` and `ChatComponentFactory` (Compose), or
+  `ChatUI` and style transformers (XML). A factory override handles its own
+  case and delegates the rest to the default. Docs:
   `compose/general-customization/component-factory.md`.
-- Actions are gated on `channel.ownCapabilities`, not hardcoded roles that
-  drift from dashboard permissions. Docs:
+- Capabilities come from `channel.ownCapabilities`. Docs:
   `compose/guides/implementing-own-capabilities.md`.
-- Compose: no ViewModel built with `factory.create(...)` or inside
-  `remember { }`, which skips the ViewModelStore so `onCleared` never runs;
-  use `viewModel(key = ..., factory = ...)`. `viewModel()` inside an SDK
-  screen that provides its own store is fine. State is collected with
-  `collectAsStateWithLifecycle`. Source: SDK code and Android practice.
+- No ViewModel built with `factory.create(...)` or inside `remember { }`: that
+  skips the ViewModelStore, so `onCleared` never runs. Use
+  `viewModel(key = ..., factory = ...)`, keyed per item when each list item
+  needs its own instance; `viewModel()` inside an SDK screen that provides its
+  own store is fine. Source: SDK code and Android practice.
+- State is collected with `collectAsStateWithLifecycle`.
 - A custom message list uses `watchChannelAsState`, not a one-off
   `queryChannel` plus polling.
-- Every `subscribe` / `subscribeFor` anywhere in the app either takes a
-  `LifecycleOwner` or keeps the returned `Disposable` and disposes it, e.g. in
-  `onCleared`. Otherwise each screen visit adds a listener. Source: SDK
+- Every `subscribe` / `subscribeFor` either takes a `LifecycleOwner` or keeps
+  the returned `Disposable` and disposes it, e.g. in `onCleared`. Source: SDK
   code.
 - A custom message list that supports jump-to-message calls
   `loadNewestMessages` alongside a send when `endOfNewerMessages` is false;
   otherwise the sent message lands in the old page. Docs:
   `client/state-layer-overview.md`.
 - A custom `fileUploader(...)` for private storage has a matching `cdn(...)`
-  that signs downloads, or uploads work but files don't load.
-  `uploadAttachmentsNetworkType(UNMETERED)` keeps attachment messages pending
-  on mobile data. Docs: `client/custom-cdn.md` for the CDN; the network type
-  is SDK source only.
+  that signs downloads, or uploads work but files don't load. Docs:
+  `client/custom-cdn.md`. `uploadAttachmentsNetworkType(UNMETERED)` keeps
+  attachment messages pending on mobile data. Source: SDK code.
+- Video: the `Call` from `streamVideo.call(type, id)` lives in a ViewModel or
+  Activity field, not in a Composable body.
 
 ## Push
 
@@ -133,7 +138,7 @@ Docs: `basics/debugging.md`, `basics/troubleshooting.md`.
   `WAKE_LOCK` with a low `maxSdkVersion`. A `success` in the dashboard push log
   only means FCM accepted it.
 
-## Unread
+## Unread counts
 
 - App badge from `GlobalState.totalUnreadCount` or `channelUnreadCount`,
   per-channel badges from `Channel.unreadCount`.
@@ -141,7 +146,7 @@ Docs: `basics/debugging.md`, `basics/troubleshooting.md`.
   `isLocalUnreadCountEnabled` tracks a local count. Docs:
   `client/livestream-chat.md`.
 
-## Scale
+## Scale and release
 
 - High-volume channel types are in `ignoredOfflineChannelTypes`, with
   `MessageLimitConfig.channelMessageLimits` set. It's unset by default, which is
@@ -153,21 +158,18 @@ Docs: `basics/debugging.md`, `basics/troubleshooting.md`.
   leaves gaps after reconnects.
 - Offline sends older than `syncMaxThreshold` are dropped, not retried ("my
   queued message never sent").
-
-Docs: `basics/offline-support.md`, `client/livestream-chat.md`,
-and, for `isAutomaticSyncOnReconnectEnabled` and `syncMaxThreshold`,
-`client/state-layer-overview.md` and
-`migration-guides/migrating-from-v6-to-v7.md`.
-
-## Release
-
-- No `ChatLogLevel.ALL` in release builds. Docs: `basics/logging.md`.
-- Every `.enqueue()` handles `Result.Failure`.
-- All `stream-chat-android-*` artifacts on one version.
-- No StrictMode or `@OptIn(InternalStreamChatApi::class)` in release code. Crashes or missing classes only in
-  minified builds mean the consumer R8 rules aren't applied. Docs:
-  `basics/troubleshooting.md`.
-- Release builds don't permit cleartext traffic in the base network security
-  config, and don't fall back to debug signing.
+- Release builds use `ChatLogLevel.NOTHING` or `ERROR`, and don't enable
+  StrictMode or opt into `InternalStreamChatApi` in app code. Source: the app
+  code.
+- The base network security config doesn't permit cleartext, and release
+  signing doesn't fall back to the debug keystore.
+- All `stream-chat-android-*` artifacts are on one version. Crashes or missing
+  classes only in minified builds mean the consumer R8 rules aren't applied.
+  Docs: `basics/troubleshooting.md`.
 - On v6, scope the v7 upgrade with the migration guide under
   `migration-guides/`.
+
+Docs: `basics/offline-support.md`, `client/livestream-chat.md`, and, for
+`isAutomaticSyncOnReconnectEnabled` and `syncMaxThreshold`,
+`client/state-layer-overview.md` and
+`migration-guides/migrating-from-v6-to-v7.md`.
