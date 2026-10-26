@@ -6,8 +6,8 @@ the developer can act on. Change code only if asked, after the report.
 
 The check sections follow the agenda of Stream's live review, so the report
 maps onto that call: initialization, a typical session, disconnecting,
-fetching channels and calls, search, rendering and customization, push, unread
-counts, and scale.
+fetching channels and calls, search, rendering and customization, calls,
+push, unread counts, and scale.
 
 This file holds the procedure and the checks that apply on every platform. Each
 platform skill adds its own pitfalls on top; run both. Platform files use the
@@ -47,7 +47,9 @@ Before judging anything, find and read:
 - the screens that render Stream data, and how each is customized
 - push: the client-side registration, any custom push service, and the
   provider name per build variant
-- dependency declarations for every Stream package
+- dependency declarations for every Stream package, and each SDK's major
+  version. `getstream docs` serves the current major; on an older one, read
+  the SDK source at the app's version and adapt checks that name newer APIs
 
 Then trace one typical session through the code: app start, login, the channel
 or call list, starting a new conversation (user search, channel creation),
@@ -77,6 +79,9 @@ record: PASS, FAIL, or N/A, the evidence (file:line), and the fix.
 A check that needs the dashboard, the CLI, or a running app you don't have is
 listed as unverified, with any in-code hint (a comment, a KDoc) as the lead.
 
+The review sends nothing anywhere, docs feedback included: docs gaps go
+under "Ask Stream" in the report.
+
 ### Initialization
 
 - The client is built once per process, at app start. Building it lazily when
@@ -88,6 +93,9 @@ listed as unverified, with any in-code hint (a comment, a KDoc) as the lead.
   act as those users. Tokens expire and come from a token provider backed by
   the app's server.
 - The provider can't hang or crash on network errors. The SDKs retry it.
+- Every login type the app offers (account, guest, anonymous, SSO) builds
+  every client its screens use. A screen that reaches a client that was never
+  built crashes.
 
 Docs: `tokens-and-authentication.md` in `getstream docs chat/<platform>`, and
 the SDK's go-live checklist (its path is in the platform file).
@@ -106,9 +114,10 @@ the SDK's go-live checklist (its path is in the platform file).
 
 ### Disconnecting
 
-- Logout disconnects the user and removes the push device. Otherwise the next
-  person on the device gets the previous user's notifications and offline
-  data: a privacy finding, Fix now.
+- Logout disconnects the user and removes the push device. Otherwise the
+  previous user's notifications keep reaching the device after logout (and
+  after the next login, if the app allows multi-user devices), and their
+  offline data stays on it: a privacy finding, Fix now.
 - The app waits for the disconnect before clearing its session or showing
   login, so a quick re-login doesn't race it. A worth-doing finding when the
   device is still removed.
@@ -185,10 +194,29 @@ break on the next SDK upgrade is a finding.
 - Prebuilt screens get their state from the SDK's own view models or hooks.
   A custom UI watches the channel or call for updates instead of a one-off
   fetch plus polling, and releases listeners when the screen goes away.
-- A call object lives as long as the call screen, not recreated on each
-  render.
-
 Docs: the platform file names the customization pages.
+
+### Calls
+
+- A call object lives as long as the call screen, not recreated on each
+  render, and the screen leaves the call when it closes. A call that is never
+  left keeps publishing audio and video.
+- Join and device errors are handled and shown, not swallowed: a failed join
+  otherwise leaves the user on a blank call screen.
+- Camera and microphone permissions are requested before joining, and a
+  denial is handled.
+- The UI follows the call's calling state: reconnecting is shown as such, and
+  a temporary disconnect doesn't end the call.
+- One call at a time: an accepted incoming call leaves the active one first,
+  or busy users auto-reject.
+- Ringing calls list every participant as a member, caller included, and use
+  a new call ID each time: ringing fires once per ID.
+- A caller cancelling rejects and then leaves; a callee declining does the
+  same. Reject notifies the others, but only leave cleans up locally.
+
+Docs: `guides/joining-and-creating-calls.md` and the incoming-calls pages in
+`getstream docs video/<platform>`; the React and React Native "Integration
+best practices" pages cover the same ground in more detail.
 
 ### Push
 
@@ -199,9 +227,19 @@ Check the chain in order. Every broken link looks the same to the user:
    rotation.
 3. A custom push service forwards Stream payloads to the SDK.
 4. The provider name in the app matches the dashboard, for every build
-   variant.
+   variant and every Stream app the build can point at.
 5. Push can still be shown when the app was killed and the Stream token has
    expired.
+
+For ringing calls the chain is the same, plus:
+
+6. The Video client is built at process start from the stored session, so it
+   exists when a ringing push arrives with the app killed.
+7. The incoming-call screen can show over the lock screen. On iOS that means
+   a VoIP token and CallKit.
+
+A product with push off entirely, such as Chat used only inside a call
+screen, is N/A with a scope question, not a FAIL.
 
 If the CLI is already set up for the app, check the user's device list with
 `getstream api`: no device means the cause is in the app. Otherwise list it as
@@ -226,7 +264,8 @@ Docs: `unread.md` in `getstream docs chat/<platform>`.
 - Large groups or livestreams were load-tested before launch. The go-live
   checklist points to the load-test tool.
 - Release builds don't log at the most verbose level: it costs performance and
-  logs message content. No debug-only tooling ships either.
+  logs message content. The app's own HTTP logging doesn't log the token
+  endpoint's bodies in release either. No debug-only tooling ships.
 - Calls that matter handle failure: connect, send, channel creation, uploads.
   Ignored errors there hide failed sends and rate limits. Don't list every
   fire-and-forget call.
@@ -236,13 +275,9 @@ Docs: `unread.md` in `getstream docs chat/<platform>`.
 Docs: `livestream-best-practices.md` in `getstream docs chat/<platform>`, and
 the SDK's go-live checklist.
 
-### Video and Feeds
+### Feeds
 
-For Video, also read the SDK's "Integration best practices" page when it
-exists (React, React Native). Otherwise use the platform skill's Video
-reference and the SDK's `guides/joining-and-creating-calls.md`, and check
-device permissions and error handling against them. For Feeds, read
-`getstream docs activity-feeds/<platform>` best practices.
+Read `getstream docs activity-feeds/<platform>` best practices.
 
 ## 4. Report
 
@@ -261,7 +296,8 @@ Lead with the checklist, grouped by urgency:
 
 Within each group, order findings by check section, in the agenda order
 above. One line per FAIL: the check section, check, evidence, fix, docs page,
-and the variant if it isn't every variant. PASS checks get a one-line list per
+and the variant if it isn't every variant. Mark a FAIL "likely" when it
+needs a running app to confirm. PASS checks get a one-line list per
 section with evidence, and N/A checks a one-line reason, so the reader sees
 they were considered. Then the session trace from step 2, as one line per step with the
 Stream calls it makes. End with the scale answers from step 1 and anything you

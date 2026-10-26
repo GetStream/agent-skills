@@ -153,10 +153,14 @@ StreamVideoBuilder(
 
 ### Disconnecting / switching users
 
-Tear the client down explicitly before constructing a new one for a different user:
+Tear the client down explicitly before constructing a new one for a different user. Delete the push device first: `logOut()` only clears the local token cache and leaves the device registered to the old user, so their calls keep reaching the phone after logout.
 
 ```kotlin
-StreamVideo.instance().logOut()
+import kotlinx.coroutines.flow.first
+
+// inside a coroutine
+val streamVideo = StreamVideo.instance()
+streamVideo.getDevice().first()?.let { streamVideo.deleteDevice(it) }
 StreamVideo.removeClient()
 
 // Then build again with the new user/token

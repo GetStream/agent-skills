@@ -6,9 +6,9 @@ bullet here replaces the generic bullet on the same topic. SDK pages are under
 `getstream docs chat-sdk/android`, API pages under `getstream docs
 chat/android`. The go-live checklist is `guides/go-live-checklist.md`.
 
-For Video on Android there is no best-practices page: use
-references/VIDEO-COMPOSE.md and RULES.md, and
-`guides/joining-and-creating-calls.md` in `getstream docs video/android`.
+Video pages are under `getstream docs video/android`; ringing and push are in
+`advanced/incoming-calls/`. Video has no go-live checklist or best-practices
+page on Android, so the Video bullets below cite those pages or the SDK code.
 
 ## Measure, don't guess
 
@@ -34,12 +34,26 @@ Docs: `basics/debugging.md`, `basics/troubleshooting.md`.
   `disableDistinctApiCalls()` (docs: `client/guides/optimizations.md`),
   `forceInsecureConnection()`, a custom `baseUrl`, a custom `OkHttpClient` with
   aggressive timeouts or interceptors rewriting Stream requests.
-- Skip this one when the SDK is a project or composite dependency. New
+- Skip this one for an SDK that is a project or composite dependency. New
   releases are on Stream's own Maven repository, not Maven Central:
   `dependencyResolutionManagement.repositories` in `settings.gradle(.kts)`
   needs `maven("https://stream-io-repo.com")`, or the build can't resolve
   newer versions. An entry under `pluginManagement` doesn't count. Docs:
   `basics/installation.md`.
+- Video: `StreamVideoBuilder.build()` runs in `Application.onCreate` whenever
+  a user is stored, not only after login or when a call screen opens, and
+  from the stored user and token, with no network call first: refreshing is
+  the `tokenProvider`'s job. A push that arrives before the build, or after
+  a failed fetch, is dropped with "StreamVideo is not initialised", so
+  ringing never reaches a killed app. Docs:
+  `advanced/incoming-calls/push-providers/firebase.md`; source: SDK code.
+- Video: a second `build()` throws while a client exists. Switching users
+  calls `StreamVideo.removeClient()` first; turning off
+  `ensureSingleInstance` to get past the error is a finding. Source: SDK
+  code.
+- Video: `removeClient()` leaves the active call, so rebuilding the clients
+  on a deep link or environment switch ends a call in progress. Rebuild only
+  when the user changes. Source: SDK code.
 
 ## Typical session
 
@@ -55,12 +69,21 @@ Docs: `basics/debugging.md`, `basics/troubleshooting.md`.
 
 ## Disconnecting
 
-- Logout calls `disconnect(flushPersistence = true)`. `deleteDevice` defaults
-  to `flushPersistence`, so `disconnect(flushPersistence = false)` leaves the
-  device registered. Source: SDK code; the docs don't cover `deleteDevice`.
+- Logout calls `disconnect(flushPersistence = true)`. On v7 `deleteDevice`
+  defaults to `flushPersistence`, so `disconnect(flushPersistence = false)`
+  leaves the device registered. On v6 `disconnect` has no `deleteDevice`: the
+  app calls `deleteDevice(device)` itself. Docs:
+  `guides/push-notifications.md`, Unsubscribing from Push Notifications.
 - Logout awaits `disconnect(...)` before navigating, not
   `GlobalScope.launch` with a delay.
 - Account switch uses `switchUser`.
+- Video logout deletes the device (`getDevice().first()`, then
+  `deleteDevice(it)`) and then calls `StreamVideo.removeClient()`.
+  `StreamVideo.logOut()` only clears the local token cache: the device stays
+  registered to the old user, so their calls keep reaching the phone until
+  someone else logs in on it, and after that too if the app allows
+  multi-user devices. Source: SDK code (`logOut` is deprecated for this
+  reason).
 
 ## Fetching channels
 
@@ -110,8 +133,25 @@ Docs: `basics/debugging.md`, `basics/troubleshooting.md`.
   that signs downloads, or uploads work but files don't load. Docs:
   `client/custom-cdn.md`. `uploadAttachmentsNetworkType(UNMETERED)` keeps
   attachment messages pending on mobile data. Source: SDK code.
-- Video: the `Call` from `streamVideo.call(type, id)` lives in a ViewModel or
+
+## Calls
+
+- The `Call` from `streamVideo.call(type, id)` lives in a ViewModel or
   Activity field, not in a Composable body.
+- `StreamCallActivity` (and `ComposeStreamCallActivity`) leaves the call on
+  back, hang-up, and call-end events, but not in `finish()`: an app path that
+  calls `finish()` or `safeFinish()` leaves first. A custom call screen calls
+  `call.leave()` itself. For 1:1 calls, check that the screen closes when the
+  other side leaves (`leaveWhenLastInCall`). Source: SDK code.
+- `join`, `accept`, `reject`, `ring`, and `create` return `Result`: a
+  `Failure` is shown, not ignored.
+- Permissions come from `LaunchCallPermissions` or
+  `rememberCallPermissionsState` before `join`. An audio-only app requests
+  only `RECORD_AUDIO`. Read references/VIDEO-COMPOSE.md, Permissions.
+- A custom accept path leaves `state.activeCall` first (docs:
+  `advanced/incoming-calls/ringing.md`), or the builder sets
+  `rejectCallWhenBusy` (source: SDK code). `StreamCallActivity` already
+  leaves the active call before accepting.
 
 ## Push
 
@@ -137,6 +177,22 @@ Docs: `basics/debugging.md`, `basics/troubleshooting.md`.
 - Intermittent push: check the merged manifest for a dependency declaring
   `WAKE_LOCK` with a low `maxSdkVersion`. A `success` in the dashboard push log
   only means FCM accepted it.
+- Video: `StreamVideoBuilder` gets a `notificationConfig` whose
+  `pushDeviceGenerators` lists a generator with the dashboard's provider name.
+  The default list is empty, so no device is registered and nothing rings in
+  the background. Source: SDK code. Docs:
+  `advanced/incoming-calls/push-providers/firebase.md`.
+- Video: the same custom-service rule applies. One service that delegates to
+  `FirebaseMessagingDelegate` serves Chat and Video: the delegate offers each
+  message to every installed SDK. Source: stream-android-push code.
+- Video: the merged manifest keeps `USE_FULL_SCREEN_INTENT`,
+  `FOREGROUND_SERVICE_PHONE_CALL`, and `POST_NOTIFICATIONS`. A
+  `tools:node="remove"` on them is fine only in an app that never rings.
+  Source: SDK manifest.
+- Video: custom incoming-call activities declare the SDK's intent actions
+  (`INCOMING_CALL`, `ACCEPT_CALL`, and the rest) and `showWhenLocked`.
+  Without them the push arrives but no screen opens. Docs:
+  `advanced/incoming-calls/push-notifications.md`.
 
 ## Unread counts
 
@@ -163,7 +219,10 @@ Docs: `basics/debugging.md`, `basics/troubleshooting.md`.
   code.
 - The base network security config doesn't permit cleartext, and release
   signing doesn't fall back to the debug keystore.
-- All `stream-chat-android-*` artifacts are on one version. Crashes or missing
+- Video release builds don't pass a `loggingLevel` at `DEBUG` or `VERBOSE`.
+  Docs: `guides/client-auth.md`.
+- All `stream-chat-android-*` artifacts are on one version, and so are all
+  `stream-video-android-*` artifacts. Crashes or missing
   classes only in minified builds mean the consumer R8 rules aren't applied.
   Docs: `basics/troubleshooting.md`.
 - On v6, scope the v7 upgrade with the migration guide under
