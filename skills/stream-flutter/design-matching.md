@@ -303,9 +303,14 @@ A design match is **not done** until the app runs and the result is compared to 
 
 **Model-driven title trap.** The channel-list screenshot is **one specific channel's** name, but your header renders for **every** channel. Never hardcode the reference's literal string. Compute the title from the channel model in one place and reuse it in both the list item and the header:
 
+```dart
+// List tile title and header title alike:
+StreamChannelName(channel: channel)
+// Where a String is needed:
+channel.state?.channelState.channel?.formatName(currentUser: client.state.currentUser)
+```
 
-
-Use it in **both** the channel-list `itemBuilder` and the header's title. There is no single SDK hook that both surfaces read, so the shared helper is the answer. **Verify on a second channel** - open a DM after seeding: the title must change to that channel's name, not stay at the seeded one.
+Use the same call in **both** the channel-list `itemBuilder` and the header's title. **Verify on a second channel** - open a DM after seeding: the title must change to that channel's name, not stay at the seeded one.
 
 ## Message row, bubble, metadata
 

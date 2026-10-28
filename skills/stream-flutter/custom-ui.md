@@ -210,7 +210,7 @@ Reach for `stream_chat_flutter`'s theme tokens / `StreamUserAvatar` when you spe
   ```
   Measure the title font from the reference too (usually a modest ~16-17 lp).
 - **The app's own chrome is not Stream.** A betting bar, product cards, a video player, reactions - those are your app's widgets sitting above/below the chat. Build them as normal Flutter; only the message feed + composer talk to the SDK. Keep the SDK out of those files.
-- **Resolve the channel title from the model, not the screenshot.** Use `channel.name` (it reads `extraData['name']`), then a sensible fallback. Reuse the shared `resolveChannelName(...)` helper from [`design-matching.md`](design-matching.md) "Model-driven title trap".
+- **Resolve the channel title from the model, not the screenshot.** Use `channel.name` (it reads `extraData['name']`), then a sensible fallback.
 - **Own the client + channel lifetime; create them once, not in a `build()`.** Create the `StreamChatClient` and the `Channel` once in the owned service/provider, so a rebuild reuses the same references rather than re-watching each frame ([`RULES.md`](RULES.md) -> "Client lifetime").
 - **Keep the feed live with `watch()`.** The `StreamChannel` widget watches the channel on init; if you hold the `Channel` yourself outside that widget, call `channel.watch()` once in your service so new messages stream into state. (A one-shot `query` without `watch` shows a static snapshot.)
 - **Observe the channel state directly.** Render straight from `MessageListCore` (or `channel.state!.messagesStream`) so a hot feed stays fast - one source of truth, no extra copy of the message list per update.
