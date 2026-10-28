@@ -81,16 +81,19 @@ Docs: `basics/debugging.md`, `basics/troubleshooting.md`.
   the SDK stops reconnecting on foreground ("messages stop arriving after a
   while"). Docs: `client/guides/handling-user-connection.md`.
 - Video: `build()` connects in the background and only logs a failed
-  connect. The app watches `StreamVideo.instance().state.connection` for
-  `ConnectionState.Failed` and sends the user back to login on an auth
-  error. Source: SDK code.
+  connect. Don't require a `ConnectionState.Failed` handler: the client
+  doesn't set it for its socket, and a rejected token ends as
+  `ConnectionState.Disconnected`, the same state as a logout or a lost
+  network. An app that routes on `Failed` has dead code. Expired tokens are
+  covered by the `tokenProvider` check. Source: SDK code.
 
 ## Disconnecting
 
-- Logout calls `disconnect(flushPersistence = true)`. On v7 `deleteDevice`
-  defaults to `flushPersistence`, so `disconnect(flushPersistence = false)`
-  leaves the device registered. On v6 `disconnect` has no `deleteDevice`: the
-  app calls `deleteDevice(device)` itself. Docs:
+- Logout calls `disconnect(flushPersistence = true)`. From 6.26.0
+  `deleteDevice` defaults to `flushPersistence`, so
+  `disconnect(flushPersistence = false)` leaves the device registered. Before
+  6.26.0 `disconnect` has no `deleteDevice`: the app calls
+  `deleteDevice(device)` itself. Docs:
   `guides/push-notifications.md`, Unsubscribing from Push Notifications.
 - Logout awaits `disconnect(...)` before navigating, not
   `GlobalScope.launch` with a delay.

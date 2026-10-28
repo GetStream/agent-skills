@@ -159,11 +159,16 @@ StreamVideoBuilder(
 Tear the client down explicitly before constructing a new one for a different user. Delete the push device first: `logOut()` only clears the local token cache and leaves the device registered to the old user, so their calls keep reaching the phone after logout.
 
 ```kotlin
+import io.getstream.result.Result
 import kotlinx.coroutines.flow.first
 
-// inside a coroutine
+// inside a suspend function
 val streamVideo = StreamVideo.instance()
-streamVideo.getDevice().first()?.let { streamVideo.deleteDevice(it) }
+val device = streamVideo.getDevice().first()
+if (device != null && streamVideo.deleteDevice(device) is Result.Failure) {
+    // Keep the user signed in and let them retry: the device would keep ringing for them.
+    return
+}
 StreamVideo.removeClient()
 
 // Then build again with the new user/token
