@@ -139,7 +139,7 @@ one is why a screen "looks migrated" but is still off:
 | **Row layout** | A restructured row (author-on-top, flat rows, no bubble) treated as a recolor - it's a **widget replacement** (the Restructured axis above), not a theme token. |
 | **Bubble geometry & text scale** | Fill matched but geometry left at Stream defaults: the **tail corner squares** on the last message of a run (Sendbird rounds every corner uniformly, 16), the **body text is larger** (Sendbird body is 14) and the **item width caps at 264/272** - so migrated bubbles wrap lines Sendbird fits on one. Fix via `messageItemTheme.bubble.shape` / `.text.textStyle` / `messageItem -> DefaultStreamMessageItem(props.copyWith(maxWidth:))` ([`design-matching.md`](design-matching.md) -> Message row, bubble, metadata). |
 | **Status bar** | Sendbird tints the status strip with the accent (white glyphs); a migration keeps the white-glyph style without the tinted strip -> **invisible clock**, or drops the tint entirely. Paint the inset + set `AnnotatedRegion` brightness ([`design-matching.md`](design-matching.md) -> Header / chrome, incl. the `removePadding` trap). |
-| **Metadata placement** | Author name / timestamp / receipts / avatar sitting at **Stream's default positions** instead of the source's - match the source's arrangement (wherever it puts them) per section 6 -> *Message-row metadata* (the `messageHeader` / `messageContent` slots **plus** a `messageItem` hand-off, because those slots can't see the message); a placement miss reads "matched" at a glance, so compare native-scale crops, never thumbnails. |
+| **Metadata placement** | Author name / timestamp / receipts / avatar sitting at **Stream's default positions** instead of the source's - match the source's arrangement (wherever it puts them) per section 6 -> *Message-row metadata* (the `messageHeader` slot receives `props.message`; the core `messageContent` slot does not, so it needs a `messageItem` hand-off); a placement miss reads "matched" at a glance, so compare native-scale crops, never thumbnails. |
 | **Header trailing** | `StreamChannelHeader` defaults its trailing edge to the channel avatar; the source header's actual actions not reproduced. |
 | **Composer inventory** | Stream's default set shipped as-is instead of matched 1:1. Inventory the source composer left->right in **both** states and match every control, the placeholder, and the field container (section 6 *Composer parity*) - **including the send button**: its accent **tint** (not Stream's default **blue**) and its **rest<->typing presence** (Sendbird hides send on an empty field; Stream's default rests on a **mic**, becoming a persistent send when voice recording isn't wired - `voiceRecordingCallback == null`). No source mic -> `enableVoiceRecording: false`; an **added** affordance is a fail exactly like a dropped one. The signature of a skipped pass - **a stock trailing control (mic, or persistent blue send), the outlined `+` chip, the gray-bordered field** - is a FAIL even when sending works. |
 | **Composer states** | The rest<->typing swap, and the **edit** and **quote/reply** states, never compared against the source. |
@@ -149,7 +149,7 @@ one is why a screen "looks migrated" but is still off:
 | **Reactions** | Left at Stream's default - overlay pills on the bubble's top edge, Stream's own emoji set and order - instead of the source's. Match what the **source actually renders**: **position** (in-bubble vs. overlay - read it off the baseline shot, don't assume), the **emoji set**, and the **order**. Sendbird's reaction set and ordering are app-configurable, so the running source is the only benchmark - never assume either SDK's default. Set the emoji set, order and position globally via `StreamChat(configData: StreamChatConfigurationData(reactionIconResolver:, reactionType:, reactionPosition:))`; relocate further via the `reactions` slot / `reactionsTheme` ([`design-matching.md`](design-matching.md) -> Message row, bubble, metadata - the reactions rows; [`RULES.md`](RULES.md)). |
 | **Custom cards** | Rendered as plain text or nested in a default bubble instead of via a custom `Attachment` builder (section 5). |
 | **Empty / loading / error strings** | A kept pre-built widget shows Stream's default English instead of the source's strings (section 6 localization row). |
-| **Dark palette** | Migrated light-only when the source ships both (`SBUThemeProvider`) - build both variants and switch on `Theme.of(context).brightness` (section 6); how the switch triggers follows the source, but both palettes must exist. Toggle and verify **both** on the device - a built-but-unverified palette is unverified, not done. |
+| **Dark palette** | Migrated light-only when the source ships both (`SBUThemeProvider`) - build both variants - `StreamTheme.light(...)` on `MaterialApp.theme.extensions` and `StreamTheme.dark(...)` on `darkTheme.extensions` (section 6); how the switch triggers follows the source, but both palettes must exist. Toggle and verify **both** on the device - a built-but-unverified palette is unverified, not done. |
 
 **Flutter realities to expect:** avatars are **circular-only** (Slack-style rounded squares need a
 custom avatar widget); there's **no consolidated Styles axis** (insets/radii spread across theme
@@ -179,7 +179,7 @@ is a fail. Run on a device you confirmed is booted (`flutter devices` -> `flutte
 never a device/OS you haven't confirmed). To reach a gated chat screen where tapping isn't available,
 use a temporary env-gated re-route: launch with `--dart-define=AUDIT_CHANNEL=<cid>`, read it via
 `String.fromEnvironment`, and when set point `home:` at the target screen wrapped in
-`StreamChannel(channel: client.channel('messaging', id: cid))` - delete it after (same rules as the
+`StreamChannel(channel: client.channel('messaging', id: cid.split(':').last))` - delete it after (same rules as the
 throwaway scaffold), and beware the stale-define trap: an incremental build can reuse the previous
 run's define values, so force the rebuild with a changing nonce define. If the device or run session
 wedges mid-pass, recover via the ladder in [`design-matching.md`](design-matching.md) Step 5 - an
@@ -264,7 +264,7 @@ The biggest conceptual shift: **App ID + optional session token -> API key + alw
 |---|---|
 | `SendbirdChat.init(appId: 'APP_ID')` / `SendbirdUIKit.init(appId:)` | `StreamChatClient('api-key')` |
 | `SendbirdChat.connect(userId, accessToken: token)` (token optional in test mode) | `client.connectUser(User(id: userId), token)` - **token always required** (`connectUserWithProvider` for prod refresh) |
-| `SendbirdUIKit.provider(...)` wraps the tree | `StreamChat(client: client, child: ...)` wraps `MaterialApp` (or `StreamChatCore` for headless) |
+| `SendbirdUIKit.provider(...)` wraps the tree | `MaterialApp(builder: (context, child) => StreamChat(client: client, child: child))` - mounted under `MaterialApp` via `builder:`, so every route is covered (or `StreamChatCore` for headless) |
 | App ID is the only credential | API **key** (client-safe) + per-user **token**; the **secret** stays server-side |
 
 Init the client **once before `runApp`** and mount `StreamChat(client:, child:)` so the provider
@@ -298,7 +298,7 @@ source shows next to a group name, and its subtitle **prefixes the sender** ("Al
 shows the bare last message. Match both via `StreamChannelListView(itemBuilder:)` -> construct a
 `StreamChannelListTile`, supplying **every part**: `avatar:` (required - `StreamChannelAvatar(channel: channel)`),
 `title:` (append `channel.memberCount`), `subtitle:` (bare last-message text), **plus `timestamp:` and
-`unreadCount:`** - the tile renders those two right-aligned at the row edge, exactly Sendbird's trailing
+`unreadCount:`**, plus `onTap: () => onChannelTap(channel)` / `onLongPress:` (the tile is inert without them) - the tile renders those two right-aligned at the row edge, exactly Sendbird's trailing
 cluster (timestamp + delivery check on your own last message); omit them and the trailing silently
 disappears. (The `defaultWidget` handed to `itemBuilder` is a `StreamChannelListItem`; its `copyWith`
 covers only `channel`/`onTap`/`onLongPress`/`selected`, so it can't reach title/subtitle. A fully
@@ -363,7 +363,8 @@ reproduce must be **surfaced explicitly**, never silently omitted (section 0.5).
 | **GroupChannel** (members) | `messaging` channel type |
 | **OpenChannel** (public) | `livestream` channel type |
 | `channelUrl` (opaque string) | `type + id` -> `client.channel('messaging', id: '...')` then `.watch()` |
-| `GroupChannel.createChannel(GroupChannelCreateParams(userIds:, name:, isDistinct:, customType:, data:))` | `client.channel('messaging', extraData: {'members': [...], 'name': ...})` then `.watch()` |
+| `GroupChannel.createChannel(GroupChannelCreateParams(userIds:, name:, isDistinct: true, ...))` | `client.channel('messaging', extraData: {'members': [...], 'name': ...})` (no id = distinct by members) then `.watch()` |
+| `GroupChannelCreateParams(..., isDistinct: false)` (Sendbird's default) | `client.channel('messaging', id: <new uuid>, extraData: {'members': [...], 'name': ...})` then `.watch()` |
 | `GroupChannelListQuery` | `StreamChannelListController(client:, filter:, channelStateSort: [SortOption.desc('last_message_at')])` with `Filter` (`Filter.in_('members', [userId])`, `Filter.equal('type', 'messaging')`). Sort goes in `channelStateSort:` (a `List<SortOption<ChannelState>>`); build entries with `SortOption.desc('field')` / `SortOption.asc('field')`. |
 
 Trap: a `Channel` from `client.channel(...)` is uninitialized until `.watch()` is awaited.
@@ -381,7 +382,7 @@ is `int?`, so the bare comparison doesn't compile). (Don't key off an empty
 builds a **member cluster** from `channel.state.members`, so a migrated 1:1 - 2 members, explicit id,
 not distinct - draws a **two-avatar cluster (including the current user)** where the source showed the
 single other person. For `memberCount <= 2`, override the avatar to the **other member's** single one:
-`StreamUserAvatar(user: m.user)` for the `channel.state.members` entry whose `user.id != currentUser.id`
+`StreamUserAvatar(user: m.user!)` for the `channel.state!.members` entry whose `user?.id != currentUser.id`
 - pass it as `StreamChannelListView(itemBuilder:)` -> `StreamChannelListTile(avatar:)` and as
 `StreamChannelHeader(trailing:)`. Do the same for the DM **title** (the other member's name, not the channel name, which
 is usually blank for a DM).
@@ -470,7 +471,7 @@ Stream's `parentId` model:
 |---|---|
 | `params.parentMessageId = id` on the reply | `channel.sendMessage(Message(text: ..., parentId: parentId))` - add `showInChannel: true` to also post it to the main channel |
 | `parent.getThreadedMessagesByTimestamp(...)` -> `ThreadedMessages.threadMessages` | `channel.getReplies(parentId)` -> `QueryRepliesResponse.messages` (paginate with `PaginationParams`); replies also stream into `channel.state.threads[parentId]` |
-| `MessageListParams..replyType = ReplyType.none` (hide replies from the main list) | Stream returns replies in the channel state, so exclude them from the channel view yourself: `where((m) => m.parentId == null)` |
+| `MessageListParams..replyType = ReplyType.none` (hide replies from the main list) | Stream already keeps thread replies out of the main list - only `showInChannel: true` replies appear there. Filter `m.parentId == null` only if the source also hid those. |
 | `parent.threadInfo.replyCount` | `message.replyCount` (on the parent) |
 | `parent.threadInfo.lastRepliedAt` | **no field on the parent** - read the last reply's `createdAt` from `channel.state.threads[parentId]`, populated once that thread has been fetched (`getReplies`) |
 
@@ -500,7 +501,7 @@ callback, a manual control, whatever the source used - on whether that end still
 | `loadPrevious()` / `loadNext()`, `MessageListParams(previous/nextResultSize)` | `StreamChannel.of(context).queryMessages(direction: QueryDirection.top)` (older) / `QueryDirection.bottom` (newer). Default page 30; `MessageListCore` paginates at 20. |
 | reverse + `startingPoint` (open mid-history) | `StreamChannel.of(context).loadChannelAtMessage(id)` - jump to a message (search result / push deep-link) |
 | `hasNext` (newer exist) | **`hasNewer = !channel.state.isUpToDate`.** After `watch()` you're at the tail (`isUpToDate == true`); it flips false only after a jump into the past (`loadChannelAtMessage`), and back to true once you page forward to the tail. |
-| `hasPrevious` (older exist) | **`hasOlder`: no public flag - derive it from the page size.** A top query returning **fewer messages than the requested limit** means older history is exhausted (the rule the SDK uses internally); until then, assume older may exist. |
+| `hasPrevious` (older exist) | **`hasOlder`: no public flag - derive it from the page size.** Call `StreamChannel.of(context).queryBeforeMessage(oldestId, limit: n)` (returns `ChannelState`); `hasOlder = (res.messages?.length ?? 0) == n`. |
 
 Derive both from the page size / `isUpToDate` - not from "are there any messages" - so a load-older /
 load-newer affordance turns off once that end is exhausted instead of triggering forever.
@@ -531,7 +532,7 @@ local), call `.toLocal()` so the rendered text matches the source.
 | Sendbird | Stream |
 |---|---|
 | `SBUColors` (+ `SBUColors.setColors(...)`) | component themes on `StreamChatThemeData` (via `StreamChat(themeData:)`) + `StreamTheme` (a `ThemeExtension`) |
-| `SBUThemeProvider` (`SBUTheme.light`/`.dark` toggle) | two `StreamChatThemeData` instances switched on `Theme.of(context).brightness` |
+| `SBUThemeProvider` (`SBUTheme.light`/`.dark` toggle) | `StreamTheme.light(...)` / `StreamTheme.dark(...)` (customized `colorScheme`) on `MaterialApp.theme` / `darkTheme` `extensions:`; a per-brightness `StreamChatThemeData` only for component-level overrides |
 | `SendbirdUIKit.setFontFamily(...)` | text styles in the theme |
 | `SBUStringProvider().setStrings(...)` (custom UI strings) | A kept Stream pre-built widget shows **default English** until overridden - its empty / loading / error states are the classic silent misses (e.g. an empty chat reverts to "Send a message to start the conversation" instead of the source's `noMessages`). Catch them all centrally: subclass `StreamChatLocalizationsEn` (from `stream_chat_localizations`), `@override` the specific getters (`sendMessageToStartConversationText` for the empty chat, `writeAMessageLabel` for the composer placeholder, ...), and register it as a `LocalizationsDelegate` in `MaterialApp.localizationsDelegates` (ahead of `GlobalStreamChatLocalizations.delegates`). Per-widget builders only cover the surfaces you remember to set: `StreamMessageListView(builders: StreamMessageListViewBuilders(empty: ...))` (the message list groups its placeholder slots under `builders:`), `StreamChannelListView(emptyBuilder:)` (top-level there), `StreamMessageComposer(placeholderBuilder:)`. |
 
@@ -594,7 +595,7 @@ via `StreamChat(componentBuilders: StreamComponentBuilders(extensions: streamCha
           borderDefault: <source border, or transparent>,  // transparent kills the pill border (the BAR hairline is outside this scope - see below)
         )),
       ]),
-      child: DefaultStreamMessageComposerInput(props: props),  // NOT StreamMessageComposerInput - recurses
+      child: DefaultStreamMessageComposerInput(props: props),  // the Default* widget (see the recursion rule in RULES.md)
     );
   },
   ```
@@ -644,7 +645,7 @@ confirm the names against the pinned source):
   to put time beside - it only stacks *below* the bubble.** `messageFooter` is the right tool only when
   the source actually renders the timestamp **below** (then use it and skip `messageContent`); a
   beside-the-bubble layout is `messageContent` or nothing.
-- **Hide the default footer** you've replaced -> `StreamTheme.messageItemTheme.metadataVisibility` gone.
+- **Hide the default footer** you've replaced -> `StreamTheme.messageItemTheme.metadataVisibility: StreamMessageLayoutVisibility.all(StreamVisibility.gone)`.
 
 The one non-obvious constraint: `messageContent` sees only the composed widgets, not the `Message`, so pass the
 message down from the `messageItem` slot (which has it) through a tiny `InheritedWidget`, read with
@@ -659,9 +660,11 @@ build whatever the source shows - the arrangement inside the slots is yours, not
 class _MsgScope extends InheritedWidget {
   const _MsgScope({required this.message, required super.child});
   final Message message;
-  static Message? maybeOf(BuildContext c) =>
-      c.dependOnInheritedWidgetOfExactType<_MsgScope>()?.message;
-  @override bool updateShouldNotify(_MsgScope o) => o.message != message;
+  static Message? maybeOf(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<_MsgScope>()?.message;
+
+  @override
+  bool updateShouldNotify(_MsgScope oldWidget) => oldWidget.message != message;
 }
 
 // messageItem publishes it (and raises maxWidth so flanking meta doesn't force early wraps)

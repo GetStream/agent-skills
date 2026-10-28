@@ -20,7 +20,7 @@ Interpret and hold in context (do not re-run unless the directory or project sha
 - No `pubspec.yaml` / `EMPTY_CWD` -> if the user explicitly asked for a new app, scaffold with `flutter create --org <reverse.domain> --project-name <name> --platforms android,ios <dir>`; otherwise stop and tell them to run `flutter create my_app` first ([`RULES.md`](RULES.md) "Project ownership").
 - `sendbird_chat_sdk` / `sendbird_uikit` present -> this is a migration; [`sendbird-migration.md`](sendbird-migration.md) drives, and calls back into steps 2-4 here.
 
-State a one-line status, e.g. `Flutter app detected - stream_chat_flutter 10.5.0 already in pubspec.lock`.
+State a one-line status, e.g. `Flutter app detected - stream_chat_flutter 10.6.0 already in pubspec.lock`.
 
 ### Version prerequisite (Chat, existing project)
 
@@ -96,17 +96,29 @@ Pick `--type` to match the vertical (`messaging`, `team`, `livestream` - see [`R
 ```dart
 Future<void> _setupFollows(StreamFeedsClient client) async {
   final userId = client.user.id;
-  // followingLimit is required: without it getOrCreate() returns an EMPTY
-  // state.following, the guard is always false, and follow() then fails
-  // with "... already exists in accepted state" on every launch.
   final timeline = client.feedFromQuery(
-    FeedQuery(fid: FeedId.timeline(userId), followingLimit: 100, watch: false),
+    FeedQuery(
+      fid: FeedId.timeline(userId),
+      followingLimit: 100,
+      watch: false,
+    ),
   );
-  await timeline.getOrCreate();
-  final already = timeline.state.following
-      .any((f) => f.targetFeed.fid == FeedId.user(userId));
-  if (!already) {
-    await timeline.follow(targetFid: FeedId.user(userId), createNotificationActivity: false);
+
+  try {
+    final result = await timeline.getOrCreate();
+    result.getOrThrow();
+
+    final isFollowingSelf = timeline.state.following
+        .any((f) => f.targetFeed.fid == FeedId.user(userId));
+    if (isFollowingSelf) return;
+
+    final follow = await timeline.follow(
+      targetFid: FeedId.user(userId),
+      createNotificationActivity: false,
+    );
+    follow.getOrThrow();
+  } finally {
+    timeline.dispose();
   }
 }
 ```
@@ -118,7 +130,7 @@ Alternatively, `client.getOrCreateFollows(FollowBatchRequest(follows: [FollowReq
 ```bash
 getstream api GetOrCreateFeed --feed-group-id user --feed-id alice --request '{"user_id":"alice"}'
 getstream api GetOrCreateFeed --feed-group-id timeline --feed-id <token_user_id> --request '{"user_id":"<token_user_id>"}'
-getstream api Follow --request '{"source":"timeline:<token_user_id>","target":"user:alice","create_notification_activity":false}'
+getstream api GetOrCreateFollows --request '{"follows":[{"source":"timeline:<token_user_id>","target":"user:alice","create_notification_activity":false}]}'
 # --jq prints the id WITH quotes - strip them before reusing it
 ID=$(getstream api AddActivity --request '{"type":"post","feeds":["user:alice"],"text":"Hello from Alice","user_id":"alice"}' --jq '.activity.id' | tr -d '"')
 getstream api AddComment --request "{\"object_id\":\"$ID\",\"object_type\":\"activity\",\"comment\":\"Nice!\",\"user_id\":\"bob\"}"
@@ -139,7 +151,7 @@ Use `flutter pub add` so pub resolves the current release; install only what the
 | Chat, custom UI | `stream_chat_flutter_core` (v10) | - |
 | Chat extras | `stream_chat_persistence` (offline), `stream_chat_localizations` (strings) - both imported separately | - |
 | Video / livestream / audio rooms | `stream_video_flutter` | `stream_video` - re-exported |
-| Video extras | `stream_video_push_notification` (ringing), `stream_video_filters`, `stream_video_noise_cancellation` - same version as `stream_video_flutter` | - |
+| Video extras | `stream_video_push_notification` (ringing), `stream_video_filters`, `stream_video_noise_cancellation`, `stream_video_screen_sharing` (iOS broadcast) - same version as `stream_video_flutter` | - |
 | Feeds | `stream_feeds`, plus `flutter_state_notifier` for `StateNotifierBuilder` (`stream_feeds` only depends on the pure-Dart `state_notifier`) | never `stream_feed` / `stream_feed_flutter_core` |
 
 SDK floors (Dart / Flutter versions) are in each package's `pubspec.yaml` `environment:` (e.g. `stream_chat_flutter` 10.6 needs Flutter >= 3.44). For per-platform requirements, fetch the product's install page from [`docs-map.md`](docs-map.md) (Chat "Install packages", Video "Install packages + platform permissions", Feeds "install" in the Feeds intro).

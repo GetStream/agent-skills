@@ -171,7 +171,7 @@ All page URLs end in `.md` (the Markdown twin - see [`SKILL.md`](SKILL.md)). Fet
 | Livestream: guide (incl. its "Hosting a livestream" and "Finding live streams" sections) / host screen / watch | `https://getstream.io/video/docs/flutter/guides/livestreaming.md`, `https://getstream.io/video/docs/flutter/ui-cookbook/hosting-a-livestream.md`, `https://getstream.io/video/docs/flutter/ui-cookbook/watching-a-livestream.md` |
 | HLS / RTMP broadcasting | `https://getstream.io/video/docs/flutter/advanced/broadcasting.md` |
 | Recording | `https://getstream.io/video/docs/flutter/advanced/recording.md` |
-| Audio rooms (+ chat) | `https://getstream.io/video/docs/flutter/ui-cookbook/audio-room-with-chat.md` |
+| Audio rooms (+ chat) | `https://getstream.io/video/docs/flutter/ui-cookbook/audio-room-with-chat.md` - the page's Chat half still uses **v9** APIs (`StreamMessageInput`); use the v10 equivalents (`StreamMessageComposer`) |
 | Chat app with video calls (page still shows v9 Chat APIs - use the v10 equivalents in [`video-patterns.md`](video-patterns.md) section 5) | `https://getstream.io/video/docs/flutter/ui-cookbook/chat-with-video.md` |
 | Multiple simultaneous calls | `https://getstream.io/video/docs/flutter/advanced/multiple-simultaneous-calls-support.md`, `https://getstream.io/video/docs/flutter/ui-cookbook/multicall.md` |
 
@@ -210,7 +210,7 @@ Start with: quick start `https://getstream.io/activity-feeds/docs/flutter.md`, i
 
 | Want to ... | Page (.md) |
 |---|---|
-| Built-in feed groups (user / timeline / notification / foryou / stories), get-or-create a feed | `https://getstream.io/activity-feeds/docs/flutter/feeds.md` |
+| Built-in feed groups (user / timeline / notification / foryou / story / stories), get-or-create a feed | `https://getstream.io/activity-feeds/docs/flutter/feeds.md` |
 | Post / update / partial-update / delete activities | `https://getstream.io/activity-feeds/docs/flutter/activities.md` |
 | Query activities across feeds | `https://getstream.io/activity-feeds/docs/flutter/query-activities.md` |
 | Watch state in widgets (`StateNotifierBuilder`, `queryMore*`, dispose) | `https://getstream.io/activity-feeds/docs/flutter/state.md` |
@@ -262,8 +262,8 @@ How to search (prefer the version-accurate local checkout - no network, matches 
    # The resolved versions:
    awk '/^  stream_/{n=$1} /^    version:/{if(n){print n,$2;n=""}}' pubspec.lock
    # The matching source (several versions can coexist - pick the one pubspec.lock names):
-   ls -d ~/.pub-cache/hosted/pub.dev/stream_* 2>/dev/null
-   grep -rn "class StreamMessageListView" ~/.pub-cache/hosted/pub.dev/stream_chat_flutter-<version>/lib
+   ls -d "${PUB_CACHE:-$HOME/.pub-cache}"/hosted/pub.dev/stream_* 2>/dev/null
+   grep -rn "class StreamMessageListView" "${PUB_CACHE:-$HOME/.pub-cache}"/hosted/pub.dev/stream_chat_flutter-<version>/lib
    ```
 
    A symbol can live in any package in the re-export chain (`stream_chat_flutter` -> `stream_chat_flutter_core` -> `stream_chat`, plus `stream_core_flutter`). Grep the whole resolved set before concluding an API is missing - see [`RULES.md`](RULES.md) "Never declare an API missing without evidence".

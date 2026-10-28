@@ -24,7 +24,9 @@ allowed-tools: >-
   Bash(flutter build *),
   Bash(flutter devices),
   Bash(flutter emulators *), Bash(flutter emulators),
-  Bash(getstream *)
+  Bash(getstream *),
+  Bash(sips *), Bash(awk *), Bash(adb *), Bash(xcrun simctl *),
+  Bash(flutter drive *), Bash(flutter test *), Bash(flutterfire *)
 ---
 
 # Stream Flutter - docs orchestrator for Flutter

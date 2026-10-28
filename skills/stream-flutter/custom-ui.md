@@ -41,7 +41,7 @@ State the decision and the signals that drove it before writing code. If the ans
 
 ## Step 1: Depend on the right packages (custom != `stream_chat_flutter`)
 
-The custom path uses **`stream_chat_flutter_core`** (headless controllers and `*Core` builder widgets) on top of the low-level `stream_chat` client, which it re-exports (`StreamChatClient`, `User`, `Message`, `Channel`, `Filter`, ...). Add it with `flutter pub add stream_chat_flutter_core:^10.0.0` and follow the "Getting started, core / custom UI" docs ([`docs-map.md`](docs-map.md)). Keep `stream_chat_flutter` out of this screen - reaching for `StreamChannelListView` / `StreamMessageListView` / `streamChatComponentBuilders` / `StreamChatThemeData` means you have drifted back onto the components path.
+The custom path uses **`stream_chat_flutter_core`** (headless controllers and `*Core` builder widgets) on top of the low-level `stream_chat` client, which it re-exports (`StreamChatClient`, `User`, `Message`, `Channel`, `Filter`, ...). Add it with `flutter pub add stream_chat_flutter_core` and follow the "Getting started, core / custom UI" docs ([`docs-map.md`](docs-map.md)). Keep `stream_chat_flutter` out of this screen - reaching for `StreamChannelListView` / `StreamMessageListView` / `streamChatComponentBuilders` / `StreamChatThemeData` means you have drifted back onto the components path.
 
 ---
 
@@ -76,14 +76,14 @@ MessageListCore(
 
 ## Step 3: Connect the client - tune it for the vertical, and pick the viewer auth
 
-Initialize the client **once** in an owned place (a service / provider / singleton), never in a widget `build()` ([`RULES.md`](RULES.md) "Client lifetime"), and provide it with `StreamChatCore` (it takes a `child`; wrap via `MaterialApp(builder:)`) - see "`StreamChatCore` / reconnect recovery" in [`docs-map.md`](docs-map.md). Do **not** attach a persistence client: the default in-memory client is exactly right for an ephemeral, high-volume feed.
+Initialize the client **once** in an owned place (a service / provider / singleton), never in a widget `build()` ([`RULES.md`](RULES.md) "Client lifetime"), and provide it with `StreamChatCore` (wrap via `MaterialApp(builder: (context, child) => StreamChatCore(client: client, child: child!))` - its `child` is non-null). `StreamChatCore` turns off client-level state recovery, so listen for `EventType.connectionRecovered` and re-`watch()` the channel - see "`StreamChatCore` / reconnect recovery" in [`docs-map.md`](docs-map.md). Do **not** attach a persistence client: the default in-memory client is exactly right for an ephemeral, high-volume feed.
 
 **Viewer auth - match it to whether the viewer posts** (see [`RULES.md`](RULES.md) "Permissions" and "Guest / anonymous users" in [`docs-map.md`](docs-map.md)). All three return a `Future<OwnUser>`:
 - Read-only viewers (the majority on a livestream): `await client.connectAnonymousUser();` - no MAU cost, reads `livestream` channels.
-- Pre-account viewers who post a little: `await client.connectGuestUser(User(id: 'guest-123'));`.
+- Pre-account viewers who post a little: `await client.connectGuestUser(User(id: 'guest-123'));` - only after you grant `create-message` (plus `create-reaction` etc.) to `guest` on the `livestream` type; by default guests can only read.
 - A signed-in user who posts: `await client.connectUser(User(id: 'alice', name: 'Alice'), token);` with a backend/CLI token.
 
-**Channel type:** use **`livestream`** (public read/write without a membership gate; supports guest + anonymous):
+**Channel type:** use **`livestream`** (no membership gate: public read for guests and anonymous viewers, write for `user`):
 
 ```dart
 final channel = client.channel('livestream', id: 'game5');
@@ -176,7 +176,7 @@ void _tickCooldown() {
 // while _remaining > 0: disable the send button and show "Wait ${_remaining}s"
 ```
 
-`getRemainingCooldown()` is computed on demand and `channel.cooldownStream` emits the configured slow-mode duration, so the periodic `Timer` drives the countdown. `getRemainingCooldown()` already returns 0 for users who can skip slow mode. Show the composer for guest and signed-in users; give anonymous read-only viewers the feed without a composer.
+`getRemainingCooldown()` is computed on demand and `channel.cooldownStream` emits the configured slow-mode duration, so the periodic `Timer` drives the countdown. `getRemainingCooldown()` already returns 0 for users who can skip slow mode. Show the composer for signed-in users (and for guests only if you granted them `create-message` on the channel type); give anonymous read-only viewers the feed without a composer.
 
 ---
 
@@ -248,11 +248,10 @@ A custom UI is not done until it builds, runs against **real seeded data**, and 
 Per [`RULES.md`](RULES.md) "Docs discipline": confirm every symbol above against the project's **pinned** version - the core-layer and low-level-client APIs move between releases. Fetch the core docs first (the "Custom message list state (core)", "`StreamChatCore` / reconnect recovery", "Send / edit / delete messages" and "Slow mode" rows in [`docs-map.md`](docs-map.md)), then escalate to the pinned source:
 
 ```bash
-# pinned versions from pubspec.lock
-COREVER=$(grep -A2 "^  stream_chat_flutter_core:" pubspec.lock | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
-LLCVER=$(grep -A2 "^  stream_chat:" pubspec.lock | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
-CORE="$HOME/.pub-cache/hosted/pub.dev/stream_chat_flutter_core-$COREVER/lib/src"
-LLC="$HOME/.pub-cache/hosted/pub.dev/stream_chat-$LLCVER/lib/src"
+# package roots of the pinned versions, from the resolved package graph (run `flutter pub get` first)
+root() { jq -r --arg n "$1" '.packages[] | select(.name == $n) | .rootUri' .dart_tool/package_config.json | sed 's|^file://||'; }
+CORE="$(root stream_chat_flutter_core)/lib/src"
+LLC="$(root stream_chat)/lib/src"
 # core: headless message list + pagination direction
 grep -rn "class MessageListCore\|paginateData\|enum QueryDirection\|maximumMessageLimit" \
   "$CORE/message_list_core.dart" "$CORE/stream_channel.dart"

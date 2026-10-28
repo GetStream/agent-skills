@@ -10,30 +10,38 @@ The docs ([`docs-map.md`](docs-map.md) "Video") cover each API. This file holds 
 One call is joined at a time; every swipe switches calls. The failure mode is a slow, older `join()` finishing **after** a newer swipe and clobbering the state. Fix: a small manager with a **version counter** ("latest request wins") that re-checks the version after every `await`. The old call's `leave()` is intentionally not awaited so swipes stay smooth.
 
 ```dart
+import 'dart:async';
+
 enum CallManagerState { idle, connecting, connected, failure }
 
 class CallManager extends ChangeNotifier {
-  CallManagerState state = CallManagerState.idle;
-  Call? currentCall;
-  String? currentCallId;
+  CallManagerState _state = CallManagerState.idle;
+  Call? _currentCall;
+  String? _currentCallId;
   int _version = 0;
   bool _disposed = false;
 
+  CallManagerState get state => _state;
+  Call? get currentCall => _currentCall;
+  String? get currentCallId => _currentCallId;
+
   void switchToCall(String callId) {
-    if (currentCallId == callId && state != CallManagerState.failure) return;
-    final version = ++_version;
-    final old = currentCall;
-    currentCall = null;
-    currentCallId = callId;
+    if (_currentCallId == callId && _state != CallManagerState.failure) return;
+    _version += 1;
+    final version = _version;
+    final old = _currentCall;
+    _currentCall = null;
+    _currentCallId = callId;
     _set(CallManagerState.connecting);
-    old?.leave(); // not awaited: teardown overlaps the next connect
-    _connect(callId, version);
+    // Not awaited, so the teardown overlaps the next connect.
+    if (old != null) unawaited(old.leave());
+    unawaited(_connect(callId, version));
   }
 
   Future<void> _connect(String callId, int version) async {
     final call = StreamVideo.instance.makeCall(
         callType: StreamCallType.liveStream(), id: callId);
-    currentCall = call;
+    _currentCall = call;
     final result = await call.join(
       connectOptions: CallConnectOptions(
         camera: TrackOption.disabled(),
@@ -41,22 +49,25 @@ class CallManager extends ChangeNotifier {
       ),
     );
     if (version != _version || _disposed) {
-      call.leave(); // a newer swipe won - drop this stale call
+      // A newer swipe won, so drop this stale call.
+      unawaited(call.leave());
       return;
     }
     _set(result.isSuccess ? CallManagerState.connected : CallManagerState.failure);
   }
 
-  void _set(CallManagerState s) {
-    state = s;
+  void _set(CallManagerState state) {
+    _state = state;
     if (!_disposed) notifyListeners();
   }
 
   @override
   void dispose() {
     _disposed = true;
-    _version++; // invalidate any in-flight connect
-    currentCall?.leave();
+    // Invalidate any in-flight connect.
+    _version += 1;
+    final call = _currentCall;
+    if (call != null) unawaited(call.leave());
     super.dispose();
   }
 }
@@ -65,7 +76,7 @@ class CallManager extends ChangeNotifier {
 Wiring:
 
 - `PageView.builder(scrollDirection: Axis.vertical, onPageChanged: (i) => manager.switchToCall(ids[i]))`; each page is a `ListenableBuilder` on the manager that shows a spinner while connecting and the player only when `currentCallId` matches the page.
-- Render with `LivestreamPlayer(call: call, onCallDisconnected: (_) {})` - the no-op callback is required, because the default pops the route and would dismiss the whole feed. Use `joinBehaviour: LivestreamJoinBehaviour.manualJoin` if the manager must fully own join timing.
+- Render with `LivestreamPlayer(call: call, joinBehaviour: LivestreamJoinBehaviour.manualJoin, onCallDisconnected: (_) {})` - the manager owns `join()`, so the player must not join on its own; the no-op callback is required, because the default pops the route and would dismiss the whole feed.
 - Derive "live" from state (`otherParticipants.any((p) => p.isVideoEnabled)` via `PartialCallStateBuilder`, or filter by the `host` role) - never keep a separate flag.
 - With the default `allowMultipleActiveCalls: false`, the SDK also leaves the prior call as soon as the new `join()` starts; the explicit `leave()` starts the teardown a little earlier.
 - Feed viewers never publish. Hosts are a standard livestream host ("Livestream: guide / host / watch" in [`docs-map.md`](docs-map.md)) using the feed item id as the call id. In production, list the feed from `queryCalls` or your backend.
@@ -93,7 +104,7 @@ Multicall API differences: `StreamVideo.instance.activeCall` **throws** - use `a
 
 Decision rule: **must a client that joins later still see it?**
 
-- **Yes -> custom data** (`call.update(custom: ...)`): durable, stored on the call, re-synced through `CallState.custom` on join. `update(custom:)` **replaces the whole map** - always read, merge, write. Needs the `update-call` capability, which `user` typically holds only as `update-call-owner` (the call's creator) on `default`, `audio_room` and `livestream` - check with `getstream api GetCallType --name <type>`. Route writes through the creator / host, or grant `update-call` to the role on that call type. Read reactively from `call.state` (`StreamBuilder` on `asStream()`); before joining, read once from `(await call.get()).getDataOrNull()?.metadata.details.custom`.
+- **Yes -> custom data** (`call.update(custom: ...)`): durable, stored on the call, re-synced through `CallState.custom` on join. `update(custom:)` merges top-level keys into the stored map (omitted keys are kept; a sent key replaces its whole value). Every `call.update(...)` also resets `startsAt` unless you pass it - on scheduled calls always pass the current `startsAt`. Needs the `update-call` capability, which `user` typically holds only as `update-call-owner` (the call's creator) on `default`, `audio_room` and `livestream` - check with `getstream api GetCallType --name <type>`. Route writes through the creator / host, or grant `update-call` to the role on that call type. Read reactively from `call.state` (`StreamBuilder` on `asStream()`); before joining, read once from `(await call.get()).getDataOrNull()?.metadata.details.custom`.
 - **No -> custom event** (`call.sendCustomEvent(eventType: 'raise-hand', custom: {...})`, received with `call.callEvents.on<StreamCallCustomEvent>(...)`): ephemeral, only clients connected at send time get it. If late joiners must know the resulting state, also mirror it into custom data.
 
 Docs: "Custom call data" and "Call events / custom events" in [`docs-map.md`](docs-map.md).
@@ -120,7 +131,7 @@ Docs: "Custom call data" and "Call events / custom events" in [`docs-map.md`](do
 
 ## 5. Chat + Video in one app
 
-Docs: "Chat app with video calls" in [`docs-map.md`](docs-map.md) - but that page still uses **v9** Chat APIs (`StreamMessageInput`, `defaultMessage.copyWith(attachmentBuilders: ...)`, `StreamChannelHeader(actions: ...)`) and never shows its attachment builder. Use the v10 equivalents below (checked against `stream_chat_flutter` 10.5.0). Same API key and **one** user JWT for both - do not mint separate tokens.
+Docs: "Chat app with video calls" in [`docs-map.md`](docs-map.md) - but that page still uses **v9** Chat APIs (`StreamMessageInput`, `defaultMessage.copyWith(attachmentBuilders: ...)`, `StreamChannelHeader(actions: ...)`) and never shows its attachment builder. Use the v10 equivalents below (checked against `stream_chat_flutter` 10.6.0). Same API key and **one** user JWT for both - do not mint separate tokens.
 
 - **Alias the imports** - both SDKs export `User`: `import 'package:stream_chat_flutter/stream_chat_flutter.dart' as chat;` and `import 'package:stream_video_flutter/stream_video_flutter.dart' as video;`. Map one app user to `chat.User(id:, name:, image:)` and `video.User(info: video.UserInfo(id:, name:, image:))`.
 - `StreamChatClient` lives in the `StreamChat` widget; `StreamVideo(...)` is its own singleton, typically created at login with the same token. Log out of both: `chatClient.disconnectUser()` and `StreamVideo.reset(disconnect: true)` (guard with `StreamVideo.isInitialized()`).

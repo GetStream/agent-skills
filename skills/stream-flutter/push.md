@@ -15,7 +15,7 @@ Docs to fetch as you go ([`docs-map.md`](docs-map.md)):
 | User wants | Delivery | Stream providers | Client packages |
 |---|---|---|---|
 | Chat push (new message while backgrounded) | FCM on Android; APNs (via Firebase by default) on iOS | one `firebase` (+ optional `apn`) | `firebase_core`, `firebase_messaging`, `flutter_local_notifications` |
-| Video ringing (incoming call wakes the app) | VoIP push + CallKit on iOS; high-priority FCM data on Android | one `apn`, one `firebase` | `stream_video_push_notification`, `firebase_core`, `firebase_messaging`, `permission_handler`, `rxdart` |
+| Video ringing (incoming call wakes the app) | VoIP push + CallKit on iOS; high-priority FCM data on Android | one `apn`, one `firebase` | `stream_video_push_notification`, `firebase_core`, `firebase_messaging`, `permission_handler`, `rxdart`, `uuid` |
 | Both | both | both | both |
 
 How a ringing call surfaces by app state:
@@ -71,9 +71,9 @@ jq -n --rawfile key /path/AuthKey_<KEYID>.p8 \
 
 **iOS (ringing):**
 
-- Deployment target and SPM: iOS 15.0 (`firebase_core` requires it), as in [`RULES.md`](RULES.md) "Video -> Build blockers" (pbxproj **and** `AppFrameworkInfo.plist`; no Podfile on SPM projects). The callkit docs page assumes a Podfile - ignore that part on SPM projects.
+- Deployment target and SPM: iOS 15.0 (`firebase_core` requires it), as in [`RULES.md`](RULES.md) "Video -> Build blockers" (`IPHONEOS_DEPLOYMENT_TARGET` in the pbxproj; no Podfile on SPM projects). The callkit docs page assumes a Podfile - ignore that part on SPM projects.
 - `Info.plist` `UIBackgroundModes`: `audio`, `processing`, `remote-notification`, `voip`; plus camera / microphone usage strings.
-- `AppDelegate.swift`: one call registers PushKit + CallKit reporting. On the Flutter 3.35+ template (`FlutterImplicitEngineDelegate`), keep plugin registration in `didInitializeImplicitFlutterEngine` and add only the Stream lines - the docs still show the older `GeneratedPluginRegistrant.register(with: self)` form:
+- `AppDelegate.swift`: one call registers PushKit + CallKit reporting. On the Flutter 3.41+ template (`FlutterImplicitEngineDelegate`), keep plugin registration in `didInitializeImplicitFlutterEngine` and add only the Stream lines - the docs still show the older `GeneratedPluginRegistrant.register(with: self)` form:
 
   ```swift
   import stream_video_push_notification
@@ -108,7 +108,7 @@ Per the Chat "Push notifications" docs ([`docs-map.md`](docs-map.md)):
 - Register **after** `connectUser` and again on every `FirebaseMessaging.instance.onTokenRefresh`: `client.addDevice(token, PushProvider.firebase, pushProviderName: '<name>')`.
 - On logout, `await client.removeDevice(token)` **before** `disconnectUser()`.
 - Android receives data-only messages - render them with `flutter_local_notifications`. The background handler is a **top-level** `@pragma('vm:entry-point')` function; inside it connect with `connectWebSocket: false` and fetch the message by id from the payload.
-- No push is sent while the user holds an open WebSocket (`StreamChat`'s `backgroundKeepAlive` keeps it ~15s after backgrounding). Push needs channel **membership** (watching is not enough) and only fires for new messages; muted channels, `skip_push`, and push disabled on the channel type suppress it.
+- Push is sent whether or not the user is connected - handle or suppress foreground `onMessage` for the open channel. Push needs channel **membership** (watching is not enough) and only fires for new messages; muted channels, `skip_push`, and push disabled on the channel type suppress it.
 
 ### Video ringing
 
@@ -129,6 +129,6 @@ Per the ringing / providers docs:
 - [ ] Foreground: the callee's in-app ringing screen appears; accept / decline / caller-cancel all end correctly.
 - [ ] Background and terminated: CallKit (iOS) / full-screen notification (Android) appears and accepting opens the call.
 - [ ] A fresh call id per test call (ringing fires once per id).
-- [ ] Chat: a message from another member arrives as a notification while the app is backgrounded past the keep-alive.
+- [ ] Chat: a message from another member arrives as a notification while the app is backgrounded.
 - [ ] Missed-call notification appears (template enabled with a body).
 - [ ] When push misbehaves, list and clear stale devices (`getDevices()` -> `removeDevice(...)`) before debugging code.
