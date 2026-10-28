@@ -550,21 +550,9 @@ class App : Application() {
 
 At login, connect first and save the session only once `build()` returned: `StreamSession.connect(context, session)` then `SessionStore(context).save(session)` (see [Login / Connect User Blueprint](#login--connect-user-blueprint)).
 
-`build()` connects in the background and only logs a failure, so watch the connection and send the user back to login when it fails (for example an invalid or revoked token):
+`build()` connects in the background and only logs a failure. Don't watch for `ConnectionState.Failed`: the client doesn't set it for its socket, and a rejected token ends as `ConnectionState.Disconnected`, the same state as a logout or a lost network. The `tokenProvider` covers expired tokens.
 
-```kotlin
-import io.getstream.video.android.core.ConnectionState
-
-// inside a coroutine scoped to the signed-in UI
-StreamVideo.instance().state.connection.collect { state ->
-    if (state is ConnectionState.Failed) {
-        logout(context) // below
-        showLogin(state.error.message)
-    }
-}
-```
-
-At logout, delete the device, remove the client, and clear the session. Don't tear down on a failed delete: the device would stay registered to this user and keep ringing for them.
+At logout, delete the device, remove the client, and clear the session. Don't tear down on a failed delete: the device would stay registered to this user and keep ringing for them. In the [Root Navigation Blueprint](#root-navigation-blueprint), call this from `onLogout` in place of the inline teardown, so the session is cleared too.
 
 ```kotlin
 import io.getstream.result.Result
