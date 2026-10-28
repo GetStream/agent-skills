@@ -162,7 +162,7 @@ fun LoginScreen(onConnected: () -> Unit) {
 **Wiring:**
 - For an expiring token, swap the `token` argument for both an initial token and a `tokenProvider` (see [VIDEO-COMPOSE.md - User Authentication](VIDEO-COMPOSE.md#user-authentication)).
 - Auto-reconnect across app launches: check `StreamVideo.instanceOrNull() != null` before showing the login screen.
-- To switch users, delete the push device (`getDevice().first()?.let { deleteDevice(it) }`), then call `StreamVideo.removeClient()` before the new `build()`. `logOut()` only clears the local token cache and leaves the device registered.
+- To switch users, delete the push device (the device from `getDevice().first()`; stop if `deleteDevice` fails), then call `StreamVideo.removeClient()` before the new `build()`. `logOut()` only clears the local token cache and leaves the device registered.
 
 ---
 
@@ -172,6 +172,7 @@ Gate the app on whether the video client has been built. Skips login if a previo
 
 ```kotlin
 import androidx.compose.runtime.rememberCoroutineScope
+import io.getstream.result.Result
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
@@ -186,7 +187,9 @@ fun RootScreen() {
                 onLogout = {
                     scope.launch {
                         val streamVideo = StreamVideo.instance()
-                        streamVideo.getDevice().first()?.let { streamVideo.deleteDevice(it) }
+                        val device = streamVideo.getDevice().first()
+                        // On a failed delete, stay signed in: the device would keep ringing for this user.
+                        if (device != null && streamVideo.deleteDevice(device) is Result.Failure) return@launch
                         StreamVideo.removeClient()
                         isConnected = false
                     }
