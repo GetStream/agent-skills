@@ -649,9 +649,7 @@ also want to migrate their Sendbird data**:
 Data migration is **server-side and SDK-independent** — it is identical whether the client is
 Swift, Kotlin, Flutter, or React — so it lives in a shared, language-agnostic runbook rather
 than here: [`../stream/sendbird-data-migration.md`](../stream/sendbird-data-migration.md). If
-the user says yes, **read that file and follow it**: pick the strategy (its §0), then export
-from Sendbird, build the JSONL import file, validate, and import via the `getstream` CLI
-(`CreateImportURL` -> upload -> `CreateImport` -> `GetImport`), adding real-time sync for B/C.
+the user says yes, **read that file and follow it**.
 
 Do **not** start a data migration unsolicited — it touches production data and may incur
 attachment-transfer cost. If the user only wanted the SDK swap, stop after step 8.

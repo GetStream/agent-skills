@@ -52,11 +52,11 @@ so the field appears only at its new location.
 
 | Key | Type | Default | Meaning |
 | --- | --- | --- | --- |
-| `comments` | []string | `["comment", "reply"]` | v2 reaction kinds that become v3 **comments**. |
+| `comments` | []string | `["comment", "reply"]` | v2 reaction kinds that become v3 **comments**. Matched case-insensitively, so `COMMENT` is already covered. |
 | `bookmarks` | []string | `[]` | Kinds that become v3 **bookmarks on an activity**. |
 | `comments_bookmarks` | []string | `[]` | Kinds that become **bookmarks on a comment**. The v2 reaction must carry the comment's foreign_id in its top-level `parent`. |
 | `reactions` | map[v2kind]v3type | `{}` | Rename a reaction kind to a different v3 type. Unlisted kinds keep their name. |
-| `comment_field` | string | `"message"` | Field in reaction `data` used as the comment text. |
+| `comment_field` | string | `"message"` | Key inside reaction `data` used as the comment text. Not a `data.` path. A comment with no text there is dropped. |
 | `attachments_field` | string (dot-path) | `"attachments"` | Field in reaction `data` holding attachments. |
 | `parent_id_field` | string (envelope path) | `"parent"` | Path whose non-empty value marks the reaction a **reply**. `""` disables reply detection. |
 | `reaction_comment_id_field` | string (envelope path) | `""` (off) | Path holding the id of a comment this reaction targets. Routes to `AddCommentReaction`. |
@@ -101,8 +101,14 @@ than carrying the literal key name into your response.
 
 | Key | Type | Default | Meaning |
 | --- | --- | --- | --- |
-| `name` | string (dot-path) or `false` | `"name"` | v2 user-data key the v3 user's **name** is read from. |
-| `image` | string (dot-path) or `false` | `"image"` | v2 user-data key the v3 user's **image** is read from. |
+| `name` | string (dot-path), list, or `false` | `"name"`, then `"username"` | v2 user-data key the v3 user's **name** is read from. |
+| `image` | string (dot-path), list, or `false` | `"image"`, then `"profileImage"`, then `"avatar"` | v2 user-data key the v3 user's **image** is read from. |
+
+When a key is not configured, the default source is tried first and then its
+fallbacks, in order; the first non-empty string wins. A fallback's value is
+copied onto `name` / `image` and its own key stays in custom. An explicit
+string uses exactly that source, with no fallbacks. A list sets the sources
+and their order yourself, for example `"image": ["avatar_url", "profileImage"]`.
 
 **These two read in the opposite direction from every other string key**: the
 map key is the *v3* field, the value is the *v2* source. They apply to users
@@ -174,6 +180,13 @@ A non-reply comment in the same app must leave that path absent:
 ```
 -> `"comment_field": "body"`
 
+```json
+{ "kind": "COMMENT", "data": { "text": "the text" } }
+```
+-> `"comment_field": "text"`
+
+`COMMENT` is already covered by the default `comments` list. Do not add it. Without `comment_field`, this comment is dropped.
+
 **Bookmark on a comment** - the target comment's foreign_id must be in the
 top-level `parent`:
 
@@ -188,6 +201,16 @@ top-level `parent`:
 { "kind": "like", "data": { "comment_id": "the-comment-fid" } }
 ```
 -> `"reaction_comment_id_field": "data.comment_id"`
+
+**Native v2 child reaction on a comment** (`reactions.addChild`) - a
+non-comment kind with the comment's id in the top-level `parent`. Without the
+key it lands in v3 as a reaction on the activity:
+
+```json
+{ "kind": "like", "parent": "the-comment-fid", "activity_id": "..." }
+```
+-> `"reaction_comment_id_field": "parent"`. A like on the activity itself has
+no `parent`, so it is unaffected.
 
 **Activity id from a nested custom field**, with a fallback to `foreign_id`
 when that field is absent:

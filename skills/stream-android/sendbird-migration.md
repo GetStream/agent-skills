@@ -435,7 +435,7 @@ The steps above migrate the **code/SDK** — they move **no history**. A migrate
 
 Data migration is **server-side and SDK-independent** (identical for Kotlin/Swift/Flutter/RN), so it
 lives in the shared runbook: [`../stream/sendbird-data-migration.md`](../stream/sendbird-data-migration.md).
-If the user says yes, read that file and follow it (pick strategy → export → build JSONL → validate →
-import via `getstream` CLI: `CreateImportURL` → upload → `CreateImport` → `GetImport`). Do **not** start
-a data migration unsolicited — it touches production data. Upload content-type must be
-`application/json`. Import member **records**, not just `member_count` (§8).
+If the user says yes, **read that file and follow it**.
+
+Do **not** start a data migration unsolicited - it touches production data.
+Import member **records**, not just `member_count` (section 8).
