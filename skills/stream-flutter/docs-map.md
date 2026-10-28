@@ -62,6 +62,7 @@ All page URLs end in `.md` (the Markdown twin - see [`SKILL.md`](SKILL.md)). Fet
 
 | Want to ... | Page (.md) |
 |---|---|
+| Ready-made channel / thread screens (`StreamChannelPage`, `StreamThreadPage`) | `https://getstream.io/chat/docs/sdk/flutter/stream-chat-flutter/channel.md`, plus `lib/src/pages/` in the pinned `stream_chat_flutter` source |
 | `StreamChannel` scope | `https://getstream.io/chat/docs/sdk/flutter/stream-chat-flutter/channel.md` |
 | Channel header | `https://getstream.io/chat/docs/sdk/flutter/stream-chat-flutter/stream-channel-header.md` |
 | Message list (`config:` / `builders:`, threads) | `https://getstream.io/chat/docs/sdk/flutter/stream-chat-flutter/message-list/stream-message-list-view.md` |
@@ -117,7 +118,7 @@ All page URLs end in `.md` (the Markdown twin - see [`SKILL.md`](SKILL.md)). Fet
 | Rate limits / query budget | `https://getstream.io/chat/docs/flutter-dart/rate-limits.md`, `https://getstream.io/chat/docs/flutter-dart/api-budget.md` |
 | Livestream chat | `https://getstream.io/chat/docs/sdk/flutter/guides/adding-chat-to-video-livestreams.md`, `https://getstream.io/chat/docs/sdk/flutter/guides/livestream-best-practices.md` |
 | AI assistants | `https://getstream.io/chat/docs/sdk/flutter/guides/ai-integrations.md`, `https://getstream.io/chat/docs/sdk/flutter/guides/ai-integrations/stream-chat-integration.md`, `https://getstream.io/chat/docs/sdk/flutter/guides/ai-integrations/client-side-tools.md` |
-| Custom CDN / E2E encryption / Sentry | `https://getstream.io/chat/docs/sdk/flutter/client/custom-cdn.md`, `https://getstream.io/chat/docs/sdk/flutter/guides/end-to-end-chat-encryption.md`, `https://getstream.io/chat/docs/sdk/flutter/guides/error-reporting-with-sentry.md` |
+| Custom CDN / E2E encryption / Sentry | `https://getstream.io/chat/docs/sdk/flutter/client/custom-cdn.md`, `https://getstream.io/chat/docs/sdk/flutter/guides/message-encryption.md`, `https://getstream.io/chat/docs/sdk/flutter/guides/error-reporting-with-sentry.md` |
 
 ---
 

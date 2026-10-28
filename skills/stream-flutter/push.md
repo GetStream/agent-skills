@@ -52,12 +52,12 @@ Pipe the secrets over stdin with `jq --rawfile` so they never appear in the chat
 # Firebase (Android; and iOS Chat push via Firebase)
 jq -n --rawfile creds /path/service-account.json \
   '{push_provider:{type:"firebase",name:"firebase",firebase_credentials:$creds}}' \
-  | getstream api UpsertPushProvider --request @-
+  | getstream api UpsertPushProvider --request -
 
 # APNs (iOS VoIP / CallKit for Video ringing; also standard APNs for call.missed)
 jq -n --rawfile key /path/AuthKey_<KEYID>.p8 \
   '{push_provider:{type:"apn",name:"apn",apn_auth_type:"token",apn_auth_key:$key,apn_key_id:"<KEYID>",apn_team_id:"<TEAMID>",apn_topic:"<BUNDLE_ID>",apn_development:true}}' \
-  | getstream api UpsertPushProvider --request @-
+  | getstream api UpsertPushProvider --request -
 ```
 
 - `apn_development:true` = sandbox (debug builds from Xcode); `false` for TestFlight / App Store. A mismatch means silent no-delivery.
@@ -71,7 +71,7 @@ jq -n --rawfile key /path/AuthKey_<KEYID>.p8 \
 
 **iOS (ringing):**
 
-- Deployment target and SPM: follow [`RULES.md`](RULES.md) "Video -> Build blockers" (pbxproj **and** `AppFrameworkInfo.plist`; no Podfile on SPM projects). The callkit docs page assumes a Podfile - ignore that part on SPM projects.
+- Deployment target and SPM: iOS 15.0 (`firebase_core` requires it), as in [`RULES.md`](RULES.md) "Video -> Build blockers" (pbxproj **and** `AppFrameworkInfo.plist`; no Podfile on SPM projects). The callkit docs page assumes a Podfile - ignore that part on SPM projects.
 - `Info.plist` `UIBackgroundModes`: `audio`, `processing`, `remote-notification`, `voip`; plus camera / microphone usage strings.
 - `AppDelegate.swift`: one call registers PushKit + CallKit reporting. On the Flutter 3.35+ template (`FlutterImplicitEngineDelegate`), keep plugin registration in `didInitializeImplicitFlutterEngine` and add only the Stream lines - the docs still show the older `GeneratedPluginRegistrant.register(with: self)` form:
 
@@ -87,7 +87,7 @@ jq -n --rawfile key /path/AuthKey_<KEYID>.p8 \
 - `google-services.json` in `android/app/`; apply `com.google.gms.google-services` in `android/app/build.gradle.kts` (`id("com.google.gms.google-services")`) and declare its version in `android/settings.gradle.kts` (Kotlin DSL - Groovy snippets do not parse).
 - `android:launchMode="singleInstance"` (or `singleTask`) on the main `<activity>` so notification taps do not stack call screens.
 - Manifest: `POST_NOTIFICATIONS` plus the Video permissions from the install page (foreground-service permissions come from the plugin). Request `POST_NOTIFICATIONS` at runtime on Android 13+ and `BLUETOOTH_CONNECT` before calls; on Android 14+ call `StreamVideoPushNotificationManager.ensureFullScreenIntentPermission()` for lock-screen ringing.
-- **Android 17 Telecom:** the ringing flow registers calls with Jetpack Telecom by default on Android 17+ devices (`AndroidPushConfiguration(telecom: TelecomPushConfiguration(...))`). For an app targeting API 37, Android 17 drops the ringtone of a push-started call unless it is in Telecom - so **never set `enabled: false`** unless the app rings some other way. The plugin needs a JDK 17+ Gradle build. Details: the Telecom section of `https://getstream.io/video/docs/flutter/advanced/incoming-calls/android-firebase-integration.md`.
+- **Android 17 Telecom:** the ringing flow registers calls with Jetpack Telecom by default on Android 17+ devices (`AndroidPushConfiguration(telecom: TelecomPushConfiguration(...))`). For an app targeting API 37+, Android 17 drops the ringtone of a push-started call unless it is in Telecom - so keep Telecom enabled unless the app rings some other way. The plugin needs a JDK 17+ Gradle build. Details: the Telecom section of `https://getstream.io/video/docs/flutter/advanced/incoming-calls/android-firebase-integration.md`.
 
 ---
 

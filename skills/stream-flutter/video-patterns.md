@@ -67,7 +67,7 @@ Wiring:
 - `PageView.builder(scrollDirection: Axis.vertical, onPageChanged: (i) => manager.switchToCall(ids[i]))`; each page is a `ListenableBuilder` on the manager that shows a spinner while connecting and the player only when `currentCallId` matches the page.
 - Render with `LivestreamPlayer(call: call, onCallDisconnected: (_) {})` - the no-op callback is required, because the default pops the route and would dismiss the whole feed. Use `joinBehaviour: LivestreamJoinBehaviour.manualJoin` if the manager must fully own join timing.
 - Derive "live" from state (`otherParticipants.any((p) => p.isVideoEnabled)` via `PartialCallStateBuilder`, or filter by the `host` role) - never keep a separate flag.
-- With the default `allowMultipleActiveCalls: false`, the SDK also leaves the prior call when the new `join()` lands; the explicit `leave()` just stops old media sooner.
+- With the default `allowMultipleActiveCalls: false`, the SDK also leaves the prior call as soon as the new `join()` starts; the explicit `leave()` starts the teardown a little earlier.
 - Feed viewers never publish. Hosts are a standard livestream host ("Livestream: guide / host / watch" in [`docs-map.md`](docs-map.md)) using the feed item id as the call id. In production, list the feed from `queryCalls` or your backend.
 
 ---
@@ -83,9 +83,9 @@ Host side:
 3. Render the 1:1 in a `Stack` over the broadcast view: a `Positioned` `ClipRRect` (about 160x220) holding `StreamCallParticipants(call: call, layoutMode: ParticipantLayoutMode.grid)` plus a mic toggle and a hang-up button.
 4. Watch the 1:1's `call.state.valueStream`; when `status.isDisconnected || endedAt != null` (either side hung up), `leave()` it - `suspendExisting` resumes the livestream's audio - then turn the broadcast's mic and camera back on. If the join fails, resume the broadcast immediately.
 
-Viewer side: `makeCall(callType: StreamCallType.defaultType(), id: '<unique>', preferences: DefaultCallPreferences(audioConfigurationPolicy: AudioConfigurationPolicy.broadcaster()))`, then `getOrCreate(memberIds: [hostId], ringing: true, video: true)` and `join(...)`. Ringing must be enabled on the `default` call type. `dropIfAloneInRingingFlow` (default `true`) auto-ends the outgoing call if the host never joins - detect it through `status.isDisconnected`.
+Viewer side: `makeCall(callType: StreamCallType.defaultType(), id: '<unique>', preferences: DefaultCallPreferences(audioConfigurationPolicy: AudioConfigurationPolicy.broadcaster()))`, then `getOrCreate(memberIds: [hostId], ringing: true, video: true)` and `join(...)`. Ringing must be enabled on the `default` call type. An unanswered ring is cancelled after the call type's `auto_cancel_timeout_ms`, and `join()` returns a failure `Result`. `dropIfAloneInRingingFlow` (default `true`) ends the call when the host leaves and you are alone - detect it through `status.isDisconnected`.
 
-Multicall API differences: `StreamVideo.instance.activeCall` **throws** - use `activeCalls` / `listenActiveCalls`. On Android each call runs its own foreground service: `StreamVideoFlutterBackground.stopService(ServiceType.call, callCid: cid)`. Under `suspendIncoming`, nothing auto-resumes - call `resumeAudio()` on the surviving call yourself.
+Multicall API differences: `StreamVideo.instance.activeCall` **throws** - use `activeCalls` / `listenActiveCalls`. On Android each call runs its own foreground service: `StreamVideoFlutterBackground.stopService(ServiceType.call, callCid: cid)` (import `package:stream_video_flutter/stream_video_flutter_background.dart`). Under `suspendIncoming`, nothing auto-resumes - call `resumeAudio()` on the surviving call yourself.
 
 ---
 
@@ -93,7 +93,7 @@ Multicall API differences: `StreamVideo.instance.activeCall` **throws** - use `a
 
 Decision rule: **must a client that joins later still see it?**
 
-- **Yes -> custom data** (`call.update(custom: ...)`): durable, stored on the call, re-synced through `CallState.custom` on join. `update(custom:)` **replaces the whole map** - always read, merge, write. Needs the `update-call` capability (granted to `user` on `default`; often not on `audio_room` / `livestream` - grant it or route writes through the host). Read reactively from `call.state` (`StreamBuilder` on `asStream()`); before joining, read once from `(await call.get()).getDataOrNull()?.metadata.details.custom`.
+- **Yes -> custom data** (`call.update(custom: ...)`): durable, stored on the call, re-synced through `CallState.custom` on join. `update(custom:)` **replaces the whole map** - always read, merge, write. Needs the `update-call` capability, which `user` typically holds only as `update-call-owner` (the call's creator) on `default`, `audio_room` and `livestream` - check with `getstream api GetCallType --name <type>`. Route writes through the creator / host, or grant `update-call` to the role on that call type. Read reactively from `call.state` (`StreamBuilder` on `asStream()`); before joining, read once from `(await call.get()).getDataOrNull()?.metadata.details.custom`.
 - **No -> custom event** (`call.sendCustomEvent(eventType: 'raise-hand', custom: {...})`, received with `call.callEvents.on<StreamCallCustomEvent>(...)`): ephemeral, only clients connected at send time get it. If late joiners must know the resulting state, also mirror it into custom data.
 
 Docs: "Custom call data" and "Call events / custom events" in [`docs-map.md`](docs-map.md).
@@ -125,7 +125,7 @@ Docs: "Chat app with video calls" in [`docs-map.md`](docs-map.md) - but that pag
 - **Alias the imports** - both SDKs export `User`: `import 'package:stream_chat_flutter/stream_chat_flutter.dart' as chat;` and `import 'package:stream_video_flutter/stream_video_flutter.dart' as video;`. Map one app user to `chat.User(id:, name:, image:)` and `video.User(info: video.UserInfo(id:, name:, image:))`.
 - `StreamChatClient` lives in the `StreamChat` widget; `StreamVideo(...)` is its own singleton, typically created at login with the same token. Log out of both: `chatClient.disconnectUser()` and `StreamVideo.reset(disconnect: true)` (guard with `StreamVideo.isInitialized()`).
 - **Call id derived from the channel** (e.g. `'${channel.id}_call<suffix>'`) - unique per call, traceable to the conversation.
-- **Start-call button in the channel header:** `StreamChannelHeader(trailing: ...)` - v10 has no `actions` parameter.
+- **Start-call button in the channel header:** `StreamChannelHeader(trailing: ...)` - v10 has no `actions` parameter, and `trailing` takes the place of the default channel avatar.
 - **Announce a call in the channel** with a custom attachment (`type: 'video_call'`, `extraData: {'callId': call.id, 'callType': call.type.value}`) rendered as a join card:
   - A custom `Attachment` with no file needs `uploadState: const UploadState.success()` - the default is `UploadState.preparing()`, which renders it as still uploading.
   - The card is a class extending `StreamAttachmentWidgetBuilder`: implement `bool canHandle(Message message, Map<String, List<Attachment>> attachments)` (the map is keyed by attachment type, e.g. `attachments.containsKey('video_call')`) and `Widget? build(BuildContext context, Message message, Map<String, List<Attachment>> attachments)`.

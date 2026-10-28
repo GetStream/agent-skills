@@ -49,7 +49,7 @@ The custom path uses **`stream_chat_flutter_core`** (headless controllers and `*
 
 `stream_chat_flutter_core` gives you **headless, builder-based** access to Stream data - the `*Core` widgets expose state + pagination through a `builder` callback with **no UI of their own**, so you render every pixel. For a single bespoke channel (a livestream feed, an overlay), the path is:
 
-1. Own one `Channel` and provide it to the subtree with the **`StreamChannel`** inherited widget. `StreamChannel` calls `channel.watch()` on init - it opens the WebSocket and loads the first page for you - and descendants read the channel via `StreamChannel.of(context).channel`.
+1. Own one `Channel` and provide it to the subtree with the **`StreamChannel`** inherited widget. `StreamChannel` calls `channel.watch()` on init when the channel is uninitialized - it subscribes to the channel's events and loads the first page for you (the WebSocket comes from `connectUser`) - and descendants read the channel via `StreamChannel.of(context).channel`.
 2. Render the messages with **`MessageListCore`**, the headless message-list widget (docs: "Custom message list state (core)" in [`docs-map.md`](docs-map.md)). It reads the channel from the nearest `StreamChannel` and hands you the message list - plus loading / empty / error states and pagination - through builder callbacks:
 
 ```dart
@@ -76,7 +76,7 @@ MessageListCore(
 
 ## Step 3: Connect the client - tune it for the vertical, and pick the viewer auth
 
-Initialize the client **once** in an owned place (a service / provider / singleton), never in a widget `build()` ([`RULES.md`](RULES.md) "Client lifetime"), and provide it with `StreamChatCore` (a `builder` around `MaterialApp`) - see "`StreamChatCore` / reconnect recovery" in [`docs-map.md`](docs-map.md). Do **not** attach a persistence client: the default in-memory client is exactly right for an ephemeral, high-volume feed.
+Initialize the client **once** in an owned place (a service / provider / singleton), never in a widget `build()` ([`RULES.md`](RULES.md) "Client lifetime"), and provide it with `StreamChatCore` (it takes a `child`; wrap via `MaterialApp(builder:)`) - see "`StreamChatCore` / reconnect recovery" in [`docs-map.md`](docs-map.md). Do **not** attach a persistence client: the default in-memory client is exactly right for an ephemeral, high-volume feed.
 
 **Viewer auth - match it to whether the viewer posts** (see [`RULES.md`](RULES.md) "Permissions" and "Guest / anonymous users" in [`docs-map.md`](docs-map.md)). All three return a `Future<OwnUser>`:
 - Read-only viewers (the majority on a livestream): `await client.connectAnonymousUser();` - no MAU cost, reads `livestream` channels.
@@ -95,7 +95,7 @@ Set the per-message throttling knobs (slow mode, read/typing events) on the chan
 
 ## Step 4: Render the feed - observe state, render newest-at-bottom
 
-Own the `Channel` in your service/provider, let `MessageListCore` observe it, and return a `ListView.builder(reverse: true, ...)` of `LiveMessageRow`s from `messageListBuilder` - the list arrives newest-first, so index 0 sits at the bottom. Load older history at the top with `_controller.paginateData(direction: QueryDirection.top)`.
+Own the `Channel` in your service/provider, let `MessageListCore` observe it, and return a `ListView.builder(reverse: true, ...)` of `LiveMessageRow`s from `messageListBuilder` - the list arrives newest-first, so index 0 sits at the bottom. Load older history at the top with `_controller.paginateData?.call(direction: QueryDirection.top)`.
 
 **Message row - this is where livestream diverges most from a messenger.** No bubbles, no left/right split, no read receipts. The common shape is **avatar + bold author name inline with the message text**, wrapping as one paragraph. Build it with a single `Text.rich` so the name and body flow and wrap as one block:
 
@@ -148,7 +148,7 @@ Pull fields off `Message`: `.text`, `.user` (`User` -> `.name`, `.image`, `.id`)
 >
 > Then verify with a **same-scale side-by-side crop** ([`design-matching.md`](design-matching.md) Step 5's crop-and-compare): stack your rendered feed against the reference at native scale and compare size/weight/color/avatar - numbers alone won't catch "it still looks bigger/heavier."
 
-**Ordering + scroll.** `MessageListCore` gives you the messages newest-first; render them in a `reverse: true` `ListView` so the newest sits at the bottom above the composer. Scroll to the bottom when a new message arrives (animate a `ScrollController` to `0.0`, which is the bottom in a reversed list). Page older history in at the top with `_controller.paginateData(direction: QueryDirection.top)`.
+**Ordering + scroll.** `MessageListCore` gives you the messages newest-first; render them in a `reverse: true` `ListView` so the newest sits at the bottom above the composer. Scroll to the bottom when a new message arrives (animate a `ScrollController` to `0.0`, which is the bottom in a reversed list). Page older history in at the top with `_controller.paginateData?.call(direction: QueryDirection.top)`.
 
 ---
 
@@ -159,11 +159,24 @@ Build a plain `TextField` + button, clear the `TextEditingController` optimistic
 **Slow-mode cooldown.** When the design shows it, gate the send button on the per-user cooldown and show a countdown:
 
 ```dart
-final remaining = channel.getRemainingCooldown(); // seconds; 0 when clear
-// while remaining > 0: disable the send button and show "Wait ${remaining}s"
+// In the composer's State (import 'dart:async').
+Timer? _ticker;
+int _remaining = 0;
+
+void _tickCooldown() {
+  _ticker?.cancel();
+  _remaining = channel.getRemainingCooldown(); // seconds; 0 when clear
+  if (_remaining == 0) return;
+  _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
+    setState(() => _remaining = channel.getRemainingCooldown());
+    if (_remaining == 0) _ticker?.cancel();
+  });
+}
+// after each send: setState(_tickCooldown); dispose: _ticker?.cancel();
+// while _remaining > 0: disable the send button and show "Wait ${_remaining}s"
 ```
 
-Rebuild on `channel.cooldownStream`, and let moderators skip the gate via `channel.canSkipSlowMode`. Show the composer for guest and signed-in users; give anonymous read-only viewers the feed without a composer.
+`getRemainingCooldown()` is computed on demand and `channel.cooldownStream` emits the configured slow-mode duration, so the periodic `Timer` drives the countdown. `getRemainingCooldown()` already returns 0 for users who can skip slow mode. Show the composer for guest and signed-in users; give anonymous read-only viewers the feed without a composer.
 
 ---
 
@@ -197,7 +210,7 @@ Reach for `stream_chat_flutter`'s theme tokens / `StreamUserAvatar` when you spe
   ```
   Measure the title font from the reference too (usually a modest ~16-17 lp).
 - **The app's own chrome is not Stream.** A betting bar, product cards, a video player, reactions - those are your app's widgets sitting above/below the chat. Build them as normal Flutter; only the message feed + composer talk to the SDK. Keep the SDK out of those files.
-- **Resolve the channel title from the model, not the screenshot.** Use `channel.name`, then `channel.extraData['name']`, then a sensible fallback (many Stream apps store the name under `extraData['name']` because top-level `channel.name` is disabled). Reuse the shared `resolveChannelName(...)` helper from [`design-matching.md`](design-matching.md) "Model-driven title trap".
+- **Resolve the channel title from the model, not the screenshot.** Use `channel.name` (it reads `extraData['name']`), then a sensible fallback. Reuse the shared `resolveChannelName(...)` helper from [`design-matching.md`](design-matching.md) "Model-driven title trap".
 - **Own the client + channel lifetime; create them once, not in a `build()`.** Create the `StreamChatClient` and the `Channel` once in the owned service/provider, so a rebuild reuses the same references rather than re-watching each frame ([`RULES.md`](RULES.md) -> "Client lifetime").
 - **Keep the feed live with `watch()`.** The `StreamChannel` widget watches the channel on init; if you hold the `Channel` yourself outside that widget, call `channel.watch()` once in your service so new messages stream into state. (A one-shot `query` without `watch` shows a static snapshot.)
 - **Observe the channel state directly.** Render straight from `MessageListCore` (or `channel.state!.messagesStream`) so a hot feed stays fast - one source of truth, no extra copy of the message list per update.
@@ -218,7 +231,7 @@ A custom UI is not done until it builds, runs against **real seeded data**, and 
    }}'
    # livestream channel
    getstream api GetOrCreateChannel --type livestream --id game5 \
-     --request '{"data": {"name": "Game 5: New York at San Antonio"}}'
+     --request '{"data": {"created_by_id": "alice", "custom": {"name": "Game 5: New York at San Antonio"}}}'
    # one message per line (repeat with varied text + user_id)
    getstream api SendMessage --type livestream --id game5 \
      --request '{"message": {"text": "lets go fire", "user_id": "alice"}}'
@@ -247,7 +260,7 @@ grep -rn "class MessageListCore\|paginateData\|enum QueryDirection\|maximumMessa
 grep -rn "connectAnonymousUser\|connectGuestUser\|Future<OwnUser> connectUser" "$LLC/client/client.dart"
 # channel: live stream, send, slow mode
 grep -rn "messagesStream\|getRemainingCooldown\|cooldownStream\|Future<SendMessageResponse> sendMessage" \
-  "$LLC/client/channel.dart"
+  "$LLC/client/channel/"
 ```
 
 Say where you found anything source-derived rather than presenting it as documented.

@@ -111,7 +111,7 @@ Future<void> _setupFollows(StreamFeedsClient client) async {
 }
 ```
 
-`stream_feeds` 0.6.1 has no single-follow `getOrCreateFollow` (the follows docs show it in JavaScript only), so this guard is what runs.
+Alternatively, `client.getOrCreateFollows(FollowBatchRequest(follows: [FollowRequest(source: FeedId.timeline(userId).rawValue, target: FeedId.user(userId).rawValue, createNotificationActivity: false)]))` is idempotent, so it can replace the guard above.
 
 2. **Seed data - via the CLI, only if the user said yes.** `getstream api` has a Feeds group (`GetOrCreateFeed`, `Follow`, `AddActivity`, `AddComment`, `AddActivityReaction`, ...):
 
@@ -125,7 +125,7 @@ getstream api AddComment --request "{\"object_id\":\"$ID\",\"object_type\":\"act
 getstream api AddActivityReaction --activity-id "$ID" --request '{"type":"like","user_id":"<token_user_id>"}'
 ```
 
-Seed authors' feeds, have the token user's timeline follow them, then post. For posting from the app, follow the "Post / update / partial-update / delete activities" docs and the `feeds` pitfall in [`RULES.md`](RULES.md) "Feeds".
+Seed authors' feeds, have the token user's timeline follow them, then post. For posting from the app, follow the "Post / update / partial-update / delete activities" docs.
 
 ---
 
@@ -142,7 +142,7 @@ Use `flutter pub add` so pub resolves the current release; install only what the
 | Video extras | `stream_video_push_notification` (ringing), `stream_video_filters`, `stream_video_noise_cancellation` - same version as `stream_video_flutter` | - |
 | Feeds | `stream_feeds`, plus `flutter_state_notifier` for `StateNotifierBuilder` (`stream_feeds` only depends on the pure-Dart `state_notifier`) | never `stream_feed` / `stream_feed_flutter_core` |
 
-For exact constraints, SDK floors (Dart / Flutter versions) and per-platform requirements, fetch the product's install page from [`docs-map.md`](docs-map.md) (Chat "Install packages", Video "Install packages + platform permissions", Feeds "install" in the Feeds intro).
+SDK floors (Dart / Flutter versions) are in each package's `pubspec.yaml` `environment:` (e.g. `stream_chat_flutter` 10.6 needs Flutter >= 3.44). For per-platform requirements, fetch the product's install page from [`docs-map.md`](docs-map.md) (Chat "Install packages", Video "Install packages + platform permissions", Feeds "install" in the Feeds intro).
 
 ---
 
@@ -150,10 +150,11 @@ For exact constraints, SDK floors (Dart / Flutter versions) and per-platform req
 
 Fetch the install page for the standard permissions and `Info.plist` keys, then also apply:
 
-- **Chat (`stream_chat_flutter`) on iOS:** the attachment / camera / voice-recording pickers need `NSPhotoLibraryUsageDescription`, `NSPhotoLibraryAddUsageDescription`, `NSCameraUsageDescription`, `NSMicrophoneUsageDescription` (and `NSDocumentsFolderUsageDescription` for the file picker) in `ios/Runner/Info.plist`. Missing keys crash the picker.
+- **Chat (`stream_chat_flutter`) on iOS:** the attachment / camera / voice-recording pickers need `NSPhotoLibraryUsageDescription`, `NSPhotoLibraryAddUsageDescription`, `NSCameraUsageDescription`, `NSMicrophoneUsageDescription` (and `NSDocumentsFolderUsageDescription` for the file picker) in `ios/Runner/Info.plist`. Missing keys crash the picker. The iOS deployment target must be 14.0+ (`file_picker`); see the 15.0 bullet in [`RULES.md`](RULES.md) "Video -> Build blockers", which applies to Chat too.
+- **Chat on Android, older projects:** `share_plus` (a `stream_chat_flutter` dependency) is built with Kotlin 2.2, so the project's `org.jetbrains.kotlin.android` plugin needs 2.1 or newer.
 - **Chat on Android with AGP 9 (only if you hit this error - recent templates build fine):** if the build fails with `cannot find symbol ... FilePickerPlugin` in `GeneratedPluginRegistrant.java`, the project was scaffolded with AGP 9.x and `file_picker` (a transitive dependency) does not compile under it. This is a toolchain mismatch - `flutter clean` will not help. Pin `com.android.application` to `8.9.1` and `org.jetbrains.kotlin.android` to `2.1.0` in `android/settings.gradle.kts`, and `distributionUrl` to `gradle-8.11.1-all.zip` in `android/gradle/wrapper/gradle-wrapper.properties`; bump again once the plugins support AGP 9.
 - **Chat on web / macOS:** web needs `oncontextmenu="return false;"` on `<body>` in `web/index.html`; macOS needs `com.apple.security.network.client` and `com.apple.security.files.user-selected.read-write` entitlements in both `.entitlements` files.
-- **Video:** the iOS SPM two-step, analyzer exclude, Kotlin-DSL `minSdk`, runtime permissions, and `StreamFlutterActivity` for PiP - all in [`RULES.md`](RULES.md) "Video -> Build blockers".
+- **Video:** the iOS 15.0 target, analyzer exclude, `minSdk` floor, runtime permissions, and PiP - all in [`RULES.md`](RULES.md) "Video -> Build blockers".
 - **Feeds:** network only; add the photo-library / camera keys if posts include uploads.
 
 ---
