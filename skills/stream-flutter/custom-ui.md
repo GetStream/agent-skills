@@ -2,7 +2,6 @@
 
 Some chat UIs are **not** a messenger. Livestream chat (Twitch / YouTube / Kalshi), live-shopping ticker chat, an overlay on a video, a betting feed, a high-volume "drop" room - these look nothing like channel-list + bubbles + composer, and the pre-built `stream_chat_flutter` widgets fight you the whole way. For these you **drop the pre-built widgets and build your own Flutter widgets on the low-level `StreamChatClient` + the headless `stream_chat_flutter_core` controllers**.
 
-
 This page is the procedure for that path - the mirror image of [`design-matching.md`](design-matching.md) (which is for *customizing the pre-built components*). Run it only when the decision in Step 0 lands on "custom". It targets `stream_chat_flutter` / `stream_chat_flutter_core` **v10**; confirm every symbol against the live core docs ([`docs-map.md`](docs-map.md) "Chat") and the project's pinned version (see "Grounding" at the end).
 
 ---
@@ -95,7 +94,7 @@ Set the per-message throttling knobs (slow mode, read/typing events) on the chan
 
 ## Step 4: Render the feed - observe state, render newest-at-bottom
 
-Own the `Channel` in your service/provider, let `MessageListCore` observe it, and return a `ListView.builder(reverse: true, ...)` of `LiveMessageRow`s from `messageListBuilder` - the list arrives newest-first, so index 0 sits at the bottom. Load older history at the top with `_controller.paginateData?.call(direction: QueryDirection.top)`.
+Own the `Channel` in your service/provider, let `MessageListCore` observe it, and return a `ListView.builder(reverse: true, ...)` of `LiveMessageRow`s from `messageListBuilder` - the list arrives newest-first, so index 0 sits at the bottom. Load older history at the top with `_messageListController.paginateData?.call(direction: QueryDirection.top)`.
 
 **Message row - this is where livestream diverges most from a messenger.** No bubbles, no left/right split, no read receipts. The common shape is **avatar + bold author name inline with the message text**, wrapping as one paragraph. Build it with a single `Text.rich` so the name and body flow and wrap as one block:
 
@@ -109,15 +108,15 @@ class LiveMessageRow extends StatelessWidget {
     final author = message.user?.name ?? message.user?.id ?? '';
     const fontSize = 15.0; // MEASURE from the reference - see below
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 3.0),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
             height: fontSize * 1.3, // first-line height -> the avatar centers on the name line
-            child: LiveAvatar(user: message.user, size: 22),
+            child: LiveAvatar(user: message.user, size: 22.0),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 8.0),
           Expanded(
             child: Text.rich(TextSpan(children: [
               TextSpan(
@@ -148,7 +147,7 @@ Pull fields off `Message`: `.text`, `.user` (`User` -> `.name`, `.image`, `.id`)
 >
 > Then verify with a **same-scale side-by-side crop** ([`design-matching.md`](design-matching.md) Step 5's crop-and-compare): stack your rendered feed against the reference at native scale and compare size/weight/color/avatar - numbers alone won't catch "it still looks bigger/heavier."
 
-**Ordering + scroll.** `MessageListCore` gives you the messages newest-first; render them in a `reverse: true` `ListView` so the newest sits at the bottom above the composer. Scroll to the bottom when a new message arrives (animate a `ScrollController` to `0.0`, which is the bottom in a reversed list). Page older history in at the top with `_controller.paginateData?.call(direction: QueryDirection.top)`.
+**Ordering + scroll.** `MessageListCore` gives you the messages newest-first; render them in a `reverse: true` `ListView` so the newest sits at the bottom above the composer. Scroll to the bottom when a new message arrives (animate a `ScrollController` to `0.0`, which is the bottom in a reversed list). Page older history in at the top with `_messageListController.paginateData?.call(direction: QueryDirection.top)`.
 
 ---
 

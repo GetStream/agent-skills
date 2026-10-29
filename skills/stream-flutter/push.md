@@ -2,7 +2,6 @@
 
 Triggered by requests like "add push notifications for chat", "incoming calls should ring when the app is closed", "CallKit", "FCM ringing", or "missed call notification". The SDK calls are in the docs; this runbook covers the order, the external setup the agent cannot do, and the traps. Obey [`RULES.md`](RULES.md) throughout - the APNs key and Firebase service account go to Stream via the CLI, never into the app or git.
 
-
 Docs to fetch as you go ([`docs-map.md`](docs-map.md)):
 
 - Chat: the "Push notifications" row under Chat -> Production.
@@ -46,18 +45,16 @@ The agent cannot create a Firebase project, download an APNs key, or toggle Xcod
 
 ## Step 2: Create the Stream push providers via the CLI
 
-Pipe the secrets over stdin with `jq --rawfile` so they never appear in the chat or a file in the repo. Names are yours to choose - they must match the code exactly.
+Build the body with `jq --rawfile` inside `--request "$(...)"` so the secrets never appear in the chat or a file in the repo. Names are yours to choose - they must match the code exactly.
 
 ```bash
 # Firebase (Android; and iOS Chat push via Firebase)
-jq -n --rawfile creds /path/service-account.json \
-  '{push_provider:{type:"firebase",name:"firebase",firebase_credentials:$creds}}' \
-  | getstream api UpsertPushProvider --request -
+getstream api UpsertPushProvider --request "$(jq -n --rawfile creds /path/service-account.json \
+  '{push_provider:{type:"firebase",name:"firebase",firebase_credentials:$creds}}')"
 
 # APNs (iOS VoIP / CallKit for Video ringing; also standard APNs for call.missed)
-jq -n --rawfile key /path/AuthKey_<KEYID>.p8 \
-  '{push_provider:{type:"apn",name:"apn",apn_auth_type:"token",apn_auth_key:$key,apn_key_id:"<KEYID>",apn_team_id:"<TEAMID>",apn_topic:"<BUNDLE_ID>",apn_development:true}}' \
-  | getstream api UpsertPushProvider --request -
+getstream api UpsertPushProvider --request "$(jq -n --rawfile key /path/AuthKey_<KEYID>.p8 \
+  '{push_provider:{type:"apn",name:"apn",apn_auth_type:"token",apn_auth_key:$key,apn_key_id:"<KEYID>",apn_team_id:"<TEAMID>",apn_topic:"<BUNDLE_ID>",apn_development:true}}')"
 ```
 
 - `apn_development:true` = sandbox (debug builds from Xcode); `false` for TestFlight / App Store. A mismatch means silent no-delivery.

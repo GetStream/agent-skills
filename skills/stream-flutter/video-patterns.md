@@ -2,7 +2,6 @@
 
 The docs ([`docs-map.md`](docs-map.md) "Video") cover each API. This file holds the cross-cutting patterns that have no docs page: a TikTok-style livestream feed, a 1:1 call over a live broadcast, sharing state across a call, listing live audio rooms and livestreams, and gluing Chat to Video. Obey [`RULES.md`](RULES.md) "Video" throughout. Confirm every symbol against the pinned `stream_video` source before shipping.
 
-
 ---
 
 ## 1. Livestream feed (TikTok-style vertical pager)
@@ -11,6 +10,9 @@ One call is joined at a time; every swipe switches calls. The failure mode is a 
 
 ```dart
 import 'dart:async';
+
+import 'package:flutter/foundation.dart';
+import 'package:stream_video_flutter/stream_video_flutter.dart';
 
 enum CallManagerState { idle, connecting, connected, failure }
 
@@ -75,7 +77,7 @@ class CallManager extends ChangeNotifier {
 
 Wiring:
 
-- `PageView.builder(scrollDirection: Axis.vertical, onPageChanged: (i) => manager.switchToCall(ids[i]))`; each page is a `ListenableBuilder` on the manager that shows a spinner while connecting and the player only when `currentCallId` matches the page.
+- `PageView.builder(scrollDirection: Axis.vertical, onPageChanged: (i) => manager.switchToCall(ids[i]))`, plus `manager.switchToCall(ids.first)` once in `initState` (`onPageChanged` does not fire for the initial page); each page is a `ListenableBuilder` on the manager that shows a spinner while connecting and the player only when `currentCallId` matches the page.
 - Render with `LivestreamPlayer(call: call, joinBehaviour: LivestreamJoinBehaviour.manualJoin, onCallDisconnected: (_) {})` - the manager owns `join()`, so the player must not join on its own; the no-op callback is required, because the default pops the route and would dismiss the whole feed.
 - Derive "live" from state (`otherParticipants.any((p) => p.isVideoEnabled)` via `PartialCallStateBuilder`, or filter by the `host` role) - never keep a separate flag.
 - With the default `allowMultipleActiveCalls: false`, the SDK also leaves the prior call as soon as the new `join()` starts; the explicit `leave()` starts the teardown a little earlier.

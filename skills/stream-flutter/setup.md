@@ -2,7 +2,6 @@
 
 Run this once per session for integrate, new-app, and Sendbird-migration requests, before feature work. How-to / reference requests skip it and go straight to **Docs lookup** in [`SKILL.md`](SKILL.md). Obey [`RULES.md`](RULES.md) throughout.
 
-
 ---
 
 ## 1. Project signals (read-only probe)
@@ -125,7 +124,7 @@ Future<void> _setupFollows(StreamFeedsClient client) async {
 
 Alternatively, `client.getOrCreateFollows(FollowBatchRequest(follows: [FollowRequest(source: FeedId.timeline(userId).rawValue, target: FeedId.user(userId).rawValue, createNotificationActivity: false)]))` is idempotent, so it can replace the guard above.
 
-2. **Seed data - via the CLI, only if the user said yes.** `getstream api` has a Feeds group (`GetOrCreateFeed`, `Follow`, `AddActivity`, `AddComment`, `AddActivityReaction`, ...):
+2. **Seed data - via the CLI, only if the user said yes.** `getstream api` has a Feeds group (`GetOrCreateFeed`, `GetOrCreateFollows`, `AddActivity`, `AddComment`, `AddActivityReaction`, ...):
 
 ```bash
 getstream api GetOrCreateFeed --feed-group-id user --feed-id alice --request '{"user_id":"alice"}'

@@ -137,7 +137,7 @@ one is why a screen "looks migrated" but is still off:
 | **Outgoing bubble** | Left as Stream's pale brand shade (`colorScheme.brand.shade100`); a solid source bubble needs its fill **and** text color set (`StreamTheme.messageItemTheme`, color via `text.textColor`; section 6 -> *Message bubble fill & text*), or the text stays dark/illegible. |
 | **Incoming bubble** | Not matched to the source's incoming fill + text. |
 | **Row layout** | A restructured row (author-on-top, flat rows, no bubble) treated as a recolor - it's a **widget replacement** (the Restructured axis above), not a theme token. |
-| **Bubble geometry & text scale** | Fill matched but geometry left at Stream defaults: the **tail corner squares** on the last message of a run (Sendbird rounds every corner uniformly, 16), the **body text is larger** (Sendbird body is 14) and the **item width caps at 264/272** - so migrated bubbles wrap lines Sendbird fits on one. Fix via `messageItemTheme.bubble.shape` / `.text.textStyle` / `messageItem -> DefaultStreamMessageItem(props.copyWith(maxWidth:))` ([`design-matching.md`](design-matching.md) -> Message row, bubble, metadata). |
+| **Bubble geometry & text scale** | Fill matched but geometry left at Stream defaults: the **tail corner squares** on the last message of a run (Sendbird rounds every corner uniformly, 16), the **body text is larger** (Sendbird body is 14) and the **item width caps at 272 lp** - so migrated bubbles wrap lines Sendbird fits on one. Fix via `messageItemTheme.bubble.shape` / `.text.textStyle` / `messageItem -> DefaultStreamMessageItem(props.copyWith(maxWidth:))` ([`design-matching.md`](design-matching.md) -> Message row, bubble, metadata). |
 | **Status bar** | Sendbird tints the status strip with the accent (white glyphs); a migration keeps the white-glyph style without the tinted strip -> **invisible clock**, or drops the tint entirely. Paint the inset + set `AnnotatedRegion` brightness ([`design-matching.md`](design-matching.md) -> Header / chrome, incl. the `removePadding` trap). |
 | **Metadata placement** | Author name / timestamp / receipts / avatar sitting at **Stream's default positions** instead of the source's - match the source's arrangement (wherever it puts them) per section 6 -> *Message-row metadata* (the `messageHeader` slot receives `props.message`; the core `messageContent` slot does not, so it needs a `messageItem` hand-off); a placement miss reads "matched" at a glance, so compare native-scale crops, never thumbnails. |
 | **Header trailing** | `StreamChannelHeader` defaults its trailing edge to the channel avatar; the source header's actual actions not reproduced. |
@@ -149,7 +149,7 @@ one is why a screen "looks migrated" but is still off:
 | **Reactions** | Left at Stream's default - overlay pills on the bubble's top edge, Stream's own emoji set and order - instead of the source's. Match what the **source actually renders**: **position** (in-bubble vs. overlay - read it off the baseline shot, don't assume), the **emoji set**, and the **order**. Sendbird's reaction set and ordering are app-configurable, so the running source is the only benchmark - never assume either SDK's default. Set the emoji set, order and position globally via `StreamChat(configData: StreamChatConfigurationData(reactionIconResolver:, reactionType:, reactionPosition:))`; relocate further via the `reactions` slot / `reactionsTheme` ([`design-matching.md`](design-matching.md) -> Message row, bubble, metadata - the reactions rows; [`RULES.md`](RULES.md)). |
 | **Custom cards** | Rendered as plain text or nested in a default bubble instead of via a custom `Attachment` builder (section 5). |
 | **Empty / loading / error strings** | A kept pre-built widget shows Stream's default English instead of the source's strings (section 6 localization row). |
-| **Dark palette** | Migrated light-only when the source ships both (`SBUThemeProvider`) - build both variants - `StreamTheme.light(...)` on `MaterialApp.theme.extensions` and `StreamTheme.dark(...)` on `darkTheme.extensions` (section 6); how the switch triggers follows the source, but both palettes must exist. Toggle and verify **both** on the device - a built-but-unverified palette is unverified, not done. |
+| **Dark palette** | Migrated light-only when the source ships both (`SBUThemeProvider`) - build both variants - `StreamTheme(brightness: Brightness.light, colorScheme: StreamColorScheme.light(...))` on `MaterialApp.theme.extensions` and `StreamTheme(brightness: Brightness.dark, colorScheme: StreamColorScheme.dark(...))` on `darkTheme.extensions` (or `StreamColorScheme.fromSeed(brand: ..., brightness: ...)`) (section 6); how the switch triggers follows the source, but both palettes must exist. Toggle and verify **both** on the device - a built-but-unverified palette is unverified, not done. |
 
 **Flutter realities to expect:** avatars are **circular-only** (Slack-style rounded squares need a
 custom avatar widget); there's **no consolidated Styles axis** (insets/radii spread across theme
@@ -532,7 +532,7 @@ local), call `.toLocal()` so the rendered text matches the source.
 | Sendbird | Stream |
 |---|---|
 | `SBUColors` (+ `SBUColors.setColors(...)`) | component themes on `StreamChatThemeData` (via `StreamChat(themeData:)`) + `StreamTheme` (a `ThemeExtension`) |
-| `SBUThemeProvider` (`SBUTheme.light`/`.dark` toggle) | `StreamTheme.light(...)` / `StreamTheme.dark(...)` (customized `colorScheme`) on `MaterialApp.theme` / `darkTheme` `extensions:`; a per-brightness `StreamChatThemeData` only for component-level overrides |
+| `SBUThemeProvider` (`SBUTheme.light`/`.dark` toggle) | `StreamTheme(brightness: Brightness.light, colorScheme: ...)` / `StreamTheme(brightness: Brightness.dark, colorScheme: ...)` on `MaterialApp.theme` / `darkTheme` `extensions:`; a per-brightness `StreamChatThemeData` only for component-level overrides |
 | `SendbirdUIKit.setFontFamily(...)` | text styles in the theme |
 | `SBUStringProvider().setStrings(...)` (custom UI strings) | A kept Stream pre-built widget shows **default English** until overridden - its empty / loading / error states are the classic silent misses (e.g. an empty chat reverts to "Send a message to start the conversation" instead of the source's `noMessages`). Catch them all centrally: subclass `StreamChatLocalizationsEn` (from `stream_chat_localizations`), `@override` the specific getters (`sendMessageToStartConversationText` for the empty chat, `writeAMessageLabel` for the composer placeholder, ...), and register it as a `LocalizationsDelegate` in `MaterialApp.localizationsDelegates` (ahead of `GlobalStreamChatLocalizations.delegates`). Per-widget builders only cover the surfaces you remember to set: `StreamMessageListView(builders: StreamMessageListViewBuilders(empty: ...))` (the message list groups its placeholder slots under `builders:`), `StreamChannelListView(emptyBuilder:)` (top-level there), `StreamMessageComposer(placeholderBuilder:)`. |
 
@@ -587,19 +587,27 @@ via `StreamChat(componentBuilders: StreamComponentBuilders(extensions: streamCha
 
   ```dart
   messageComposerInput: (context, props) {
-    final t = StreamTheme.of(context);
+    final theme = Theme.of(context);
+    final streamTheme = StreamTheme.of(context);
     return Theme(
-      data: Theme.of(context).copyWith(extensions: [
-        t.copyWith(colorScheme: t.colorScheme.copyWith(
-          backgroundElevation1: <source field fill>,   // pill fill
-          borderDefault: <source border, or transparent>,  // transparent kills the pill border (the BAR hairline is outside this scope - see below)
-        )),
-      ]),
-      child: DefaultStreamMessageComposerInput(props: props),  // the Default* widget (see the recursion rule in RULES.md)
+      data: theme.copyWith(
+        extensions: [
+          // Keep the app's other extensions; the StreamTheme below replaces the inherited one.
+          ...theme.extensions.values,
+          streamTheme.copyWith(
+            colorScheme: streamTheme.colorScheme.copyWith(
+              backgroundElevation1: <source field fill>, // pill fill
+              borderDefault: <source border, or transparent>, // transparent removes the pill border (the BAR hairline is outside this scope - see below)
+            ),
+          ),
+        ],
+      ),
+      // The Default* widget (see the recursion rule in RULES.md).
+      child: DefaultStreamMessageComposerInput(props: props),
     );
   },
   ```
-  Corner differs? add `radius: t.radius.copyWith(xxxl: <measured>)`. The bar paints its own chrome -
+  Corner differs? add `radius: streamTheme.radius.copyWith(xxxl: Radius.circular(<measured>))`. The bar paints its own chrome -
   its fill AND its top hairline (`Border(top:)` at bar level) - *outside* this input-slot scope: to
   retint the bar or kill the hairline, scope a second `Theme` with the same tokens around the **whole
   composer**.
@@ -607,7 +615,7 @@ via `StreamChat(componentBuilders: StreamComponentBuilders(extensions: streamCha
   tinted with the accent. Override `messageComposerLeading`: render the measured glyph and wire
   `props.onAttachmentButtonPressed`.
 - **Send presence.** Disable the mic the source doesn't have (`enableVoiceRecording: false`) - but the
-  stock trailing then renders a **persistent enabled send**, where Sendbird **hides send on an empty
+  stock trailing then renders a **persistent send, disabled while empty**, where Sendbird **hides send on an empty
   field**. Override `messageComposerInputTrailing`: listen to `props.controller`, return
   `SizedBox.shrink()` while the text is empty, else the accent-tinted send calling
   `props.onSendPressed`. The default slot is a **state machine** (slow-mode countdown | voice UI |
@@ -682,13 +690,13 @@ messageContent: (context, props) {
     child: Column(
       crossAxisAlignment: StreamMessageLayout.crossAxisAlignmentOf(context),
       children: [
-        ?props.header,
+        if (props.header != null) props.header!,
         Row(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [Flexible(child: props.child), _timeReceipt(message)], // child = bubble + reactions + replies row
         ),
-        ?props.footer,
+        if (props.footer != null) props.footer!,
       ],
     ),
   );
