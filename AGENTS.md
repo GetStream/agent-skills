@@ -12,7 +12,7 @@ This repository contains the Stream skill pack. Skill source lives under `skills
 | [`skills/stream-react-native/SKILL.md`](skills/stream-react-native/SKILL.md) | Build or integrate Stream Chat/Video/Feeds in React Native or Expo apps |
 | [`skills/stream-swift/SKILL.md`](skills/stream-swift/SKILL.md) | Build or integrate Stream Chat/Video/Feeds in Swift/SwiftUI/UIKit/iOS apps, including AI assistants and agentic chat (StreamChatAI) |
 | [`skills/stream-android/SKILL.md`](skills/stream-android/SKILL.md) | Build or integrate Stream Chat/Video/Feeds in Android/Jetpack Compose apps, including AI assistants and agentic chat (`stream-chat-android-ai-compose`) |
-| [`skills/stream-flutter/SKILL.md`](skills/stream-flutter/SKILL.md) | Build or integrate Stream Chat in Flutter apps (stream_chat_flutter and stream_chat_flutter_core) |
+| [`skills/stream-flutter/SKILL.md`](skills/stream-flutter/SKILL.md) | Build or integrate Stream Chat, Video, and Feeds in Flutter apps (stream_chat_flutter, stream_chat_flutter_core, stream_video_flutter, stream_feeds) |
 | [`skills/stream-unity/SKILL.md`](skills/stream-unity/SKILL.md) | Build or integrate Stream Chat and Stream Video in Unity Engine projects (C#). Chat + Video - no Feeds SDK for Unity |
 | [`skills/stream-unreal/SKILL.md`](skills/stream-unreal/SKILL.md) | Build or integrate Stream Chat in Unreal Engine 5.7/5.8 projects (C++ and Blueprint). Chat only - no Video or Feeds SDK for Unreal |
 | [`skills/stream-feeds-migration/SKILL.md`](skills/stream-feeds-migration/SKILL.md) | Generate the v2 -> v3 Activity Feeds sync mapping by sampling the v2 app's live activities and reactions, and by reading the app's v2 integration code when it is available. No CLI and no project required - it emits a config object |
