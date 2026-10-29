@@ -52,6 +52,8 @@ dependencies {
 }
 ```
 
+The SDK brings Compose in only at runtime, so the app's own Composables need the Compose BOM plus `androidx.compose.foundation:foundation` and `androidx.compose.material3:material3` in the app module; without them `Column`, `Text`, and `MaterialTheme` don't resolve.
+
 If you don't know the latest version, look it up via the sources listed in [`RULES.md` -> Version lookup](../RULES.md#version-lookup) (Maven Central / GitHub releases). Never use `search.maven.org`.
 
 Mandatory permissions are declared in the SDK's library manifest and merged automatically — you do **not** need to add them to your app manifest. You **do** need to request `CAMERA` / `RECORD_AUDIO` at runtime before joining a call (see [Permissions](#permissions)).
@@ -63,6 +65,7 @@ Build the `StreamVideo` client **once** at app launch via `StreamVideoBuilder(..
 ```kotlin
 import android.app.Application
 import android.content.pm.ApplicationInfo
+import io.getstream.log.Priority
 import io.getstream.video.android.core.StreamVideo
 import io.getstream.video.android.core.StreamVideoBuilder
 import io.getstream.video.android.core.logging.LoggingLevel
@@ -133,7 +136,7 @@ Token generation: `getstream token <user_id>` (same CLI as Chat - see [`credenti
 `TokenProvider` has a single `suspend` method. The SDK invokes it automatically when the token expires:
 
 ```kotlin
-import io.getstream.video.android.core.TokenProvider
+import io.getstream.video.android.core.socket.common.token.TokenProvider
 
 val tokenProvider = object : TokenProvider {
     override suspend fun loadToken(): String =
@@ -153,10 +156,19 @@ StreamVideoBuilder(
 
 ### Disconnecting / switching users
 
-Tear the client down explicitly before constructing a new one for a different user:
+Tear the client down explicitly before constructing a new one for a different user. Delete the push device first: `logOut()` only clears the local token cache and leaves the device registered to the old user, so their calls keep reaching the phone after logout.
 
 ```kotlin
-StreamVideo.instance().logOut()
+import io.getstream.result.Result
+import kotlinx.coroutines.flow.first
+
+// inside a suspend function
+val streamVideo = StreamVideo.instance()
+val device = streamVideo.getDevice().first()
+if (device != null && streamVideo.deleteDevice(device) is Result.Failure) {
+    // Keep the user signed in and let them retry: the device would keep ringing for them.
+    return
+}
 StreamVideo.removeClient()
 
 // Then build again with the new user/token
@@ -488,7 +500,7 @@ A failed WebSocket connection prevents calls from being established.
 ### Ringing call issues
 
 - **App in foreground:** ringing UI shows via the active socket. Fix connection issues first.
-- **App in background or killed:** requires push notification + a foreground service. The SDK ships a default service config in `NotificationConfig` — don't strip it from the merged manifest.
+- **App in background or killed:** requires a dashboard push provider, a push device generator on the builder, and a client built in `Application.onCreate` from a saved session - see the [Ringing with Push Blueprint](VIDEO-COMPOSE-blueprints.md#ringing-with-push-blueprint). Don't strip the SDK's call permissions or service from the merged manifest.
 - **Calling yourself** — caller and callee must be different users; a user cannot ring themselves.
 - **Unknown member** — the callee must have connected to Stream at least once so the platform knows their device token.
 - **Reused call ID** — ringing fires only once per call ID. Use a fresh `UUID().toString()` (or a server-issued id) for every ringing call.
