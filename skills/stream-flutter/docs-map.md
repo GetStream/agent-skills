@@ -117,8 +117,20 @@ All page URLs end in `.md` (the Markdown twin - see [`SKILL.md`](SKILL.md)). Fet
 | Go-live checklist / best practices | `https://getstream.io/chat/docs/sdk/flutter/guides/go-live-checklist.md`, `https://getstream.io/chat/docs/flutter-dart/best-practices.md` |
 | Rate limits / query budget | `https://getstream.io/chat/docs/flutter-dart/rate-limits.md`, `https://getstream.io/chat/docs/flutter-dart/api-budget.md` |
 | Livestream chat | `https://getstream.io/chat/docs/sdk/flutter/guides/adding-chat-to-video-livestreams.md`, `https://getstream.io/chat/docs/sdk/flutter/guides/livestream-best-practices.md` |
-| AI assistants | `https://getstream.io/chat/docs/sdk/flutter/guides/ai-integrations.md`, `https://getstream.io/chat/docs/sdk/flutter/guides/ai-integrations/stream-chat-integration.md`, `https://getstream.io/chat/docs/sdk/flutter/guides/ai-integrations/client-side-tools.md` |
 | Custom CDN / E2E encryption / Sentry | `https://getstream.io/chat/docs/sdk/flutter/client/custom-cdn.md`, `https://getstream.io/chat/docs/sdk/flutter/guides/message-encryption.md`, `https://getstream.io/chat/docs/sdk/flutter/guides/error-reporting-with-sentry.md` |
+
+### AI integrations
+
+For build / integrate work, run [`ai-integration.md`](ai-integration.md) first - it settles `^0.1.0` vs the pinned `main` commit of `stream_chat_flutter_ai`, carries the wiring the docs leave out, and links the shared backend contract. These pages cover the 0.1.0 components; for `AIConversationView`, agent steps, approvals, `AIClientToolRunner` and the voice views, read the package `README.md` at the pinned commit (source table below).
+
+| Want to ... | Page (.md) |
+|---|---|
+| AI components (`StreamingMessageView`, `AITypingIndicatorView`, `ChatComposer`, `AISuggestionsView`, `SpeechToTextButton`, charts), install, platform permissions, theming, best practices (`ai_generated`, indicator events, stop, ephemeral updates) | `https://getstream.io/chat/docs/sdk/flutter/guides/ai-integrations.md` |
+| AI rows in the `stream_chat_flutter` message list, the indicator handler, send and stop, the import `hide` list | `https://getstream.io/chat/docs/sdk/flutter/guides/ai-integrations/stream-chat-integration.md` |
+| Client-side tools over `custom_client_tool_invocation` events (`AIClientTool`, `AIToolRegistry`) | `https://getstream.io/chat/docs/sdk/flutter/guides/ai-integrations/client-side-tools.md` |
+| Backend agent with the Vercel AI SDK (`@stream-io/chat-ai-sdk`) | `https://getstream.io/chat/docs/sdk/flutter/guides/ai-integrations/stream-chat-ai-sdk.md` |
+| Backend agent with LangChain (`@stream-io/chat-langchain-sdk`) | `https://getstream.io/chat/docs/sdk/flutter/guides/ai-integrations/stream-chat-langchain-sdk.md` |
+| Stream Agents (Vision Agents): the agent folder, sessions, voice, tools | `getstream docs agents/flutter` (local docs via the CLI), then [`ai-integration.md`](ai-integration.md) shape E |
 
 ---
 
@@ -148,7 +160,7 @@ All page URLs end in `.md` (the Markdown twin - see [`SKILL.md`](SKILL.md)). Fet
 | Custom call data | `https://getstream.io/video/docs/flutter/advanced/custom-data.md` |
 | End-to-end encryption | `https://getstream.io/video/docs/flutter/guides/end-to-end-encryption.md` |
 | Participant sorting | `https://getstream.io/video/docs/flutter/guides/sorting-api.md` |
-| Closed captions / transcription | `https://getstream.io/video/docs/flutter/guides/closed-captions.md`, `https://getstream.io/video/docs/flutter/ui-cookbook/transcriptions.md` |
+| Closed captions / transcription (a voice agent's transcript shown as a conversation: [`ai-integration.md`](ai-integration.md) shape E) | `https://getstream.io/video/docs/flutter/guides/closed-captions.md`, `https://getstream.io/video/docs/flutter/ui-cookbook/transcriptions.md` |
 | Reactions | `https://getstream.io/video/docs/flutter/guides/reactions.md`, `https://getstream.io/video/docs/flutter/ui-cookbook/reactions.md` |
 
 ### Call UI
@@ -253,6 +265,8 @@ For a specific customization or behavior the docs do not cover - an exact compon
 | Chat theming + base components | `stream-core-flutter` | `stream_core_flutter` (`StreamTheme`, `StreamComponentBuilders`, `StreamColorScheme`) | - |
 | Video | `stream-video-flutter` | `packages/stream_video`, `stream_video_flutter`, `stream_video_push_notification`, `stream_video_filters` | `dogfooding/`, `packages/*/example/` |
 | Feeds | `stream-feeds-flutter` | `packages/stream_feeds` | `sample_app/` |
+| AI components | `stream-chat-flutter-ai` (read at the pinned commit `e7a0d2a`) | `packages/stream_chat_flutter_ai` (`README.md`, `CHANGELOG.md` "Upcoming") | `packages/stream_chat_flutter_ai/example/`; `chat-ai-samples` `flutter/` (on 0.1.0) |
+| Stream Agents (Vision Agents) | `Vision-Agents`, `accelerate` branch | `sdks/dart/core`, `sdks/dart/chat`, `sdks/dart/rtc` (`sdks/dart/README.md`) | `examples/voice_agents/flutter_demo` (branch `claude/flutter-demo-parity-b6ccd3` until Vision-Agents#1327 merges) |
 
 How to search (prefer the version-accurate local checkout - no network, matches what the project compiles):
 

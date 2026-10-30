@@ -119,6 +119,17 @@ This skill targets **`stream_chat_flutter` / `stream_chat_flutter_core` v10**. v
 
 ---
 
+## AI and LLM integrations
+
+Runbook: [`ai-integration.md`](ai-integration.md); shared contract: [`../stream/ai-backend-contract.md`](../stream/ai-backend-contract.md). The non-negotiables:
+
+- **The model runs on a backend agent, never in the app.** No LLM provider key, Stream secret, or admin token in the Flutter app, and no "call the LLM from the device, then post the answer" shortcut.
+- **Always state the backend contract** (`ai_generated`, `generating: true/false`, one partially-updated message, `ai_indicator.*`, honor stop) to the developer, and run its CLI check before debugging Dart code.
+- **`stream_chat_flutter_ai` is the AI component library** (no Stream Chat dependency; Dart 3.11+, Flutter 3.41+). `^0.1.0` from pub.dev has the streaming text, indicator, composer, suggestions and client-tool registry; `AIConversationView`, agent steps, approvals, `AIClientToolRunner` and the voice views come from the package's `main` pinned to `e7a0d2a` until 0.2.0 is released - say which you took. Next to `stream_chat_flutter`, resolve it at 10.6.0+ and import it with the AI widget names hidden ([`ai-integration.md`](ai-integration.md) Step 0).
+- **Show an AI conversation with `AIConversationView`, never a hand-built list.** The alternative is the `stream_chat_flutter` message list with AI rows from `messageBuilder`, for a conversation that needs messenger features or a channel the app already shows with the UI kit. A Stream Agents (Vision Agents) app renders with these components too: add `vision_agents_core` / `_chat` / `_rtc` only (no `_chat` next to the UI kit), and ask through the session ([`ai-integration.md`](ai-integration.md) shape E).
+
+---
+
 ## Video
 
 ### Build blockers (the docs do not cover these)

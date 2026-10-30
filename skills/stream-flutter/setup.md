@@ -152,6 +152,7 @@ Use `flutter pub add` so pub resolves the current release; install only what the
 | Video / livestream / audio rooms | `stream_video_flutter` | `stream_video` - re-exported |
 | Video extras | `stream_video_push_notification` (ringing), `stream_video_filters`, `stream_video_noise_cancellation`, `stream_video_screen_sharing` (iOS broadcast) - same version as `stream_video_flutter` | - |
 | Feeds | `stream_feeds`, plus `flutter_state_notifier` for `StateNotifierBuilder` (`stream_feeds` only depends on the pure-Dart `state_notifier`) | never `stream_feed` / `stream_feed_flutter_core` |
+| AI assistants / agents | `stream_chat_flutter_ai` - `^0.1.0`, or the pinned `main` commit for `AIConversationView`, agent steps and the voice views; [`ai-integration.md`](ai-integration.md) Step 0 picks | the Vision Agents views package - [`ai-integration.md`](ai-integration.md) shape E |
 
 SDK floors (Dart / Flutter versions) are in each package's `pubspec.yaml` `environment:` (e.g. `stream_chat_flutter` 10.6 needs Flutter >= 3.44). For per-platform requirements, fetch the product's install page from [`docs-map.md`](docs-map.md) (Chat "Install packages", Video "Install packages + platform permissions", Feeds "install" in the Feeds intro).
 
