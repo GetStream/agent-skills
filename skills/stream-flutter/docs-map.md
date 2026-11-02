@@ -121,16 +121,17 @@ All page URLs end in `.md` (the Markdown twin - see [`SKILL.md`](SKILL.md)). Fet
 
 ### AI integrations
 
-For build / integrate work, run [`ai-integration.md`](ai-integration.md) first - it installs `stream_chat_flutter_ai`, carries the wiring the docs leave out, and links the shared backend contract. Where these pages stop (`AIConversationView`, agent steps, approvals, `AIClientToolRunner`, the voice views), read the package `README.md` (source table below).
+For build / integrate work, run [`ai-integration.md`](ai-integration.md) first - it installs `stream_chat_flutter_ai`, carries the wiring the docs leave out, and links the shared backend contract. Where these pages stop, read the package `README.md` (source table below).
 
 | Want to ... | Page (.md) |
 |---|---|
-| AI components (`StreamingMessageView`, `AITypingIndicatorView`, `ChatComposer`, `AISuggestionsView`, `SpeechToTextButton`, charts), install, platform permissions, theming, best practices (`ai_generated`, indicator events, stop, ephemeral updates) | `https://getstream.io/chat/docs/sdk/flutter/guides/ai-integrations.md` |
+| AI components (`StreamingMessageView`, `AITypingIndicatorView`, `ChatComposer`, `AISuggestionsView`, `SpeechToTextButton`, charts, `AIReplyActionsView`, the on-device model, the voice views), install, platform requirements, replacing components, theming, best practices (`ai_generated`, indicator events, stop, ephemeral updates) | `https://getstream.io/chat/docs/sdk/flutter/guides/ai-integrations.md` |
+| An assistant-style conversation (`AIConversationView`): messages from Stream Chat as `AIMessage`, thinking, a message while it's sent, older messages, footer, reply actions, attachments | `https://getstream.io/chat/docs/sdk/flutter/guides/ai-integrations/conversation-view.md` |
 | AI rows in the `stream_chat_flutter` message list, the indicator handler, send and stop, the import `hide` list | `https://getstream.io/chat/docs/sdk/flutter/guides/ai-integrations/stream-chat-integration.md` |
-| Client-side tools over `custom_client_tool_invocation` events (`AIClientTool`, `AIToolRegistry`) | `https://getstream.io/chat/docs/sdk/flutter/guides/ai-integrations/client-side-tools.md` |
+| Reasoning and tool-call steps (`AIMessagePartsView`), tool approvals (`AIToolApprover`), tool sign-ins (`AIToolAuthorizer`), the step format | `https://getstream.io/chat/docs/sdk/flutter/guides/ai-integrations/reasoning-and-tool-calls.md` |
+| Device tools: `AIClientToolRunner` for agent steps (results go back to the model), `AIToolRegistry` for `custom_client_tool_invocation` events, `AIClientIdentity.installId()` | `https://getstream.io/chat/docs/sdk/flutter/guides/ai-integrations/client-side-tools.md` |
 | Backend agent with the Vercel AI SDK (`@stream-io/chat-ai-sdk`) | `https://getstream.io/chat/docs/sdk/flutter/guides/ai-integrations/stream-chat-ai-sdk.md` |
 | Backend agent with LangChain (`@stream-io/chat-langchain-sdk`) | `https://getstream.io/chat/docs/sdk/flutter/guides/ai-integrations/stream-chat-langchain-sdk.md` |
-| Stream Agents (Vision Agents): the agent folder, sessions, voice, tools | `getstream docs agents/flutter` (local docs via the CLI), then [`ai-integration.md`](ai-integration.md) shape E |
 
 ---
 
@@ -160,7 +161,7 @@ For build / integrate work, run [`ai-integration.md`](ai-integration.md) first -
 | Custom call data | `https://getstream.io/video/docs/flutter/advanced/custom-data.md` |
 | End-to-end encryption | `https://getstream.io/video/docs/flutter/guides/end-to-end-encryption.md` |
 | Participant sorting | `https://getstream.io/video/docs/flutter/guides/sorting-api.md` |
-| Closed captions / transcription (a transcript of a voice agent not on Stream Agents, shown as a conversation: [`ai-integration.md`](ai-integration.md) "A voice agent's transcript as a conversation") | `https://getstream.io/video/docs/flutter/guides/closed-captions.md`, `https://getstream.io/video/docs/flutter/ui-cookbook/transcriptions.md` |
+| Closed captions / transcription (a voice agent's transcript shown as a conversation: [`ai-integration.md`](ai-integration.md) "Shape E") | `https://getstream.io/video/docs/flutter/guides/closed-captions.md`, `https://getstream.io/video/docs/flutter/ui-cookbook/transcriptions.md` |
 | Reactions | `https://getstream.io/video/docs/flutter/guides/reactions.md`, `https://getstream.io/video/docs/flutter/ui-cookbook/reactions.md` |
 
 ### Call UI
@@ -265,7 +266,7 @@ For a specific customization or behavior the docs do not cover - an exact compon
 | Chat theming + base components | `stream-core-flutter` | `stream_core_flutter` (`StreamTheme`, `StreamComponentBuilders`, `StreamColorScheme`) | - |
 | Video | `stream-video-flutter` | `packages/stream_video`, `stream_video_flutter`, `stream_video_push_notification`, `stream_video_filters` | `dogfooding/`, `packages/*/example/` |
 | Feeds | `stream-feeds-flutter` | `packages/stream_feeds` | `sample_app/` |
-| AI components | `stream-chat-flutter-ai` | `packages/stream_chat_flutter_ai` (`README.md`, `CHANGELOG.md`) | `packages/stream_chat_flutter_ai/example/`; `chat-ai-samples` `flutter/` |
+| AI components | `stream-chat-flutter-ai` | `packages/stream_chat_flutter_ai` (`README.md`, `CHANGELOG.md`) | `packages/stream_chat_flutter_ai/example/` |
 
 How to search (prefer the version-accurate local checkout - no network, matches what the project compiles):
 

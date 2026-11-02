@@ -9,7 +9,7 @@ Shared by the platform AI runbooks ([`../stream-react/ai-integration.md`](../str
 - Stream's server SDKs: `@stream-io/chat-ai-sdk` (Vercel AI SDK) or `@stream-io/chat-langchain-sdk` - docs pages "Stream Chat AI SDK" / "Stream Chat LangChain SDK" in the platform's Chat docs. Or the user's own agent that follows the contract below.
 - The agent holds a long-lived WebSocket to the channel, so it runs as **its own long-lived process** (the reference server, or `AgentManager` in a long-lived service) - **not** a serverless function or a Next.js route handler.
 - The app calls its start / stop endpoints through an **authenticated** route, so anonymous callers cannot start agents on the LLM bill. Allowlist the model / platform on the server - a model picker's value is only a hint.
-- Reference backends: `GetStream/chat-ai-samples` `ai-sdk-sample` and `langchain-sample` (both expose `/start-ai-agent`, `/stop-ai-agent`, `/summarize`; READMEs cover run + `.env`).
+- Reference backends: `GetStream/chat-ai-samples` `ai-sdk-sample` and `langchain-sample` (both expose `/start-ai-agent`, `/stop-ai-agent`, `/summarize`; READMEs cover run + `.env`). `/start-ai-agent` takes `{channel_id, channel_type, platform, model}` (`channel_type` defaults to `messaging`) and adds its bot to the channel; `/stop-ai-agent` takes `{channel_id}`. Stop the agent when the person leaves the conversation; `AgentManager` also stops idle agents after its inactivity threshold.
 
 If it is unclear whether a backend exists, ask one question:
 
