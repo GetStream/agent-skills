@@ -1,6 +1,6 @@
 ---
 name: stream-android
-description: "Build and integrate Stream Chat, Video, and Feeds in Android apps. Use for Jetpack Compose, Android Studio, and Gradle project work - including Stream package setup, auth and token wiring, screen blueprints, AI assistants and LLM chat (ChatGPT-style apps, streaming replies, thinking indicators, stop generating) with stream-chat-android-ai-compose, and any follow-up Stream UI work such as adding screens, navigating between channel list and channel/message screens, channel tap handling, deep links, push routing, theming, custom channel/message UI, video calling flows (joining/starting calls, ringing, custom call controls and participant tiles), and Feeds surfaces (timeline, activity composer, threaded comments, follow graph / profile, notification feed, stories)."
+description: "Build, integrate, and review Stream Chat, Video, and Feeds in Android apps. Use for Jetpack Compose, Android Studio, and Gradle project work - including Stream package setup, auth and token wiring, screen blueprints, read-only integration reviews before going live, AI assistants and LLM chat (ChatGPT-style apps, streaming replies, thinking indicators, stop generating) with stream-chat-android-ai-compose, and any follow-up Stream UI work such as adding screens, navigating between channel list and channel/message screens, channel tap handling, deep links, push routing, theming, custom channel/message UI, video calling flows (joining/starting calls, ringing, custom call controls and participant tiles), and Feeds surfaces (timeline, activity composer, threaded comments, follow graph / profile, notification feed, stories)."
 license: See LICENSE in repository root
 compatibility: Requires an Android Studio / Gradle project (Kotlin). The `getstream` CLI (binary name `getstream`) is the default path for the credentials flow (API key fetch, token mint, and any product-specific setup - see `credentials.md`); only optional when the user pastes the API key and token themselves.
 metadata:
@@ -48,6 +48,7 @@ Before any tool call, decide the **track** from the user's input alone - no prob
 | "Build a ChatGPT-style app", "add an AI assistant / support bot / copilot", "stream the LLM response", "thinking indicator", "stop generating", "voice input to the AI", LangChain, Vercel AI SDK, `stream-chat-android-ai-compose` | **A** (new app) or **B** (existing app), then run [`ai-integration.md`](ai-integration.md) for the integration step; **C** if the user only asks how one AI component works |
 | Request carries a **target appearance** - a screenshot, a Figma frame, or "make the chat look like WhatsApp / Telegram / Slack / \<app\>" | **B (or A)** + the **styling-depth flag** below -> [`design-matching.md`](design-matching.md) |
 | "Migrate from Sendbird", "replace the Sendbird Chat SDK with Stream", "we're switching off Sendbird / SendbirdUIKit / uikit-compose" | **B** + the **migration flag** below -> [`sendbird-migration.md`](sendbird-migration.md) |
+| "Review / audit / check my Stream integration", "is this ready for production?", "prepare for the integration review" | **R - Integration review** (read-only) |
 | Bare `/stream-android` with no args | List the tracks briefly and wait |
 
 ### Disambiguation flow
@@ -60,6 +61,7 @@ If the request is ambiguous between **build/integrate** and **reference lookup**
 
 - **Tracks A, B, D** -> run **Step 0.5 (credentials)** first, **then Project signals** once per session, then continue in [`builder.md`](builder.md) and [`sdk.md`](sdk.md). Do not probe the project before credentials.
 - **Track C** -> skip both steps if the product + UI layer are explicit. Only run Project signals on demand if the SDK or UI layer is ambiguous.
+- **Track R** -> skip credentials and Project signals (the review locates the integration itself); follow stream skill's integration-review.md with [`integration-review.md`](integration-review.md) for the Android checks. Report first; change code only if asked.
 
 ### Migration flag (orthogonal to the track)
 
@@ -112,6 +114,7 @@ Use the result to produce a **one-line status**, for example:
 | B - Existing app | [`builder.md`](builder.md) + [`sdk.md`](sdk.md) + relevant reference files |
 | C - Reference lookup | [`sdk.md`](sdk.md) + relevant reference files |
 | D - Bootstrap / setup | [`builder.md`](builder.md) + [`sdk.md`](sdk.md) |
+| R - Integration review | stream skill's integration-review.md + [`integration-review.md`](integration-review.md) |
 
 ---
 

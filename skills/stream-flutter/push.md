@@ -84,7 +84,7 @@ getstream api UpsertPushProvider --request "$(jq -n --rawfile key /path/AuthKey_
 - `google-services.json` in `android/app/`; apply `com.google.gms.google-services` in `android/app/build.gradle.kts` (`id("com.google.gms.google-services")`) and declare its version in `android/settings.gradle.kts` (Kotlin DSL - Groovy snippets do not parse).
 - `android:launchMode="singleInstance"` (or `singleTask`) on the main `<activity>` so notification taps do not stack call screens.
 - Manifest: `POST_NOTIFICATIONS` plus the Video permissions from the install page (foreground-service permissions come from the plugin). Request `POST_NOTIFICATIONS` at runtime on Android 13+ and `BLUETOOTH_CONNECT` before calls; on Android 14+ call `StreamVideoPushNotificationManager.ensureFullScreenIntentPermission()` for lock-screen ringing.
-- **Android 17 Telecom:** the ringing flow registers calls with Jetpack Telecom by default on Android 17+ devices (`AndroidPushConfiguration(telecom: TelecomPushConfiguration(...))`). For an app targeting API 37+, Android 17 drops the ringtone of a push-started call unless it is in Telecom - so keep Telecom enabled unless the app rings some other way. The plugin needs a JDK 17+ Gradle build. Details: the Telecom section of `https://getstream.io/video/docs/flutter/advanced/incoming-calls/android-firebase-integration.md`.
+- **Android 17 Telecom:** the ringing flow registers calls with Jetpack Telecom by default on Android 17+ devices (`AndroidPushConfiguration(telecom: TelecomPushConfiguration(...))`). The plugin needs a JDK 17+ Gradle build. Details: the Telecom section of `https://getstream.io/video/docs/flutter/advanced/incoming-calls/android-firebase-integration.md`.
 
 ---
 

@@ -18,6 +18,7 @@ Use this table to resolve a user request to the section(s) you must read before 
 | "join a call", "call lobby", "enter call ID", join-or-create flow | [Home / Join-or-Start Call Blueprint](#home--join-or-start-call-blueprint) |
 | "active call screen", `CallContent`, in-call UI, layout switcher | [Active Call Blueprint (CallContent)](#active-call-blueprint-callcontent) |
 | "ringing", incoming call, outgoing call, accept/decline, `RingingCallContent` | [Ringing Call Blueprint](#ringing-call-blueprint) |
+| ring when the app is closed or in the background, call push notifications, "phone doesn't ring", Firebase for calls | [Ringing with Push Blueprint](#ringing-with-push-blueprint) |
 | "custom controls", mic/camera/leave bar, replace control buttons | [Custom Call Controls Blueprint](#custom-call-controls-blueprint) |
 | "custom participant tile", custom video renderer, participant overlay | [Custom Participant Tile Blueprint](#custom-participant-tile-blueprint) |
 | "participant grid", custom layout, local PiP | [Participant Grid Blueprint](#participant-grid-blueprint) |
@@ -91,11 +92,17 @@ Register it in `AndroidManifest.xml`:
 Stream Video's "connect user" is `StreamVideoBuilder(... user = ..., token = ...).build()` — there is no separate `connectUser` call like Chat. To support a login screen, defer the `build()` until after the user picks an identity.
 
 ```kotlin
+import android.content.Intent
+import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 import io.getstream.video.android.compose.theme.VideoTheme
 import io.getstream.video.android.core.StreamVideo
 import io.getstream.video.android.core.StreamVideoBuilder
@@ -119,6 +126,7 @@ class LoginActivity : ComponentActivity() {
 
 @Composable
 fun LoginScreen(onConnected: () -> Unit) {
+    val context = LocalContext.current.applicationContext
     var userId by remember { mutableStateOf("") }
     var name by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
@@ -145,11 +153,13 @@ fun LoginScreen(onConnected: () -> Unit) {
                 runCatching {
                     // Demo wiring only. In production, fetch the token from your backend and pass
                     // a tokenProvider into StreamVideoBuilder instead of a static string.
+                    // Ringing apps: StreamSession.connect(...), then SessionStore(context).save(...)
+                    // from the Ringing with Push Blueprint instead.
                     StreamVideoBuilder(
-                        context = applicationContext,
-                        apiKey = "your_api_key",
+                        context = context,
+                        apiKey = BuildConfig.STREAM_API_KEY,
                         user = User(id = userId, name = name.ifBlank { userId }),
-                        token = "your_static_token_here",
+                        token = Config.USER_TOKEN,
                     ).build()
                     onConnected()
                 }.onFailure { error = it.message }
@@ -161,8 +171,8 @@ fun LoginScreen(onConnected: () -> Unit) {
 
 **Wiring:**
 - For an expiring token, swap the `token` argument for both an initial token and a `tokenProvider` (see [VIDEO-COMPOSE.md - User Authentication](VIDEO-COMPOSE.md#user-authentication)).
-- Auto-reconnect across app launches: check `StreamVideo.instanceOrNull() != null` before showing the login screen.
-- To switch users, call `StreamVideo.instance().logOut()` then `StreamVideo.removeClient()` before the new `build()`.
+- Skipping login on the next launch needs a saved session that `Application.onCreate` builds the client from: in a new process `StreamVideo.instanceOrNull()` is `null` until something calls `build()`. If the app rings with push, it needs this anyway - save the session and connect through `StreamSession.connect` from the [Ringing with Push Blueprint](#ringing-with-push-blueprint) instead of calling the builder here.
+- To switch users, delete the push device (the device from `getDevice().first()`; stop if `deleteDevice` fails), then call `StreamVideo.removeClient()` before the new `build()`. `logOut()` only clears the local token cache and leaves the device registered.
 
 ---
 
@@ -171,17 +181,28 @@ fun LoginScreen(onConnected: () -> Unit) {
 Gate the app on whether the video client has been built. Skips login if a previous session is still alive.
 
 ```kotlin
+import androidx.compose.runtime.rememberCoroutineScope
+import io.getstream.result.Result
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+
 @Composable
 fun RootScreen() {
     var isConnected by remember { mutableStateOf(StreamVideo.instanceOrNull() != null) }
+    val scope = rememberCoroutineScope()
 
     if (isConnected) {
         VideoTheme {
             HomeScreen(
                 onLogout = {
-                    StreamVideo.instance().logOut()
-                    StreamVideo.removeClient()
-                    isConnected = false
+                    scope.launch {
+                        val streamVideo = StreamVideo.instance()
+                        val device = streamVideo.getDevice().first()
+                        // On a failed delete, stay signed in: the device would keep ringing for this user.
+                        if (device != null && streamVideo.deleteDevice(device) is Result.Failure) return@launch
+                        StreamVideo.removeClient()
+                        isConnected = false
+                    }
                 },
             )
         }
@@ -411,6 +432,173 @@ Button(onClick = { scope.launch { call.reject(); call.leave() } }) { Text("Rejec
 - `call.reject()` rejects the call for the current user; pair with `leave()` to drop any local references.
 - `RingingCallContent` exposes `onIncomingContent` and `onOutgoingContent` slots if you want to fully replace the default ringing UIs — match the lambda signatures defined in the SDK source.
 - `onAcceptedContent` is **required** (no default).
+- This section rings only while the app is open and connected. For calls that ring with the app in the background or killed, also follow the [Ringing with Push Blueprint](#ringing-with-push-blueprint).
+
+---
+
+## Ringing with Push Blueprint
+
+Calls that ring when the app is in the background or killed. Four pieces must all be in place, and a missing one fails silently - the phone just doesn't ring:
+
+1. a Firebase push provider in the Stream dashboard
+2. the Firebase push artifact and a `FirebasePushDeviceGenerator` on the builder
+3. a saved session, so `Application.onCreate` can build the client before the push is handled
+4. an incoming-call screen that can open over the lock screen
+
+**1. Dashboard push provider.** It needs the Firebase service-account JSON (Firebase console -> Project settings -> Service accounts). Create a Firebase provider named `firebase` in the dashboard (Push Notifications -> New Configuration), or with `getstream api UpsertPushProvider` (`--schema` prints the body). The JSON and the app's `google-services.json` come from the user - never invent them.
+
+**2. Gradle.** Add the Firebase push artifact and the Google services plugin:
+
+```kotlin
+// app/build.gradle.kts
+plugins {
+    id("com.google.gms.google-services")
+}
+
+dependencies {
+    implementation("io.getstream:stream-video-android-ui-compose:<video-version>")
+    implementation("io.getstream:stream-android-push-firebase:<push-version>")
+}
+```
+
+- `<push-version>`: the `stream-android-push` version the Video SDK already pulls in (`./gradlew :app:dependencies --configuration debugRuntimeClasspath | grep stream-android-push`), so the push modules stay on one version. Versions newer than Maven Central's are only on Stream's Maven repository (`maven("https://stream-io-repo.com")` under `dependencyResolutionManagement.repositories`).
+- Google services plugin: declare it in the root `plugins` block with `apply false`; the current version is the `<release>` in `https://dl.google.com/dl/android/maven2/com/google/gms/google-services/maven-metadata.xml`.
+- `google-services.json` goes in the app module. The build fails without it: until the user adds theirs, leave the plugin unapplied and tell them the app won't ring until it's there.
+
+**3. Session and client.** Save the user and last token at login, and build the client from them in `Application.onCreate` - no network call there. A push that arrives before `build()` is dropped ("StreamVideo is not initialised"). The token is a credential: keep it in app-private storage, as below.
+
+```kotlin
+package com.example.streamvideo
+
+import android.app.Application
+import android.content.Context
+import io.getstream.android.push.firebase.FirebasePushDeviceGenerator
+import io.getstream.video.android.core.StreamVideo
+import io.getstream.video.android.core.StreamVideoBuilder
+import io.getstream.video.android.core.notifications.NotificationConfig
+import io.getstream.video.android.core.socket.common.token.TokenProvider
+import io.getstream.video.android.model.User
+
+// BuildConfig.STREAM_API_KEY comes from `getstream env` (see credentials.md).
+
+data class Session(val userId: String, val name: String, val token: String)
+
+class SessionStore(context: Context) {
+    private val prefs = context.getSharedPreferences("stream_session", Context.MODE_PRIVATE)
+
+    fun load(): Session? {
+        val userId = prefs.getString("user_id", null) ?: return null
+        val token = prefs.getString("token", null) ?: return null
+        return Session(userId, prefs.getString("name", userId) ?: userId, token)
+    }
+
+    fun save(session: Session) {
+        prefs.edit()
+            .putString("user_id", session.userId)
+            .putString("name", session.name)
+            .putString("token", session.token)
+            .apply()
+    }
+
+    fun saveToken(token: String) = prefs.edit().putString("token", token).apply()
+
+    fun clear() = prefs.edit().clear().apply()
+}
+
+object StreamSession {
+    // Must match the provider name in the Stream dashboard.
+    private const val PUSH_PROVIDER_NAME = "firebase"
+
+    fun connect(context: Context, session: Session) {
+        // Already built for this process. Logout (below) removes the client
+        // before a different user connects.
+        if (StreamVideo.isInstalled) return
+        val store = SessionStore(context)
+        StreamVideoBuilder(
+            context = context.applicationContext,
+            apiKey = BuildConfig.STREAM_API_KEY,
+            user = User(id = session.userId, name = session.name),
+            token = session.token,
+            // With expiring tokens from your backend: called when the token
+            // expires. Omit it for a never-expiring `getstream token`.
+            tokenProvider = object : TokenProvider {
+                override suspend fun loadToken(): String =
+                    yourAuthService.fetchVideoToken(session.userId).also(store::saveToken)
+            },
+            notificationConfig = NotificationConfig(
+                pushDeviceGenerators = listOf(
+                    FirebasePushDeviceGenerator(
+                        providerName = PUSH_PROVIDER_NAME,
+                        context = context.applicationContext,
+                    ),
+                ),
+            ),
+        ).build()
+    }
+}
+
+class App : Application() {
+    override fun onCreate() {
+        super.onCreate()
+        val store = SessionStore(this)
+        val session = store.load() ?: return
+        // build() throws on a blank key or token; don't crash every launch on a bad session.
+        runCatching { StreamSession.connect(this, session) }.onFailure { store.clear() }
+    }
+}
+```
+
+At login, connect first and save the session only once `build()` returned: `StreamSession.connect(context, session)` then `SessionStore(context).save(session)` (see [Login / Connect User Blueprint](#login--connect-user-blueprint)).
+
+`build()` connects in the background and only logs a failure. Don't watch for `ConnectionState.Failed`: the client doesn't set it for its socket, and a rejected token ends as `ConnectionState.Disconnected`, the same state as a logout or a lost network. The `tokenProvider` covers expired tokens.
+
+At logout, delete the device, remove the client, and clear the session. Don't tear down on a failed delete: the device would stay registered to this user and keep ringing for them. In the [Root Navigation Blueprint](#root-navigation-blueprint), call this from `onLogout` in place of the inline teardown, so the session is cleared too.
+
+```kotlin
+import io.getstream.result.Result
+import kotlinx.coroutines.flow.first
+
+suspend fun logout(context: Context): Boolean {
+    val streamVideo = StreamVideo.instanceOrNull() ?: return true
+    val device = streamVideo.getDevice().first()
+    if (device != null && streamVideo.deleteDevice(device) is Result.Failure) return false
+    StreamVideo.removeClient()
+    SessionStore(context).clear()
+    return true
+}
+```
+
+**4. Incoming-call screen.** The Compose SDK registers `ComposeStreamCallActivity` for the incoming, accept, and outgoing call actions, with `showWhenLocked` and `turnScreenOn`, so a push opens it with no manifest changes. It handles accept, reject, permissions, and leaving. Use it as the only incoming UI: don't also render `RingingCallContent` from `state.ringingCall` in an app shell, or the app shows two incoming screens while it's open. Start outgoing calls through it too:
+
+```kotlin
+import android.content.Context
+import io.getstream.video.android.compose.ui.ComposeStreamCallActivity
+import io.getstream.video.android.core.notifications.NotificationHandler
+import io.getstream.video.android.model.StreamCallId
+import io.getstream.video.android.ui.common.StreamCallActivity
+import java.util.UUID
+
+fun startOutgoingCall(context: Context, calleeIds: List<String>) {
+    context.startActivity(
+        StreamCallActivity.callIntent(
+            context = context,
+            // A new ID per ringing call: a call ID rings only once.
+            cid = StreamCallId(type = "default", id = UUID.randomUUID().toString()),
+            members = calleeIds,
+            leaveWhenLastInCall = true,
+            action = NotificationHandler.ACTION_OUTGOING_CALL,
+            clazz = ComposeStreamCallActivity::class.java,
+        ),
+    )
+}
+```
+
+**Wiring:**
+- The SDK asks for `POST_NOTIFICATIONS` on launch (`NotificationConfig.requestPermissionOnAppLaunch`); without it no ringing notification shows on Android 13+.
+- Don't remove `USE_FULL_SCREEN_INTENT`, `FOREGROUND_SERVICE_PHONE_CALL`, or `POST_NOTIFICATIONS` from the merged manifest with `tools:node="remove"`.
+- A custom `FirebaseMessagingService` must forward to `FirebaseMessagingDelegate.handleRemoteMessage` and register new tokens with `FirebaseMessagingDelegate.registerFirebaseToken` - see `getstream docs video/android`, `advanced/incoming-calls/push-providers/firebase.md`.
+- To replace the SDK call screen, subclass `ComposeStreamCallActivity` and give the subclass the same intent actions, `showWhenLocked`, and `turnScreenOn` - see `advanced/incoming-calls/push-notifications.md`.
+- Test on two physical devices. Both users log in once first, which registers their devices; a user who never logged in has nothing to ring. Then swipe the app away on one and ring it from the other.
 
 ---
 
