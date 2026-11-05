@@ -1,13 +1,6 @@
 ---
 name: stream-react
-description:
-  "Build, integrate, audit, or upgrade Stream Chat, Video, Feeds, and Moderation
-  in React / Next.js web apps - the default skill for web work. Scaffold a new
-  app, add Stream to an existing project, review an integration, upgrade an SDK
-  major, or migrate from Sendbird. Covers team messaging, DMs, video
-  conferencing, livestreaming, social feeds, AI assistants, and apps built on
-  Stream Agents (voice and text agents, @stream-io/calypso). Web React only -
-  React Native uses stream-react-native."
+description: "Build, integrate, audit, or upgrade Stream Chat, Video, Feeds, and Moderation in React / Next.js web apps - the default skill for web work. Scaffold a new app, add Stream to an existing project, review an integration, upgrade an SDK major, or migrate from Sendbird. Covers team messaging, DMs, video conferencing, livestreaming, social feeds, AI assistants, and apps built on Stream Agents (voice and text agents, @stream-io/calypso). Web React only - React Native uses stream-react-native."
 license: See LICENSE in repository root
 metadata:
   author: GetStream

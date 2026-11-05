@@ -1,0 +1,21 @@
+name: Validate plugin
+
+# Runs the checks the Claude plugin directory applies to a submission, so a
+# change that would be refused fails here first. Bump the pinned Claude Code
+# version on purpose; the directory's checks change with it.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Validate plugin for the Claude plugin directory
+        run: npx -y @anthropic-ai/claude-code@2.1.318 plugin validate . --profile directory --strict

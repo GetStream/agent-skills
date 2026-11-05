@@ -1,12 +1,6 @@
 ---
 name: stream
-description:
-  "Stream overview, CLI, and router for Chat, Video, Feeds, Moderation, and
-  Agents. Use for any Stream task: building or integrating Stream into web, iOS,
-  Android, React Native, Flutter, Unity, or Unreal apps, building voice or text
-  AI agents with Stream Agents, querying Stream data, running
-  getstream CLI commands, looking up Stream SDK docs, or migrating (from
-  Sendbird, or Feeds v2 to v3). Routes to the right skill."
+description: "Stream overview, CLI, and router for Chat, Video, Feeds, Moderation, and Agents. Use for any Stream task: building or integrating Stream into web, iOS, Android, React Native, Flutter, Unity, or Unreal apps, building voice or text AI agents with Stream Agents, querying Stream data, running getstream CLI commands, looking up Stream SDK docs, or migrating (from Sendbird, or Feeds v2 to v3). Routes to the right skill."
 license: See LICENSE in repository root
 metadata:
   author: GetStream
