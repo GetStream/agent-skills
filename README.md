@@ -25,9 +25,9 @@ In Claude Code:
 /plugin install getstream@getstream
 ```
 
-Then run `/mcp` to sign in to the `stream` server.
+Then run `/mcp` to sign in to the `getstream` server.
 
-In Cursor, open **Customize**, search for Stream, and select **Install**. Sign in to the `stream` MCP server when Cursor asks.
+In Cursor, open **Customize**, search for Stream, and select **Install**. Sign in to the `getstream` MCP server when Cursor asks.
 
 Neither plugin includes the `getstream` CLI. [Install the Stream CLI](https://getstream.io/agent-skills/docs/installation/) yourself, or let the `stream` skill install it the first time a skill needs it.
 

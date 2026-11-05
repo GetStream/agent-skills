@@ -23,7 +23,7 @@
     "mcp"
   ],
   "mcpServers": {
-    "stream": {
+    "getstream": {
       "type": "http",
       "url": "https://mcp.getstream.io/mcp"
     }
