@@ -63,8 +63,10 @@ the block in one shell invocation so Python inherits the credentials.
 
 `<skill-dir>` is the directory holding this `SKILL.md`. Resolve it to an
 absolute path before running - the skill runs from whatever directory the user
-happens to be in, so a relative path only works by accident. `getstream skills`
-links the pack into one of two places, so it is one of:
+happens to be in, so a relative path only works by accident. Use the path this
+`SKILL.md` was loaded from: a plugin install keeps it in the agent's plugin
+folder, not in the project. If you do not have that path, `getstream skills`
+linked the pack into one of two places, so it is one of:
 
 - `.agents/skills/stream-feeds-migration` (Cursor, Codex)
 - `.claude/skills/stream-feeds-migration` (Claude Code)

@@ -7,7 +7,7 @@
   },
   "homepage": "https://getstream.io",
   "repository": "https://github.com/GetStream/agent-skills",
-  "license": "See LICENSE",
+  "license": "Apache-2.0",
   "keywords": [
     "stream",
     "chat",

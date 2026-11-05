@@ -8,7 +8,7 @@
   },
   "homepage": "https://getstream.io",
   "repository": "https://github.com/GetStream/agent-skills",
-  "license": "See LICENSE",
+  "license": "Apache-2.0",
   "keywords": [
     "stream",
     "chat",
@@ -21,10 +21,5 @@
     "mcp"
   ],
   "logo": "assets/logo.png",
-  "skills": "./skills/",
-  "mcpServers": {
-    "stream": {
-      "url": "https://mcp.getstream.io/mcp"
-    }
-  }
+  "skills": "./skills/"
 }
