@@ -25,9 +25,11 @@ In Claude Code:
 /plugin install stream@getstream
 ```
 
-Then run `/mcp` to sign in to the `stream` server. The Claude Code plugin also brings the `getstream` CLI: its launcher uses an installed CLI, or fetches one into `~/.stream/bin` the first time a skill runs it.
+Then run `/mcp` to sign in to the `stream` server.
 
-In Cursor, open **Customize**, search for Stream, and select **Install**. Sign in to the `stream` MCP server when Cursor asks. The Cursor plugin does not bring the CLI, so [install the Stream CLI](https://getstream.io/agent-skills/docs/installation/) too.
+In Cursor, open **Customize**, search for Stream, and select **Install**. Sign in to the `stream` MCP server when Cursor asks.
+
+Neither plugin includes the `getstream` CLI. [Install the Stream CLI](https://getstream.io/agent-skills/docs/installation/) yourself, or let the `stream` skill install it the first time a skill needs it.
 
 Use `/stream` for generic routing, or invoke a skill directly with `/stream-react`, `/stream-swift`, `/stream-android`, `/stream-react-native`, `/stream-flutter`, `/stream-unity`, `/stream-feeds-migration`, or `/stream-unreal`. SDK documentation is available through `getstream docs`. Step-by-step instructions are in the [installation guide](https://getstream.io/agent-skills/docs/installation/).
 
@@ -53,7 +55,11 @@ For older CLI installations, [`stream-builder`](skills/stream-builder/SKILL.md) 
 
 ## What gets installed
 
-Skills are Markdown instructions and supporting files, including helper scripts where needed. The `getstream` CLI installs them from this repository. As a Claude Code plugin, the `getstream` launcher uses an installed CLI, or downloads one from Stream's release manifest (`getstream.io/cli/latest.json`) into `~/.stream/bin` and verifies its checksum. Tool permissions are managed by your agent harness.
+Skills are Markdown instructions and supporting files, including helper scripts where needed. The `getstream` CLI installs them from this repository. The plugins do not include the CLI: when a skill needs `getstream` and it is not installed, the `stream` skill runs Stream's install script (`curl -fsSL https://getstream.io/cli.sh | bash`). Tool permissions are managed by your agent harness.
+
+## Privacy
+
+The plugins connect to the Stream MCP server and, through the `getstream` CLI, to the Stream API. Stream's [privacy policy](https://getstream.io/legal/privacy/) covers the data they send.
 
 ## What your agent can do
 
