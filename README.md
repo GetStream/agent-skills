@@ -22,7 +22,7 @@ In Claude Code:
 
 ```
 /plugin marketplace add GetStream/agent-skills
-/plugin install stream@getstream
+/plugin install getstream@getstream
 ```
 
 Then run `/mcp` to sign in to the `stream` server.

@@ -6,7 +6,7 @@
   },
   "plugins": [
     {
-      "name": "stream",
+      "name": "getstream",
       "source": "./",
       "description": "Build with Stream Chat, Video, Feeds, and Moderation: scaffold apps, add Stream to existing projects, and query and manage your Stream apps through the Stream MCP server."
     }

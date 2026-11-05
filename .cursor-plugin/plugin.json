@@ -1,7 +1,7 @@
 {
-  "name": "stream",
+  "name": "getstream",
   "displayName": "Stream",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Build with Stream Chat, Video, Feeds, and Moderation: scaffold apps, add Stream to existing projects, and query and manage your Stream apps through the Stream MCP server.",
   "author": {
     "name": "GetStream"
@@ -21,5 +21,6 @@
     "mcp"
   ],
   "logo": "assets/logo.png",
-  "skills": "./skills/"
+  "skills": "./skills/",
+  "mcpServers": "./mcp.json"
 }
