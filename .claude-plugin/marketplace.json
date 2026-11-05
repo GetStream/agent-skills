@@ -2,7 +2,8 @@
   "name": "getstream",
   "description": "Official Stream plugins for Claude Code",
   "owner": {
-    "name": "GetStream"
+    "name": "GetStream",
+    "email": "marketing@getstream.io"
   },
   "plugins": [
     {
