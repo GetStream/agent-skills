@@ -56,7 +56,7 @@ so the field appears only at its new location.
 | `bookmarks` | []string | `[]` | Kinds that become v3 **bookmarks on an activity**. |
 | `comments_bookmarks` | []string | `[]` | Kinds that become **bookmarks on a comment**. The v2 reaction must carry the comment's foreign_id in its top-level `parent`. |
 | `reactions` | map[v2kind]v3type | `{}` | Rename a reaction kind to a different v3 type. Unlisted kinds keep their name. |
-| `comment_field` | string | `"message"` | Key inside reaction `data` used as the comment text. Not a `data.` path. A comment with no text there is dropped. |
+| `comment_field` | string | `"message"` | Key inside reaction `data` used as the comment text. Not a `data.` path. Empty text is dropped only when there is no attachment object and no http(s) URL in the reaction data. Whitespace-only text is kept. A comment that only contains an http(s) URL is kept. |
 | `attachments_field` | string (dot-path) | `"attachments"` | Field in reaction `data` holding attachments. |
 | `parent_id_field` | string (envelope path) | `"parent"` | Path whose non-empty value marks the reaction a **reply**. `""` disables reply detection. |
 | `reaction_comment_id_field` | string (envelope path) | `""` (off) | Path holding the id of a comment this reaction targets. Routes to `AddCommentReaction`. |
@@ -185,7 +185,7 @@ A non-reply comment in the same app must leave that path absent:
 ```
 -> `"comment_field": "text"`
 
-`COMMENT` is already covered by the default `comments` list. Do not add it. Without `comment_field`, this comment is dropped.
+`COMMENT` is already covered by the default `comments` list. Do not add it. Without `comment_field`, this comment is dropped: its text is not in `data.message`, and it has no attachment and no http(s) URL.
 
 **Bookmark on a comment** - the target comment's foreign_id must be in the
 top-level `parent`:
