@@ -57,9 +57,16 @@ For older CLI installations, [`stream-builder`](skills/stream-builder/SKILL.md) 
 
 Skills are Markdown instructions and supporting files, including helper scripts where needed. The `getstream` CLI installs them from this repository. The plugins do not include the CLI: when a skill needs `getstream` and it is not installed, the `stream` skill runs Stream's install script (`curl -fsSL https://getstream.io/cli.sh | bash`). Tool permissions are managed by your agent harness.
 
-## Privacy
+## Network access and privacy
 
-The plugins connect to the Stream MCP server and, through the `getstream` CLI, to the Stream API. Stream's [privacy policy](https://getstream.io/legal/privacy/) covers the data they send.
+The skills and plugins connect to:
+
+- **Stream MCP server** (`mcp.getstream.io`), once you sign in with your Stream account.
+- **Stream API**, through the `getstream` CLI.
+- **Docs and SDK source**: skills fetch Stream SDK docs from `getstream.io` and `getstream.github.io`, SDK source from `github.com` and `raw.githubusercontent.com`, and Flutter package pages from `pub.dev`.
+- **Feeds migration**: `fetch_sample.py` reads `STREAM_API_KEY` and `STREAM_API_SECRET` from your environment, signs a short-lived token with the secret on your machine, and reads activities from the Stream v2 API (`api.stream-io-api.com`). The secret itself is never sent. `scan_v2_calls.py` reads local files only.
+
+Stream's [privacy policy](https://getstream.io/legal/privacy/) covers the data sent to Stream.
 
 ## What your agent can do
 
