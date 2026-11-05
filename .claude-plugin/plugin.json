@@ -7,6 +7,7 @@
   },
   "homepage": "https://getstream.io",
   "privacyPolicyUrl": "https://getstream.io/legal/privacy/",
+  "icon": "./assets/logo.png",
   "repository": "https://github.com/GetStream/agent-skills",
   "license": "Apache-2.0",
   "keywords": [
