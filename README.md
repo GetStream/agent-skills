@@ -27,7 +27,7 @@ Install the [Stream CLI](https://getstream.io/agent-skills/docs/installation/), 
 getstream skills
 ```
 
-With no arguments, it installs the `stream` skill and its compatibility entrypoints. Name platform skills to install them too, such as `getstream skills stream-react stream-swift`, and run `getstream skills -h` for installation options. To set up a project (auth, org/app selection, credentials), run `getstream init`.
+With no arguments, it installs every skill below. To install a subset, name the platform skills, such as `getstream skills stream-react stream-swift`; the `stream` skill and its compatibility entrypoints come with them. Run `getstream skills -h` for installation options. To set up a project (auth, org/app selection, credentials), run `getstream init`.
 
 Step-by-step instructions are in the [installation guide](https://getstream.io/agent-skills/docs/installation/).
 
