@@ -35,6 +35,10 @@ grep -rn "SendbirdProvider\|GroupChannel\|OpenChannel\|useSendbirdStateContext\|
 cat package.json   # both Sendbird versions and the package manager
 ```
 
+Pin the Stream Chat major you migrate to (chat-versions.md): the installed one if
+Stream is already present, otherwise the npm `latest`. Every Stream symbol you
+write comes from that major's docs.
+
 | Pattern found                                                           | How it migrates                                                                          |
 | ----------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
 | UIKit drop-in (`<SendbirdProvider>`, `<GroupChannel>`, `renderX` props) | Architectural remap, not a rename - compose Stream primitives (mapping section 12)       |
@@ -137,7 +141,9 @@ File-by-file, in place, referencing the mapping, and tracking progress in the
 ledger:
 
 - **UI composition** (mapping section 12-13): `<GroupChannel>` -> composed
-  `<Channel><Window><MessageList/><MessageComposer/></Window><Thread/></Channel>`;
+  `<Channel><Window><MessageList/><MessageComposer/></Window><Thread/></Channel>`
+  in the mapping's major (on another major, take the composition from that
+  major's docs, chat-versions.md);
   `<GroupChannelList>` -> `<ChannelList>`; `renderX` props -> component swaps
   via `<WithComponents>`; `useSendbirdStateContext` -> focused context hooks.
   Keep `<ChannelList>` as the query/watch/state owner - don't maintain a

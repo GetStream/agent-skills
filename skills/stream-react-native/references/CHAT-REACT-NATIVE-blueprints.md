@@ -2,6 +2,8 @@
 
 Load only the section you are implementing. For `llms.txt` manifest search, see [DOCS.md](DOCS.md). For setup, packages, and gotchas, see [CHAT-REACT-NATIVE.md](CHAT-REACT-NATIVE.md).
 
+**These blueprints were written against Chat RN v9 (`stream-chat` 9).** On another major, follow [CHAT-VERSIONS.md](CHAT-VERSIONS.md) section 4: screen structure comes from that major's docs, and only the version-neutral parts come from here.
+
 Expo lane: change imports from `"stream-chat-react-native"` to `"stream-chat-expo"` unless the symbol comes from React Navigation, React Native, or `stream-chat`.
 
 ## Contents

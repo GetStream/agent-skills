@@ -1,6 +1,6 @@
 ---
 name: stream-react
-description: "Build, integrate, audit, or upgrade Stream Chat, Video, Feeds, and Moderation in React / Next.js web apps - the default skill for web work. Scaffold a new app, add Stream to an existing project, review an integration, upgrade an SDK major, or migrate from Sendbird. Covers team messaging, DMs, video conferencing, livestreaming, social feeds, AI assistants, and apps built on Stream Agents (voice and text agents, @stream-io/calypso). Web React only - React Native uses stream-react-native."
+description: "Build, integrate, audit, or upgrade Stream Chat, Video, Feeds, and Moderation in React / Next.js web apps - the default skill for web work. Scaffold a new app, add Stream to an existing project, review an integration, upgrade an SDK major, or migrate from Sendbird. Covers team messaging, DMs, video conferencing, livestreaming, social feeds, AI assistants (including generative UI with A2UI / OpenUI), and apps built on Stream Agents (voice and text agents, @stream-io/calypso). Web React only - React Native uses stream-react-native."
 license: See LICENSE in repository root
 metadata:
   author: GetStream
@@ -20,7 +20,12 @@ cat $(getstream docs chat-sdk/react)/INDEX.md
 Client and UI: chat-sdk/react, video/react, activity-feeds/react. Node.js
 backend (e.g. Next.js routes): chat/node, activity-feeds/node, moderation/node.
 Stream Agents (sessions, voice, tools): agents/javascript.
-Previous majors are available too (e.g. chat-sdk/react/v13).
+Previous majors are available too (chat-sdk/react/v<major>).
+
+Chat SDK majors can differ deeply (state, layout, configuration). Before any Chat
+code, pin the installed major, read only that major's docs (never the unversioned
+id on trust), and treat SDK names in this skill and in your memory as leads to
+confirm there - follow chat-versions.md.
 
 ## Setup
 
@@ -33,7 +38,7 @@ choice unless the user says otherwise. Latest shadcn uses Base UI, not Radix: no
 
 Install the SDKs:
 
-- Chat: `stream-chat stream-chat-react`
+- Chat: `stream-chat stream-chat-react` (see chat-versions.md for which major)
 - Video: `@stream-io/video-react-sdk`
 - Feeds: `@stream-io/feeds-react-sdk`
 - Stream Agents: `@stream-io/calypso`, plus the Chat and Video packages above
@@ -172,8 +177,9 @@ findings, and fix only if asked.
 ## Upgrading an SDK version
 
 When asked, read the upgrade notes for both the installed and the target major
-(use the versioned docs: chat-sdk/react/v13, chat-sdk/react/v14, ...), apply
-them, then verify as if you're building an app.
+(use the versioned docs: chat-sdk/react/v<major>), apply them, then verify as if
+you're building an app. For Chat, follow the AI migration guide for the exact pair
+of majors (chat-versions.md), one major per pass.
 
 ## Matching a reference design
 
@@ -205,7 +211,9 @@ names:
   - ChatGPT-style app, an assistant inside an existing chat, streaming answers, stop
     generating, client tools: follow ai-integration.md.
 
-If the request fits both and the user hasn't said, ask which backend they want.
+If the request fits both and the user hasn't said, ask which backend they want. An
+agent that answers with UI (generative UI: A2UI, OpenUI, cards or forms in a reply)
+works with either backend: add ai-integration.md's "Generative UI" section.
 
 ## Other skills
 

@@ -29,11 +29,13 @@ Pick the manifest set that matches the requested product. Most requests touch on
 
 The primary Chat manifest should identify itself as the current React Native docs. If it does not, treat that as a docs-version problem and verify from the manifest title before continuing. The same applies to the Video and Feeds manifests.
 
+**Chat docs are per major.** The unversioned Chat manifest above is whichever major is "Latest" (its title says which), which is not necessarily the major the app installs, and Chat majors can have different APIs. Pin the installed major first and use that major's manifest (`https://getstream.io/chat/docs/sdk/react-native/v<major>/llms.txt`) or `getstream docs chat-sdk/react-native/v<major>`. See [CHAT-VERSIONS.md](CHAT-VERSIONS.md). Never code an app from another major's manifest.
+
 ---
 
 ## Lookup workflow
 
-1. Identify the product (Chat, Video, or Feeds) from the user request, then fetch the matching primary manifest.
+1. Identify the product (Chat, Video, or Feeds) from the user request, then fetch the matching primary manifest. For Chat, pick the manifest of the pinned major ([CHAT-VERSIONS.md](CHAT-VERSIONS.md)).
 2. Search manifest link text for the exact component, hook, guide, or feature name.
 3. Fetch the selected markdown URL from the manifest.
 4. Confirm the markdown page matches the current React Native SDK docs when doing SDK work.
