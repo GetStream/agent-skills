@@ -47,6 +47,7 @@ For older CLI installations, [`stream-builder`](skills/stream-builder/SKILL.md) 
   - [`integration-review.md`](skills/stream/integration-review.md) - read-only integration review: procedure, cross-platform checks, and the report format
 - [`skills/stream-react/`](skills/stream-react/) - **React web sub-skill** (default for web React / Next.js work)
   - [`SKILL.md`](skills/stream-react/SKILL.md) - build and integrate Stream, audit an app, upgrade SDKs, and verify the result
+  - [`chat-versions.md`](skills/stream-react/chat-versions.md) - pin the installed Chat React major, use that major's docs, find its migration guide
   - [`design-matching.md`](skills/stream-react/design-matching.md) - implement and verify a reference design
   - [`sendbird-migration.md`](skills/stream-react/sendbird-migration.md) - migrate a Sendbird app to Stream Chat React
   - [`sendbird-mapping.md`](skills/stream-react/sendbird-mapping.md) - Sendbird-to-Stream symbol mappings and behavioral differences
@@ -64,7 +65,7 @@ For older CLI installations, [`stream-builder`](skills/stream-builder/SKILL.md) 
   - [`RULES.md`](skills/stream-react-native/RULES.md) - Chat and Video RN non-negotiable rules (incl. Chat + Video interop)
   - [`credentials.md`](skills/stream-react-native/credentials.md) - API key, token, and optional requested demo-data flow
   - [`builder.md`](skills/stream-react-native/builder.md) + [`sdk.md`](skills/stream-react-native/sdk.md) - shared RN CLI and Expo integration flow across products
-  - [`references/`](skills/stream-react-native/references/) - `llms.txt` docs lookup (Chat + Video manifests), Chat RN setup/blueprints, Video RN setup/blueprints (`VIDEO-REACT-NATIVE.md`, `VIDEO-REACT-NATIVE-blueprints.md`), gotchas
+  - [`references/`](skills/stream-react-native/references/) - `llms.txt` docs lookup (Chat + Video manifests), Chat RN majors (`CHAT-VERSIONS.md`), Chat RN setup/blueprints, Video RN setup/blueprints (`VIDEO-REACT-NATIVE.md`, `VIDEO-REACT-NATIVE-blueprints.md`), gotchas
 - [`skills/stream-android/`](skills/stream-android/) - **Android sub-skill**
   - [`SKILL.md`](skills/stream-android/SKILL.md) - entrypoint: intent classifier, local project detection, module pointers
   - [`RULES.md`](skills/stream-android/RULES.md) - Android non-negotiable rules

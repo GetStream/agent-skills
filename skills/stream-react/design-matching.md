@@ -189,7 +189,9 @@ and the reference read as the same screen.
 ## Appendix: Chat React v14 reskin cheat-sheet
 
 Concrete starting points for the most common chat regions, so a reskin isn't
-reverse-engineered from compiled CSS every time. Scope: `stream-chat-react` v14. The
+reverse-engineered from compiled CSS every time. Scope: `stream-chat-react` v14. On
+another major, check each selector against that major's theming docs and the migration
+guide for the pair (chat-versions.md) before reusing it. The
 installed `node_modules/stream-chat-react/dist/css/index.css` and the `.d.ts` under
 `dist/types/` outrank this table and the docs - grep them to confirm any selector or
 variable before relying on it.

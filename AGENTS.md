@@ -8,7 +8,7 @@ This repository contains the Stream skill pack. Skill source lives under `skills
 
 | Sub-skill | Use for |
 |---|---|
-| [`skills/stream-react/SKILL.md`](skills/stream-react/SKILL.md) | **Default for web React/Next.js.** Scaffold, enhance, audit, or migrate a React/Next.js app with Chat/Video/Feeds/Moderation, including AI assistants and agentic chat (`@stream-io/chat-react-ai`) and apps built on Stream Agents |
+| [`skills/stream-react/SKILL.md`](skills/stream-react/SKILL.md) | **Default for web React/Next.js.** Scaffold, enhance, audit, or migrate a React/Next.js app with Chat/Video/Feeds/Moderation, including AI assistants and agentic chat (`stream-chat-react/ai-components`, generative UI with A2UI / OpenUI) and apps built on Stream Agents |
 | [`skills/stream-react-native/SKILL.md`](skills/stream-react-native/SKILL.md) | Build or integrate Stream Chat/Video/Feeds in React Native or Expo apps |
 | [`skills/stream-swift/SKILL.md`](skills/stream-swift/SKILL.md) | Build or integrate Stream Chat/Video/Feeds in Swift/SwiftUI/UIKit/iOS apps, including AI assistants and agentic chat (StreamChatAI) |
 | [`skills/stream-android/SKILL.md`](skills/stream-android/SKILL.md) | Build or integrate Stream Chat/Video/Feeds in Android/Jetpack Compose apps, including AI assistants and agentic chat (`stream-chat-android-ai-compose`) |

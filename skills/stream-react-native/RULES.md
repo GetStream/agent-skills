@@ -9,6 +9,7 @@ Target **Stream Chat React Native**, **Stream Video React Native**, and **Stream
 - Follow the official docs for the current React Native New Architecture support matrix. When migration docs are stricter than the general New Architecture guide, use the stricter requirement.
 - The bundled references assume the React Native **New Architecture**. Do not claim old-architecture support unless the docs for the selected package version explicitly say it is supported.
 - This skill bundles Chat, Video, and Feeds. Do not implement or document React Native Moderation review UI from memory.
+- **Chat: pin the major before any Chat code.** Chat SDK majors can differ deeply. Read the installed wrapper and `stream-chat` versions (new app: the npm `latest`), then use only that major's docs, as [`references/CHAT-VERSIONS.md`](references/CHAT-VERSIONS.md) says. Never write one major's API into another major's app because those are the only docs or blueprints at hand - stop and say so instead.
 
 Use Stream `llms.txt` manifests as the docs authority. Start from [`references/DOCS.md`](references/DOCS.md), fetch the appropriate manifest, then fetch the selected markdown page before coding. Do not maintain or rely on hardcoded individual docs URLs. If a symbol must be verified in source, inspect the installed package in the target app's `node_modules` after install.
 
@@ -188,7 +189,7 @@ When using React Navigation or Expo Router:
 - **Chat:** Place `OverlayProvider` above the navigation screens. With React Navigation, prefer `OverlayProvider` above `NavigationContainer`. Keep `Chat` high enough that screen transitions do not reconnect the client. Pass channel CIDs or ids through navigation params, not `Channel` instances. Recreate the `Channel` instance from `useChatContext().client` on the destination screen. **`keyboardVerticalOffset`/`topInset` on `<Channel>` offset for chrome that sits *above* the Channel and pushes its top down — a native navigation header, or (rarely) a custom header rendered as a *sibling above* `<Channel>`.** In that case set **both** to that header's height (equal values — `topInset` is what the attachment picker uses to compute its bottom-sheet snap point; without it the sheet clamps short). A custom header rendered *inside* `<Channel>` (the common floating in-screen-header pattern) has nothing above the Channel to offset, so pass both **explicitly as `0`** (`keyboardVerticalOffset={0} topInset={0}`). **Do not rely on omitting them:** in the installed SDK, `Channel` defaults `topInset` to `0` but **destructures `keyboardVerticalOffset` with no default**, so omitting it passes `undefined`, not `0` (confirm in the pinned source — *documented/assumed behaviour is not the SDK default*, see Package version and docs discipline). A non-zero value over-compensates the keyboard-avoiding view and mis-computes the picker snap. **Default to an explicit `0`;** set a non-zero value only when a native header is present. **Verify by focusing the input so the real software keyboard rises** — programmatic `setText` does NOT raise the keyboard, so it never exercises this prop — with the picker also opened. `bottomInset` stays opt-in (only for a tab bar that owns the bottom safe-area).
 - **Video:** Place `StreamVideo` above `NavigationContainer` (or above the Expo Router root layout) so the client survives screen transitions. Pass the call id (and call type when not the default) through navigation params, not `Call` instances. The destination call screen mounts `<StreamCall>` after calling `client.call(type, id, { reuseInstance: true })` once; descendants read via `useCall()`. Other screens/components must not call `client.call(...)` to obtain the same instance.
 
-For Chat threads, keep thread state explicit. When a thread screen is open, pass the same `thread` value to the main `Channel` and render the thread screen with `threadList`.
+For Chat threads, keep thread state explicit. With the blueprints' major, when a thread screen is open, pass the same `thread` value to the main `Channel` and render the thread screen with `threadList`. On another major, take the thread screen from that major's docs ([`references/CHAT-VERSIONS.md`](references/CHAT-VERSIONS.md)).
 
 ---
 
@@ -234,7 +235,6 @@ Offline support is opt-in.
 - Expo apps already use a dev-client/native-build lane. Expo Go is not a supported target for this skill.
 - Access to threads in offline mode is not implemented in the referenced docs.
 - On sign-out, run `chatClient.offlineDb.resetDB()` before `disconnectUser()` to avoid cross-user data leaks.
-
 For offline-first boot, read the offline section in [`sdk.md`](sdk.md) before coding. The docs require starting `connectUser` before rendering Chat components but not blocking the UI on the promise.
 
 ---
@@ -257,7 +257,7 @@ Runbook: [`ai-integration.md`](ai-integration.md). The non-negotiables:
 
 - **The model runs on a backend agent, never in the app.** No LLM provider key, Stream secret, or admin token in the JS bundle, `app.json`, or native config.
 - **Always tell the developer what the backend must send** (`ai_generated`, one partially-updated message, `ai_indicator.*`, honor stop, `generating`), and run the CLI check in [`ai-integration.md`](ai-integration.md) Step 3 before debugging RN code.
-- **Stay on the prebuilt components, docs-first** - the lane's Chat package + `@stream-io/chat-react-native-ai`, from the `ai-integrations` pages in `getstream docs chat-sdk/react-native`. The AI package has native code - rebuild after install (no Expo Go).
+- **Stay on the prebuilt components, docs-first** - the lane's Chat package and its `ai-components` entry point (not the deprecated `@stream-io/chat-react-native-ai`), from the AI pages in the pinned major's docs. Its dictation and native views need a native rebuild (no Expo Go).
 
 ---
 
@@ -275,7 +275,7 @@ Load only the React Native files that match the request and product:
 
 Before writing or editing **any** Stream Chat, Stream Video, or Stream Feeds React Native screen, provider, hook usage, navigation handler, thread / comments flow, theming override, offline flow, ringing handler, call control, participant tile, activity row, composer, follow button, or component customization, you **must** open the matching section of the corresponding blueprints file:
 
-- Chat work -> [`references/CHAT-REACT-NATIVE-blueprints.md`](references/CHAT-REACT-NATIVE-blueprints.md)
+- Chat work -> [`references/CHAT-REACT-NATIVE-blueprints.md`](references/CHAT-REACT-NATIVE-blueprints.md) when the installed Chat major is the one the blueprints were written for (their first lines say which). On another major, follow [`references/CHAT-VERSIONS.md`](references/CHAT-VERSIONS.md) section 4 instead.
 - Video work -> [`references/VIDEO-REACT-NATIVE-blueprints.md`](references/VIDEO-REACT-NATIVE-blueprints.md)
 - Feeds work -> [`references/FEEDS-REACT-NATIVE-blueprints.md`](references/FEEDS-REACT-NATIVE-blueprints.md)
 

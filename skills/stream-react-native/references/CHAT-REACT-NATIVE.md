@@ -6,6 +6,8 @@ Rules: [../RULES.md](../RULES.md) (Chat-only, New Architecture, secrets, runtime
 
 Manifest-selected docs are the authority. Use [DOCS.md](DOCS.md) before installing packages or making API-specific claims.
 
+Written against Chat RN **v9**. On another major, any component API named here is a lead until that major's docs confirm it: [CHAT-VERSIONS.md](CHAT-VERSIONS.md).
+
 ## Contents
 
 - **Quick ref** - package + peer matrix per lane, and the first-path step order

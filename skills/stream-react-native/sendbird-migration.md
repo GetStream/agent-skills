@@ -22,6 +22,11 @@ rule:
 Where a step touches a Stream RN component's *current* props/hooks, fetch the matching page via
 [`references/DOCS.md`](references/DOCS.md) per [`RULES.md`](RULES.md) > Package version and docs
 discipline — a future major can rename symbols, as Chat RN v8 -> v9 did ([`migrate.md`](migrate.md)).
+The Stream column of the mapping is grounded on Chat RN **v9**. Pin the Stream major you migrate to
+first (the installed one, or the npm `latest` for a fresh install). On another major, translate each
+Stream symbol through the migration guide for the pair
+([`references/CHAT-VERSIONS.md`](references/CHAT-VERSIONS.md)), then confirm it in that major's docs
+and `node_modules` before writing it.
 
 **Flavor first (every RN migration).** `stream-chat-react-native` (bare RN CLI) and `stream-chat-expo`
 (Expo) are thin wrappers over the **same** `stream-chat-react-native-core`; the component/hook API is
