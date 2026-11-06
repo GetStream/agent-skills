@@ -29,6 +29,7 @@ For Sendbird data migration, use the shared [`skills/stream/sendbird-data-migrat
 - In skill instructions, refer to files within the same skill by raw relative path: "Read migration.md".
 - For a file in another skill, name the skill and path: "Read stream skill's migration.md".
 - For another skill's SKILL.md, name only the skill: "Refer to stream skill".
+- `getstream skills` installs every skill under `skills/` into the user's project, next to the skills they keep there. Name a new skill `stream-<name>` so it never collides with one of theirs.
 - When moving or removing skill files, update their callers, the skills table in README.md, and the contents list in CONTRIBUTING.md, then check local links. Run affected helper scripts when needed to verify behavior and report what was checked.
 - **ASCII only:** all files in this repo must contain ASCII characters only. No em/en dashes, smart quotes, ellipsis chars, arrows, checkmarks, or other non-ASCII glyphs - use plain ASCII equivalents (`-`, `'`, `"`, `...`, `->`, `OK`, etc.).
 
