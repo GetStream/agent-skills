@@ -43,10 +43,15 @@ getstream docs list | grep -i "React Native v"      # which majors exist, which 
 cat $(getstream docs chat-sdk/react-native/v<major>)/INDEX.md
 ```
 
-If the CLI doesn't list the major (a prerelease), use the site's manifest
-`https://getstream.io/chat/docs/sdk/react-native/v<major>/llms.txt` and fetch the `.md`
-pages it lists. Check the manifest title against the pinned major. Don't mix pages from two
-majors.
+The CLI's list can lag the site: a major can be released and Latest on the site while the
+CLI still shows the previous one as Latest. If the CLI doesn't list the pinned major, read
+the title of the unversioned site manifest first,
+`https://getstream.io/chat/docs/sdk/react-native/llms.txt`. When it names the pinned major
+(for example "React Native v10 (Latest)"), use it: the site serves its Latest major only at
+the unversioned URL, and `.../v<major>/llms.txt` returns a 404 for it. Otherwise (a
+prerelease, an older major), use `https://getstream.io/chat/docs/sdk/react-native/v<major>/llms.txt`
+and check its title the same way. Fetch the `.md` pages the manifest lists, and don't mix
+pages from two majors.
 
 If no docs exist for the pinned major, stop and tell the user. Don't write the code from
 another major's docs because they are "the closest documented API".

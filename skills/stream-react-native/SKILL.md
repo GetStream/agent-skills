@@ -40,8 +40,11 @@ say which major the answer is for.
 
 Start with `getstream init` (binds the working dir to a Stream app, existing or
 new) and `getstream env --target expo` (writes `EXPO_PUBLIC_STREAM_API_KEY` to
-`.env`). A bare RN CLI app has no env target: put the public API key in the
-app's config, never the secret.
+`.env`). `getstream env` writes `.env` to the folder `getstream init` ran in,
+which isn't always the app folder (an app scaffolded in a subfolder): move it
+next to the app's `package.json`, or Metro never reads it. A bare RN CLI app
+has no env target: put the public API key in the app's config, never the
+secret.
 
 For new apps, Expo (`npx create-expo-app@latest`, Expo Router) is the default
 unless the user asks for RN CLI. In an existing app, read the lane before
@@ -101,7 +104,8 @@ Native setup that costs real runs:
   in the root `package.json` (the default breaks bottom sheets, the message
   overlay, and context menus). It is read at pod install: rebuild native after.
 - Expo Router on SDK 56+ refuses to bundle with any `@react-navigation/*`
-  package. Don't install one, even for `useHeaderHeight`.
+  package. Don't install one, even for `useHeaderHeight`: recent Expo Router
+  (SDK 58) exports it from `expo-router/react-navigation`.
 - `react-native-teleport` (a Chat peer) has `react-dom` as an optional peer:
   when the app already has `react-dom` (the default Expo template does), pin it
   to the app's exact `react` version, or the install resolves a mismatch.
@@ -164,11 +168,14 @@ a camera prompt. Camera/mic permission is requested only on an explicit action
 Chat:
 
 - Component overrides go through `<WithComponents overrides={...}>`, placed
-  above the navigator. A component passed as a `<Channel>` prop is silently
-  ignored and looks like a stale bundle. `WithComponents` reads its overrides
-  once, at mount: an override that must change at runtime (theme, state) reads
-  it inside the component (`useTheme()`, a hook), not by swapping the
-  `overrides` object. Some slots (the
+  above the navigator. To change a shared slot (such as `EmptyStateIndicator`,
+  which the channel list, message list, and thread all read) on one screen
+  only, wrap just that screen's component in its own `WithComponents`; nested
+  ones merge with their parent. A component passed as a `<Channel>` prop is
+  silently ignored and looks like a stale bundle. `WithComponents` reads its
+  overrides once, at mount: an override that must change at runtime (theme,
+  state) reads it inside the component (`useTheme()`, a hook), not by swapping
+  the `overrides` object. Some slots (the
   `MessageContent*View` slots, `MessageSpacer`, `MessageText`, `Input`) are
   optional overrides, not defaults: grep both `DEFAULT_COMPONENTS` and
   `OptionalComponentOverrides` in the installed core before saying a slot
@@ -178,8 +185,11 @@ Chat:
   iOS, -300 on Android). With the header rendered inside `<Channel>`, pass
   `keyboardVerticalOffset={0}` and `topInset={0}`. Under a native navigation
   header, pass the header height to both - `topInset` is what the attachment
-  picker uses for its snap point. On Expo Router SDK 56+ there is no
-  `useHeaderHeight`: use `(Platform.OS === 'ios' ? 44 : 56) + insets.top`. A
+  picker uses for its snap point. On Expo Router, take the height from
+  `useHeaderHeight` in `expo-router/react-navigation` when the installed
+  version exports it, else `(Platform.OS === 'ios' ? 44 : 56) + insets.top`.
+  On iOS 26 the native header is transparent by default (content scrolls under
+  it, so no offset is right): set `headerTransparent: false` on the stack. A
   gap between the composer and the picker means `topInset` is wrong; don't
   close it with `bottomInset`. Check by focusing the input so the real keyboard
   rises (`setText` doesn't raise it).

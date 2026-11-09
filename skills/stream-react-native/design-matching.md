@@ -52,7 +52,10 @@ Convert the reference into a written spec file before building:
   body, timestamp) has its own size and weight - record them separately.
 - **Don't ship affordances the app can't back.** A control in the reference for a feature
   the app doesn't have (a call button in a chat-only header, a camera icon with no camera
-  package) is either built for real or left out and reported - never a dead button.
+  package) is either built for real or left out and reported - never a dead button. A
+  camera button wired to `takeAndUploadImage()` crashes natively where there is no camera
+  (the iOS simulator: "Source type 1 not available"): guard it (`Device.isDevice` from
+  `expo-device`) and check it on a device.
 - **Floating or docked composer, from the image:** wallpaper or messages continuously
   behind and around it (usually with a shadow) means floating; a separate bar or a seam
   where the list ends means docked. Ask only if the cues are genuinely ambiguous.
@@ -241,7 +244,8 @@ appearance flips are in simulator-verification.md.
 7. **Exit honestly.** Report what didn't match with both values (spec vs rendered). If no
    capture was possible, the work is UNVERIFIED - say so; never claim a match you didn't
    see. Delete the test channel (`DeleteChannel`, `hard_delete`), the test users, and every
-   scaffold.
+   scaffold - except test users that are also the app's dev login roster: keep those, and
+   say in the report which users and channels you left in the app.
 
 ## Appendix: Chat RN v9 reskin cheat-sheet
 

@@ -161,6 +161,8 @@ override resolve at first mount and don't follow a runtime flip, so cold-launch 
 
 ## What the simulator can't show
 
+- Camera capture crashes there: `takeAndUploadImage()` raises a native exception
+  ("Source type 1 not available") that kills the app.
 - Camera and microphone capture, a populated photo gallery, push delivery, and sizes
   relative to the real keyboard (the attachment picker's height): check on a device.
 - On the iOS simulator, the first native multipart upload after a cold launch can fail;
