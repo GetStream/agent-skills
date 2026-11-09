@@ -30,8 +30,8 @@ use local docs with `getstream docs` and the installed types.
 Map the footprint before any edit:
 
 ```bash
-grep -rln "@sendbird/chat\|@sendbird/uikit-react" --include=*.{ts,tsx,js,jsx} .
-grep -rn "SendbirdProvider\|GroupChannel\|OpenChannel\|useSendbirdStateContext\|sendbirdSelectors\|withSendBird" --include=*.{ts,tsx} .
+grep -rln "@sendbird/chat\|@sendbird/uikit-react" --include='*.ts' --include='*.tsx' --include='*.js' --include='*.jsx' --exclude-dir=node_modules .
+grep -rn "SendbirdProvider\|GroupChannel\|OpenChannel\|useSendbirdStateContext\|sendbirdSelectors\|withSendBird" --include='*.ts' --include='*.tsx' --exclude-dir=node_modules .
 cat package.json   # both Sendbird versions and the package manager
 ```
 

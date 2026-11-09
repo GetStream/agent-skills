@@ -24,7 +24,8 @@ The `/stream` router directs app work to platform skills and uses the `getstream
 | Migrate / upgrade a web SDK version | `stream-react` |
 | Migrate a web app from Sendbird | `stream-react` + `sendbird-migration.md` |
 | Data queries, app config, and CLI operations | `stream` (CLI, built in) |
-| Build or integrate a React Native CLI/Expo app | `stream-react-native` + its `sdk.md` and `references/*.md` |
+| Build or integrate a React Native CLI/Expo app | `stream-react-native` |
+| Migrate a React Native app from Sendbird | `stream-react-native` + `sendbird-migration.md` |
 | Look up SDK documentation | `stream` via `getstream docs` |
 | Build or integrate a Swift/iOS app | `stream-swift` (docs orchestrator: `docs-map.md` + `setup.md`) |
 | Build or integrate an Android app | `stream-android` + its `builder.md`, `sdk.md`, and `references/*.md` |
@@ -60,12 +61,14 @@ For older CLI installations, [`stream-builder`](skills/stream-builder/SKILL.md) 
   - [`push.md`](skills/stream-swift/push.md) - seamless push runbook: APNs key, CLI push-provider creation, client wiring, VoIP + CallKit
   - [`design-matching.md`](skills/stream-swift/design-matching.md) - reproduce a reference design with the **pre-built components**: region -> `ViewFactory`/`Styles`/theming map
   - [`custom-ui.md`](skills/stream-swift/custom-ui.md) - the **components-vs-custom** decision + how to build a livestream/bespoke surface on the low-level client + State Layer
-- [`skills/stream-react-native/`](skills/stream-react-native/) - **React Native Chat + Video sub-skill**
-  - [`SKILL.md`](skills/stream-react-native/SKILL.md) - RN/Expo intent classifier with Chat/Video product router, project detection, module pointers
-  - [`RULES.md`](skills/stream-react-native/RULES.md) - Chat and Video RN non-negotiable rules (incl. Chat + Video interop)
-  - [`credentials.md`](skills/stream-react-native/credentials.md) - API key, token, and optional requested demo-data flow
-  - [`builder.md`](skills/stream-react-native/builder.md) + [`sdk.md`](skills/stream-react-native/sdk.md) - shared RN CLI and Expo integration flow across products
-  - [`references/`](skills/stream-react-native/references/) - `llms.txt` docs lookup (Chat + Video manifests), Chat RN majors (`CHAT-VERSIONS.md`), Chat RN setup/blueprints, Video RN setup/blueprints (`VIDEO-REACT-NATIVE.md`, `VIDEO-REACT-NATIVE-blueprints.md`), gotchas
+- [`skills/stream-react-native/`](skills/stream-react-native/) - **React Native sub-skill** (Chat, Video, and Feeds in RN CLI and Expo apps)
+  - [`SKILL.md`](skills/stream-react-native/SKILL.md) - build and integrate Stream, audit an app, upgrade SDKs, and verify the result
+  - [`chat-versions.md`](skills/stream-react-native/chat-versions.md) - pin the installed Chat RN major, use that major's docs, find its migration guide
+  - [`ai-integration.md`](skills/stream-react-native/ai-integration.md) - AI assistants on the Chat SDK's `ai-components`, and what the backend agent must send
+  - [`design-matching.md`](skills/stream-react-native/design-matching.md) - implement and verify a reference design
+  - [`simulator-verification.md`](skills/stream-react-native/simulator-verification.md) - run, drive, and screenshot the app on a simulator or emulator
+  - [`sendbird-migration.md`](skills/stream-react-native/sendbird-migration.md) - migrate a Sendbird app to Stream Chat React Native
+  - [`sendbird-mapping.md`](skills/stream-react-native/sendbird-mapping.md) - Sendbird-to-Stream symbol mappings and behavioral differences
 - [`skills/stream-android/`](skills/stream-android/) - **Android sub-skill**
   - [`SKILL.md`](skills/stream-android/SKILL.md) - entrypoint: intent classifier, local project detection, module pointers
   - [`RULES.md`](skills/stream-android/RULES.md) - Android non-negotiable rules

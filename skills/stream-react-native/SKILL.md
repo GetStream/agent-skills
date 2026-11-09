@@ -1,319 +1,404 @@
 ---
 name: stream-react-native
-description: "Builds, integrates, migrates, audits Stream Chat, Video, and Feeds in React Native CLI and Expo apps. Use when scaffolding an RN/Expo app, adding Stream to an existing app, upgrading a Stream SDK major, migrating from Sendbird (@sendbird/chat, @sendbird/uikit-react-native), building AI assistants / LLM chat (streaming, stop generating) with the Chat SDK's ai-components, answering RN/Expo how-to questions, or customizing Stream RN UI. Triggers on React Native, Expo, Expo Router, stream-chat-react-native, stream-chat-expo, @stream-io/video-react-native-sdk, @stream-io/feeds-react-native-sdk, ChatGPT clone, channel list, message list, MessageComposer, threads, attachment picker, audio messages, offline support, push notifications, video call, livestream, audio room, ringing, CallContent, ParticipantView, activity/timeline/notification feed, StreamFeeds, comments, reactions, follows, and theming. React Native and Expo only - not web React (use stream-react), not Moderation review UI."
+description: "Build, integrate, audit, or upgrade Stream Chat, Video, and Feeds in React Native CLI and Expo / Expo Router apps, and answer RN / Expo how-to questions about them. Scaffold a new app, add Stream to an existing project, review an integration, upgrade an SDK major, migrate from Sendbird (@sendbird/chat, @sendbird/uikit-react-native), or build an AI assistant / ChatGPT-style app on the Chat SDK's ai-components (replacing the deprecated @stream-io/chat-react-native-ai). Covers channel lists, messages, MessageComposer, threads, the attachment picker, audio messages, offline support, push notifications, video calls, CallContent and ParticipantView, ringing, livestreams, audio rooms, StreamFeeds activity / timeline / notification feeds, comments, reactions, follows, and theming or matching a design, with stream-chat-react-native, stream-chat-expo, @stream-io/video-react-native-sdk, and @stream-io/feeds-react-native-sdk. React Native and Expo only - web React uses stream-react."
 license: See LICENSE in repository root
-compatibility: Supports new or existing React Native CLI and Expo apps running Stream Chat RN or Stream Video RN with React Native New Architecture. The `getstream` CLI is the default credentials and requested demo-data path; pasted API key and token are accepted as fallback.
 metadata:
   author: GetStream
-allowed-tools: >-
-  Read, Write, Edit, Glob, Grep, Task,
-  WebFetch(domain:getstream.io),
-  WebFetch(domain:raw.githubusercontent.com),
-  Bash(ls *), Bash(find . *), Bash(grep *), Bash(awk *), Bash(tail *), Bash(sips *),
-  Bash(cat package.json), Bash(cat app.json), Bash(cat app.config.js), Bash(cat app.config.ts),
-  Bash(cat babel.config.js), Bash(cat metro.config.js),
-  Bash(command -v getstream), Bash(getstream *),
-  Bash(npm view *), Bash(npm install *), Bash(npm uninstall *),
-  Bash(yarn add *), Bash(pnpm add *),
-  Bash(curl -Ls https://getstream.io/chat/docs/sdk/react-native/llms.txt),
-  Bash(curl -Ls https://getstream.io/chat/docs/react-native/llms.txt),
-  Bash(curl -Ls https://getstream.io/video/docs/react-native/llms.txt),
-  Bash(curl -Ls https://getstream.io/activity-feeds/docs/react-native/llms.txt),
-  Bash(curl -s http://localhost:*),
-  Bash(npx create-expo-app@latest *), Bash(npx create-expo-app *),
-  Bash(npx @react-native-community/cli@latest init *),
-  Bash(npx expo install *), Bash(npx expo prebuild *), Bash(npx expo start *),
-  Bash(npx expo run:*), Bash(npx react-native *), Bash(npx tsc *),
-  Bash(npm run *), Bash(yarn *), Bash(pnpm *), Bash(node -e *),
-  Bash(npx pod-install *), Bash(cd ios && pod install),
-  Bash(xcrun simctl *), Bash(open -a Simulator), Bash(defaults write *),
-  Bash(md5 *), Bash(lsof *),
-  Bash(brew install watchman), Bash(watchman *),
-  Bash(magick *), Bash(python3 *), Bash(.designvenv/bin/pip *),
-  Bash(git worktree *), Bash(git log *), Bash(git status *)
 ---
 
-# Stream React Native - skill router + execution flow
+# Stream React Native
 
-**Rules:** Read **[`RULES.md`](RULES.md)** once per session. Every non-negotiable React Native Chat, Video, and Feeds rule is stated there.
+## Docs
 
-This file is the single entrypoint: intent classification, product selection, project detection, and module pointers for Stream Chat React Native, Stream Video React Native, and Stream Feeds React Native work.
-
----
-
-## Step 0: Intent classifier (mandatory first - never skip)
-
-Before any tool call, decide the track from the user's input alone. Do not probe the filesystem first.
-
-### Signals -> track
-
-| Signal in user input | Track |
-|---|---|
-| "Build/create/scaffold a new React Native app", "create an Expo app", "new Stream Chat RN app", "new Stream Video RN app", "new Stream Feeds RN app", empty directory + React Native/Expo Chat / Video / Feeds | **A - New app** |
-| "Upgrade/migrate/bump a Stream SDK version", "upgrade stream-chat-react-native to the next major", "migrate Chat RN to the new SDK", "vN to vN+1", "move to the new stream-chat major", "bump Stream Video/Feeds", "Feeds v2 -> v3" | **M - Migrate / upgrade** |
-| "Migrate from Sendbird", "replace Sendbird with Stream", "we're switching off Sendbird", "rip out @sendbird/uikit-react-native", "convert SendbirdUIKitContainer / createGroupChannelFragment to Stream", `@sendbird/chat` / `@sendbird/uikit-react-native` / `-foundation` present in the target's `package.json` | **S - Migrate from Sendbird** |
-| "Add/integrate Stream Chat into this app", "wire Chat RN", "set up stream-chat-expo", "add a video call", "wire Stream Video", "set up @stream-io/video-react-native-sdk", "add an activity feed", "wire Stream Feeds", "set up @stream-io/feeds-react-native-sdk", "change/customize this Chat / Video / Feeds UI" | **B - Existing app** |
-| `React Native`, `Expo`, `Expo Router`, `stream-chat-react-native`, `stream-chat-expo`, `@stream-io/video-react-native-sdk`, `@stream-io/feeds-react-native-sdk`, `Stream Chat RN`, `Stream Video RN`, `Stream Feeds RN`, `Chat React Native`, `Video React Native`, `Feeds React Native`, migration | **C - Reference lookup** if the user only asks how/docs; otherwise **B - Existing app** |
-| Explicit product/runtime token: `Chat React Native`, `Chat Expo`, `Video React Native`, `Video Expo`, `Feeds React Native`, `Feeds Expo` | **C - Reference lookup** |
-| Words "docs" or "documentation" around Stream Chat, Stream Video, or Stream Feeds React Native / Expo work | **C - Reference lookup** |
-| "How do I {X} in React Native/Expo?", "What does {SDK component/hook/prop} do?" | **C - Reference lookup** |
-| "Audit/review/check an existing Stream **Video** integration against best practices", "is my video app production-ready?", "what am I missing before launch?" | **C - Reference lookup** (read-only) - run the **Integration best-practices audit** in [`references/VIDEO-REACT-NATIVE.md`](references/VIDEO-REACT-NATIVE.md) |
-| "Install Stream packages", "set up Chat RN", "set up Video RN", "set up Feeds RN", "wire auth/token flow" with no broader feature request | **D - Bootstrap / setup** |
-| "Build a ChatGPT-style app", "add an AI assistant / support bot / copilot", "stream the LLM response", "thinking indicator", "stop generating", "voice input to the AI", "let the agent do X on the device", LangChain, Vercel AI SDK, `stream-chat-react-native/ai-components`, `stream-chat-expo/ai-components`, the deprecated `@stream-io/chat-react-native-ai`, generative UI / A2UI / OpenUI | **A** (new app) or **B** (existing app), then run [`ai-integration.md`](ai-integration.md) for the integration step; **C** if the user only asks how one AI component works (search the pinned major's Chat docs for the AI pages) |
-| Stream Moderation review UI or any other non-Chat / non-Video / non-Feeds Stream RN product | **Reject bundled scope** and route to live docs only if the user wants docs |
-| Bare `/stream-react-native` with no args | List the tracks briefly and wait |
-
-### Disambiguation flow
-
-If the request is ambiguous between wiring code and reference lookup, ask one short question and wait:
-
-> Do you want me to wire this into the project, or just map the React Native SDK pattern and files?
-
-If the user wants a new app but did not name Expo or RN CLI, default to Expo because it is the shortest successful path. Use RN CLI when the user asks for it or when native project constraints require it.
-
-### Product classifier (after track is known)
-
-Identify the product from the user's input or detected packages. Tracks A, B, and D all need the product before continuing; Track C selects the matching reference pair.
-
-| Product signal | Product | References |
-|---|---|---|
-| `stream-chat-react-native`, `stream-chat-expo`, channel, message, MessageComposer, thread, attachment, offline support | **Chat** | [`references/CHAT-REACT-NATIVE.md`](references/CHAT-REACT-NATIVE.md) + [`references/CHAT-REACT-NATIVE-blueprints.md`](references/CHAT-REACT-NATIVE-blueprints.md) |
-| `@stream-io/video-react-native-sdk`, video call, livestream, audio room, ringing, CallContent, ParticipantView, screenshare, picture in picture | **Video** | [`references/VIDEO-REACT-NATIVE.md`](references/VIDEO-REACT-NATIVE.md) + [`references/VIDEO-REACT-NATIVE-blueprints.md`](references/VIDEO-REACT-NATIVE-blueprints.md) |
-| `@stream-io/feeds-react-native-sdk`, `useCreateFeedsClient`, `StreamFeeds`, `StreamFeed`, activity feed, timeline feed, notification feed, for-you feed, `useFeedActivities`, `useActivityComments`, reactions, comments, follows, follow / unfollow, activity composer, `activityWithStateUpdates` | **Feeds** | [`references/FEEDS-REACT-NATIVE.md`](references/FEEDS-REACT-NATIVE.md) + [`references/FEEDS-REACT-NATIVE-blueprints.md`](references/FEEDS-REACT-NATIVE-blueprints.md) |
-| Two or more products in one app (chat alongside a video call, feeds + chat, feeds + video, etc.) | **Combined** | Load only the reference pairs for the products in scope. Nest the providers (e.g. `<StreamVideo>` inside `<OverlayProvider><Chat>` inside `<StreamFeeds>`); do not place them as siblings. See [`RULES.md`](RULES.md) and the manifest-selected `/video/docs/react-native/advanced/chat-with-video.md` for the Chat + Video interop notes |
-
-If the request is ambiguous between products, ask one short question and wait:
-
-> Are you wiring Stream Chat (channels, messages), Stream Video (calls, livestream, audio rooms), or Stream Feeds (activity feed, timeline, comments, reactions, follows)? Or more than one in the same app?
-
-### Scope rejection
-
-This skill bundles **Chat, Video, and Feeds React Native**. If the user asks for Stream Moderation review UI or another non-bundled Stream RN product, say:
-
-> The React Native skill currently bundles Chat, Video, and Feeds references. I can help with any combination of those here, or switch to live docs for other products.
-
-Do not invent missing React Native Moderation API details from memory.
-
-### Chat major gate (every Chat track)
-
-Chat SDK majors can differ deeply (state, channel lists, threads, configuration). Before writing, reviewing, or explaining any Chat code, pin the installed major (new app: the npm `latest`), use only that major's docs, and treat SDK names in this skill, its blueprints, and your memory as leads to confirm there: follow [`references/CHAT-VERSIONS.md`](references/CHAT-VERSIONS.md). Track C answers name the major they apply to when the user did not say.
-
-### After classification
-
-- **Tracks A, B, D** -> run Project signals, then continue in [`builder.md`](builder.md) and [`sdk.md`](sdk.md). Run [`credentials.md`](credentials.md) before writing Chat, Video, or Feeds connection code or creating requested demo data.
-- **Track M** -> Read [`migrate.md`](migrate.md) first; it fetches the live upgrade guide before any edit. Run Project signals for lane / package-manager / New-Architecture detection, but **skip credentials, provisioning, and the scaffold path** - it edits an existing project.
-- **Track S** -> Read [`sendbird-migration.md`](sendbird-migration.md) first; it detects the Sendbird integration shape (and the Expo-vs-bare flavor) before any edit. Run Project signals for lane / package-manager / New-Architecture detection, but **do not enter Track A/B/D or any scaffold path** - it re-implements an existing Sendbird integration in place.
-- **Track C** -> skip credentials and project probes if the product + runtime are explicit. Only run a read-only probe if RN CLI vs Expo is ambiguous and the answer affects the guidance.
-
----
-
-## Step 0.5: Credentials, token, and demo data (tracks A, B, D only)
-
-Use [`credentials.md`](credentials.md) once per session before writing code that connects to Stream Chat, Stream Video, or Stream Feeds.
-
-It resolves:
-
-- Stream API key
-- user id and display name
-- user token or token provider plan
-- optional demo data, only when requested, via Stream CLI calls (Chat: `UpdateUsers`, `GetOrCreateChannel`, `SendMessage`; Video and Feeds do not require seed data because calls are ephemeral and activities can be posted at runtime)
-
-For Track A, it is acceptable to scaffold the app first if the runtime or target directory must be resolved before credentials. Do not render a connected Chat, Video, or Feeds UI until credentials or a token-provider plan are resolved.
-
----
-
-## Project signals (tracks A/B/D - once per session; Track C on demand only)
-
-Read-only local probe. Use it to detect empty/new workspace, RN CLI vs Expo, New Architecture hints, navigation setup, and existing Stream packages.
+Don't write Stream SDK code from memory. APIs change between majors, so your
+memory is stale. Read the docs first, via the `getstream docs` command:
 
 ```bash
-bash -c 'echo "=== PACKAGE ==="; test -f package.json && grep -oE "\"(stream-chat|stream-chat-react-native|stream-chat-expo|@stream-io/video-react-native-sdk|@stream-io/feeds-react-native-sdk|@stream-io/react-native-webrtc|@stream-io/react-native-callingx|react-native|expo|@react-navigation/[^\"]+|expo-router|react-native-reanimated|react-native-worklets|react-native-teleport|@op-engineering/op-sqlite)\": *\"[^\"]*\"" package.json 2>/dev/null; echo "=== EXPO ==="; find . -maxdepth 2 \( -name "app.json" -o -name "app.config.js" -o -name "app.config.ts" -o -path "./app/_layout.*" \) -print 2>/dev/null; echo "=== NATIVE ==="; find . -maxdepth 2 \( -name "ios" -o -name "android" \) -type d -print 2>/dev/null; echo "=== CONFIG ==="; find . -maxdepth 2 \( -name "babel.config.js" -o -name "metro.config.js" \) -print 2>/dev/null; echo "=== EXPO_SDK ==="; node -e "try{console.log(require(\"./node_modules/expo/package.json\").version)}catch(e){try{console.log(require(\"./package.json\").dependencies.expo)}catch(e){console.log(\"-\")}}" 2>/dev/null; echo "=== EMPTY ==="; test -z "$(ls -A 2>/dev/null)" && echo "EMPTY_CWD" || echo "NON_EMPTY"'
+cat $(getstream docs chat-sdk/react-native)/INDEX.md
 ```
 
-Hold the result in conversation context. Do not re-run unless the user changes directory, packages are installed, or the project shape changes.
+Client and UI: chat-sdk/react-native, video/react-native,
+activity-feeds/react-native; the low-level Chat client (permissions, query
+filters, channel types) is chat/react-native. Node.js backend (token route,
+webhooks): chat/node, activity-feeds/node, moderation/node. Previous Chat
+majors are available too (chat-sdk/react-native/v<major>).
 
-Use the result to produce a one-line status, for example:
+Chat SDK majors can differ deeply (state, channel lists, threads,
+configuration). Before any Chat code, pin the installed major, read only that
+major's docs (never the unversioned id on trust), and treat SDK names in this
+skill and in your memory as leads to confirm there - follow chat-versions.md.
 
-- `Empty workspace detected - defaulting to Expo new app unless the user asked for RN CLI`
-- `Expo app detected - stream-chat-expo absent - Expo Router present - ready for Chat setup`
-- `Expo app detected - stream-chat-expo <N>.x + stream-chat in the core's range - Chat major <N>: chat-sdk/react-native/v<N> docs; blueprints only if they were written for <N> (references/CHAT-VERSIONS.md)`
-- `Expo app detected - Expo SDK 56+ - apply RULES.md > Expo Router SDK 56+ rule (no @react-navigation/*)`
-- `⚠️ react-native-reanimated 4.5.0 + react-native-worklets 0.10.0 detected — known crash pair (Expo SDK 57 pin); bump to ≥4.5.1/≥0.10.2 and rebuild native (RULES.md > Required peer setup)`
-- `Expo app detected - @stream-io/video-react-native-sdk absent - ready for Video setup`
-- `Expo app detected - @stream-io/feeds-react-native-sdk absent - ready for Feeds setup`
-- `RN CLI app detected - ios/android present - stream-chat-react-native installed - checking provider placement`
-- `RN CLI app detected - both @stream-io/video-react-native-sdk and stream-chat-react-native installed - Chat + Video interop applies`
-- `Expo app detected - @stream-io/feeds-react-native-sdk and stream-chat-expo installed - nest StreamFeeds + Chat providers (no sibling mounts)`
-- `No RN/Expo app detected in a non-empty directory - create a new app in a child directory or ask before reusing this directory`
+Video versions its docs too: `getstream docs list` shows which
+`video/react-native` major is Latest and which is a beta. Read the installed
+`@stream-io/video-react-native-sdk` major and pass the versioned id
+(video/react-native/v<major>) when it isn't the Latest one.
 
-If there is no RN/Expo project and Track A applies, scaffold one through [`builder.md`](builder.md) > **2. New app scaffold**. If Track B/D applies in a non-RN directory, ask before creating a child app because that changes project ownership.
+A how-to question needs no setup: answer it from the pinned major's docs and
+say which major the answer is for.
 
----
+## Setup
 
-## Module map
+Start with `getstream init` (binds the working dir to a Stream app, existing or
+new) and `getstream env --target expo` (writes `EXPO_PUBLIC_STREAM_API_KEY` to
+`.env`). A bare RN CLI app has no env target: put the public API key in the
+app's config, never the secret.
 
-| Track | Module(s) |
-|---|---|
-| A - New app | [`builder.md`](builder.md) + [`sdk.md`](sdk.md) + `llms.txt` docs lookup + product references (Chat / Video / Feeds) |
-| B - Existing app | [`builder.md`](builder.md) + [`sdk.md`](sdk.md) + `llms.txt` docs lookup + product references (Chat / Video / Feeds) |
-| C - Reference lookup | [`sdk.md`](sdk.md) + [`references/DOCS.md`](references/DOCS.md) + relevant product reference files |
-| D - Bootstrap / setup | [`builder.md`](builder.md) + [`sdk.md`](sdk.md) + `llms.txt` docs lookup |
-| M - Migrate / upgrade | [`migrate.md`](migrate.md) + [`references/DOCS.md`](references/DOCS.md) (live upgrade guide) + [`references/CHAT-VERSIONS.md`](references/CHAT-VERSIONS.md) (Chat) + product reference for the migrated SDK |
-| S - Migrate from Sendbird | [`sendbird-migration.md`](sendbird-migration.md) + [`references/sendbird-notes.md`](references/sendbird-notes.md) + [`references/sendbird-symbols.tsv`](references/sendbird-symbols.tsv) + [`references/design-matching.md`](references/design-matching.md) + [`credentials.md`](credentials.md) + [`references/CHAT-REACT-NATIVE.md`](references/CHAT-REACT-NATIVE.md) |
+For new apps, Expo (`npx create-expo-app@latest`, Expo Router) is the default
+unless the user asks for RN CLI. In an existing app, read the lane before
+editing: Expo or RN CLI (`app.json` / `app.config.*`, `ios/` + `android/`),
+the Expo SDK version, Expo Router or React Navigation, and the package manager.
+Keep all of them. In a non-empty directory that isn't an RN app, ask before
+scaffolding a child app there.
 
----
+Install the SDKs, with the peers listed on each product's Installation page:
 
-## Reference layout
+- Chat: `stream-chat` plus one wrapper for the lane - `stream-chat-expo` on
+  Expo, `stream-chat-react-native` on RN CLI, never both (see
+  chat-versions.md for which major)
+- Video: `@stream-io/video-react-native-sdk` (both lanes)
+- Feeds: `@stream-io/feeds-react-native-sdk` (both lanes)
+- Server-side: `@stream-io/node-sdk`
 
-Shared React Native and Expo patterns live in **[`sdk.md`](sdk.md)**.
+Don't bump an already-installed Stream major. Expo apps use `npx expo install`
+so versions match the Expo SDK.
 
-Product-specific setup, docs lookup, gotchas, and UI blueprints live under **`references/`**:
+Writes through `getstream api` (product configuration: channel types, feed
+groups, moderation policies, and the Video label below) are app-wide. Before the
+first one, run `getstream status` and tell the user which app it will change, so
+a stale CLI binding doesn't write to the wrong (possibly production) app.
 
-- **`llms.txt` docs lookup (Chat, Video, Feeds):** [`references/DOCS.md`](references/DOCS.md)
-- **Chat SDK majors (which major, which docs, which migration guide):** [`references/CHAT-VERSIONS.md`](references/CHAT-VERSIONS.md)
-- **Chat setup/reference:** [`references/CHAT-REACT-NATIVE.md`](references/CHAT-REACT-NATIVE.md)
-- **Chat screen/component blueprints:** [`references/CHAT-REACT-NATIVE-blueprints.md`](references/CHAT-REACT-NATIVE-blueprints.md)
-- **Video setup/reference:** [`references/VIDEO-REACT-NATIVE.md`](references/VIDEO-REACT-NATIVE.md)
-- **Video screen/component blueprints:** [`references/VIDEO-REACT-NATIVE-blueprints.md`](references/VIDEO-REACT-NATIVE-blueprints.md)
-- **Feeds setup/reference:** [`references/FEEDS-REACT-NATIVE.md`](references/FEEDS-REACT-NATIVE.md)
-- **Feeds screen/component blueprints:** [`references/FEEDS-REACT-NATIVE-blueprints.md`](references/FEEDS-REACT-NATIVE-blueprints.md)
-- **iOS simulator verification (fast run/screenshot loop):** [`references/SIMULATOR-VERIFICATION.md`](references/SIMULATOR-VERIFICATION.md)
+For Video apps, label the use case once, without asking the user (metadata, no
+runtime effect):
 
-If the requested product file is not bundled yet, say so plainly and only switch to live docs if the user asks.
+```sh
+getstream api UpdateApp --request '{"video_primary_use_case":"livestreaming"}'
+```
 
----
+Allowed values: `video-calling`, `voice-calling`, `livestreaming`,
+`audio-rooms`, `ai-agents`, `live-shopping`, `other`. Derive it from what the
+app is, not from the call type in use (Whatnot runs on the `livestream` call
+type but is `live-shopping`). Any commerce signal means `live-shopping`. Unsure
+means `other`.
 
-## Docs-first triggers (consult docs before building)
+Native setup that costs real runs:
 
-The bundled blueprints cover the **common scaffold path only** - root providers, auth gate, fresh-app scaffold, channel list, channel/message screen, threads (and the Video/Feeds equivalents). For anything that **customizes or extends** that path, the live `llms.txt`-selected page is the source of truth for the current API and recommended pattern. Fetch it **before** writing code.
+- Chat and Video ship native code: Expo apps run in a development build
+  (`expo-dev-client`, `npx expo prebuild`), never Expo Go. Every native package
+  added later means another prebuild and native build, so decide the full set
+  of capability packages (picker, camera, audio recording, video playback,
+  offline, ringing) before the first build.
+- Babel: on Expo SDK 54+, `babel-preset-expo` adds the worklets plugin itself -
+  don't create a `babel.config.js` (a hand-written one can break Metro with
+  `Cannot read properties of undefined (reading 'transformFile')`). On RN CLI
+  the Reanimated / worklets plugin goes last in `babel.config.js`.
+- Expo SDK 57 pins `react-native-reanimated@4.5.0` + `react-native-worklets@0.10.0`,
+  a pair that crashes on animation paths (not at boot, so a clean launch proves
+  nothing). Require reanimated >= 4.5.1 and worklets >= 0.10.2, installed after
+  the other `npx expo install` calls, which re-pin the bad pair. Check the
+  installed versions, not the launch.
+- With Reanimated 4 and Chat, set
+  `"reanimated": { "staticFeatureFlags": { "FORCE_REACT_RENDER_FOR_SETTLED_ANIMATIONS": false } }`
+  in the root `package.json` (the default breaks bottom sheets, the message
+  overlay, and context menus). It is read at pod install: rebuild native after.
+- Expo Router on SDK 56+ refuses to bundle with any `@react-navigation/*`
+  package. Don't install one, even for `useHeaderHeight`.
+- `react-native-teleport` (a Chat peer) has `react-dom` as an optional peer:
+  when the app already has `react-dom` (the default Expo template does), pin it
+  to the app's exact `react` version, or the install resolves a mismatch.
+- Safe areas: `SafeAreaProvider` from `react-native-safe-area-context` at the
+  root, never `SafeAreaView` from `react-native`. On RN 0.85 / Expo 56 the
+  package's `SafeAreaView` can fail to apply insets; `useSafeAreaInsets()` plus
+  padding works. Android draws edge-to-edge (`edgeToEdgeEnabled`: Expo
+  `app.json`, RN CLI 0.81+ `gradle.properties`).
 
-Docs-first applies when the request hits any of these:
+## Auth and users
 
-- **UI customization / theming / component overrides** - themes, design tokens, replacing a slot (message bubble, composer, call controls, participant tile, activity row), custom render props.
-- **Cookbook recipes** - typing indicators, message actions, reactions UI, attachment handling, mentions, search, link previews, etc.
-- **Advanced guides** - push notifications, offline support, PiP, ringing, screenshare, broadcasting, video filters, Chat+Video interop, notification/For-You feeds, polls, moderation.
-- **Migration / version upgrades.**
-- **Any exact API, prop, hook, or component detail** not already in the bundled blueprints.
+Tokens are minted server-side: a route uses the secret and returns the token
+with the apiKey. The route derives the Stream user id from its own session
+(cookie, JWT, OAuth subject), never from a `user_id` the app sends - that lets
+any signed-in user impersonate any other. The secret never reaches the app
+bundle, `app.json`, or native config. An app that already has auth or a token
+endpoint gets it extended, not a second one.
 
-Mechanism:
+Start with a login screen. Don't auto-connect, don't hardcode user credentials,
+don't seed demo users or content on app load. The token route upserts only the
+requesting user.
 
-**Consulting the references/DOCS.md, use `getstream docs` to fetch relevant docs. Never build customization, cookbook, or advanced features from memory.**
+Without a backend: a new Stream app has dev tokens off, so `devToken()` is
+rejected. Don't turn auth checks off to get around it (an app-wide security
+setting). Mint a token per test user with `getstream token <user_id>` (one
+call per user) into a `__DEV__`-gated, gitignored module, let the login screen
+pick from that roster, and say a real deployment needs a token route.
+`EXPO_PUBLIC_*` values are inlined at bundle time: restart Metro with `--clear`
+after editing `.env`.
 
----
+## Building
 
-## Styling-depth flag: matching a provided design
+Clients mount once, at the app root, above the navigator. Don't
+`disconnectUser()` in a screen's cleanup - it kills the client every other
+screen shares. A call screen's cleanup is `call.leave()`. A channel screen needs
+no cleanup: don't `stopWatching()` a channel when its screen closes - the
+channel list still shows it and needs its events.
 
-Orthogonal to the track above: if a request carries a **target appearance** - an attached
-screenshot, a Figma frame, or "make it look like \<app\>" - do not
-treat it as a set-a-few-colors task. **Before** writing UI code, run
-[`references/design-matching.md`](references/design-matching.md):
-it decomposes the reference region by region and plans **every** difference as one of three axes -
-**theming** (the `Theme` object), **layout** (`WithComponents` slot overrides + props), or
-**functional** (props / config / SDK hooks) - then verifies region-by-region against the reference.
-Implement every region, the composer included; a region left at the SDK default is a FAIL, not a
-"known cosmetic gap."
+- Chat: `useCreateChatClient()` (returns `null` while connecting - render
+  nothing until it's ready). With offline support this blocks the cached UI;
+  see the offline bullet under Chat.
+- Feeds: `useCreateFeedsClient()` (returns `undefined` while connecting).
+- Video: `StreamVideoClient.getOrCreateInstance()` in a `useEffect` with
+  `disconnectUser()` cleanup, never `new StreamVideoClient()` - a second
+  instance breaks push and ringing.
 
-This runs in addition to (not instead of) the `DOCS.md` lookup: fetch the manifest-selected
-theming/customization pages to confirm exact theme paths and component names. A plain request
-with **no** target appearance does not trip this flag - build from the blueprints as usual.
+Providers nest; they are never siblings: `GestureHandlerRootView` >
+`SafeAreaProvider` > Stream providers > navigator. Chat's `OverlayProvider` sits
+above the navigator, or the long-press menu, attachment picker, and image
+gallery render under the screen. Navigation params carry ids (`channel.cid`, a
+call id, an activity id), never a `Channel`, `Call`, or activity object.
 
-**Front-loaded traps (the recurring RN design-match failures — internalize before you start; full detail + recipes in [`references/design-matching.md`](references/design-matching.md)):**
-- **Composer is first-class and structural, not a colour.** If it floats (inset pill, rounded, shadow, content behind), set **`messageInputFloating` on `<Channel>`** — never fake a floating pill with a translucent background fill. The composer *bar* surface is `messageComposer.wrapper` (`container` is only an inner row — colouring it paints a band around the buttons). Send/mic lives **inside** the input pill and **swaps** at-rest↔typing (reuse `OutputButtons`, don't hand-roll). The attach `+` is **two things** — a trigger *and* a `+`↔keyboard stateful icon wired to `toggleAttachmentPicker` (don't drop in the bordered SDK `AttachButton` and assume it matches).
-- **Never fake a structure with a background fill; resolve the structural mechanism (prop/flag/slot) before cosmetic polish** (glass, exact colours).
-- **Timestamp/receipts *inside* the bubble is a structural relayout** (`MessageContent*` slots), not a theme key — the inside-the-bubble metadata look many reskins need.
-- **A chat app's attach sheet IS Stream's `AttachmentPicker`** (tiles on top + gallery below) — override `AttachmentPickerSelectionBar`, don't build a parallel modal. A **bottom** bar is also overridable (both `AttachmentPickerSelectionBar` and `AttachmentPickerContent` are context slots) — null the bar + override the content with an absolute-overlay bar; the host being a direct import does NOT lock the layout.
-- **`Channel` `keyboardVerticalOffset`/`topInset`: pass an explicit `0` for an inside-`Channel` header** — omitting `keyboardVerticalOffset` passes `undefined` (it has no SDK default), not `0`. Set a non-zero value only for a **native** header (or a sibling header *above* `<Channel>`). Verify keyboard-avoidance by **focusing the input to raise the real keyboard** — `setText` doesn't raise it.
-- **Overriding a composite slot drops every sub-feature the default drew** unless you reproduce it (avatar, grouping, reactions, replies, receipts, edited/deleted state).
-- **Setup traps that silently break these builds:** on Expo SDK 57 bump past the crash-prone reanimated pin (≥4.5.1/≥0.10.2), and on Reanimated 4 set `FORCE_REACT_RENDER_FOR_SETTLED_ANIMATIONS: false` in root `package.json` (both in [`RULES.md`](RULES.md) > Required peer setup).
+Start with prebuilt Stream SDK components. Customize them via documented props,
+theme, and hooks. Feeds has no prebuilt UI - build from its hooks.
 
-The cross-cutting reasoning rules that catch these live in [`references/design-matching.md`](references/design-matching.md) — read it for any design-match request. Where each one sits: partial-styling → inner container, name-isn't-the-node, reinvention red flag, structure-before-surface and idiomatic-≠-matching in **Step 1 > Region checklist + routing**; no magic numbers and ink-vs-declared-size in **Step 1 > Getting sizes right / Weight**; override-every-cascading-token, pinned-vs-adapted surfaces and glyph knockouts in **Step 1 > Follow EVERY color**; regression adjacency in **Step 3**. Two stay here: *green-launch ≠ correct* in [`references/SIMULATOR-VERIFICATION.md`](references/SIMULATOR-VERIFICATION.md) §7, and *assumed-≠-SDK-default* in [`RULES.md`](RULES.md) > Package version and docs discipline.
+Land on a channel list, lobby, or feed by default - never directly in a call or
+a camera prompt. Camera/mic permission is requested only on an explicit action
+(Join, Go Live). Empty states say what to do next.
 
----
+Chat:
 
-## Track A - New app
+- Component overrides go through `<WithComponents overrides={...}>`, placed
+  above the navigator. A component passed as a `<Channel>` prop is silently
+  ignored and looks like a stale bundle. `WithComponents` reads its overrides
+  once, at mount: an override that must change at runtime (theme, state) reads
+  it inside the component (`useTheme()`, a hook), not by swapping the
+  `overrides` object. Some slots (the
+  `MessageContent*View` slots, `MessageSpacer`, `MessageText`, `Input`) are
+  optional overrides, not defaults: grep both `DEFAULT_COMPONENTS` and
+  `OptionalComponentOverrides` in the installed core before saying a slot
+  doesn't exist.
+- Keyboard and picker insets: omitting `<Channel>`'s `keyboardVerticalOffset`
+  doesn't mean 0 - the keyboard view falls back to its own default (86.5 on
+  iOS, -300 on Android). With the header rendered inside `<Channel>`, pass
+  `keyboardVerticalOffset={0}` and `topInset={0}`. Under a native navigation
+  header, pass the header height to both - `topInset` is what the attachment
+  picker uses for its snap point. On Expo Router SDK 56+ there is no
+  `useHeaderHeight`: use `(Platform.OS === 'ios' ? 44 : 56) + insets.top`. A
+  gap between the composer and the picker means `topInset` is wrong; don't
+  close it with `bottomInset`. Check by focusing the input so the real keyboard
+  rises (`setText` doesn't raise it).
+- Feature gating: the source of truth is the connected user's
+  `channel.data?.own_capabilities`. Outside `<Channel>`, read them with
+  `useChannelOwnCapabilities(channel)`; the context hook throws there.
+- Custom reaction types are string ids, not emoji characters (emoji are
+  rejected server-side), passed as `supportedReactions` on `<Channel>`. Extend the
+  exported `reactionData` instead of rebuilding it, and mark the picker's
+  entries `isMain: true` - entries without it never show in the picker.
+- A channel created from a member list only (no id) can't change its members
+  later. Give it an id when membership will change.
+- A custom long-press menu owns its thread and edit wiring: open a thread with
+  `openThread(message)` plus your navigation to the thread screen; start an
+  edit with `setEditingState` after the menu's Modal has closed, then focus the
+  input (an edit started while the Modal is open silently does nothing).
+- Offline support is opt-in (`enableOfflineSupport` on `<Chat>` plus
+  `@op-engineering/op-sqlite`). It only helps if the UI renders before the
+  connection does: `useCreateChatClient` returns `null` until connected, so an
+  offline launch shows a blank screen. Create the client yourself and call
+  `connectUser` without awaiting it before rendering `<Chat>`, as
+  `basics/offline-support.md` shows. On sign-out call
+  `client.offlineDb?.resetDB()` before `disconnectUser()`, or the next user on
+  the device sees the previous user's data.
 
-**Full detail:** [`builder.md`](builder.md) - use the new-app path.
+Feeds:
 
-| Phase | Name | What you do |
-|---|---|---|
-| **A1** | Detect | Run Project signals. Empty workspace is valid for Track A. |
-| **A2** | Choose lane and product | Default to Expo if unspecified; use RN CLI when requested. Confirm product (Chat, Video, Feeds, or any combination). |
-| **A3** | Scaffold | Create the app with current framework tooling; do not explain full RN/Expo environment setup. |
-| **A4** | Install + wire | Use the manifest-selected Installation docs for each product, verify npm dist-tags, install package and peers, then wire providers and first UI. |
-| **A5** | Verify | Confirm install, root providers, permissions (Video: camera/mic), auth, and first rendered Chat / Video / Feeds screen. |
+- Import from `@stream-io/feeds-react-native-sdk`. Some docs snippets import
+  the web package (`@stream-io/feeds-react-sdk`); don't copy that.
+- A social feed needs a visible follow control - a timeline without follows is
+  permanently empty. Follows go through the timeline feed instance, not
+  `client.follow()`, so the feed hooks update. Follow your own user feed too, or
+  your own posts never appear in your timeline.
+- Screens that show live data read watched feeds through the state hooks, not
+  `queryActivities` (a one-off query that never updates).
+- A comments screen built on `client.activityWithStateUpdates(id)` must ask for
+  comments in its `get()` call, or `useActivityComments` stays empty. Dispose
+  the handle on unmount.
+- The `foryou` feed group returns nothing until its `activity_selectors` are
+  configured (`getstream api UpdateFeedGroup`), and a `popular` selector also
+  needs activities that clear its `min_popularity`.
+- Push devices are registered with `client.createDevice()` (native token, not
+  the Expo push token) and removed with `client.deleteDevice()` before
+  disconnecting - not Video's `addDevice`.
 
----
+Video:
 
-## Track B - Existing app
+- The destination call screen is the only place that gets the call:
+  `client.call(type, id, { reuseInstance: true })` - the same call may already
+  exist from a ring, a deep link, or push, and without the flag the SDK builds a
+  duplicate. Descendants read it with `useCall()`.
+- Guard the cleanup leave:
+  `if (call.state.callingState !== CallingState.LEFT) await call.leave()`. The
+  default hang-up already leaves, and a second `leave()` throws. Hang-up
+  handlers only navigate.
+- Audio routing is automatic on join and leave. Don't add
+  `callManager.start/stop` for normal calls; only a view-only audience
+  (livestream viewer, audio-room listener) changes `audioRole` to `listener`.
+- Ringing: `StreamVideoRN.setPushConfig` needs `createStreamVideoClient`,
+  built with the same options as the app's client - a mismatch breaks ringing.
+  Non-ringing call pushes are app-owned and on iOS use the APNs token, not the
+  VoIP token.
+- Insets reach the call UI through the theme (`variants.insets` from
+  `useSafeAreaInsets()`). Don't also wrap `CallContent` and its siblings in
+  `SafeAreaView` - that doubles the padding.
+- Call-type setting changes don't apply to existing calls - test with a fresh
+  call id.
 
-**Full detail:** [`builder.md`](builder.md) - use the existing-project path.
+Push, ringing, and Chat with Video follow the docs runbooks: Chat's
+`guides/push-notifications.md`, Video's `advanced/incoming-calls/`, and
+Video's `advanced/chat-with-video.md` (one API key and token for both, nested
+providers).
 
-| Phase | Name | What you do |
-|---|---|---|
-| **B1** | Detect | Run Project signals and inspect existing app structure before editing. Note any existing Chat / Video / Feeds packages. |
-| **B2** | Preserve | Keep Expo/RN CLI lane, package manager, navigation stack, and auth architecture. If the user asks to **upgrade/migrate an SDK version**, that is **Track M** -> [`migrate.md`](migrate.md), not a Track B edit. |
-| **B3** | Integrate | Use `llms.txt` lookup for the requested area, then load only the Chat / Video / Feeds reference/blueprint sections needed. |
-| **B4** | Verify | Confirm the requested Stream Chat / Video / Feeds flow builds and renders in the existing app. |
+Moderation:
 
----
+- Don't build moderation UIs (review queue and the like): Stream Dashboard
+  already provides them. End-user actions (report, block, mute) are fine.
+- `CreateBlockList` 400s if the list already exists - check `ListBlockLists`
+  first. Fill blocklists with real words, not `badword1` placeholders.
+- Custom moderation rules return 403 on free plans - use blocklist + config
+  instead.
 
-## Track C - Reference lookup
+## Defaults to keep
 
-Load only the relevant files for the requested product:
+The prebuilt components ship features users expect. Keep each one on unless the
+user turns it off by name. A design reference that doesn't show a feature, or
+"keep it minimal", is not turning it off: keep the feature and style it to
+match, or ask.
 
-- `llms.txt` manifest lookup rules -> [`references/DOCS.md`](references/DOCS.md)
-- Shared lifecycle / auth / provider / runtime patterns -> [`sdk.md`](sdk.md)
-- Chat RN setup and gotchas -> [`references/CHAT-REACT-NATIVE.md`](references/CHAT-REACT-NATIVE.md)
-- Chat RN screen/component structure -> [`references/CHAT-REACT-NATIVE-blueprints.md`](references/CHAT-REACT-NATIVE-blueprints.md)
-- Video RN setup and gotchas -> [`references/VIDEO-REACT-NATIVE.md`](references/VIDEO-REACT-NATIVE.md)
-- Video RN screen/component structure -> [`references/VIDEO-REACT-NATIVE-blueprints.md`](references/VIDEO-REACT-NATIVE-blueprints.md)
-- Feeds RN setup and gotchas -> [`references/FEEDS-REACT-NATIVE.md`](references/FEEDS-REACT-NATIVE.md)
-- Feeds RN screen/component structure -> [`references/FEEDS-REACT-NATIVE-blueprints.md`](references/FEEDS-REACT-NATIVE-blueprints.md)
-- **Audit an existing Video integration against best practices** -> the **Integration best-practices audit** section in [`references/VIDEO-REACT-NATIVE.md`](references/VIDEO-REACT-NATIVE.md) (read-only review; produce findings before changing any code)
+Override the smallest slot that does the job, and add to existing
+`WithComponents` overrides instead of replacing them. Replacing a whole region
+drops everything it rendered by default:
 
-If the user asks for exact API details not bundled here, use [`references/DOCS.md`](references/DOCS.md) to fetch the right manifest and selected markdown page. If implementation still needs source-level confirmation, inspect the installed package under the target app's `node_modules` after dependencies are installed. Do not use machine-specific documentation paths.
+- A custom message must put back what the default renders: text, attachments,
+  quoted message, polls, reactions, replies count, the long-press menu,
+  timestamp, read status, edited and deleted states.
+- A custom composer must put back the attachment picker and previews, the
+  quoted-message preview, audio recording, link previews, and the send / stop
+  button.
 
----
+The defaults, and what usually turns them off:
 
-## Track D - Bootstrap / setup
+- Markdown in message text. Rendering `message.text` in a plain `<Text>`, or a
+  custom `MessageText` that doesn't build on the SDK's, turns it off. Check:
+  send `**bold**`, a list, and a code block.
+- Reactions. A custom message without the reaction list, or custom reaction
+  types missing `isMain`. Check: long-press, react, and see the reaction.
+- Threads. A navigator without a thread screen, or a custom message without
+  the replies count. Check: reply in a thread, and open it from the parent.
+- Attachment picker. Keep the SDK's `AttachmentPicker` and override only
+  `AttachmentPickerSelectionBar` / `AttachmentPickerContent`; don't build a
+  separate modal. The picker's toggle lives inside the default `AttachButton`
+  and isn't exported: a custom attach button reproduces it (design-matching.md,
+  Build). Check: open the picker, attach an image, send.
+- Send and mic. Reuse `OutputButtons` (it swaps send, mic, and stop by state)
+  instead of hand-rolling buttons. Audio recording is off by default
+  (`audioRecordingEnabled` on `<Channel>`). Check: type, send, and record if
+  enabled.
+- AI replies: `isMessageAIGenerated` on `<Chat>` (streamed text), and the stop
+  button the default composer shows while the AI works (replacing the composer
+  drops it). Check: as in ai-integration.md.
 
-Use when the user wants package install and shared wiring more than a full feature build. Branch by product:
+## Verify
 
-- detect RN CLI vs Expo
-- use `llms.txt` lookup for the matching product's Installation docs and verify current npm dist-tags
-- install the correct package and required peers (Chat: `stream-chat-react-native` or `stream-chat-expo`; Video: `@stream-io/video-react-native-sdk`; Feeds: `@stream-io/feeds-react-native-sdk` + `@react-native-community/netinfo`)
-- Chat-specific wiring: add Reanimated/Worklets Babel plugin as the last plugin, wrap the entry point with `GestureHandlerRootView`, place `OverlayProvider` and `Chat`, wire `useCreateChatClient` or the app's backend token provider
-- Video-specific wiring: declare camera/mic permissions, add Expo config plugins where applicable, create `StreamVideoClient` and mount `StreamVideo`
-- Feeds-specific wiring: call `useCreateFeedsClient` (returns `undefined` while connecting), mount `<StreamFeeds client={client}>` once near the app root, and (typically) wrap an `OwnFeedsContextProvider` that creates the user + timeline feeds and the self-follow
-- stop before product-specific UI if the user only asked for setup
+Type-check (from an absolute `cd` into the project, never piped - a pipe
+reports the pipe's exit status, so a failing check reads as green), build
+native, run the app on a simulator or emulator, and test multi-user flows as
+two different users: two simulators, a simulator and an emulator, or - with one
+device - the second user acting server-side
+(`getstream api SendMessage ... "user_id":"<other user>"`) while you watch the
+message arrive live; that user must exist and be a channel member (log in as
+them once first). That is a verification step, not app seeding. Drive the
+interactions (tap, long-press, type, send); a screenshot doesn't prove a tap
+works. Follow simulator-verification.md for the run loop.
 
----
+Run the check for each default in Defaults to keep. Report what was verified
+and what wasn't, and list each default that is off with the user's words that
+turned it off.
 
-## Track M - Migrate / upgrade a version
+## Auditing an integration
 
-**Full detail:** [`migrate.md`](migrate.md) - Read it first; it fetches the live upgrade guide before any edit. Docs-driven and read-only until the guide is fetched - **never migrate from memory** ([`RULES.md`](RULES.md) > Package version and docs discipline). Skip credentials, provisioning, and scaffold; preserve the project's runtime lane, package manager, and lockfile.
+When asked, perform a read-only audit: check the code against the docs and the
+rules in Building, report findings, and fix only if asked. Video has a
+checklist page for this: `advanced/integration-best-practices.md` in
+video/react-native. For a pre-launch review, also follow the stream skill's
+integration-review.md.
 
-| Phase | Name | What you do |
-|---|---|---|
-| **M1** | Detect | Run Project signals + read `package.json`/lockfile: which Stream packages, their from -> to versions, runtime lane, package manager, and RN/Expo New-Architecture status. |
-| **M2** | Fetch the guide | From the product manifest ([`references/DOCS.md`](references/DOCS.md)) fetch the matching upgrade guide and, for Chat, the AI migration guide for the pair ([`references/CHAT-VERSIONS.md`](references/CHAT-VERSIONS.md) says how to find it). One major per pass. Hard gate on failure -> `getstream docs` -> stop and ask. |
-| **M2.5** | Prerequisites | Clear RN-specific blockers first, as the guide lists them: New Architecture requirement, RN / Expo / Node floors, new native/peer deps (e.g. `react-native-teleport` for Chat v9), native rebuild. |
-| **M3** | Apply | Bump only the targeted packages (each at its own target; bump the lane's Chat wrapper together with `stream-chat`), apply every documented breaking change, ground each symbol in installed `node_modules/stream-chat-react-native-core` source, grep for renamed symbols, do native config + keyboard cleanup. |
-| **M4** | Verify | `tsc --noEmit` -> Metro bundle -> native build -> simulator/device smoke of the core flow. No `next build`; a green `tsc` is not a render. Run gate commands from an absolute `cd` and **never piped** - a pipe returns the pipe's exit status, not the command's. |
-| **M5** | Summarize | Packages bumped, breaking changes applied, native/New-Arch changes, files touched, manual follow-ups. Offer (don't auto-run) the next step. |
+## Upgrading an SDK version
 
----
+When asked, read the upgrade notes for both the installed and the target major
+(use the versioned docs), apply them, then verify as if you're building an app.
+For Chat, follow the AI migration guide for the exact pair of majors
+(chat-versions.md), one major per pass.
 
-## Track S - Migrate from Sendbird
+RN upgrades also carry native work, in this order: prerequisites the guide
+names (New Architecture, React Native / Expo floors), new native peers, then
+the code. Bump the lane's wrapper and `stream-chat` together; Stream packages
+version independently, so each gets its own target. Confirm every renamed
+symbol in the installed `stream-chat-react-native-core` source, not the
+wrapper. Rebuild native (`pod install`, or `npx expo prebuild --clean` and a new
+development build) before testing.
 
-**Full detail:** [`sendbird-migration.md`](sendbird-migration.md) - Read it first. It detects the existing Sendbird integration shape **and** the Expo-vs-bare flavor, then re-implements each touchpoint **in place** against the grounded Sendbird<->Stream mapping ([`references/sendbird-notes.md`](references/sendbird-notes.md) + [`references/sendbird-symbols.tsv`](references/sendbird-symbols.tsv)), and finally offers the separate server-side data migration. Not a scaffold track: **do not enter Track A/B/D**. The compiler is the oracle - never migrate from memory ([`references/sendbird-notes.md`](references/sendbird-notes.md) > Trust model).
+Feeds v2 to v3 is a data migration as well as a code one: use the
+stream-feeds-migration skill for the mapping.
 
-| Phase | Name | What you do |
-|---|---|---|
-| **S0** | Detect & inventory | Run Project signals for the flavor (Expo vs bare RN), package manager, New-Arch, navigation. Grep the Sendbird footprint, classify each touchpoint + every `@sendbird` symbol (mapped / unmapped-known / unknown), build the **parity ledger**, and capture the **visual baseline** (simulator screenshots of the original, or code-derived theme) - [`sendbird-migration.md`](sendbird-migration.md) section 0. |
-| **S1** | Plan & checkpoint | Assemble the plan (flavor + shape, token path, design bar, gaps). Pause and batch-ask the user on any GAP row, unresolved credentials, or an ambiguous design bar; else proceed. Section 2. |
-| **S2** | Packages & connection | Install Stream **alongside** Sendbird (flavor-correct package + peers; wire `GestureHandlerRootView` / `OverlayProvider` / Reanimated Babel plugin). Prove a real user connects (`useCreateChatClient` + `tokenProvider`) via [`credentials.md`](credentials.md) **before** touching UI. Sections 3-4. |
-| **S3** | Migrate touchpoints | File-by-file, in place: UI composition (no `<Window>`; app-owned header), channels, messages/attachments, events (`{ unsubscribe }` cleanup), pagination (stateless), membership/moderation, offline. Delete hand-rolled machinery for reactive primitives. Then remove all three Sendbird packages. Section 5. |
-| **S4** | Design parity | Re-author the theme as a JS `Theme` object (no CSS), then run [`references/design-matching.md`](references/design-matching.md) from Step 1 with the baseline as the reference. Section 6. |
-| **S5** | Verify | Gates in order: `tsc --noEmit`, native build, zero `@sendbird` imports, two-user simulator smoke **+ every interaction driven** (gate 4 - handlers are verified there, not by the design gate), design verify loop vs the ledger, ledger closure, README. Run gate commands from an absolute `cd` and **never piped**. Section 7. |
-| **S6** | Offer data migration | Never auto-run. Offer the server-side data migration ([`../stream/sendbird-data-migration.md`](../stream/sendbird-data-migration.md)); stop if the user only wanted the SDK swap. Section 8. |
+## Matching a reference design
+
+When the request carries a target appearance - a screenshot, a Figma frame,
+"make it look like WhatsApp" - follow design-matching.md.
+
+A named app without a reference ("a Slack-like team chat", "a WhatsApp-style DM
+app") is guidance on structure - the shape, built from prebuilt components - not
+a look to match. Only explicit design reference warrants design-matching.md.
+
+## Migrating from Sendbird
+
+For the code migration, follow sendbird-migration.md. When the user also wants
+their existing data moved (users, channels, message history), follow the stream
+skill's sendbird-data-migration.md.
+
+## AI assistants, support bots, agents
+
+The model runs on a backend agent, never in the app: no LLM provider key or
+Stream secret in the bundle, `app.json`, or native config.
+
+- Stream Agents (voice and text agents run on Stream, `getstream agents`) has no
+  React Native client SDK. Tell the user before building.
+- Support bot, help desk, RAG chat: the backend is the same as on the web -
+  follow stream-react skill's ai-support-agent.md for it, then
+  ai-integration.md for the app.
+- ChatGPT-style app, an assistant inside an existing chat, streaming answers,
+  stop generating, voice input, client tools, generative UI: follow
+  ai-integration.md.
+
+## Other skills
+
+This skill covers Stream. For general React Native and Expo work, use these
+skills if they're installed:
+
+- vercel-react-native-skills: performance - list rendering, animations, native
+  modules.
+- Expo's skills (expo/skills): Expo Router, development builds, EAS, upgrading
+  the Expo SDK.
+
+Where general advice conflicts with this skill, this skill wins for Stream
+code:
+
+- Create clients as described in Building, even if a performance rule suggests
+  restructuring the effect or memoizing differently.
+- Customize Stream UI through its documented overrides (`WithComponents`, the
+  theme, props, hooks), not by rebuilding it as your own components. Defaults
+  to keep applies.
+- Keep the Chat and Video packages in a development build even where a general
+  skill prefers Expo Go.
+
+If these skills aren't installed, carry on without them. Don't install skills
+yourself; mention them once in the final summary:
+
+```bash
+npx skills add vercel-labs/agent-skills --skill vercel-react-native-skills
+npx skills add expo/skills
+```
