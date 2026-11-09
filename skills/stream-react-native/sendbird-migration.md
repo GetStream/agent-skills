@@ -84,8 +84,9 @@ design-matching.md (sampled colors, radii, sizes, weights).
   never `simctl openurl exp://...`, whose "Open in Expo Go?" alert can't be
   tapped and forces a simulator reboot. A fresh simulator may need Expo Go
   installed from `~/.expo/ios-simulator-app-cache/Expo-Go-*.tar.app`.
-- `simctl` can't tap: drive the states from temporary scaffold code that uses the
-  original app's own Sendbird APIs, and remove it after capture.
+- Drive the states with real taps when a simulator tool can tap; with only
+  `simctl`, which can't, use temporary scaffold code that calls the original app's
+  own Sendbird APIs, and remove it after capture.
 
 If the original can't run, fall back to user-provided screenshots (ask), or
 build it from a `git worktree` at the pre-migration commit. With no pixels at

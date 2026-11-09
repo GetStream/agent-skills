@@ -1,12 +1,25 @@
 # Verifying on a simulator
 
 Running the app to screenshot and check it is the most expensive part of an RN build.
-Most of the wasted time comes from a second native build, a stale Metro bundle, and the
-simulator's lack of touch input. This file covers the iOS simulator in both lanes (Expo
-development build, RN CLI), with Android emulator equivalents at the end.
+Most of the wasted time comes from a second native build, a stale Metro bundle, and fixed
+waits. This file covers the iOS simulator in both lanes (Expo development build, RN CLI),
+with Android emulator equivalents at the end.
 
 Pin one simulator UDID for the whole loop and pass it to every `simctl` and `run:ios`
 call; several booted simulators is how a screenshot lands on the wrong device.
+
+## Two ways to drive it
+
+- **A simulator tool that can tap** (an iOS Simulator MCP or similar: tap, type,
+  long-press, swipe, screenshots): prefer it. Reach screens and interaction states with
+  real taps instead of temporary code, and poll with its screenshots. Its traps are in
+  "Driving it with taps".
+- **Only `xcrun simctl`:** it can't tap, type, or scroll. Reach screens with temporary code
+  ("Reaching screens and states with only simctl").
+
+The rules are the same either way: never wait with a fixed `sleep` - poll ("Wait by
+polling, not sleeping"); terminate before every relaunch; and drive every handler, because
+a screenshot doesn't prove a tap works.
 
 ## The run loop
 
@@ -95,7 +108,21 @@ xcrun simctl privacy <udid> grant microphone <bundleId>   # the recorder needs i
   audio, but the recorder UI still renders; attempt the capture before concluding it
   can't be done.
 
-## Reaching screens and states without taps
+## Driving it with taps
+
+- Poll after every tap that navigates or opens a sheet, until the new screen settles,
+  before typing. Keys typed before the input has focus go to the app (in development a
+  `d` opens the Expo dev menu).
+- A key press can switch the simulator to its hardware keyboard: the on-screen keyboard
+  hides, and the SDK's edit action, which waits for it, silently does nothing. Show the
+  on-screen keyboard again before an edit or a keyboard-avoidance check.
+- Fast typing races a confirm button: let the input settle before tapping send or save,
+  then check the saved text.
+- Expo's floating dev gear covers header-right buttons; drag it aside before tapping them.
+- In development, saving a theme module can remount the navigator: expect to navigate back
+  to the screen under test after each theme edit.
+
+## Reaching screens and states with only simctl
 
 `simctl` can't tap, type, or scroll. Drive navigation and state from temporary code,
 screenshot, then delete the code, type-check, and relaunch:
@@ -122,7 +149,9 @@ passed every screenshot check while channel taps did nothing. Drive each handler
 
 A fixed `sleep` either shoots the splash or wastes time on every capture. Poll: mark the
 Metro log, launch, wait for this launch's bundle line, then take screenshots until one
-differs from the splash and the next is identical.
+differs from the splash and the next is identical. With a screenshot tool, the rule is
+the same - after a launch or a tap, take screenshots until two in a row match, instead of
+sleeping. The script below is the `simctl` version.
 
 ```bash
 U=<udid>; B=<bundleId>; LOG=/tmp/metro-<proj>.log; OUT=<screen>-<state>-1.png
