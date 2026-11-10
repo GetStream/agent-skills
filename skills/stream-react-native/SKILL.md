@@ -376,7 +376,8 @@ The model runs on a backend agent, never in the app: no LLM provider key or
 Stream secret in the bundle, `app.json`, or native config.
 
 - Stream Agents (voice and text agents run on Stream, `getstream agents`) has no
-  React Native client SDK. Tell the user before building.
+  React Native client SDK: `@stream-io/stream-agents` is for Node and the browser.
+  Tell the user before building.
 - Support bot, help desk, RAG chat: the backend is the same as on the web -
   follow stream-react skill's ai-support-agent.md for it, then
   ai-integration.md for the app.
