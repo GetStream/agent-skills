@@ -8,8 +8,8 @@ with the Chat and Video UI kits, and runs any tools it registers.
 ## Docs
 
 ```bash
-d=$(getstream docs agents/javascript)
-cat $d/INDEX.md                      # quickstart: agent folder, tools, chat UI
+d=$(getstream docs agents)           # one doc set; each page has every SDK's code
+cat $d/quickstart.md                 # quickstart: agent folder, tools, chat UI
 cat $d/sessions.md                   # sessions, voice, events, history
 cat $d/auth.md                       # user tokens
 cat $d/tool-calling-and-dispatch.md  # browser tools vs a Dispatch worker

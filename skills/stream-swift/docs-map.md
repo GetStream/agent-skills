@@ -167,19 +167,26 @@ Prefix `https://getstream.io/chat/docs/sdk/ios`:
 
 ### Chat - AI integrations (LLM assistants, streaming, agents)
 
-Run [`ai-integration.md`](ai-integration.md) first - it settles 5.13.0 vs the standalone fallback, carries the wiring the docs leave out, and links the shared backend contract (the model lives on a backend agent, never in the app; the `ai_generated` / `generating` / `ai_indicator.*` protocol). Prefix `https://getstream.io/chat/docs/sdk/ios`:
+Run [`ai-integration.md`](ai-integration.md) first - it settles which Chat version and which agent backend (Stream Agents with the `StreamAgents` SDK, or an agent of your own), carries the wiring the docs leave out, and links the shared backend contract (the model lives on a backend agent, never in the app; the `ai_generated` / `generating` / `ai_indicator.*` protocol). Prefix `https://getstream.io/chat/docs/sdk/ios/ai-components` (the pages moved there from `.../guides/ai-integrations/`, whose `.md` URLs are gone):
 
 | Want to ... | Page (.md) |
 |---|---|
-| AI components (`StreamingMessageView`, `AIComposerView`, `SpeechToTextButton`, `AITypingIndicatorView`, `SuggestionsView`, `StreamingReasoningView`, `SidebarView`, `AIOnDeviceModel`), install from 5.13.0, requirements, `Info.plist` keys, migrating from `stream-chat-swift-ai`, `AIAppearance` + localization, best practices (`ai_generated`, indicator events, stop, ephemeral updates) | `.../guides/ai-integrations.md` |
-| Show the conversation - the primary way, for AI chats and voice agent transcripts (`AIConversationView`, `AIMessage`, messages from Stream Chat, thinking, pending messages, older messages, `AIConversationViewFactory`, reply actions, attachments), from 5.15.0. A voice transcript also runs [`ai-integration.md`](ai-integration.md) shape E | `.../guides/ai-integrations/conversation-view.md` |
-| The alternative: the components inside the `StreamChatSwiftUI` message list (streaming custom attachment with agent steps, message resolver, thinking indicator via `Styles`) - for an assistant inside an existing messenger, or a conversation that needs messenger features | `.../guides/ai-integrations/swiftui-integration.md` |
-| Agent steps: reasoning, tool calls, approvals (`AIMessagePart`, `AIMessagePartsView`, `AIToolCallView`, `AIToolApprovalView`, `AIToolApprovalCard`, `AIToolApprover`), the step format | `.../guides/ai-integrations/reasoning-and-tool-calls.md` |
-| Client-side tools (`AIClientTool`, `AIClientToolDefinition`, `AIClientToolRunner`, registration, `client_id`; from agent steps or `custom_client_tool_invocation` events) | `.../guides/ai-integrations/client-side-tools.md` |
-| Backend agent with the Vercel AI SDK (`@stream-io/chat-ai-sdk`) | `.../guides/ai-integrations/stream-chat-ai-sdk.md` |
-| Backend agent with LangChain (`@stream-io/chat-langchain-sdk`) | `.../guides/ai-integrations/stream-chat-langchain-sdk.md` |
+| Start: what to build, how the app, Stream Agents and the components fit, install (`StreamAgents` + `StreamChatAI`), `Info.plist` keys, signing the user in, an `AgentTransport`, `AIAppearance` + localization, the component list | `https://getstream.io/chat/docs/sdk/ios/ai-components.md` |
+| Use cases: a support agent, a personal assistant (conversation list, device tools, voice mode), a voice agent (call screen, glow, transcript) | `.../use-cases/customer-support-agent.md`, `.../use-cases/personal-assistant.md`, `.../use-cases/voice-agent.md` |
+| Show the conversation - the primary way, for AI chats and voice agent transcripts (`AIConversationView`, `AIMessage`, messages from Stream Chat, thinking, pending messages, older messages, suggestions, `SidebarView`, `AIConversationViewFactory`, reply actions, attachments). A voice transcript also runs [`ai-integration.md`](ai-integration.md) shape E | `.../conversation-view.md` |
+| The conversation's state (`AIConversation`, from 5.16.0): a transport to your agent (`AIConversationTransport`, `AIConversationFeed`, requests), a transport over a Stream Chat channel, what the backend sends, stop, actions, `AIOnDeviceModel` | `.../conversation-state.md` |
+| The composer (`AIComposerView`, `SpeechToTextButton`, photos, chat options, usage descriptions) | `.../composer.md` |
+| Streaming Markdown, code and charts (`StreamingMessageView`, `AITypingIndicatorView`) | `.../streaming-messages.md` |
+| Agent steps: reasoning, tool calls, approvals, sign-ins, tools on the device (`AIMessagePart`, `AIMessagePartsView`, `StreamingReasoningView`, `AIToolApprovalCard`, `AIToolApprover`, `AIClientTool`, `AIClientToolDefinition`, `AIClientToolRunner`), the step format | `.../reasoning-and-tool-calls.md` |
+| Generative UI (from 5.16.0): `AIUIHost`, `StreamChatA2UI` / `StreamChatOpenUI` renderers, components, the app's tools, actions, telling the agent what the app shows (`capabilities`) | `.../generative-ui.md` |
+| Voice visualizations (`AIVoiceGlowView`, `AIVoiceWaveView`, `AIVoiceAgentState`) | `.../voice-visualizations.md` |
+| The alternative: the components inside the `StreamChatSwiftUI` message list (streaming custom attachment with agent steps, message resolver, thinking indicator via `Styles`) - for an assistant inside an existing messenger, or a conversation that needs messenger features | `.../swiftui-integration.md` |
+| Backend agent with the Vercel AI SDK (`@stream-io/chat-ai-sdk`) | `.../stream-chat-ai-sdk.md` |
+| Backend agent with LangChain (`@stream-io/chat-langchain-sdk`) | `.../stream-chat-langchain-sdk.md` |
 
-Code: components `GetStream/stream-chat-swift` (`Sources/StreamChatAI`, the `StreamChatAI` product from 5.13.0, added in #4306; the standalone `stream-chat-swift-ai` repo is the fallback for apps below 5.13.0 or on Xcode 26), reference iOS app `GetStream/chat-ai-samples` (`ios/AIComponents`, the message-list path, still on the standalone package - apply the docs' migration steps when copying), reference backends `chat-ai-samples/ai-sdk-sample` and `langchain-sample`. The pages above cover 5.13.0 through 5.15.0 (5.15.0 added `AIConversationView`, `AIToolAuthorizationView` and the voice visualizations). They no longer show the standalone package's API (take that from its 0.12.0 source).
+Stream Agents itself (the agent folder, sessions, voice, `responses.create`, generative UI on the router) is in the Agents docs: `getstream docs agents` (one doc set; each page has the Swift code beside the other SDKs'), or `https://getstream.io/agents/docs/quickstart.md`.
+
+Code: components `GetStream/stream-chat-swift` (`Sources/StreamChatAI`, the `StreamChatAI` product from 5.13.0, added in #4306; `Sources/StreamChatA2UI` and `Sources/StreamChatOpenUI` from 5.16.0; the standalone `stream-chat-swift-ai` repo is the fallback for apps below 5.13.0 or on Xcode 26), the Stream Agents Swift SDK `GetStream/Vision-Agents` (`sdks/swift/core`, the `StreamAgents` product; `sdks/swift/README.md`; sample apps in `examples/voice_agents/swift_assistant` and `swift_demo`, to read for patterns; apps build on the hosted router - see [`ai-integration.md`](ai-integration.md)), reference iOS app `GetStream/chat-ai-samples` (`ios/AIComponents`, the message-list path, still on the standalone package - apply the 5.13.0 renames in [`ai-integration.md`](ai-integration.md) Step 0 when copying), reference backends `chat-ai-samples/ai-sdk-sample` and `langchain-sample`. The pages above cover 5.16.0 (5.15.0 added `AIConversationView`, `AIToolAuthorizationView` and the voice visualizations; 5.16.0 added `AIConversation` and generative UI). They no longer show the standalone package's API (take that from its 0.12.0 source).
 
 ### Chat - best practices and limits
 
@@ -350,6 +357,7 @@ For a specific UI customization or feature the docs do not cover - an exact `Vie
 | Video (SwiftUI + UIKit) | `stream-video-swift` | `Sources/` | `DemoApp` (SwiftUI), `DemoAppUIKit` |
 | Feeds | `stream-feeds-swift` | `Sources/` (StreamFeeds) | `DemoApp` |
 | Chat AI components | `stream-chat-swift` 5.13.0+ (fallback: `stream-chat-swift-ai`) | `Sources/StreamChatAI`, tests in `Tests/StreamChatAITests` | the ChatGPT-style app in `chat-ai-samples` (`ios/AIComponents`, the message-list path) |
+| Stream Agents Swift SDK | `Vision-Agents` (product `StreamAgents`, pinned `exact:` - see [`ai-integration.md`](ai-integration.md)) | `sdks/swift/core/Sources/StreamAgents` | `examples/voice_agents/swift_assistant`, `swift_demo` (read for patterns; build on the hosted router) |
 
 How to search (prefer the version-accurate local checkout - no network, matches what the project compiles):
 

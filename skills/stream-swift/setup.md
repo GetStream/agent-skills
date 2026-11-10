@@ -17,9 +17,75 @@ Interpret and hold in context:
 - `*.xcodeproj` / `*.xcworkspace` -> existing Xcode app; preserve its UI layer and package manager.
 - `Package.swift`, no Xcode project -> ask whether it is an app package, a shared module, or support code.
 - `Podfile` -> keep CocoaPods unless the user wants to migrate.
-- `EMPTY_CWD` / no Xcode project -> **stop**: tell the user to create the iOS app in Xcode first. Do not scaffold from the CLI.
+- `EMPTY_CWD` / no Xcode project -> ask the user to create the iOS app in Xcode (File > New > Project > App, SwiftUI), then continue in it. If they'd rather you create it, or the run is unattended and no one can, generate it with XcodeGen as below. Never hand-write a `project.pbxproj`: its object ids and build phases are easy to get subtly wrong, and Xcode rewrites it anyway.
 
 State a one-line status (e.g. `SwiftUI app detected - MyApp.xcodeproj - ready for Stream wiring`).
+
+### No project: generate one with XcodeGen
+
+`xcodegen` is not part of Xcode. Use it if `which xcodegen` finds it; otherwise install it with `brew install xcodegen`, saying so first. Write `project.yml` at the project root, create the source folders, and run `xcodegen generate`. This template matches what Xcode 27's App template sets (Swift 5 mode, approachable concurrency, `MainActor` default isolation, member import visibility, a generated `Info.plist`). It was checked with XcodeGen 2.46.0 and Xcode 27.1: it builds, and its test target runs on the simulator. Keep only the packages and products the app needs:
+
+```yaml
+name: MyApp
+options:
+  bundleIdPrefix: com.example            # ask for the real one, or keep it as a placeholder
+  deploymentTarget:
+    iOS: "17.0"
+packages:
+  StreamChat:
+    url: https://github.com/GetStream/stream-chat-swift
+    from: 5.16.0
+  StreamAgents:                          # Stream Agents apps only - see ai-integration.md Step 0
+    url: https://github.com/GetStream/Vision-Agents
+    exactVersion: 0.3.0                  # an exact plain tag, never a range
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    SWIFT_APPROACHABLE_CONCURRENCY: YES
+    SWIFT_DEFAULT_ACTOR_ISOLATION: MainActor
+    SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY: YES
+targets:
+  MyApp:
+    type: application
+    platform: iOS
+    sources: [MyApp]                     # MyApp/MyApp.swift holds the @main App
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.myapp
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+        # The usage descriptions the features need, e.g. for the AI composer and voice:
+        INFOPLIST_KEY_NSMicrophoneUsageDescription: Talk to the assistant.
+        INFOPLIST_KEY_NSSpeechRecognitionUsageDescription: Dictate a message.
+        INFOPLIST_KEY_NSCameraUsageDescription: Send a photo.
+        INFOPLIST_KEY_NSPhotoLibraryUsageDescription: Send a photo.
+    dependencies:
+      - package: StreamChat
+        product: StreamChat
+      - package: StreamChat
+        product: StreamChatAI
+      - package: StreamAgents
+        product: StreamAgents
+  MyAppTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources: [MyAppTests]
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+    dependencies:
+      - target: MyApp
+schemes:
+  MyApp:
+    build:
+      targets:
+        MyApp: all
+    test:
+      targets: [MyAppTests]
+```
+
+For SwiftUI Chat, add a `StreamChatSwiftUI` package (`https://github.com/GetStream/stream-chat-swiftui`, `from: 5.16.0`); for Video without Stream Agents, `stream-video-swift` on its own version line (step 3). The signing team is not in the file: set `DEVELOPMENT_TEAM` under the target's settings, or pick the team in Xcode, before running on a device. Commit `project.yml` with the generated project, and run `xcodegen generate` again after adding files or packages. Build once from the command line (`xcodebuild -scheme MyApp -destination 'generic/platform=iOS Simulator' build`) before wiring features, so package resolution problems show up first.
 
 ---
 
@@ -44,8 +110,11 @@ If the user says they will paste credentials, take them and skip the CLI steps b
 # "stream project is not initialized; run `getstream init` first" otherwise.
 getstream init
 
-# API key -> Secrets.xcconfig (read via Info.plist / Bundle.main); the secret is never printed
-getstream env --target ios
+# API key -> Secrets.xcconfig (read via Info.plist / Bundle.main); the secret is never printed.
+# It is written in the project root (where .stream/ is), and a relative --out is read from there
+# too, so for an Xcode project in a subfolder pass an absolute path from that folder:
+getstream env --target ios                                  # Xcode project at the root
+getstream env --target ios --out "$PWD/Secrets.xcconfig"     # run from the Xcode project's folder
 
 # Token (never-expiring, or add --ttl <duration>)
 getstream token <user_id>
@@ -78,7 +147,7 @@ Never put the API **secret** in app code - the CLI uses it server-side only. Nev
 .package(url: "https://github.com/GetStream/stream-chat-swiftui.git", from: "5.0.0"),
 ```
 
-(UIKit-only apps take `stream-chat-swift` alone, product `StreamChatUI`, same `from: "5.0.0"`. AI assistants also link the `StreamChatAI` product of `stream-chat-swift`, available from 5.13.0 - pin both Chat packages `from: "5.13.0"` and build with Xcode 27; [`ai-integration.md`](ai-integration.md) Step 0 covers older apps and the standalone fallback.) In Xcode's "Add Package Dependencies" dialog set **Dependency Rule -> Up to Next Major -> 5.0.0** for each.
+(UIKit-only apps take `stream-chat-swift` alone, product `StreamChatUI`, same `from: "5.0.0"`. AI assistants also link the `StreamChatAI` product of `stream-chat-swift`, available from 5.13.0; the current AI docs build on `AIConversation` and generative UI from 5.16.0, so pin both Chat packages `from: "5.16.0"` and build with Xcode 27. An app on Stream Agents also adds the `StreamAgents` product of `GetStream/Vision-Agents` at an exact version. [`ai-integration.md`](ai-integration.md) Step 0 covers both, older apps, and the standalone fallback.) In Xcode's "Add Package Dependencies" dialog set **Dependency Rule -> Up to Next Major -> 5.0.0** for each.
 
 **This is not the default resolution, so pin it explicitly.** Stream still ships a parallel **4.x** line (GitHub currently even tags a 4.x build as "Latest"), so an unpinned "add package" can silently resolve to v4 and break the code these runbooks generate. **Only use v4 if the customer explicitly asks for it** (a locked older app) - then say so, pin `~> 4.0.0` instead, and route docs through the **v4 tree** ([`docs-map.md`](docs-map.md) "Chat - v4": same paths with `/v4/` inserted after `ios/`), expecting the v5-only APIs to be absent. **Video** and **Feeds** are on their **own** version lines - `stream-video-swift` is currently **1.x**, not 5.x - so pin each to *its* own latest major and never force "5.x" onto them.
 

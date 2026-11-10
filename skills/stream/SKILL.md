@@ -40,12 +40,22 @@ getstream --version
 
 Alternatively, the user can install the CLI from getstream.io/cli.
 
+A CLI that is already installed can be too old for these skills: early stable
+builds (such as 1.0.0) have no `docs`, `status` or `webhook` command. If `getstream -h`
+doesn't list a command a skill asks for, run `getstream update` and check
+again.
+
 The `getstream agents` commands are only in beta builds, whose version is a
-date and a commit (`YYYY-MM-DD-<commit>`) rather than semver. A stable build
-answers them with "agents unavailable". Install the beta over it:
+date and a commit (`YYYY-MM-DD-<commit>`) rather than semver. Tell which build
+is installed from `getstream --version`, not from an error message: a current
+stable build answers `getstream agents` with "agents are available in private
+beta builds only", and an early one with `unknown command "agents"`. A beta
+build has every command a stable build has, so for any Stream Agents work
+install it first, over the stable one:
 
 ```bash
 curl -fsSL https://getstream.io/cli/beta/install.sh | bash
+getstream --version   # YYYY-MM-DD-<commit>
 ```
 
 ## Routing
@@ -66,24 +76,41 @@ First match wins:
    production?", "prepare for the integration review"), read
    integration-review.md together with the platform skill.
 
-   Install a missing skill with `getstream skills <name>`, then follow it. For a
+   Install a missing skill with `getstream skills <name>`, then follow it
+   (`getstream skills` alone installs every skill; an older CLI installs only
+   stream, stream-builder and stream-docs, so `getstream update` first). For a
    web app, or a generic app, pick stream-react. A framework beats an OS: "an
    Unreal chat app for iOS" is stream-unreal.
 
+   AI work is the exception to that default. When the request names an AI
+   feature (AI Components, an AI assistant, a voice agent, generative UI) but
+   no platform, and the working directory doesn't show one (an `.xcodeproj`,
+   a `build.gradle`, a `pubspec.yaml`, a `package.json`), ask which platform
+   before routing. The AI components differ by platform, so a build started on
+   the wrong one is thrown away.
+
    An app built around Stream Agents is platform work too, even when the request
-   only says "agent" or "voice agent". Configure the agent from its folder and
-   `getstream docs agents/<sdk>` (`javascript`, `ios`, `android`, `flutter`),
-   and build the app with the platform skill: its Chat UI kit renders the
-   session's conversation and its Video SDK holds the call. React Native, Unity,
-   and Unreal have no Agents client SDK - tell the user before building.
+   only says "agent" or "voice agent". Read the Agents docs with
+   `getstream docs agents`: one doc set for every SDK, where each page has the
+   code for every language (there are no `agents/<sdk>` ids). Configure the
+   agent from its folder. A folder from `getstream agents init --template` is
+   an example agent for "Acme Corp": replace its `agent.yaml` description,
+   `instructions.md`, `guardrail.md`, `knowledge/`, `confirm` skill and
+   simulations before the first sync. Build the app with the platform skill:
+   its Chat UI kit renders the session's conversation and its Video SDK holds
+   the call. React Native, Unity, and Unreal have no Agents client SDK - tell
+   the user before building.
 
 2. **Migrate Feeds v2 to v3:** use stream-feeds-migration skill.
 3. **Migrate from Sendbird:** use the platform-specific skill to migrate the
    code; to move the data itself (users, channels, message history), read
    sendbird-data-migration.md.
-4. **Docs / "how does X work" questions:** use the `getstream docs` command. In
-   a command substitution like `$(getstream docs <id>)` don't add `2>&1`. The
-   path you need is on stdout.
+4. **Docs / "how does X work" questions:** use the `getstream docs` command,
+   with an id from `getstream docs list`. In a command substitution like
+   `$(getstream docs <id>)` don't add `2>&1`. The path you need is on stdout.
+   On a wrong id stdout is empty and the error goes to stderr, so a bare
+   `ls $(getstream docs <id>)` lists the current directory instead. Check the
+   result first: `d=$(getstream docs <id>) && ls "$d"`.
 5. **Query or mutate app data** ("list channels", "any flagged messages?",
    one-off API calls): use the `getstream api` command.
 6. **Genuinely ambiguous:** ask.
