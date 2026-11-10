@@ -36,6 +36,12 @@ getstream api QueryChannels --request '{"filter_conditions":{"cid":"messaging:<c
   --jq '.channels[0].messages[] | {user: .user.id, ai_generated: (if has("ai_generated") then .ai_generated else .custom.ai_generated end), generating: (if has("generating") then .generating else .custom.generating end), text: (.text // "" | .[0:40])}'
 ```
 
+A Stream Agents session keeps its conversation in an `agent:<session id>` channel, not `messaging:`. Read the person's latest one by membership instead, with the same `--jq` (add `ui: (.custom.ai_ui // .ai_ui | if . then {format, status} else null end)` to see generative UI):
+
+```bash
+getstream api QueryChannels --request '{"filter_conditions":{"type":"agent","members":{"$in":["<user-id>"]}},"sort":[{"field":"last_message_at","direction":-1}],"limit":1,"message_limit":5}' --jq '...'
+```
+
 `null` for a bot message means the backend is not setting it - fix the agent, and tell the developer. The `ai_indicator.*` events are ephemeral; log them in the app rather than the CLI.
 
 ## Agent steps: reasoning, tool calls, approvals, device tools
@@ -56,8 +62,10 @@ Check the steps with the CLI after one prompt:
 
 ```bash
 getstream api QueryChannels --request '{"filter_conditions":{"cid":"messaging:<channel-id>"},"message_limit":5}' \
-  --jq '.channels[0].messages[] | select((if has("ai_generated") then .ai_generated else .custom.ai_generated end) == true) | {steps: [.attachments[]? | {type, name, status, decision: .approval.decision}]}'
+  --jq '.channels[0].messages[] | select((if has("ai_generated") then .ai_generated else .custom.ai_generated end) == true) | {steps: [.attachments[]? | (.custom // {}) as $c | {type, name: (.name // $c.name), status: (.status // $c.status), executor: (.executor // $c.executor), decision: ((.approval // $c.approval // {}).decision)}]}'
 ```
+
+The API returns an attachment's step fields under `custom` (the Stream Agents router's always are), so read them from both places as above; reading only the top level shows `null` for every field. For a Stream Agents session, use the `agent` channel filter above.
 
 ## Rules for every platform
 

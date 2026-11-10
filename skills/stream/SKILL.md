@@ -93,10 +93,13 @@ First match wins:
    only says "agent" or "voice agent". Read the Agents docs with
    `getstream docs agents`: one doc set for every SDK, where each page has the
    code for every language (there are no `agents/<sdk>` ids). Configure the
-   agent from its folder, and build the app with the platform skill: its Chat
-   UI kit renders the session's conversation and its Video SDK holds the call.
-   React Native, Unity, and Unreal have no Agents client SDK - tell the user
-   before building.
+   agent from its folder. A folder from `getstream agents init --template` is
+   an example agent for "Acme Corp": replace its `agent.yaml` description,
+   `instructions.md`, `guardrail.md`, `knowledge/`, `confirm` skill and
+   simulations before the first sync. Build the app with the platform skill:
+   its Chat UI kit renders the session's conversation and its Video SDK holds
+   the call. React Native, Unity, and Unreal have no Agents client SDK - tell
+   the user before building.
 
 2. **Migrate Feeds v2 to v3:** use stream-feeds-migration skill.
 3. **Migrate from Sendbird:** use the platform-specific skill to migrate the

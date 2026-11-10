@@ -110,8 +110,11 @@ If the user says they will paste credentials, take them and skip the CLI steps b
 # "stream project is not initialized; run `getstream init` first" otherwise.
 getstream init
 
-# API key -> Secrets.xcconfig (read via Info.plist / Bundle.main); the secret is never printed
-getstream env --target ios
+# API key -> Secrets.xcconfig (read via Info.plist / Bundle.main); the secret is never printed.
+# It is written in the project root (where .stream/ is), and a relative --out is read from there
+# too, so for an Xcode project in a subfolder pass an absolute path from that folder:
+getstream env --target ios                                  # Xcode project at the root
+getstream env --target ios --out "$PWD/Secrets.xcconfig"     # run from the Xcode project's folder
 
 # Token (never-expiring, or add --ttl <duration>)
 getstream token <user_id>
