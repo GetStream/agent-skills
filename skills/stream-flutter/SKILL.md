@@ -1,6 +1,6 @@
 ---
 name: stream-flutter
-description: "Build, integrate, migrate to, and answer how-to questions for Stream Chat, Video, and Feeds in Flutter / Dart apps. Supports stream_chat_flutter (pre-built Chat UI), stream_chat_flutter_core (custom Chat UI), stream_video_flutter (calls, ringing, audio rooms, livestreaming), and stream_feeds (Activity Feeds v3, no pre-built UI). Routes each request to the exact official Flutter docs page, fetches it live, and applies it - with a curated setup flow, a push / ringing runbook, design-matching and custom-UI runbooks, a Sendbird -> Stream Chat migration runbook, and Flutter-specific pitfalls."
+description: "Build, integrate, review, migrate to, and answer how-to questions for Stream Chat, Video, and Feeds in Flutter / Dart apps. Supports stream_chat_flutter (pre-built Chat UI), stream_chat_flutter_core (custom Chat UI), stream_video_flutter (calls, ringing, audio rooms, livestreaming), and stream_feeds (Activity Feeds v3, no pre-built UI). Routes each request to the exact official Flutter docs page, fetches it live, and applies it - with a curated setup flow, a push / ringing runbook, design-matching and custom-UI runbooks, a Sendbird -> Stream Chat migration runbook, a read-only integration review before going live (including livestream launches), and Flutter-specific pitfalls."
 license: See LICENSE in repository root
 compatibility: Requires a Flutter project for build/integrate work (or scaffolds one when asked to create a new app). Credentials and seeding use the getstream CLI. Docs lookups need only network access.
 metadata:
@@ -74,6 +74,7 @@ From the user's words alone - no probes first - resolve three things:
    - **Integrate** ("add Chat to my app", "wire Video into this project") -> run [`setup.md`](setup.md), then **Docs lookup** for the feature.
    - **New app** ("build a Flutter chat app", "create a livestream app", "build a Twitter-style feed") -> [`setup.md`](setup.md) (it scaffolds when asked), then **Docs lookup**, scoped to the requested screens. Feeds defaults to Twitter-style UI.
    - **Setup only** ("install Stream", "wire auth/token") -> [`setup.md`](setup.md) and stop.
+   - **Review / audit** ("review / audit / check my Stream integration", "is this ready for production?", "are we ready for the livestream launch?", "prepare for the integration review") -> read-only: skip setup and credentials, follow stream skill's integration-review.md with [`integration-review.md`](integration-review.md) for the Flutter checks. A livestream or audio-room app also gets stream skill's livestream-review.md. Report first; change code only if asked.
    - **Push / ringing** ("push notifications", "incoming calls when the app is closed", "CallKit", "FCM", "missed calls") -> [`push.md`](push.md) (after setup if the app is not wired yet).
    - **Advanced Video patterns** (TikTok-style livestream feed, 1:1 call while livestreaming, two calls at once, audio-room lobby, shared call state, Chat + Video in one app) -> [`video-patterns.md`](video-patterns.md) plus the docs it routes to.
    - **Migrate from Sendbird** ("replace `sendbird_chat_sdk` / `sendbird_uikit` with Stream", "switch off Sendbird") -> run [`sendbird-migration.md`](sendbird-migration.md): detect the Sendbird integration shape, swap packages + init, re-implement each touchpoint while changing as little app code as possible, re-apply theming, and verify **design + functional fidelity per screen** against the Sendbird original. It reuses [`setup.md`](setup.md) for credentials and the rigor of [`design-matching.md`](design-matching.md); when the code migration is verified it **asks** whether to also migrate the data and hands off to [`../stream/sendbird-data-migration.md`](../stream/sendbird-data-migration.md).
@@ -146,6 +147,7 @@ There are no bundled SDK reference or blueprint files - anything that used to li
 - [`setup.md`](setup.md) - the CLI-driven setup flow.
 - [`push.md`](push.md) - Chat push + Video ringing (CallKit / FCM / Telecom), automating what the docs only describe.
 - [`video-patterns.md`](video-patterns.md) - Video patterns with no docs page.
+- [`integration-review.md`](integration-review.md) - Flutter checks for the read-only integration review, livestream checks included.
 - [`design-matching.md`](design-matching.md) - reproducing a reference design with the **pre-built components**.
 - [`custom-ui.md`](custom-ui.md) - the **custom** `stream_chat_flutter_core` path.
 - [`sendbird-migration.md`](sendbird-migration.md) - the Sendbird -> Stream Chat migration procedure.

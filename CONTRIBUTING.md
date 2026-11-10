@@ -45,6 +45,7 @@ For older CLI installations, [`stream-builder`](skills/stream-builder/SKILL.md) 
   - [`SKILL.md`](skills/stream/SKILL.md) - Stream overview, CLI discovery, and skill routing
   - [`sendbird-data-migration.md`](skills/stream/sendbird-data-migration.md) - shared Sendbird data export, import, and cutover workflow
   - [`integration-review.md`](skills/stream/integration-review.md) - read-only integration review: procedure, cross-platform checks, and the report format
+  - [`livestream-review.md`](skills/stream/livestream-review.md) - livestream and audio-room checks for the integration review: viewer join path, host path, call-type settings, audience scale, event readiness
 - [`skills/stream-react/`](skills/stream-react/) - **React web sub-skill** (default for web React / Next.js work)
   - [`SKILL.md`](skills/stream-react/SKILL.md) - build and integrate Stream, audit an app, upgrade SDKs, and verify the result
   - [`chat-versions.md`](skills/stream-react/chat-versions.md) - pin the installed Chat React major, use that major's docs, find its migration guide
@@ -78,6 +79,7 @@ For older CLI installations, [`stream-builder`](skills/stream-builder/SKILL.md) 
   - [`docs-map.md`](skills/stream-flutter/docs-map.md) - intent -> exact official Flutter docs page (Chat UI/core/client, Video, Feeds), plus a pub-cache source / example-app fallback
   - [`setup.md`](skills/stream-flutter/setup.md) - project detection, v10 check, CLI credentials + seed data, install, platform setup, client wiring
   - [`push.md`](skills/stream-flutter/push.md) - Chat push + Video ringing runbook: CLI push providers, CallKit / FCM / Telecom, ship-code-defer-config
+  - [`integration-review.md`](skills/stream-flutter/integration-review.md) - Flutter checks for an integration review, including the livestream checks
   - [`video-patterns.md`](skills/stream-flutter/video-patterns.md) - Video patterns with no docs page (livestream feed, call over a broadcast, shared call state, Chat + Video glue)
   - [`design-matching.md`](skills/stream-flutter/design-matching.md) + [`custom-ui.md`](skills/stream-flutter/custom-ui.md) - pre-built components vs custom `stream_chat_flutter_core` UI
   - [`sendbird-migration.md`](skills/stream-flutter/sendbird-migration.md) - Sendbird -> Stream Chat migration runbook
