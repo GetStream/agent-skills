@@ -5,7 +5,7 @@ copilot inside an existing chat, streaming answers with a thinking indicator and
 agent that acts in the app (client tools), or an agent that answers with UI (generative
 UI: A2UI, OpenUI). For a support bot or help desk, follow ai-support-agent.md first - it
 builds the backend; this file adds the UI. For an agent on Stream Agents
-(`@stream-io/calypso`), follow stream-agents.md for the session and use this file for the
+(`@stream-io/stream-agents`), follow stream-agents.md for the session and use this file for the
 Chat UI.
 
 Stream doesn't host the model. A backend agent (a bot user) answers in the channel by

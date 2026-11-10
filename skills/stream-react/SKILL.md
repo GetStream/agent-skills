@@ -1,6 +1,6 @@
 ---
 name: stream-react
-description: "Build, integrate, audit, or upgrade Stream Chat, Video, Feeds, and Moderation in React / Next.js web apps - the default skill for web work. Scaffold a new app, add Stream to an existing project, review an integration, upgrade an SDK major, or migrate from Sendbird. Covers team messaging, DMs, video conferencing, livestreaming, social feeds, AI assistants (including generative UI with A2UI / OpenUI), and apps built on Stream Agents (voice and text agents, @stream-io/calypso). Web React only - React Native uses stream-react-native."
+description: "Build, integrate, audit, or upgrade Stream Chat, Video, Feeds, and Moderation in React / Next.js web apps - the default skill for web work. Scaffold a new app, add Stream to an existing project, review an integration, upgrade an SDK major, or migrate from Sendbird. Covers team messaging, DMs, video conferencing, livestreaming, social feeds, AI assistants (including generative UI with A2UI / OpenUI), and apps built on Stream Agents (voice and text agents, @stream-io/stream-agents). Web React only - React Native uses stream-react-native."
 license: See LICENSE in repository root
 metadata:
   author: GetStream
@@ -41,7 +41,7 @@ Install the SDKs:
 - Chat: `stream-chat stream-chat-react` (see chat-versions.md for which major)
 - Video: `@stream-io/video-react-sdk`
 - Feeds: `@stream-io/feeds-react-sdk`
-- Stream Agents: `@stream-io/calypso`, plus the Chat and Video packages above
+- Stream Agents: `@stream-io/stream-agents`, plus the Chat and Video packages above
   for its UI (stream-agents.md)
 - Server-side: `@stream-io/node-sdk`
 
@@ -203,7 +203,7 @@ secret in the client bundle. There are two kinds of backend; pick by what the us
 names:
 
 - **Stream Agents** - the agent and its models run on Stream (`getstream agents`, an
-  `agents/<name>/` folder, `@stream-io/calypso`). Any voice agent is this kind. Follow
+  `agents/<name>/` folder, `@stream-io/stream-agents`). Any voice agent is this kind. Follow
   stream-agents.md.
 - **Your own agent process** answering in a Chat channel (`@stream-io/chat-ai-sdk`,
   LangChain, a webhook turn):

@@ -19,7 +19,7 @@ provide UI kits.
 Stream Agents runs voice and text AI agents on Stream's backend. An agent is a
 folder of plain files (`agents/<name>/agent.yaml`, instructions, guardrail,
 knowledge, skills, simulations) synced with `getstream agents`, and sessions
-with it are opened through the Agents SDKs (`@stream-io/calypso` on the web). A
+with it are opened through the Agents SDKs (`@stream-io/stream-agents` on the web). A
 session's conversation is a Chat channel and its voice is a Video call, so the
 app around an agent is a Chat and Video app like any other.
 
