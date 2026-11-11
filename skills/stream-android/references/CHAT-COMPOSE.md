@@ -11,7 +11,7 @@ Rules: [../RULES.md](../RULES.md) (secrets, no dev tokens in production, proper 
 ## Quick ref
 
 - **Target version:** Stream Chat Android **v7.x** (see [RULES.md](../RULES.md) - if your memory disagrees with the docs, trust the docs)
-- **Artifact (Compose):** `io.getstream:stream-chat-android-compose` via Maven Central
+- **Artifact (Compose):** `io.getstream:stream-chat-android-compose` from Stream's Maven repository, `maven("https://stream-io-repo.com")` ([`../builder.md`](../builder.md) "Install the SDKs")
 - **Artifact (core only):** `io.getstream:stream-chat-android-client` (pulled in transitively by Compose)
 - **First:** Installation -> Manifest -> `ChatClient` build -> `connectUser` -> `ChatTheme { ChannelsScreen() }`
 - **Per feature:** Jump to the relevant section or blueprint when implementing a screen
@@ -53,7 +53,7 @@ dependencies {
 }
 ```
 
-If you don't know the latest version, ask the user to check the [installation guide](https://getstream.io/chat/docs/sdk/android/basics/getting-started/).
+If you don't know the latest version, look it up via [`RULES.md` -> Version lookup](../RULES.md#version-lookup).
 
 ### Client Initialization
 

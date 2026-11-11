@@ -23,7 +23,7 @@ When the two disagree about an API signature, the fetched docs page wins and the
 
 | Manifest | Use for |
 |---|---|
-| `https://getstream.io/chat/docs/sdk/android/llms.txt` | Primary source for the Stream Chat Android UI SDKs (Compose and XML): installation, Compose components and `ChatComponentFactory`, theming, UI cookbook, XML view components, offline support, push, guides, migration guides, and the `ai-integrations` pages (AI Integrations, Compose Integration, Stream Chat AI SDK, Stream Chat LangChain SDK). |
+| `https://getstream.io/chat/docs/sdk/android/llms.txt` | Primary source for the Stream Chat Android UI SDKs (Compose and XML): installation, Compose components and `ChatComponentFactory`, theming, UI cookbook, XML view components, offline support, push, guides, migration guides, and the AI components pages under `https://getstream.io/chat/docs/sdk/android/ai-components/` (Quickstart, the use cases, Conversation View, Conversation State, Composer, Streaming Messages, Reasoning and Tool Calls, Generative UI, Voice Visualizations, Compose Integration, Stream Chat AI SDK, Stream Chat LangChain SDK). |
 | `https://getstream.io/chat/docs/android/llms.txt` | Secondary source for low-level Chat API/client topics: tokens, users, channels, messages, query syntax, permissions, events, webhooks, push provider setup, imports/exports. |
 
 ### Video (Android)
@@ -82,7 +82,7 @@ Do not convert these heuristics into a static mapping. If the docs add, rename, 
 
 ## Source selection
 
-**Chat work.** Use the Chat primary manifest for UI SDK work in either layer: artifact installation, `ChatClient` setup pages, Compose components and `ChatComponentFactory` slots, theming, XML view components and binding, offline, push UI setup, cookbook recipes, guides, and the `ai-integrations` pages. Use the Chat secondary manifest for Chat API/client work: tokens, auth, users, channels, messages, reactions, query syntax, permissions, events, typing, webhooks, import/export, rate limits, and API errors.
+**Chat work.** Use the Chat primary manifest for UI SDK work in either layer: artifact installation, `ChatClient` setup pages, Compose components and `ChatComponentFactory` slots, theming, XML view components and binding, offline, push UI setup, cookbook recipes, guides, and the AI components pages (`ai-components/`). Use the Chat secondary manifest for Chat API/client work: tokens, auth, users, channels, messages, reactions, query syntax, permissions, events, typing, webhooks, import/export, rate limits, and API errors.
 
 **Video work.** Use the Video manifest for everything: installation, client and call lifecycle, ringing/push, Compose components and cookbook, advanced topics. Video does not have a separate API/client manifest.
 
@@ -98,17 +98,22 @@ Verify the current published version before writing a dependency, using the sour
 
 ```bash
 # Chat - Compose UI SDK / XML UI SDK
-curl -s https://repo1.maven.org/maven2/io/getstream/stream-chat-android-compose/maven-metadata.xml | grep -o '<release>[^<]*'
-curl -s https://repo1.maven.org/maven2/io/getstream/stream-chat-android-ui-components/maven-metadata.xml | grep -o '<release>[^<]*'
+curl -s https://stream-io-repo.com/io/getstream/stream-chat-android-compose/maven-metadata.xml | grep -o '<release>[^<]*'
+curl -s https://stream-io-repo.com/io/getstream/stream-chat-android-ui-components/maven-metadata.xml | grep -o '<release>[^<]*'
 
-# Chat - AI components (versioned independently of the Chat SDK)
-curl -s https://repo1.maven.org/maven2/io/getstream/stream-chat-android-ai-compose/maven-metadata.xml | grep -o '<release>[^<]*'
+# Chat - AI components (released with the Chat SDK, at its version)
+curl -s https://stream-io-repo.com/io/getstream/stream-chat-android-ai-compose/maven-metadata.xml | grep -o '<release>[^<]*'
+
+# Stream Agents
+curl -s https://stream-io-repo.com/io/getstream/stream-agents-android-core/maven-metadata.xml | grep -o '<release>[^<]*'
 
 # Video
-curl -s https://repo1.maven.org/maven2/io/getstream/stream-video-android-ui-compose/maven-metadata.xml | grep -o '<release>[^<]*'
+curl -s https://stream-io-repo.com/io/getstream/stream-video-android-ui-compose/maven-metadata.xml | grep -o '<release>[^<]*'
 
 # Feeds
-curl -s https://repo1.maven.org/maven2/io/getstream/stream-feeds-android-client/maven-metadata.xml | grep -o '<release>[^<]*'
+curl -s https://stream-io-repo.com/io/getstream/stream-feeds-android-client/maven-metadata.xml | grep -o '<release>[^<]*'
 ```
+
+These versions resolve only from Stream's Maven repository: add `maven("https://stream-io-repo.com")` to the project's repositories ([`../builder.md`](../builder.md) "Install the SDKs").
 
 Install the latest release when it matches the manifest-selected docs version. If it does not, use the version the manifest's installation page recommends. Add the coordinates to `gradle/libs.versions.toml` when the project already uses a version catalog ([`../RULES.md`](../RULES.md) "Project ownership").

@@ -11,6 +11,10 @@ allowed-tools:
   - Edit
   - Glob
   - Grep
+  - WebFetch(domain:getstream.io)
+  - WebFetch(domain:github.com)
+  - WebFetch(domain:raw.githubusercontent.com)
+  - Bash(curl -s *)
   - Bash(ls *)
   - Bash(grep *)
   - Bash(find . *)
@@ -143,7 +147,7 @@ Current extracted modules:
 
 Future Android product coverage should stay in this naming family instead of creating more top-level skills.
 
-If the requested product/UI layer file is not bundled yet, say so plainly, use `sdk.md` for the shared Android patterns, and only switch to live docs if the user asks.
+If the requested product/UI layer file is not bundled yet, say so plainly, then look the topic up through the manifests in [`references/DOCS.md`](references/DOCS.md) and fetch the page before writing code or answering ([`RULES.md`](RULES.md) "Reference discipline"), alongside `sdk.md` for the shared Android patterns.
 
 ---
 
