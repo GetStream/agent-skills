@@ -63,8 +63,10 @@ the block in one shell invocation so Python inherits the credentials.
 
 `<skill-dir>` is the directory holding this `SKILL.md`. Resolve it to an
 absolute path before running - the skill runs from whatever directory the user
-happens to be in, so a relative path only works by accident. `getstream skills`
-links the pack into one of two places, so it is one of:
+happens to be in, so a relative path only works by accident. Use the path this
+`SKILL.md` was loaded from: a plugin install keeps it in the agent's plugin
+folder, not in the project. If you do not have that path, `getstream skills`
+linked the pack into one of two places, so it is one of:
 
 - `.agents/skills/stream-feeds-migration` (Cursor, Codex)
 - `.claude/skills/stream-feeds-migration` (Claude Code)
@@ -274,8 +276,10 @@ the sample.
 - **Comment text** - inspect the `data` of every comment-kind reaction. The
   default is `data.message`. If that field is missing and the text is under
   `text` or `body`, set `comment_field` to that key (`"text"`, not
-  `"data.text"`). A comment kind with no text at the configured field is
-  dropped. It is not kept as a reaction.
+  `"data.text"`). Empty text is dropped only when there is no attachment
+  object and no http(s) URL in the reaction data. Whitespace-only text is
+  kept, and so is a comment that only contains an http(s) URL. A dropped
+  comment is not kept as a reaction.
 - **Replies** - is the parent comment id in the top-level `parent` (the
   default, no config needed) or nested in `data`? If nested, set
   `parent_id_field` to that envelope path. Confirm against a **non**-reply too:

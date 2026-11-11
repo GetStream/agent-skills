@@ -43,9 +43,9 @@ Default token model:
 
 Runbook: [`ai-integration.md`](ai-integration.md); shared contract: [`../stream/ai-backend-contract.md`](../stream/ai-backend-contract.md). The non-negotiables:
 
-- **The model runs on a backend agent, never in the app.** No LLM provider key, Stream secret, or admin token in the Android module, and no "call the LLM from the device, then post the answer" shortcut.
-- **Always state the backend contract** (`ai_generated`, one partially-updated message, `ai_indicator.*`, honor stop) to the developer, and run its CLI check before debugging Android code.
-- **`io.getstream:stream-chat-android-ai-compose` is the AI component artifact.** `stream-chat-android-ai-assistant` was removed in v7 - never add it to a v7+ project. The AI artifact is Compose-only and does not depend on the Chat SDK, so wiring it to a channel is always yours to write.
+- **The model runs on a backend agent, never in the app.** No LLM provider key, Stream secret, or admin token in the Android module, and no "call the LLM from the device, then post the answer" shortcut. (The one exception is the optional offline fallback `AIOnDeviceModel`, Gemini Nano on the device, which needs no key.)
+- **Always state the backend contract** (`ai_generated`, one partially-updated message, `ai_indicator.*`, honor stop) to the developer, and run its CLI check before debugging Android code. On Stream Agents the router keeps the contract; the app opens sessions with `io.getstream:stream-agents-android-core` (`StreamAgents`) and asks the session, never the channel.
+- **`io.getstream:stream-chat-android-ai-compose` is the AI component artifact**, shipped with Stream Chat from 7.15.0 at the SDK's version. `stream-chat-android-ai-assistant` was removed in v7 - never add it to a v7+ project. The AI artifact is Compose-only and does not depend on the Chat SDK, so wiring it to a channel is yours to write unless Stream Agents does it.
 - **Subscribe to `ai_indicator.*` on the `ChannelClient`**, which filters by `cid`; stop is `sendEvent(EventType.AI_TYPING_INDICATOR_STOP)`, not a helper method.
 
 ---

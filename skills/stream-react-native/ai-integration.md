@@ -1,91 +1,137 @@
-# Stream React Native - AI assistants, LLM chat, and agentic experiences
+# AI chat in React Native
 
-Use this runbook when a React Native / Expo request involves an **LLM or AI agent**: a ChatGPT-style app, an AI assistant / support bot / copilot in chat, streaming the model's answer, a thinking indicator, "stop generating", rendering markdown / code / tables / charts from the model, voice dictation into the prompt, or letting the agent trigger actions on the device (client tools).
+Run this when the app talks to an LLM through Chat: a ChatGPT-style app, an assistant or
+copilot inside an existing chat, streaming answers with a thinking indicator and stop,
+voice input into the prompt, an agent that acts on the device (client tools), or an agent
+that answers with UI (generative UI). For a support bot or help desk, the backend comes
+from stream-react skill's ai-support-agent.md; this file covers the app.
 
-Stream does not host the model. A **backend agent** (a bot user) answers in the Chat channel, streaming its reply by updating one message and sending `ai_indicator.*` events. The app is a **renderer and a trigger** - it never calls the LLM or holds a provider key, Stream secret, or admin token. It composes with the track: run Track A / B first (project signals, [`credentials.md`](credentials.md), Chat setup), then this runbook drives the integration.
+Stream doesn't host the model. A backend agent (a bot user) answers in the channel by
+updating one message and sending `ai_indicator.*` events. The app renders and triggers -
+it never calls the LLM or holds a provider key, Stream secret, or admin token.
 
----
+## Docs
 
-## Step 1: Classify, then read the docs
-
-The pages are in the local docs (`getstream docs`); `ai-integrations` is listed in the Chat manifest in [`references/DOCS.md`](references/DOCS.md):
-
-```bash
-d=$(getstream docs chat-sdk/react-native)
-cat $d/guides/ai-integrations.md                         # AI Integrations
-cat $d/guides/ai-integrations/sdk-integration.md         # SDK Integration
-cat $d/guides/ai-integrations/stream-chat-ai-sdk.md      # Stream Chat AI SDK
-cat $d/guides/ai-integrations/stream-chat-langchain-sdk.md
-```
-
-| Shape | Signals | Read |
-|---|---|---|
-| **A. AI-first app** (ChatGPT / Claude / Gemini clone) | one user + one assistant, conversation drawer, bottom-sheet options, voice input | **AI Integrations** (the `@stream-io/chat-react-native-ai` components, install + peers, Babel, permissions, `StreamTheme`) + **SDK Integration** (wiring them into `stream-chat-react-native`) |
-| **B. Assistant inside an existing messenger** (support bot, "ask AI", copilot) | humans and a bot in the same channels | **SDK Integration** only - keep the app's own `MessageComposer`, message UI, and theme |
-| **C. Agent acts on the device** (open a screen, read location, show a form) | "the assistant should do X in the app" | A or B, plus the "Client Tools" section of **Stream Chat AI SDK** |
-| **Backend** (no agent yet, "which SDK", memory, titles) | no backend exists, or the question is server-side | **Stream Chat AI SDK** (Vercel AI SDK) or **Stream Chat LangChain SDK** |
-
-If it is unclear whether a backend exists, ask which one to use: the user's own agent, or one set up with Stream's AI SDK (`@stream-io/chat-ai-sdk`, Vercel AI SDK) or LangChain SDK (`@stream-io/chat-langchain-sdk`). With `AgentManager` the agent holds a WebSocket per channel, so it runs as **its own long-lived process**, not a serverless function. Reference servers: `GetStream/chat-ai-samples` `ai-sdk-sample` and `langchain-sample`. The app calls the agent's start / stop endpoints through an **authenticated** route, and the server allowlists the model - a model picker's value is only a hint.
-
-Decisions the docs leave to you:
-
-- **Stay on the prebuilt components** - the lane's Chat package + `@stream-io/chat-react-native-ai`, not a hand-built `FlatList` on the low-level client. In shape B the core SDK does most of the work: `isMessageAIGenerated` on `<Chat>` renders its built-in `StreamingMessageView` (typewriter), and the default composer swaps the send button for `StopMessageStreamingButton` while the AI is thinking / generating. Add a thinking indicator under `MessageList`. For rich markdown / code / tables / charts, register a **small wrapper** on the `StreamingMessageView` slot that reads `useMessageContext().message` and renders the AI package's `<StreamingMessageView text={message.text ?? ""} />` - do not register the AI component itself, the slot does not pass `text`. **Add** these to the app's existing `WithComponents` overrides - do not replace them.
-- **Install for the lane** ([`RULES.md`](RULES.md) > Runtime lane ownership, Required peer setup): the package, its native peers (`react-native-svg`, `victory-native`, `@shopify/react-native-skia`, plus the Reanimated / Worklets / Gesture Handler the Chat SDK already needs), and `@babel/plugin-proposal-export-namespace-from` - Expo: `npx expo install`; RN CLI: the project's package manager. Optional features pick **one** lane variant: `expo-image-picker` vs `react-native-image-picker`, `expo-clipboard` vs `@react-native-clipboard/clipboard`. The package ships **native code** (dictation), so rebuild: `pod install` on RN CLI, a dev build / `npx expo prebuild` on Expo - not Expo Go. It is a **0.x** package - check `npm view @stream-io/chat-react-native-ai version` and confirm props against the installed types before copying from the sample.
-
-## Step 2: Fill the gaps from the reference app
-
-The docs show each component; the **wiring around them** lives only in the reference app (RN CLI). Read the matching file instead of inventing it, and say the pattern came from the sample:
-
-`https://raw.githubusercontent.com/GetStream/chat-ai-samples/main/react-native/<file>`
-
-| Need | File |
-|---|---|
-| Provider order (`SafeAreaProvider` > `StreamTheme` > `GestureHandlerRootView` > `OverlayProvider` > `Chat isMessageAIGenerated`) | `App.tsx` |
-| `<Channel preSendMessageRequest>` (watch on first send, start the agent once, title via `summarize`), `WithComponents` overrides (`StreamingMessageView`, bot-bubble theme, hidden author / footer), `ComposerView` with stop, AI typing indicator | `screens/ChatContent.tsx` |
-| Conversation drawer, "new chat" = a fresh unwatched channel | `screens/MenuDrawer.tsx`, `contexts/AppContext.tsx` |
-| `ComposerView` bottom-sheet options | `bottomSheetOptions.ts` |
-| Backend calls (start / stop agent, summarize) | `http/requests.ts` |
-| `ai_generated` custom-data type (`tsc` fails without it) | `custom-types.d.ts` |
-| Babel plugin order (export-namespace-from, worklets last) | `babel.config.js` |
-
-Component source: `GetStream/ai-components-js` (`packages/react-native-sdk`); core SDK side: `stream-chat-react-native` `package/src/components/AITypingIndicatorView/` (`useAIState`, `AIStates`) and `StopMessageStreamingButton` in `package/src/components/MessageInput/`.
-
-**Do not copy the sample's auth or hosts.** `chatConfig.ts` hardcodes an API key and a static user token, and `http/requests.ts` points at a demo host. Use [`credentials.md`](credentials.md) for the token path and your own agent URL from config.
-
-## Step 3: Tell the developer what the backend must send
-
-The app only renders what the agent writes and emits, and it cannot tell when something is missing - it builds and looks subtly wrong. **Always state this to the developer**, and when they bring their own backend, ask them to confirm it before wiring the app:
-
-- `ai_generated: true` on the bot's reply when it is **created**. `isMessageAIGenerated` keys on it; missing -> an **ordinary bubble with no typewriter and no AI markdown**, and a custom agent that does not skip its own `ai_generated` messages can **answer itself in a loop**.
-- **One message, updated as tokens arrive:** throttled chunks via `ephemeralUpdateMessage`, one final `partialUpdateMessage` to persist it (`$(getstream docs chat/node)/ai-message-streaming.md`). A reply posted once, complete, **appears all at once**.
-- `ai_indicator.update` with `ai_state` (`AI_STATE_THINKING`, `AI_STATE_GENERATING`, `AI_STATE_EXTERNAL_SOURCES`, `AI_STATE_ERROR`) while working, and `ai_indicator.clear` when done. Missing -> **no thinking indicator and no stop button**.
-- Honor `ai_indicator.stop` (sent by `channel.stopAIResponse()`): abort the model call and keep the partial text. Missing -> **stop does nothing**.
-- `generating: true` on partial updates, `false` on the final update, stop, and error. React Native ignores it, but iOS needs it - set it so one backend serves every client.
-
-Stream's server SDKs and the sample backends already do all of this. Start the agent and register tools once per conversation, after the channel is watched - never on every render, remount, or screen focus. After one prompt, read a real bot message before debugging RN code:
+Pin the Chat major first (chat-versions.md), then find the AI pages in that major's docs
+rather than at fixed paths - their names and places move between majors:
 
 ```bash
-getstream api QueryChannels --request '{"filter_conditions":{"cid":"messaging:<channel-id>"},"message_limit":5}' \
-  --jq '.channels[0].messages[] | {user: .user.id, ai_generated: (if has("ai_generated") then .ai_generated else .custom.ai_generated end), generating: (if has("generating") then .generating else .custom.generating end), text: (.text // "" | .[0:40])}'
+d=$(getstream docs chat-sdk/react-native/v<major>)
+grep -niE "ai|generative|langchain|speech|dictation" $d/INDEX.md
 ```
 
-`null` for a bot message means the backend is not setting it - fix the agent, and tell the developer. The `ai_indicator.*` events are ephemeral; log them in the app rather than the CLI.
+| Need | Page (by title) |
+| --- | --- |
+| The AI components: streaming markdown, composer, typing indicator, speech-to-text, theming | "AI Integrations" overview |
+| AI replies in the regular message list and composer | "SDK integration" |
+| UI in a reply: A2UI, OpenUI, your own components | "Generative UI" (if the major has one) |
+| A backend: Vercel AI SDK or LangChain, client tools | "Stream Chat AI SDK", "Stream Chat LangChain SDK" |
 
----
+An AI-first app (one user + one assistant, conversation drawer, voice input) needs the
+overview and SDK integration. An assistant inside an existing messenger needs SDK
+integration only - keep the app's own composer, message UI, and theme. An agent that acts
+on the device adds the client tools section of the AI SDK page.
 
-## Pitfalls the docs do not shout about
+## Backend
 
-- **Rendering `ComposerView` instead of `MessageComposer` drops the built-in stop button.** Pass `isGenerating` (Thinking or Generating from `useAIState`) and `stopGenerating={() => channel.stopAIResponse()}`, as SDK Integration shows.
-- **Same names in two packages.** `StreamingMessageView` and `AITypingIndicatorView` exist in both the core SDK and `@stream-io/chat-react-native-ai`. Import the rich ones from the AI package; the `WithComponents` slot keeps the core name.
-- **Pass `isMessageAIGenerated` on `<Chat>` only.** `<Channel>` accepts the prop but the SDK overwrites it with the `<Chat>` value, so a `<Channel>`-level function is silently ignored.
-- **Theme twice.** `StreamTheme` (AI components) and the Chat `theme` are separate systems - a dark mode or brand change needs both.
-- **Permissions or the app crashes / dictation fails silently:** iOS `NSMicrophoneUsageDescription` + `NSSpeechRecognitionUsageDescription` (and camera / photo library with the media picker), Android `RECORD_AUDIO` (and `CAMERA`); on Expo use the package's config plugin, then rebuild.
-- **`ComposerView` bottom sheet under the nav bar:** pass `bottomSheetInsets` from `useSafeAreaInsets()` (the sample pads Android extra). Keyboard offset on `<Channel>` follows [`RULES.md`](RULES.md) > Navigation and overlay discipline.
-- **Local backend:** the iOS simulator reaches `localhost`, the Android emulator needs `10.0.2.2`, a physical device needs the Mac's LAN IP or a tunnel. Keep the agent URL in config.
-- **Client tools on device** arrive as `custom_client_tool_invocation` events on the channel. Request OS permissions when the tool first runs, confirm with the user before any tool that changes data, and validate `args` - they are model output.
+Two shapes work:
 
-## Verify before stopping
+- **Webhook turn** - a `message.new` webhook route runs one LLM turn with the server SDK
+  and returns. stream-react skill's ai-support-agent.md builds it.
+- **Long-lived agent** - `@stream-io/chat-ai-sdk` (Vercel AI SDK) or
+  `@stream-io/chat-langchain-sdk` with `AgentManager`. It holds a WebSocket per channel,
+  so it runs as its own process, not a serverless function. Reference servers:
+  `GetStream/chat-ai-samples` `ai-sdk-sample` and `langchain-sample`.
 
-- on a real build ([`references/SIMULATOR-VERIFICATION.md`](references/SIMULATOR-VERIFICATION.md)), a prompt gets a streamed, markdown-rendered answer from the bot in the same channel; the thinking indicator appears and clears; stop keeps the partial answer; dictation fills the prompt
-- the Step 3 CLI check shows `ai_generated: true` and a final `generating: false`, and the developer was told what the backend must send
-- existing message / composer overrides still render (shape B); `tsc --noEmit` passes with the `ai_generated` custom type
+If it's unclear whether a backend exists, ask which one to use. Start agents through an
+authenticated route, once per conversation after the channel is watched - never on every
+render, remount, or screen focus - and allowlist the model on the server.
+
+The app can't tell when the agent skips a field - it builds and looks subtly wrong. Tell
+the developer what the agent must send, and run the CLI check before debugging app code:
+both are in the stream skill's ai-backend-contract.md. In short: `ai_generated: true` on
+the reply (missing: a plain bubble, and a custom agent can answer itself in a loop), one
+message updated as tokens arrive, `ai_indicator.update` / `.clear` (missing: no thinking
+indicator and no stop button), honoring `ai_indicator.stop` (sent by
+`channel.stopAIResponse()`), and `generating` for the other platforms. A `null` field on a
+real bot message means fix the agent, not the app.
+
+A backend on the developer's machine: the iOS simulator reaches `localhost`, the Android
+emulator needs `10.0.2.2`, a physical device needs the machine's LAN IP or a tunnel. Keep
+the agent URL in config.
+
+## Client
+
+The AI components ship with the Chat SDK, behind the lane's `ai-components` entry point
+(`stream-chat-react-native/ai-components`, or `stream-chat-expo/ai-components` on Expo).
+The standalone `@stream-io/chat-react-native-ai` package is deprecated: don't install it.
+An app that already uses it moves over with the overview page's "Migrating from
+`@stream-io/chat-react-native-ai`" section. Take imports, peers, and props from the pinned
+major's docs and the installed types. Defaults to keep in SKILL.md applies to every
+override below.
+
+- Pass `isMessageAIGenerated` on `<Chat>` only - on a lower component it is ignored. With
+  it, the default message list streams the reply, and the default composer swaps send for
+  a stop button while the AI is thinking or generating.
+- For rich markdown / code / tables in the regular message list, follow SDK integration:
+  a small wrapper on the message-text slot that reads the message from context and
+  renders the AI components' streaming view. Registering the AI component directly on
+  the slot renders nothing - the slot doesn't pass `text`. Add to the app's existing
+  `WithComponents` overrides; don't replace them.
+- The main entry point and `ai-components` export some of the same names
+  (`StreamingMessageView`, `AITypingIndicatorView`, ...) as different components. Import
+  the rich ones from `ai-components`, keep the slot names from the main entry point, and
+  alias one import when a file needs both.
+- Replacing `MessageComposer` with the AI composer drops the built-in stop button. Show
+  one while `useAIState(channel).aiState` is thinking or generating, calling
+  `channel.stopAIResponse()`.
+- Install what the overview's Installation lists (its native peers and the Babel setup),
+  with `npx expo install` on Expo. Optional features (media picker, clipboard) need one
+  of the listed packages for the lane; without one, their buttons silently do nothing.
+- Speech-to-text on iOS is compiled in only when the app turns it on (a Podfile flag on
+  RN CLI, the `stream-chat-expo` config plugin on Expo, per the overview's
+  Speech-to-text). Without it the microphone button doesn't render, with no error. Add
+  the microphone and speech-recognition usage descriptions (Android `RECORD_AUDIO`), then
+  rebuild native - `pod install`, or a new development build.
+- The AI components take their theme from their own theme provider, not the Chat theme,
+  and don't switch to dark by themselves: a dark mode or brand change is applied twice.
+- The composer's bottom sheet sits under the navigation bar unless it gets the bottom
+  safe-area inset (see its props in the overview). Keyboard offsets on `<Channel>` follow
+  SKILL.md.
+- Client tools arrive as `custom_client_tool_invocation` events on the channel. Ask for OS
+  permissions when a tool first runs, confirm with the user before any tool that changes
+  data, and validate `args` - they're model output.
+
+## Generative UI: A2UI and OpenUI
+
+When the agent should answer with UI - cards, a form, a map - look for a "Generative UI"
+page in the pinned major's docs.
+
+- **The page exists:** read it in full and follow it; it is the source for the host, the
+  renderer entry points, peer versions, message fields, and actions. The traps the web
+  SDK documents apply here too (stream-react skill's ai-integration.md, "Generative UI"):
+  install renderer packages at the versions the docs name, tell the model what the app
+  can show or it never writes UI, the backend moves the UI out of the reply text into the
+  message's UI field, keep one host per conversation, treat the reply's UI as untrusted,
+  and confirm actions that change data.
+- **No such page:** the React Native SDK doesn't render generative UI in that major. Say
+  so plainly - don't port the web renderers or build a format parser from memory. A
+  backend that follows the format keeps each reply's text readable, so the app shows the
+  text; confirm that with the developer.
+
+## Reference implementation
+
+The overview links the SDK's own example app for the AI components (an Expo ChatGPT-style
+app in `GetStream/stream-chat-react-native`); read it on the branch the docs link for the
+wiring the docs don't show - provider order, the overrides, the composer with stop,
+conversation switching, the custom-data types `tsc` needs, and Babel setup. Don't copy
+auth or hosts from any sample; use the token route from SKILL.md.
+
+## Verify
+
+On a native build (simulator-verification.md): a prompt gets a streamed,
+markdown-rendered answer from the bot in the same channel; the thinking indicator appears
+and clears; stop keeps the partial answer; with speech-to-text, the microphone button is
+visible and dictation fills the prompt. The QueryChannels check shows `ai_generated: true`
+and a final `generating: false`; existing message and composer overrides still render;
+`tsc --noEmit` passes.

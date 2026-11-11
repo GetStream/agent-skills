@@ -14,12 +14,17 @@ platform skill adds its own pitfalls on top; run both. Platform files use the
 same section names, and a platform bullet replaces the generic bullet on the
 same topic, so check each topic once.
 
+An app that livestreams or runs audio rooms gets one more set of checks: read
+livestream-review.md after the scope step and run it with the checks below.
+
 | Platform | Platform checks |
 |---|---|
 | Android | Read stream-android skill's integration-review.md |
-| React, React Native | The platform skill's audit section, plus the Video "Integration best practices" page in that SDK's docs |
+| React | Read stream-react skill's integration-review.md (Video and livestream checks), plus the skill's audit section |
+| React Native | The platform skill's audit section, plus the Video "Integration best practices" page in that SDK's docs |
+| Flutter | Read stream-flutter skill's integration-review.md |
 | iOS | No platform file yet: stream-swift skill's RULES.md pitfalls, and the best-practices pages listed in its docs-map.md |
-| Flutter, Unity, Unreal | No platform file yet: use the SDK's go-live checklist page and the platform skill's RULES.md |
+| Unity, Unreal | No platform file yet: use the SDK's go-live checklist page and the platform skill's RULES.md |
 
 ## 1. Scope
 
@@ -30,7 +35,10 @@ ask, record the answer as unknown and continue:
 - UI: Stream's prebuilt components or the app's own UI on the client SDK. With
   a custom UI, read state, unread, and notification handling become the app's
   job, so more checks apply.
-- Features shipped: 1:1, groups, livestream, support inbox, calls, feeds.
+- Features shipped: 1:1, groups, livestream, support inbox, calls, feeds. For
+  livestreams and audio rooms (a `livestream` or `audio_room` call type, a
+  backstage or Go Live step, a host and an audience), read
+  livestream-review.md now: it adds scope questions and things to locate.
 - Scale: channels per user, members in the largest channel, messages per day
   in the busiest channel, concurrent call participants, expected growth.
   Several findings only matter at scale, so record the answers in the report.
@@ -68,8 +76,9 @@ another variant with that variant's name.
 
 ## 3. Walk the checks
 
-Run the generic checks below, then the platform file. Where the platform file
-covers the same item in more detail, its version replaces the generic one.
+Run the generic checks below, then the platform file, then
+livestream-review.md if the scope step found livestreaming. Where the platform
+file covers the same item in more detail, its version replaces the generic one.
 
 Back every finding with its source: the docs page a check names (look it up
 with `getstream docs`), the SDK source, or the app code itself for general
@@ -278,7 +287,8 @@ Docs: `unread.md` in `getstream docs chat/<platform>`.
   libraries can have their own version lines.
 
 Docs: `livestream-best-practices.md` in `getstream docs chat/<platform>`, and
-the SDK's go-live checklist.
+the SDK's go-live checklist. Livestream video, and the rest of livestream
+chat, are in livestream-review.md.
 
 ### Feeds
 

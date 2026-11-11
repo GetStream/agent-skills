@@ -1,22 +1,22 @@
 # Stream Agents in React
 
 Run this when the app talks to a Stream Agent: an `agents/<name>/` folder synced with
-`getstream agents`, and sessions opened with `@stream-io/calypso`. The agent - its models,
+`getstream agents`, and sessions opened with `@stream-io/stream-agents`. The agent - its models,
 guardrail, knowledge and routing - runs on Stream. The app opens sessions, renders them
 with the Chat and Video UI kits, and runs any tools it registers.
 
 ## Docs
 
 ```bash
-d=$(getstream docs agents/javascript)
-cat $d/INDEX.md                      # quickstart: agent folder, tools, chat UI
+d=$(getstream docs agents)           # one doc set; each page has every SDK's code
+cat $d/quickstart.md                 # quickstart: agent folder, tools, chat UI
 cat $d/sessions.md                   # sessions, voice, events, history
 cat $d/auth.md                       # user tokens
 cat $d/tool-calling-and-dispatch.md  # browser tools vs a Dispatch worker
 cat $d/creating-an-agent.md          # agent.yaml keys
 ```
 
-When the docs and the SDK disagree, the SDK's types win (`node_modules/@stream-io/calypso/dist/*.d.ts`).
+When the docs and the SDK disagree, the SDK's types win (`node_modules/@stream-io/stream-agents/dist/*.d.ts`).
 The backend source is github.com/GetStream/Vision-Agents.
 
 ## Setup
@@ -25,18 +25,18 @@ The backend source is github.com/GetStream/Vision-Agents.
   `getstream init`, then `getstream agents init <name> --template voice` (or `text`). It
   also creates the `agent` call type and channel type that sessions need. Edit the
   folder, then `getstream agents sync <name>` and `getstream agents test <name>`.
-- Install `@stream-io/calypso` with the UI kits: `stream-chat stream-chat-react` for the
-  conversation, `@stream-io/video-react-sdk` for voice. Calypso marks them optional peers;
+- Install `@stream-io/stream-agents` with the UI kits: `stream-chat stream-chat-react` for the
+  conversation, `@stream-io/video-react-sdk` for voice. The SDK marks them optional peers;
   this runbook uses them.
-- Token route as in SKILL.md. One user token signs in Calypso, Chat, and Video. The
+- Token route as in SKILL.md. One user token signs in Stream Agents, Chat, and Video. The
   browser `Client` gets the `apiKey` and `setUser`, never the secret.
 
 ## Client
 
-- Create one Calypso `Client` at the app shell, next to the Chat and Video clients, and
+- Create one Stream Agents `Client` at the app shell, next to the Chat and Video clients, and
   hand those over with `client.use({ chat, video })`. Without it, `session.chat()` and
   `session.video()` open second connections as the same user.
-- `import "@stream-io/calypso/chat"` and `"@stream-io/calypso/video"` once, from a
+- `import "@stream-io/stream-agents/chat"` and `"@stream-io/stream-agents/video"` once, from a
   `'use client'` module. Without them `session.chat()` / `session.video()` throw.
 - **Transcript:** the session's channel is the transcript, for text and for voice. Get
   it with `const { channel } = await session.chat()` and render it with `<Chat>`,
@@ -70,7 +70,7 @@ The backend source is github.com/GetStream/Vision-Agents.
   binding `<audio>` elements by hand.
 - **Pacing on voice:** the channel gets a reply's text as it is generated, so the
   default `StreamedMessageText` (about 65 chars/s) runs well ahead of the voice (about
-  15). Check the installed packages: `@stream-io/calypso` has `session.speech` (grep
+  15). Check the installed packages: `@stream-io/stream-agents` has `session.speech` (grep
   `speech` in its `dist/*.d.ts`) and `stream-chat-react` exports `useHeardText` from
   `stream-chat-react/ai-components` (14.14.1+). With both, replace the
   `StreamedMessageText` slot on voice sessions with the `SpokenMessageText` recipe from

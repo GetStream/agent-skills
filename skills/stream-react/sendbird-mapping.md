@@ -3,7 +3,9 @@
 This mapping of symbols and behaviors has been compiled against `@sendbird/chat`
 4.21.1 + `@sendbird/uikit-react` 3.18.2 and `stream-chat` v9 +
 `stream-chat-react` v14. Typecheck your work against the currently installed
-versions.
+versions. When the installed `stream-chat-react` major differs, translate each Stream
+symbol through the migration guide for that pair (chat-versions.md), then confirm it
+in the installed major's docs and `node_modules` before writing it.
 
 Rows marked **(inferred)** were derived from type definitions, but not verified
 in a real-app sample. Take these with extra care.

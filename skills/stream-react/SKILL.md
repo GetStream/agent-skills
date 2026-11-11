@@ -1,13 +1,6 @@
 ---
 name: stream-react
-description:
-  "Build, integrate, audit, or upgrade Stream Chat, Video, Feeds, and Moderation
-  in React / Next.js web apps - the default skill for web work. Scaffold a new
-  app, add Stream to an existing project, review an integration, upgrade an SDK
-  major, or migrate from Sendbird. Covers team messaging, DMs, video
-  conferencing, livestreaming, social feeds, AI assistants, and apps built on
-  Stream Agents (voice and text agents, @stream-io/calypso). Web React only -
-  React Native uses stream-react-native."
+description: "Build, integrate, audit, or upgrade Stream Chat, Video, Feeds, and Moderation in React / Next.js web apps - the default skill for web work. Scaffold a new app, add Stream to an existing project, review an integration, upgrade an SDK major, or migrate from Sendbird. Covers team messaging, DMs, video conferencing, livestreaming, social feeds, AI assistants (including generative UI with A2UI / OpenUI), and apps built on Stream Agents (voice and text agents, @stream-io/stream-agents). Web React only - React Native uses stream-react-native."
 license: See LICENSE in repository root
 metadata:
   author: GetStream
@@ -27,7 +20,12 @@ cat $(getstream docs chat-sdk/react)/INDEX.md
 Client and UI: chat-sdk/react, video/react, activity-feeds/react. Node.js
 backend (e.g. Next.js routes): chat/node, activity-feeds/node, moderation/node.
 Stream Agents (sessions, voice, tools): agents/javascript.
-Previous majors are available too (e.g. chat-sdk/react/v13).
+Previous majors are available too (chat-sdk/react/v<major>).
+
+Chat SDK majors can differ deeply (state, layout, configuration). Before any Chat
+code, pin the installed major, read only that major's docs (never the unversioned
+id on trust), and treat SDK names in this skill and in your memory as leads to
+confirm there - follow chat-versions.md.
 
 ## Setup
 
@@ -40,10 +38,10 @@ choice unless the user says otherwise. Latest shadcn uses Base UI, not Radix: no
 
 Install the SDKs:
 
-- Chat: `stream-chat stream-chat-react`
+- Chat: `stream-chat stream-chat-react` (see chat-versions.md for which major)
 - Video: `@stream-io/video-react-sdk`
 - Feeds: `@stream-io/feeds-react-sdk`
-- Stream Agents: `@stream-io/calypso`, plus the Chat and Video packages above
+- Stream Agents: `@stream-io/stream-agents`, plus the Chat and Video packages above
   for its UI (stream-agents.md)
 - Server-side: `@stream-io/node-sdk`
 
@@ -174,13 +172,16 @@ and list each default that is off with the user's words that turned it off.
 ## Auditing an integration
 
 When asked, perform a read-only audit: check the code against the docs, report
-findings, and fix only if asked.
+findings, and fix only if asked. For a pre-launch review, or for an app that
+livestreams, follow the stream skill's integration-review.md together with
+integration-review.md, which has the React checks for Video and livestreams.
 
 ## Upgrading an SDK version
 
 When asked, read the upgrade notes for both the installed and the target major
-(use the versioned docs: chat-sdk/react/v13, chat-sdk/react/v14, ...), apply
-them, then verify as if you're building an app.
+(use the versioned docs: chat-sdk/react/v<major>), apply them, then verify as if
+you're building an app. For Chat, follow the AI migration guide for the exact pair
+of majors (chat-versions.md), one major per pass.
 
 ## Matching a reference design
 
@@ -204,7 +205,7 @@ secret in the client bundle. There are two kinds of backend; pick by what the us
 names:
 
 - **Stream Agents** - the agent and its models run on Stream (`getstream agents`, an
-  `agents/<name>/` folder, `@stream-io/calypso`). Any voice agent is this kind. Follow
+  `agents/<name>/` folder, `@stream-io/stream-agents`). Any voice agent is this kind. Follow
   stream-agents.md.
 - **Your own agent process** answering in a Chat channel (`@stream-io/chat-ai-sdk`,
   LangChain, a webhook turn):
@@ -212,7 +213,9 @@ names:
   - ChatGPT-style app, an assistant inside an existing chat, streaming answers, stop
     generating, client tools: follow ai-integration.md.
 
-If the request fits both and the user hasn't said, ask which backend they want.
+If the request fits both and the user hasn't said, ask which backend they want. An
+agent that answers with UI (generative UI: A2UI, OpenUI, cards or forms in a reply)
+works with either backend: add ai-integration.md's "Generative UI" section.
 
 ## Other skills
 

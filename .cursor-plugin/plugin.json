@@ -1,14 +1,15 @@
 {
-  "name": "stream",
+  "name": "getstream",
   "displayName": "Stream",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Build with Stream Chat, Video, Feeds, and Moderation: scaffold apps, add Stream to existing projects, and query and manage your Stream apps through the Stream MCP server.",
   "author": {
-    "name": "GetStream"
+    "name": "GetStream",
+    "email": "marketing@getstream.io"
   },
   "homepage": "https://getstream.io",
   "repository": "https://github.com/GetStream/agent-skills",
-  "license": "See LICENSE",
+  "license": "Apache-2.0",
   "keywords": [
     "stream",
     "chat",
@@ -22,9 +23,5 @@
   ],
   "logo": "assets/logo.png",
   "skills": "./skills/",
-  "mcpServers": {
-    "stream": {
-      "url": "https://mcp.getstream.io/mcp"
-    }
-  }
+  "mcpServers": "./mcp.json"
 }

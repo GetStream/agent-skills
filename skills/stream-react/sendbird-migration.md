@@ -30,10 +30,14 @@ use local docs with `getstream docs` and the installed types.
 Map the footprint before any edit:
 
 ```bash
-grep -rln "@sendbird/chat\|@sendbird/uikit-react" --include=*.{ts,tsx,js,jsx} .
-grep -rn "SendbirdProvider\|GroupChannel\|OpenChannel\|useSendbirdStateContext\|sendbirdSelectors\|withSendBird" --include=*.{ts,tsx} .
+grep -rln "@sendbird/chat\|@sendbird/uikit-react" --include='*.ts' --include='*.tsx' --include='*.js' --include='*.jsx' --exclude-dir=node_modules .
+grep -rn "SendbirdProvider\|GroupChannel\|OpenChannel\|useSendbirdStateContext\|sendbirdSelectors\|withSendBird" --include='*.ts' --include='*.tsx' --exclude-dir=node_modules .
 cat package.json   # both Sendbird versions and the package manager
 ```
+
+Pin the Stream Chat major you migrate to (chat-versions.md): the installed one if
+Stream is already present, otherwise the npm `latest`. Every Stream symbol you
+write comes from that major's docs.
 
 | Pattern found                                                           | How it migrates                                                                          |
 | ----------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
@@ -137,7 +141,9 @@ File-by-file, in place, referencing the mapping, and tracking progress in the
 ledger:
 
 - **UI composition** (mapping section 12-13): `<GroupChannel>` -> composed
-  `<Channel><Window><MessageList/><MessageComposer/></Window><Thread/></Channel>`;
+  `<Channel><Window><MessageList/><MessageComposer/></Window><Thread/></Channel>`
+  in the mapping's major (on another major, take the composition from that
+  major's docs, chat-versions.md);
   `<GroupChannelList>` -> `<ChannelList>`; `renderX` props -> component swaps
   via `<WithComponents>`; `useSendbirdStateContext` -> focused context hooks.
   Keep `<ChannelList>` as the query/watch/state owner - don't maintain a
