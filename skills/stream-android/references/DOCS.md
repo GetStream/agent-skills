@@ -94,26 +94,6 @@ Do not convert these heuristics into a static mapping. If the docs add, rename, 
 
 ## Version lookup before installing
 
-Verify the current published version before writing a dependency, using the sources [`../RULES.md`](../RULES.md) "Version lookup" allows (never `search.maven.org`):
-
-```bash
-# Chat - Compose UI SDK / XML UI SDK
-curl -s https://stream-io-repo.com/io/getstream/stream-chat-android-compose/maven-metadata.xml | grep -o '<release>[^<]*'
-curl -s https://stream-io-repo.com/io/getstream/stream-chat-android-ui-components/maven-metadata.xml | grep -o '<release>[^<]*'
-
-# Chat - AI components (released with the Chat SDK, at its version)
-curl -s https://stream-io-repo.com/io/getstream/stream-chat-android-ai-compose/maven-metadata.xml | grep -o '<release>[^<]*'
-
-# Stream Agents
-curl -s https://stream-io-repo.com/io/getstream/stream-agents-android-core/maven-metadata.xml | grep -o '<release>[^<]*'
-
-# Video
-curl -s https://stream-io-repo.com/io/getstream/stream-video-android-ui-compose/maven-metadata.xml | grep -o '<release>[^<]*'
-
-# Feeds
-curl -s https://stream-io-repo.com/io/getstream/stream-feeds-android-client/maven-metadata.xml | grep -o '<release>[^<]*'
-```
-
-These versions resolve only from Stream's Maven repository: add `maven("https://stream-io-repo.com")` to the project's repositories ([`../builder.md`](../builder.md) "Install the SDKs").
+Verify the current published version before writing a dependency, using the sources [`../RULES.md`](../RULES.md) "Version lookup" allows (never `search.maven.org`). The ready-made `maven-metadata.xml` commands, the repository setup and the troubleshooting are in [`MAVEN-REPOSITORY.md`](MAVEN-REPOSITORY.md).
 
 Install the latest release when it matches the manifest-selected docs version. If it does not, use the version the manifest's installation page recommends. Add the coordinates to `gradle/libs.versions.toml` when the project already uses a version catalog ([`../RULES.md`](../RULES.md) "Project ownership").

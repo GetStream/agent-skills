@@ -14,12 +14,12 @@ For Stream Feeds (V3), target the latest published `io.getstream:stream-feeds-an
 
 ### Version lookup
 
-Stream Android artifacts are published to Stream's own Maven repository, `https://stream-io-repo.com`. Maven Central only has older releases (it stops at Chat 7.13.0 and the standalone `stream-chat-android-ai-compose` 0.3.0), and `io.getstream:stream-agents-android-core` was never on it. When you need the current Stream artifact version, use one of these sources:
+Stream Android artifacts are published to Stream's Maven repository, `https://stream-io-repo.com`; Maven Central only has older releases. Setup, version lookup and troubleshooting are in [`references/MAVEN-REPOSITORY.md`](references/MAVEN-REPOSITORY.md). When you need the current Stream artifact version, use one of these sources:
 
-- Stream's Maven repository metadata: `https://stream-io-repo.com/io/getstream/<artifact>/maven-metadata.xml` - the `<release>` element is the current version ([`references/DOCS.md`](references/DOCS.md) has ready-made commands)
+- Stream's Maven repository metadata: `https://stream-io-repo.com/io/getstream/<artifact>/maven-metadata.xml` - the `<release>` element is the current version
 - GitHub releases: `https://github.com/GetStream/stream-chat-android/releases`, `https://github.com/GetStream/stream-video-android/releases`, `https://github.com/GetStream/stream-feeds-android/releases`
 
-Do not take a version from Maven Central (`repo1.maven.org`, `central.sonatype.com`): it is behind, and it leads you to install an old API. Any version you install needs `maven("https://stream-io-repo.com")` in the project's repositories ([`builder.md`](builder.md) "Install the SDKs").
+Do not take a version from Maven Central (`repo1.maven.org`, `central.sonatype.com`): it is behind, and it leads you to install an old API.
 
 **Do not use `search.maven.org`** — it is deprecated and its index is stale; it will lead you to ship outdated versions by mistake. If a tool result shows `search.maven.org` as the source, discard it and re-query one of the sources above.
 

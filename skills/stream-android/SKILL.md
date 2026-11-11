@@ -124,7 +124,7 @@ Use the result to produce a **one-line status**, for example:
 
 ## Reference layout
 
-Live documentation is looked up through the `llms.txt` manifests in **[`references/DOCS.md`](references/DOCS.md)** - the entrypoint for guides and surfaces this pack does not bundle. The AI runbook (LLM assistants, streaming replies, agents) lives in **[`ai-integration.md`](ai-integration.md)**, on top of the shared backend contract in [`../stream/ai-backend-contract.md`](../stream/ai-backend-contract.md).
+Live documentation is looked up through the `llms.txt` manifests in **[`references/DOCS.md`](references/DOCS.md)** - the entrypoint for guides and surfaces this pack does not bundle. Stream's Maven repository (`stream-io-repo.com`: setup, versions, troubleshooting) is in **[`references/MAVEN-REPOSITORY.md`](references/MAVEN-REPOSITORY.md)**. The AI runbook (LLM assistants, streaming replies, agents) lives in **[`ai-integration.md`](ai-integration.md)**, on top of the shared backend contract in [`../stream/ai-backend-contract.md`](../stream/ai-backend-contract.md).
 
 Shared Android/Kotlin patterns live in **[`sdk.md`](sdk.md)**. The curated procedure for reproducing a
 **reference design** with the pre-built Compose components (the region -> `ChatComponentFactory`-slot map

@@ -62,19 +62,7 @@ Prefer the project's existing dependency strategy:
 - **Version catalog (`gradle/libs.versions.toml`) present:** add Stream entries to the catalog, then reference them from the app module's `build.gradle.kts`.
 - **No version catalog:** add the dependency directly to the module's `build.gradle.kts` (or `build.gradle`) under `dependencies { ... }`.
 
-Every Stream artifact (Chat, the AI components, Stream Agents, Video, Feeds) resolves from Stream's Maven repository; Maven Central only has older releases. Add it to `dependencyResolutionManagement.repositories` in `settings.gradle(.kts)` (an entry under `pluginManagement` does not count), next to the repositories the project already lists:
-
-```kotlin
-dependencyResolutionManagement {
-    repositories {
-        google()
-        mavenCentral()
-        maven("https://stream-io-repo.com")
-    }
-}
-```
-
-In an older project that declares repositories in the root `build.gradle(.kts)` `allprojects { repositories { ... } }` block, add it there instead.
+Every Stream artifact (Chat, the AI components, Stream Agents, Video, Feeds) resolves from Stream's Maven repository; Maven Central only has older releases. Before adding a dependency, add `maven("https://stream-io-repo.com")` to `dependencyResolutionManagement.repositories` in `settings.gradle(.kts)` as [`references/MAVEN-REPOSITORY.md`](references/MAVEN-REPOSITORY.md) shows (Kotlin, Groovy and the legacy `allprojects` form).
 
 For the exact artifact ids, see the matching reference file (`CHAT-COMPOSE.md`, `VIDEO-COMPOSE.md`, `FEEDS-COMPOSE.md`, …).
 
