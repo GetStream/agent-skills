@@ -80,11 +80,14 @@ The Chat client already models the protocol - no custom wire format (on shape A 
 
 **Subscribe on the `ChannelClient`, not on `ChatClient`.** `chatClient.channel(cid).subscribeFor<...>` already filters these three events by `cid`, so the contract's key-by-channel rule costs you nothing; subscribing on the client means "Thinking" appears in the wrong conversation.
 
-**Android has no `stopAIResponse()` helper** (React and React Native do). Stop is an event:
+**Android has no `stopAIResponse()` helper** (React and React Native do). Stop is an event: send `ai_indicator.stop` with the `message_id` of the reply, the id from the latest `AIIndicatorUpdatedEvent`. `sendEvent` sends the entries of `extraData` as top-level fields of the event, next to the channel's `cid`:
 
 ```kotlin
 chatClient.channel(cid)
-    .sendEvent(EventType.AI_TYPING_INDICATOR_STOP)
+    .sendEvent(
+        eventType = EventType.AI_TYPING_INDICATOR_STOP,
+        extraData = mapOf("message_id" to replyId),
+    )
     .enqueue()
 ```
 
