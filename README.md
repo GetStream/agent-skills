@@ -69,7 +69,7 @@ Use `/stream` for generic routing, or invoke a skill directly by name. Each skil
 
 Skills are Markdown instructions and supporting files, including helper scripts where needed. The Stream MCP server is hosted by Stream at `https://mcp.getstream.io/mcp`.
 
-The plugins do not include the `getstream` CLI, which skills use for data queries, app config, and SDK docs (`getstream docs`). When a skill needs it and it is not installed, the `stream` skill runs Stream's install script (`curl -fsSL https://getstream.io/cli.sh | bash`). Tool permissions are managed by your agent harness.
+The plugins do not include the `getstream` CLI, which skills use for data queries, app config, and SDK docs (`getstream docs`). When a skill needs it and it is not installed, the `stream` skill asks you to install it from [getstream.io/cli](https://getstream.io/cli) and does not run an install script itself. Tool permissions are managed by your agent harness.
 
 ## Network access and privacy
 

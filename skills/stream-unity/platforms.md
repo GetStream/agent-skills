@@ -163,7 +163,7 @@ The easiest targets, and the right place to test a call from two clients on one 
 Chat works: it swaps in a browser WebSocket under `UNITY_WEBGL` via `Libs/NativeWebSocket/WebSocket.jslib`. Notes:
 
 - **No threads.** Everything runs on the browser's single thread; a long synchronous block stalls the socket and looks like a disconnect.
-- **No `File.ReadAllBytes`.** Uploads need bytes from a browser file input via a jslib bridge, or from a `Texture2D.EncodeToPNG`.
+- **No synchronous file I/O.** Upload bytes have to come from a browser file input through a jslib bridge, or be encoded in memory from a `Texture2D`.
 - **Managed stripping still applies** - the `link.xml` requirement is identical.
 - **Video will not work.** If the user wants calls on WebGL, the honest answers are: Chat in Unity plus Stream's web Video SDK in surrounding page JavaScript, or a non-WebGL build. Do not attempt a Unity WebGL video build.
 

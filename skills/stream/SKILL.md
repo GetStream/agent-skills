@@ -31,14 +31,11 @@ endpoint, obtaining credentials, minting user tokens, reading the docs, and
 installing the other Stream skills. Don't work from memory of it - run
 `getstream -h` and `getstream <command> -h` and follow what they print.
 
-To install (unless already present):
-
-```bash
-curl -fsSL https://getstream.io/cli.sh | bash
-getstream --version
-```
-
-Alternatively, the user can install the CLI from getstream.io/cli.
+Check for it with `command -v getstream`. If it is missing, do not download or
+run an install script yourself: ask the user to install it from
+https://getstream.io/cli and wait. In Claude Code they can run the installer
+from that page in the session by prefixing it with `!`. Then confirm with
+`getstream --version`.
 
 A CLI that is already installed can be too old for these skills: early stable
 builds (such as 1.0.0) have no `docs`, `status` or `webhook` command. If `getstream -h`
@@ -51,12 +48,9 @@ is installed from `getstream --version`, not from an error message: a current
 stable build answers `getstream agents` with "agents are available in private
 beta builds only", and an early one with `unknown command "agents"`. A beta
 build has every command a stable build has, so for any Stream Agents work
-install it first, over the stable one:
-
-```bash
-curl -fsSL https://getstream.io/cli/beta/install.sh | bash
-getstream --version   # YYYY-MM-DD-<commit>
-```
+ask the user to install it over the stable one, the same way: they run the beta
+installer (`https://getstream.io/cli/beta/install.sh`, piped to `bash`)
+themselves, then you confirm `getstream --version` prints `YYYY-MM-DD-<commit>`.
 
 ## Routing
 
