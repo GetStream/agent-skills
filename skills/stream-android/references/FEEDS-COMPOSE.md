@@ -10,7 +10,7 @@ Rules: [../RULES.md](../RULES.md) (secrets, no fake credentials, client lifetime
 
 ## Quick ref
 
-- **Artifact:** `io.getstream:stream-feeds-android-client` via Maven Central
+- **Artifact:** `io.getstream:stream-feeds-android-client` from Stream's Maven repository, `maven("https://stream-io-repo.com")` ([`../builder.md`](../builder.md) "Install the SDKs")
 - **First:** Installation → Manifest → `FeedsClient(...)` build → `client.connect()` → create `Feed` objects → observe `FeedState` → build Composables
 - **Per feature:** Jump to the relevant section or blueprint when implementing a screen
 - **Docs:** `https://getstream.io/activity-feeds/docs/android/` and the source at `https://github.com/GetStream/stream-feeds-android`
@@ -51,7 +51,7 @@ dependencies {
 }
 ```
 
-For the current version, follow [`RULES.md` → Version lookup](../RULES.md#version-lookup) (Maven Central / GitHub releases — never `search.maven.org`).
+For the current version, follow [`RULES.md` -> Version lookup](../RULES.md#version-lookup) (Stream's Maven repository / GitHub releases - never `search.maven.org`).
 
 **Compose deps the blueprints rely on.** The default Android Studio "Empty Compose Activity" template ships Material3, the Compose BOM, and `lifecycle-runtime-ktx`, but **not** the three below. The blueprints in [`FEEDS-COMPOSE-blueprints.md`](FEEDS-COMPOSE-blueprints.md) won't compile without them:
 
