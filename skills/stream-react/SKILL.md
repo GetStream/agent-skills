@@ -172,7 +172,9 @@ and list each default that is off with the user's words that turned it off.
 ## Auditing an integration
 
 When asked, perform a read-only audit: check the code against the docs, report
-findings, and fix only if asked.
+findings, and fix only if asked. For a pre-launch review, or for an app that
+livestreams, follow the stream skill's integration-review.md together with
+integration-review.md, which has the React checks for Video and livestreams.
 
 ## Upgrading an SDK version
 
