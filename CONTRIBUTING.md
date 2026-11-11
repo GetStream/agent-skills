@@ -85,6 +85,7 @@ For older CLI installations, [`stream-builder`](skills/stream-builder/SKILL.md) 
   - [`setup.md`](skills/stream-flutter/setup.md) - project detection, v10 check, CLI credentials + seed data, install, platform setup, client wiring
   - [`push.md`](skills/stream-flutter/push.md) - Chat push + Video ringing runbook: CLI push providers, CallKit / FCM / Telecom, ship-code-defer-config
   - [`integration-review.md`](skills/stream-flutter/integration-review.md) - Flutter checks for an integration review, including the livestream checks
+  - [`ai-integration.md`](skills/stream-flutter/ai-integration.md) - AI assistants and agents on `stream_chat_flutter_ai`: Stream Agents (`stream_agents_*`) or an agent of your own, the conversation, approvals, device tools, generative UI, voice
   - [`video-patterns.md`](skills/stream-flutter/video-patterns.md) - Video patterns with no docs page (livestream feed, call over a broadcast, shared call state, Chat + Video glue)
   - [`design-matching.md`](skills/stream-flutter/design-matching.md) + [`custom-ui.md`](skills/stream-flutter/custom-ui.md) - pre-built components vs custom `stream_chat_flutter_core` UI
   - [`sendbird-migration.md`](skills/stream-flutter/sendbird-migration.md) - Sendbird -> Stream Chat migration runbook

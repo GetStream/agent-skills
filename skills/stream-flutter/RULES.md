@@ -123,10 +123,11 @@ This skill targets **`stream_chat_flutter` / `stream_chat_flutter_core` v10**. v
 
 Runbook: [`ai-integration.md`](ai-integration.md); shared contract: [`../stream/ai-backend-contract.md`](../stream/ai-backend-contract.md). The non-negotiables:
 
-- **The model runs on a backend agent, never in the app.** No LLM provider key, Stream secret, or admin token in the Flutter app, and no "call the LLM from the device, then post the answer" shortcut.
-- **Always state the backend contract** (`ai_generated`, `generating: true/false`, one partially-updated message, `ai_indicator.*`, honor stop) to the developer when an agent writes to a Chat channel, and run its CLI check before debugging Dart code.
-- **`stream_chat_flutter_ai` is the AI component library** (no Stream Chat dependency; Dart 3.11+, Flutter 3.41+). Use `^0.2.0`. Next to `stream_chat_flutter`, resolve it at 10.6.0+ and import it with the AI widget names hidden ([`ai-integration.md`](ai-integration.md) Step 0).
-- **Show an AI conversation with `AIConversationView`, never a hand-built list.** The alternative is the `stream_chat_flutter` message list with AI rows from `messageBuilder`, for a conversation that needs messenger features or a channel the app already shows with the UI kit. A voice agent's transcript renders with `AIConversationView` too ([`ai-integration.md`](ai-integration.md) shape E).
+- **The model runs on a backend agent or on Stream Agents, never in the app.** No LLM provider key, Stream secret, or admin token in the Flutter app, and no "call the LLM from the device, then post the answer" shortcut.
+- **Always state the backend contract** (`ai_generated`, `generating: true/false`, one partially-updated message, `ai_indicator.*`, honor stop) to the developer when an agent of their own writes to a Chat channel, and run its CLI check before debugging Dart code. On Stream Agents the router writes it.
+- **Packages:** `stream_chat_flutter_ai` `^0.2.0` (+ `stream_chat_flutter_ai_a2ui` for generative UI; Dart 3.12+, Flutter 3.44+), and on Stream Agents `stream_agents_core` / `stream_agents_chat` / `stream_agents_rtc`. Next to `stream_chat_flutter`, resolve it at 10.6.0+ and import it with the AI widget names hidden ([`ai-integration.md`](ai-integration.md) Step 0).
+- **Show an AI conversation with `AIConversationView` driven by an `AIConversation`, never a hand-built list.** The alternative is the `stream_chat_flutter` message list with AI rows from `messageBuilder`, for a conversation that needs messenger features or a channel the app already shows with the UI kit. A voice agent's transcript renders with `AIConversationView` too ([`ai-integration.md`](ai-integration.md) shape E).
+- **On Stream Agents, ask the session (`session.responses.create`), never the channel** - the agent doesn't answer `channel.sendMessage`.
 
 ---
 
