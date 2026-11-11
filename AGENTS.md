@@ -9,7 +9,7 @@ This repository contains the Stream skill pack. Skill source lives under `skills
 | Sub-skill | Use for |
 |---|---|
 | [`skills/stream-react/SKILL.md`](skills/stream-react/SKILL.md) | **Default for web React/Next.js.** Scaffold, enhance, audit, or migrate a React/Next.js app with Chat/Video/Feeds/Moderation, including AI assistants and agentic chat (`stream-chat-react/ai-components`, generative UI with A2UI / OpenUI) and apps built on Stream Agents |
-| [`skills/stream-react-native/SKILL.md`](skills/stream-react-native/SKILL.md) | Build, integrate, audit, or upgrade Stream Chat/Video/Feeds in React Native or Expo apps, including AI assistants (`stream-chat-react-native/ai-components`), design matching, and Sendbird migration |
+| [`skills/stream-react-native/SKILL.md`](skills/stream-react-native/SKILL.md) | Build, integrate, audit, or upgrade Stream Chat/Video/Feeds in React Native or Expo apps, including AI assistants (`stream-chat-react-native/ai-components`) and apps built on Stream Agents, design matching, and Sendbird migration |
 | [`skills/stream-swift/SKILL.md`](skills/stream-swift/SKILL.md) | Build or integrate Stream Chat/Video/Feeds in Swift/SwiftUI/UIKit/iOS apps, including AI assistants and agentic chat (StreamChatAI) |
 | [`skills/stream-android/SKILL.md`](skills/stream-android/SKILL.md) | Build or integrate Stream Chat/Video/Feeds in Android/Jetpack Compose apps, including AI assistants and agentic chat (`stream-chat-android-ai-compose`) |
 | [`skills/stream-flutter/SKILL.md`](skills/stream-flutter/SKILL.md) | Build or integrate Stream Chat, Video, and Feeds in Flutter apps (stream_chat_flutter, stream_chat_flutter_core, stream_video_flutter, stream_feeds) |

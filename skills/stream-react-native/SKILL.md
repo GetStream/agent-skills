@@ -1,6 +1,6 @@
 ---
 name: stream-react-native
-description: "Build, integrate, audit, or upgrade Stream Chat, Video, and Feeds in React Native CLI and Expo / Expo Router apps, and answer RN / Expo how-to questions about them. Scaffold a new app, add Stream to an existing project, review an integration, upgrade an SDK major, migrate from Sendbird (@sendbird/chat, @sendbird/uikit-react-native), or build an AI assistant / ChatGPT-style app on the Chat SDK's ai-components (replacing the deprecated @stream-io/chat-react-native-ai). Covers channel lists, messages, MessageComposer, threads, the attachment picker, audio messages, offline support, push notifications, video calls, CallContent and ParticipantView, ringing, livestreams, audio rooms, StreamFeeds activity / timeline / notification feeds, comments, reactions, follows, and theming or matching a design, with stream-chat-react-native, stream-chat-expo, @stream-io/video-react-native-sdk, and @stream-io/feeds-react-native-sdk. React Native and Expo only - web React uses stream-react."
+description: "Build, integrate, audit, or upgrade Stream Chat, Video, and Feeds in React Native CLI and Expo / Expo Router apps, and answer RN / Expo how-to questions about them. Scaffold a new app, add Stream to an existing project, review an integration, upgrade an SDK major, migrate from Sendbird (@sendbird/chat, @sendbird/uikit-react-native), or build an AI assistant / ChatGPT-style app on the Chat SDK's ai-components (replacing the deprecated @stream-io/chat-react-native-ai), or one on Stream Agents. Covers channel lists, messages, MessageComposer, threads, the attachment picker, audio messages, offline support, push notifications, video calls, CallContent and ParticipantView, ringing, livestreams, audio rooms, StreamFeeds activity / timeline / notification feeds, comments, reactions, follows, and theming or matching a design, with stream-chat-react-native, stream-chat-expo, @stream-io/video-react-native-sdk, and @stream-io/feeds-react-native-sdk. React Native and Expo only - web React uses stream-react."
 license: See LICENSE in repository root
 metadata:
   author: GetStream
@@ -375,9 +375,8 @@ skill's sendbird-data-migration.md.
 The model runs on a backend agent, never in the app: no LLM provider key or
 Stream secret in the bundle, `app.json`, or native config.
 
-- Stream Agents (voice and text agents run on Stream, `getstream agents`) has no
-  React Native client SDK: `@stream-io/stream-agents` is for Node and the browser.
-  Tell the user before building.
+- Stream Agents (the agent and its models run on Stream, `getstream agents`, an
+  `agents/<name>/` folder, `@stream-io/stream-agents`): follow stream-agents.md.
 - Support bot, help desk, RAG chat: the backend is the same as on the web -
   follow stream-react skill's ai-support-agent.md for it, then
   ai-integration.md for the app.

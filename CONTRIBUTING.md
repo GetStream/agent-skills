@@ -66,6 +66,7 @@ For older CLI installations, [`stream-builder`](skills/stream-builder/SKILL.md) 
   - [`SKILL.md`](skills/stream-react-native/SKILL.md) - build and integrate Stream, audit an app, upgrade SDKs, and verify the result
   - [`chat-versions.md`](skills/stream-react-native/chat-versions.md) - pin the installed Chat RN major, use that major's docs, find its migration guide
   - [`ai-integration.md`](skills/stream-react-native/ai-integration.md) - AI assistants on the Chat SDK's `ai-components`, and what the backend agent must send
+  - [`stream-agents.md`](skills/stream-react-native/stream-agents.md) - apps on Stream Agents (`@stream-io/stream-agents`): sessions shown with `AIConversation`, approvals, sign-ins, device tools
   - [`design-matching.md`](skills/stream-react-native/design-matching.md) - implement and verify a reference design
   - [`simulator-verification.md`](skills/stream-react-native/simulator-verification.md) - run, drive, and screenshot the app on a simulator or emulator
   - [`sendbird-migration.md`](skills/stream-react-native/sendbird-migration.md) - migrate a Sendbird app to Stream Chat React Native

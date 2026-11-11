@@ -98,8 +98,9 @@ First match wins:
    `instructions.md`, `guardrail.md`, `knowledge/`, `confirm` skill and
    simulations before the first sync. Build the app with the platform skill:
    its Chat UI kit renders the session's conversation and its Video SDK holds
-   the call. React Native, Unity, and Unreal have no Agents client SDK - tell
-   the user before building.
+   the call. React Native runs `@stream-io/stream-agents` for text agents, with
+   no call-based voice (stream-react-native skill's stream-agents.md). Unity and
+   Unreal have no Agents client SDK - tell the user before building.
 
 2. **Migrate Feeds v2 to v3:** use stream-feeds-migration skill.
 3. **Migrate from Sendbird:** use the platform-specific skill to migrate the
