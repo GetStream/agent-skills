@@ -179,8 +179,9 @@ and list each default that is off with the user's words that turned it off.
 
 When asked, perform a read-only audit: check the code against the docs, report
 findings, and fix only if asked. For a pre-launch review, or for an app that
-livestreams, follow the stream skill's integration-review.md together with
-integration-review.md, which has the React checks for Video and livestreams.
+livestreams or is built on two-person calls, follow the stream skill's
+integration-review.md together with integration-review.md, which has the
+React checks for Video, livestreams, and two-person calls.
 
 ## Upgrading an SDK version
 
