@@ -5,6 +5,18 @@ license: See LICENSE in repository root
 compatibility: Requires an Xcode or Swift/iOS project for build/integrate work. Docs lookups need only network access.
 metadata:
   author: GetStream
+allowed-tools: >-
+  Read, Write, Edit, Glob, Grep,
+  WebFetch(domain:getstream.io),
+  WebFetch(domain:github.com),
+  WebFetch(domain:raw.githubusercontent.com),
+  Bash(ls *),
+  Bash(grep *),
+  Bash(find * *),
+  Bash(find . *),
+  Bash(cat Package.swift), Bash(cat Package.resolved), Bash(cat Podfile),
+  Bash(jq *),
+  Bash(getstream *)
 ---
 
 # Stream Swift - docs orchestrator for iOS

@@ -5,6 +5,26 @@ license: See LICENSE in repository root
 compatibility: Requires an Android Studio / Gradle project (Kotlin). The `getstream` CLI (binary name `getstream`) is the default path for the credentials flow (API key fetch, token mint, and any product-specific setup - see `credentials.md`); only optional when the user pastes the API key and token themselves.
 metadata:
   author: GetStream
+allowed-tools:
+  - Read
+  - Write
+  - Edit
+  - Glob
+  - Grep
+  - WebFetch(domain:getstream.io)
+  - WebFetch(domain:github.com)
+  - WebFetch(domain:raw.githubusercontent.com)
+  - Bash(curl -s *)
+  - Bash(ls *)
+  - Bash(grep *)
+  - Bash(find . *)
+  - Bash(cat **/settings.gradle)
+  - Bash(cat **/settings.gradle.kts)
+  - Bash(cat **/build.gradle)
+  - Bash(cat **/build.gradle.kts)
+  - Bash(cat gradle/libs.versions.toml)
+  - Bash(command -v getstream)
+  - Bash(getstream *)
 ---
 
 # Stream Android - skill router + execution flow
