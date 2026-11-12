@@ -31,7 +31,9 @@ endpoint, obtaining credentials, minting user tokens, reading the docs, and
 installing the other Stream skills. Don't work from memory of it - run
 `getstream -h` and `getstream <command> -h` and follow what they print.
 
-To install (unless already present):
+Check for it with `command -v getstream`. If it is missing, ask the user before
+installing it: the install script downloads and runs code on their machine. Once
+they agree:
 
 ```bash
 curl -fsSL https://getstream.io/cli.sh | bash
@@ -39,6 +41,11 @@ getstream --version
 ```
 
 Alternatively, the user can install the CLI from getstream.io/cli.
+
+`getstream init` and `getstream login` can open a browser for a human to sign
+in. Tell the user, wait for them to finish, then check with `getstream status`. Use
+`getstream login --guest` (a temporary account an agent can use) only with the
+user's OK.
 
 A CLI that is already installed can be too old for these skills: early stable
 builds (such as 1.0.0) have no `docs`, `status` or `webhook` command. If `getstream -h`
@@ -51,7 +58,7 @@ is installed from `getstream --version`, not from an error message: a current
 stable build answers `getstream agents` with "agents are available in private
 beta builds only", and an early one with `unknown command "agents"`. A beta
 build has every command a stable build has, so for any Stream Agents work
-install it first, over the stable one:
+install it first, over the stable one - asking the user first, as above:
 
 ```bash
 curl -fsSL https://getstream.io/cli/beta/install.sh | bash
