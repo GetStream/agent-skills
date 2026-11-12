@@ -158,7 +158,7 @@ class LoginActivity : AppCompatActivity(R.layout.activity_login) {
             )
 
             // Demo wiring only. In production, fetch the token from your backend
-            // and give connectUser a TokenProvider instead of a static string.
+            // and pass a TokenProvider to connectUser instead of a static string.
             ChatClient.instance()
                 .connectUser(user, token = "your_static_token_here")
                 .enqueue { result ->
@@ -284,7 +284,7 @@ class CustomChannelsShellActivity : AppCompatActivity(R.layout.activity_custom_c
 **Wiring:**
 - `ChannelListFragment.newInstance { ... }` exposes only `customTheme(themeResId)`, `showHeader(...)`, `showSearch(...)`, `headerTitle(...)`. Filter / sort customization is done by overriding `getFilter()` / `getSort()` in a `ChannelListFragment` subclass - `newInstance` does not accept those.
 - Bound `ChannelListView` listeners (`setChannelItemClickListener`, `setChannelLongClickListener`, `setChannelDeleteClickListener`, `setChannelLeaveClickListener`) **are** wired directly on the View - they are overwritten by `bindView` only for state, not for clicks.
-- Always call `bindView` from the host's `onCreate` (or `onViewCreated`), not from a callback - the binding subscribes to the lifecycle owner you hand it.
+- Always call `bindView` from the host's `onCreate` (or `onViewCreated`), not from a callback - the binding subscribes to the lifecycle owner you pass in.
 
 ---
 
@@ -486,7 +486,7 @@ ChannelFragment.newInstance(cid) {
 ```
 
 **Wiring:**
-- `Channel.cid` is the canonical `"<type>:<id>"` string - put it in a single intent extra instead of two separate fields.
+- `Channel.cid` is the canonical `"<type>:<id>"` string - pass it as a single intent extra instead of two separate fields.
 - `messageId(...)` jumps the message list to that message on first display (used by push deep-links).
 - The pre-built `ChannelListFragment` does not select a channel by id on its own - for a master-detail layout that highlights the current channel, drop down to bound `ChannelListView` + your own selection state.
 
@@ -594,7 +594,7 @@ class CustomChannelListItemViewHolderFactory : ChannelListItemViewHolderFactory(
 }
 ```
 
-The base factory exposes `listenerContainer: ChannelListListenerContainer` (with `channelClickListener`, `channelLongClickListener`, `deleteClickListener`, `moreOptionsClickListener`, `userClickListener`, `swipeListener`), `visibilityContainer`, `iconProviderContainer`, and `style` - forward whichever your custom view holder needs.
+The base factory exposes `listenerContainer: ChannelListListenerContainer` (with `channelClickListener`, `channelLongClickListener`, `deleteClickListener`, `moreOptionsClickListener`, `userClickListener`, `swipeListener`), `visibilityContainer`, `iconProviderContainer`, and `style` - pass through whichever your custom view holder needs.
 
 ```kotlin
 // Wire on the View (bound shell):
@@ -648,7 +648,7 @@ ChatClient.instance().switchUser(nextUser, nextToken).enqueue { result ->
 ```
 
 **Wiring:**
-- `disconnect(flushPersistence = true)` clears the Room cache; use `false` when you want to keep cached channels for the same user across temporary disconnects.
+- `disconnect(flushPersistence = true)` clears the Room cache; pass `false` when you want to keep cached channels for the same user across temporary disconnects.
 - `disconnect(...).enqueue { ... }` already hops back to the main thread for the callback - Activity / navigation calls are safe to make directly.
 - `switchUser(user, token)` and `switchUser(user, tokenProvider)` are both `@JvmOverloads`; use the `TokenProvider` form for expiring tokens.
 - If you roll your own switch via `disconnect(...).enqueue { connectUser(...) }`, do not call `connectUser(...)` inside the disconnect callback's `Result.Failure` branch unless you've handled the underlying error first; retrying immediately can loop on the same failing token.
