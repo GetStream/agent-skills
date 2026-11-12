@@ -1,0 +1,50 @@
+{
+  "name": "getstream",
+  "version": "0.2.0",
+  "description": "Build with Stream Chat, Video, Feeds, and Moderation: scaffold apps, add Stream to existing projects, and query and manage your Stream apps through the Stream MCP server.",
+  "author": {
+    "name": "GetStream",
+    "email": "marketing@getstream.io",
+    "url": "https://getstream.io"
+  },
+  "homepage": "https://getstream.io",
+  "repository": "https://github.com/GetStream/agent-skills",
+  "license": "Apache-2.0",
+  "keywords": [
+    "stream",
+    "chat",
+    "video",
+    "feeds",
+    "moderation",
+    "realtime",
+    "messaging",
+    "getstream",
+    "mcp"
+  ],
+  "skills": "./skills/",
+  "mcpServers": "./mcp.json",
+  "interface": {
+    "displayName": "Stream",
+    "shortDescription": "Build chat, video, and feeds",
+    "longDescription": "Official Stream skills and MCP server for building realtime apps with Stream Chat, Video, Feeds, and Moderation. The skills scaffold new apps and add Stream to existing React and Next.js, React Native and Expo, Swift and SwiftUI, Android and Jetpack Compose, Flutter, Unity, and Unreal projects. They cover SDK setup, auth and token wiring, UI customization, AI assistant chat, integration reviews, SDK upgrades, Sendbird migrations, and Activity Feeds v2 to v3 migrations, and look up current SDK docs with the getstream CLI. The Stream MCP server signs in with your Stream account so the agent can list your apps and call the Stream API on them, for example to find users, list channels and calls, or review flagged messages.",
+    "developerName": "Stream",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Interactive",
+      "Read",
+      "Write"
+    ],
+    "websiteURL": "https://getstream.io",
+    "supportURL": "https://github.com/GetStream/agent-skills/issues",
+    "privacyPolicyURL": "https://getstream.io/legal/privacy/",
+    "termsOfServiceURL": "https://getstream.io/legal/",
+    "defaultPrompt": [
+      "Add Stream Chat to this React app",
+      "Build a SwiftUI video calling app with Stream Video",
+      "Show the flagged messages in my Stream app"
+    ],
+    "brandColor": "#005FFF",
+    "composerIcon": "./brand-kit/logo.png",
+    "logo": "./brand-kit/logo.png"
+  }
+}
