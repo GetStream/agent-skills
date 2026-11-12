@@ -56,7 +56,7 @@ Then import. **Ask the user to close the Unity Editor first** if it has the proj
 ```bash
 UNITY="/Applications/Unity/Hub/Editor/6000.0.32f1/Unity.app/Contents/MacOS/Unity"   # match ProjectVersion.txt
 "$UNITY" -batchmode -quit -logFile /tmp/unity-import.log \
-  -projectPath "$PWD" \
+  -projectPath "<absolute path to the Unity project>" \
   -importPackage /tmp/Stream.Chat.Unity.SDK.5.7.0.unitypackage
 ```
 

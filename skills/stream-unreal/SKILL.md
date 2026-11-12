@@ -5,21 +5,6 @@ license: See LICENSE in repository root
 compatibility: Requires an Unreal Engine 5.7 or 5.8 project (C++ or Blueprint) and a local engine install for build/verify work. Docs lookups need only network access. The `getstream` CLI is the default path for credentials (API key + user token); optional if the user pastes them.
 metadata:
   author: GetStream
-allowed-tools: >-
-  Read, Write, Edit, Glob, Grep,
-  WebFetch(domain:getstream.io),
-  WebFetch(domain:github.com),
-  WebFetch(domain:raw.githubusercontent.com),
-  WebFetch(domain:getstream.github.io),
-  Bash(ls *),
-  Bash(grep *),
-  Bash(find * *),
-  Bash(find . *),
-  Bash(cat *.uproject), Bash(cat *.uplugin),
-  Bash(jq *),
-  Bash(gh release *),
-  Bash(unzip *),
-  Bash(getstream *)
 ---
 
 # Stream Unreal - docs orchestrator for Unreal Engine

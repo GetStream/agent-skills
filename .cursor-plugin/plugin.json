@@ -21,7 +21,7 @@
     "getstream",
     "mcp"
   ],
-  "logo": "assets/logo.png",
+  "logo": "brand-kit/logo.png",
   "skills": "./skills/",
   "mcpServers": "./mcp.json"
 }

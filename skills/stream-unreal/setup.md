@@ -305,13 +305,14 @@ Compile and run, do not assume:
 
 ```bash
 UE="/Users/Shared/Epic Games/UE_5.7"   # or resolve from LauncherInstalled.dat / $UE_ROOT
+UPROJECT="<absolute path to project>/MyGame.uproject"
 
 # Compile the editor target - needed once, and after any C++ change
 "$UE/Engine/Build/BatchFiles/Mac/Build.sh" MyGameEditor Mac Development \
-    -project="$PWD/MyGame.uproject" -waitmutex
+    -project="$UPROJECT" -waitmutex
 
 # Run a map standalone, no editor UI. -unattended keeps it in the foreground on macOS.
-"$UE/Engine/Binaries/Mac/UnrealEditor" "$PWD/MyGame.uproject" /Game/Main/Maps/Main \
+"$UE/Engine/Binaries/Mac/UnrealEditor" "$UPROJECT" /Game/Main/Maps/Main \
     -game -windowed -ResX=430 -ResY=860 -unattended -log -stdout
 ```
 

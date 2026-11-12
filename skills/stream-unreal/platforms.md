@@ -227,28 +227,30 @@ echo "$UE"    # e.g. /Users/Shared/Epic Games/UE_5.8
 (Windows: `C:\ProgramData\Epic\UnrealEngineLauncher\LauncherInstalled.dat`. Default install paths are `/Users/Shared/Epic Games/UE_5.x` and `C:\Program Files\Epic Games\UE_5.x`.)
 
 ```bash
+UPROJECT="<absolute path to project>/MyGame.uproject"
+
 # Compile the editor target - needed once, and after any C++ change
 "$UE/Engine/Build/BatchFiles/Mac/Build.sh" MyGameEditor Mac Development \
-    -project="$PWD/MyGame.uproject" -waitmutex
+    -project="$UPROJECT" -waitmutex
 
 # iOS COMPILE CHECK ONLY - produces a content-free .app that crashes on launch (see 1)
 "$UE/Engine/Build/BatchFiles/Mac/Build.sh" MyGame IOS Development \
-    -project="$PWD/MyGame.uproject" -waitmutex
+    -project="$UPROJECT" -waitmutex
 
 # iOS build you can actually deploy
 "$UE/Engine/Build/BatchFiles/RunUAT.sh" BuildCookRun \
-    -project="$PWD/MyGame.uproject" \
+    -project="$UPROJECT" \
     -platform=IOS -clientconfig=Development \
     -build -cook -stage -package -pak -nocompileeditor
 
 # Android build you can actually deploy
 "$UE/Engine/Build/BatchFiles/RunUAT.sh" BuildCookRun \
-    -project="$PWD/MyGame.uproject" \
+    -project="$UPROJECT" \
     -platform=Android -clientconfig=Development \
     -build -cook -stage -package -pak -nocompileeditor
 
 # Run a map standalone, no editor UI. -unattended matters on macOS - see below.
-"$UE/Engine/Binaries/Mac/UnrealEditor" "$PWD/MyGame.uproject" /Game/Main/Maps/Main \
+"$UE/Engine/Binaries/Mac/UnrealEditor" "$UPROJECT" /Game/Main/Maps/Main \
     -game -windowed -ResX=430 -ResY=860 -unattended -log -stdout
 ```
 
