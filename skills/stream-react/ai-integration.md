@@ -5,8 +5,8 @@ copilot inside an existing chat, streaming answers with a thinking indicator and
 agent that acts in the app (client tools), or an agent that answers with UI (generative
 UI: A2UI, OpenUI). For a support bot or help desk, follow ai-support-agent.md first - it
 builds the backend; this file adds the UI. For an agent on Stream Agents
-(`@stream-io/stream-agents`), follow stream-agents.md for the session and use this file for the
-Chat UI.
+(`@stream-io/stream-agents`), follow stream-agents.md instead - it covers the session and the
+UI; only this file's "Generative UI" section applies there too.
 
 Stream doesn't host the model. A backend agent (a bot user) answers in the channel by
 updating one message and sending `ai_indicator.*` events. The app renders and triggers -
@@ -24,14 +24,31 @@ grep -niE "ai|generative|langchain|reasoning|tool" $d/INDEX.md
 
 | Need | Page (by title) |
 | --- | --- |
-| The AI components: streaming markdown, AI composer, state indicator, theming | "AI integrations" overview |
-| AI replies in the regular message list and composer | "SDK integration" |
+| The AI components: what they are, install and stylesheets, theming, migrating | "Quickstart" (`ai-components.md`) |
+| AI replies in the regular message list and composer | "SDK integration" * |
 | An agent conversation laid out by turn, reasoning, tool calls and approvals | "Conversation view", "Reasoning and tool calls" |
+| The prompt composer: attachments, dictation, stop | "Composer" |
+| Streaming markdown, code and tables in a reply | "Streaming messages" |
+| A voice agent's glow or wave | "Voice visualizations" |
 | UI in a reply: A2UI, OpenUI, your own components | "Generative UI" |
-| A backend: Vercel AI SDK or LangChain, client tools | "Stream Chat AI SDK", "Stream Chat LangChain SDK" |
+| A backend: Vercel AI SDK or LangChain, client tools | "Stream Chat AI SDK" *, "Stream Chat LangChain SDK" * |
+
+\* Not in the CLI's docs copy (the pages are unlisted on the site). Fetch the Markdown from
+the site instead: unversioned for the latest major - the one `getstream docs chat-sdk/react`
+resolves to - and with `v<major>` for an older one (a versioned URL for the latest major
+404s):
+
+```bash
+p=sdk-integration   # or stream-chat-ai-sdk, stream-chat-langchain-sdk
+curl -fsSL https://getstream.io/chat/docs/sdk/react/ai-components/$p.md            # latest major
+curl -fsSL https://getstream.io/chat/docs/sdk/react/v<major>/ai-components/$p.md   # older major
+```
+
+Use the response only if its first line starts with `# ` (the page title); anything else is
+an error page, not the docs.
 
 An AI-first app (one user + one assistant, conversation sidebar, model picker) needs the
-overview and SDK integration, and usually the conversation view. An assistant inside an
+Quickstart and SDK integration, and usually the conversation view. An assistant inside an
 existing messenger needs SDK integration only - keep the app's own composer, message UI,
 and styling. An agent that acts in the app adds the client tools section of the AI SDK
 page.
@@ -82,7 +99,7 @@ getstream api QueryChannels --request '{"filter_conditions":{"cid":"messaging:<c
 The AI components are part of `stream-chat-react`, behind the
 `stream-chat-react/ai-components` entry point, with their own stylesheet. The standalone
 `@stream-io/chat-react-ai` package is deprecated: don't install it. An app that already
-uses it moves over with the overview page's "Migrating from `@stream-io/chat-react-ai`"
+uses it moves over with the Quickstart page's "Migrating from `@stream-io/chat-react-ai`"
 section (imports, stylesheet path, class-name prefix, a few renamed props). Take import
 paths and props from the pinned major's docs and the installed types. Defaults to keep in
 SKILL.md applies to every override below.
@@ -94,7 +111,8 @@ SKILL.md applies to every override below.
   reads the message from context. Registering `StreamingMessage` directly on the slot
   renders nothing - the slot doesn't pass `text`. Add to the app's existing
   `WithComponents` overrides; don't replace them.
-- Load the AI components' stylesheet after the SDK's, as the overview's Usage shows.
+- Load the AI components' stylesheet after the SDK's, as the Quickstart's "Step 2: Install
+  the SDKs" shows.
   Without it the composer and indicators render unstyled.
 - Replacing the composer with `AIMessageComposer` drops the built-in stop button. Render
   one while `useAIState(channel).aiState` is thinking or generating, calling
