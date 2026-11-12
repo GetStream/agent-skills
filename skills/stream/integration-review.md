@@ -17,8 +17,9 @@ same topic, so check each topic once.
 An app that livestreams or runs audio rooms gets one more set of checks: read
 livestream-review.md after the scope step and run it with the checks below.
 An app whose calls have two people in them (appointments and other
-scheduled sessions, or calls one user places to another from a chat, a
-match, or an order) gets two-person-review.md the same way.
+scheduled calls, or calls that ring: one user calling another from a chat,
+a match, or an order, or a call the app places) gets
+two-person-review.md the same way.
 
 | Platform | Platform checks |
 |---|---|

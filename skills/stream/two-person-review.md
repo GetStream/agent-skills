@@ -3,16 +3,18 @@
 Extra checks for an integration review of an app whose calls have two
 people in them. Two kinds of app are built on such calls:
 
-- Scheduled sessions: appointments, consultations, tutoring, coaching,
+- Scheduled calls: appointments, consultations, tutoring, coaching,
   interviews. The app's backend matches a provider and a client, and both
   open the call at an agreed time.
-- Calls one user places to another: a call button in a chat, on a match,
-  an order, a ride, or a listing. One side rings, the other answers.
+- Calls that ring. A user-to-user call: one user rings another from a
+  chat, a match, an order, a ride, or a listing. Or a call the app places:
+  the next available expert is rung, or a user is rung when it is their
+  turn.
 
 Run it from integration-review.md when the scope step finds either; that
 file's procedure, evidence rules, and report format apply here. The first
 five groups of checks apply to every two-person call. The sixth,
-"Scheduled sessions", applies only to the first kind: skip it for an app
+"Scheduled calls", applies only to the first kind: skip it for an app
 that rings, with one line in the report saying so. What makes a call ring
 (push, the incoming-call screen, accept and reject) is covered by the
 Calls and Push checks in integration-review.md; this module adds nothing
@@ -48,10 +50,10 @@ what the code can't answer:
 
 - How a call starts: both sides open a scheduled call (a link, an
   appointment page), or one side rings the other. This decides whether
-  the "Scheduled sessions" group runs. An app can have both.
+  the "Scheduled calls" group runs. An app can have both.
 - What entitles two people to be in a call together: a booking, a match,
   an open order, a friendship. And what ends it.
-- For scheduled sessions: one call per appointment, or a standing room
+- For scheduled calls: one call per appointment, or a standing room
   (one per clinician, tutor, or agent) that successive clients enter, and
   whether one side waits to be let in by the other (a waiting room).
 - What kind of data the conversation and the user records carry: health,
@@ -324,7 +326,7 @@ calling-state and events pages.
 Docs: the SDK's camera-and-microphone, noise-cancellation, blocked-audio,
 and picture-in-picture pages.
 
-### Scheduled sessions
+### Scheduled calls
 
 Only for apps where both sides open a call at a booked time. Skip the
 group for calls that ring.
@@ -401,7 +403,7 @@ names above. As a guide:
   rejoin after a kick.
 - **Fix before scaling:** states or records that depend on leave-reason
   strings, a bitrate cap taken from the wrong codec column, and for
-  scheduled sessions a standing room shared by successive clients and no
+  scheduled calls a standing room shared by successive clients and no
   way back in after a reload.
 - **Worth doing:** requests for a smaller incoming video that do nothing
   with two participants, an oversized bitrate or resolution, a missing
@@ -411,5 +413,5 @@ names above. As a guide:
 
 After the scale answers, add the "Ask Stream" list. Never drop it, even
 when every check passes. When the app rings, add one line saying that the
-"Scheduled sessions" group was skipped and that ringing was checked with
+"Scheduled calls" group was skipped and that ringing was checked with
 the Calls and Push sections of integration-review.md only.

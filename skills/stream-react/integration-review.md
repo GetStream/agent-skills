@@ -302,7 +302,7 @@ the app uses.
 
 React detail for stream skill's two-person-review.md, group by group. The
 bullets here add to the generic checks and don't replace them: every
-requirement in the generic bullet still applies. "Scheduled sessions" at
+requirement in the generic bullet still applies. "Scheduled calls" at
 the end is only for apps where both sides open a call at a booked time;
 skip it for calls that ring. An app on the
 plain JS client (`@stream-io/video-client`, no React) is covered by the
@@ -448,7 +448,7 @@ camera.
   and iPad browsers, picture-in-picture of a call and what happens to the
   camera in the background are unverified without a device test.
 
-### Scheduled sessions
+### Scheduled calls
 
 - The other side: an effect that leaves, ends the call, or navigates away
   as soon as `useRemoteParticipants()` is empty ends the appointment on a
