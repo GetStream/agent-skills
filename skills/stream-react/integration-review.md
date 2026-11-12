@@ -322,7 +322,7 @@ video/javascript`. Docs: `guides/joining-and-creating-calls.md`,
   create: true })` in the browser, with members taken from the page, lets
   a signed-in user make a call with members of their choosing when their
   role has `create-call`, and with `ring: true` it rings them. That is
-  the usual shape of a call button in a chat: run the generic check on
+  how a call button in a chat is usually built: run the generic check on
   what ties the two people together. Source: SDK code.
 - The `user` object given to `StreamVideoClient` is sent to Stream when
   the client connects: its `name`, `image`, and `custom` are stored on the

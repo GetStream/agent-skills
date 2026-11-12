@@ -7,9 +7,14 @@ people in them. Two kinds of app are built on such calls:
   interviews. The app's backend matches a provider and a client, and both
   open the call at an agreed time.
 - Calls that ring. A user-to-user call: one user rings another from a
-  chat, a match, an order, a ride, or a listing. Or a call the app places:
-  the next available expert is rung, or a user is rung when it is their
-  turn.
+  chat, a match, an order, a ride, or a listing. Or an app-placed call:
+  the app rings the next available expert, or rings a user when it is
+  their turn.
+
+The names are the docs' own: `call-types/builtin.md` in `getstream docs
+video/api`, under "How a call starts". Its other two, the agent call (a
+person and an AI agent) and the always-on link between two fixed devices,
+are not what this module is for.
 
 Run it from integration-review.md when the scope step finds either; that
 file's procedure, evidence rules, and report format apply here. The first
@@ -104,7 +109,8 @@ Stream calls it makes.
   call type the `user` and `guest` roles have `join-call`, so with those
   defaults any signed-in user who learns a call id can walk into the
   call. FAIL, Fix now, when the data is sensitive. Without the grants,
-  mark it unverified. Docs: `call-types/permissions.md`.
+  mark it unverified. Docs: `calls.md` (restrict call access) and
+  `call-types/permissions.md`.
 - `limits.max_participants: 2` is not access control. FAIL when it is the
   only thing that keeps a third person out: it caps how many are in at
   once, not who, so the first two to arrive are in. It also counts
