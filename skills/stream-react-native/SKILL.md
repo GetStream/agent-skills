@@ -68,10 +68,11 @@ so versions match the Expo SDK.
 Writes through `getstream api` (product configuration: channel types, feed
 groups, moderation policies, and the Video label below) are app-wide. Before the
 first one, run `getstream status` and tell the user which app it will change, so
-a stale CLI binding doesn't write to the wrong (possibly production) app.
+a stale CLI binding doesn't write to the wrong (possibly production) app. Ask
+before each app-wide write, and run it only once the user agrees.
 
-For Video apps, label the use case once, without asking the user (metadata, no
-runtime effect):
+For Video apps, offer to label the use case once (metadata, no runtime effect),
+and set it once the user agrees:
 
 ```sh
 getstream api UpdateApp --request '{"video_primary_use_case":"livestreaming"}'
@@ -82,6 +83,9 @@ Allowed values: `video-calling`, `voice-calling`, `livestreaming`,
 app is, not from the call type in use (Whatnot runs on the `livestream` call
 type but is `live-shopping`). Any commerce signal means `live-shopping`. Unsure
 means `other`.
+
+Product configuration (channel types, feed groups, moderation policies) goes
+through `getstream api`, with the user's go-ahead as above.
 
 Native setup that costs real runs:
 
@@ -229,8 +233,8 @@ Feeds:
   comments in its `get()` call, or `useActivityComments` stays empty. Dispose
   the handle on unmount.
 - The `foryou` feed group returns nothing until its `activity_selectors` are
-  configured (`getstream api UpdateFeedGroup`), and a `popular` selector also
-  needs activities that clear its `min_popularity`.
+  configured (`getstream api UpdateFeedGroup`, app-wide: ask first, as in Setup), and a
+  `popular` selector also needs activities that clear its `min_popularity`.
 - Push devices are registered with `client.createDevice()` (native token, not
   the Expo push token) and removed with `client.deleteDevice()` before
   disconnecting - not Video's `addDevice`.
