@@ -207,7 +207,8 @@ replaces everything inside the composer wrapper, as a column reusing `InputView`
   `useAttachmentPickerState().selectedPicker` is set.
 - **No threads** (only when the user turned them off by name): hiding the UI isn't enough.
   `getstream api UpdateChannelType --name messaging --request '{"replies":false}'` (check
-  `-h` for the body) - app-wide, so on an app with real data confirm with the user first.
+  `-h` for the body) - app-wide, so ask the user first and run it only once they agree
+  (SKILL.md, Setup).
   The custom message's replies indicator is then N/A.
 
 ## Verify
