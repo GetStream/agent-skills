@@ -34,6 +34,14 @@ components). The backend source is github.com/GetStream/Vision-Agents.
 
 ## Setup
 
+- The UI below needs `AIConversationController` from `stream-chat-react/ai-components`:
+  stream-chat-react 15.0.1 or later, or 14.17.0 or later on v14. A new app installs the
+  latest. In an existing app, pin the installed major (chat-versions.md) and check
+  `grep -rl AIConversationController node_modules/stream-chat-react/dist/types`. If it's
+  missing, ask the user before upgrading: a newer release of the same major first; from an
+  older major, one major per pass, as SKILL.md's "Upgrading an SDK version" says. If they
+  decline, tell them this runbook's Stream Agents UI needs those versions, and stop - don't
+  hand-roll it.
 - The `getstream agents` commands need the beta CLI (see stream skill). `getstream agents
   init <name> --template voice` (or `text`) creates the folder and also the app-wide `agent`
   call type and channel type that sessions need. Ask the user before running it: run
