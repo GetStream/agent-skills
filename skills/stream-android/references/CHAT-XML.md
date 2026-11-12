@@ -11,7 +11,7 @@ Rules: [../RULES.md](../RULES.md) (secrets, no dev tokens in production, proper 
 ## Quick ref
 
 - **Target version:** Stream Chat Android **v7.x** (see [RULES.md](../RULES.md) — if your memory disagrees with the docs, trust the docs)
-- **Artifact (XML / Views):** `io.getstream:stream-chat-android-ui-components` via Maven Central
+- **Artifact (XML / Views):** `io.getstream:stream-chat-android-ui-components` from Stream's Maven repository, `maven("https://stream-io-repo.com")` ([`../builder.md`](../builder.md) "Install the SDKs")
 - **Artifact (core only):** `io.getstream:stream-chat-android-client` (pulled in transitively)
 - **First:** Installation -> Manifest -> `ChatClient` build -> `connectUser` -> `ChannelListFragment` in an Activity
 - **Per feature:** Jump to the relevant section or blueprint when wiring a screen

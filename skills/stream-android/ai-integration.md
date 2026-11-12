@@ -21,7 +21,7 @@ Use the Chat version the project already resolves for every AI artifact ([`refer
 
 **`stream-chat-android-ai-compose` does not depend on the Chat SDK.** It never sees a `ChatClient`, a `Channel` or a `Message`: you hand it `AIMessage`s and callbacks. That is the fact that shapes everything below - the connection to Stream is either Stream Agents' (shape A on Stream Agents) or yours (every other shape).
 
-**Stream Agents on Android.** When the agent runs on Stream Agents (an `agents/<name>/` folder synced with `getstream agents`, see [`../stream/SKILL.md`](../stream/SKILL.md)), the app opens its sessions with `io.getstream:stream-agents-android-core` from `https://stream-io-repo.com` (0.2.0 is the first release; check the repository for a newer one). The client is `StreamAgents`, the package `io.getstream.agents.android.core`. It needs `compileSdk` 37, Kotlin 2.3 or newer and `minSdk` 24, and brings Stream Chat and Stream Video with it. Its source is `sdks/kotlin` on the `accelerate` branch of `GetStream/Vision-Agents` (`https://raw.githubusercontent.com/GetStream/Vision-Agents/accelerate/sdks/kotlin/README.md`). When the docs and the SDK disagree, the SDK's source at the resolved version wins.
+**Stream Agents on Android.** When the agent runs on Stream Agents (an `agents/<name>/` folder synced with `getstream agents`, see [`../stream/SKILL.md`](../stream/SKILL.md)), the app opens its sessions with `io.getstream:stream-agents-android-core` from `https://stream-io-repo.com` (look the version up as [`references/DOCS.md`](references/DOCS.md) "Version lookup before installing" shows). The client is `StreamAgents`, the package `io.getstream.agents.android.core`. It needs `compileSdk` 37, Kotlin 2.3 or newer and `minSdk` 24, and brings Stream Chat and Stream Video with it. Its source is `sdks/kotlin` on the `accelerate` branch of `GetStream/Vision-Agents` (`https://raw.githubusercontent.com/GetStream/Vision-Agents/accelerate/sdks/kotlin/README.md`). When the docs and the SDK disagree, the SDK's source at the resolved version wins.
 
 ## Step 1: Classify the shape, then fetch
 
@@ -30,7 +30,7 @@ Pages come from the Chat primary manifest ([`references/DOCS.md`](references/DOC
 | Shape | Signals | Fetch (manifest title) |
 |---|---|---|
 | **A. AI-first app** (ChatGPT / Claude / Gemini clone) | one user + one assistant, conversation drawer, new-chat action, voice input | On Stream Agents: **Quickstart**, then **Personal Assistant** or **Customer Support Agent**. On the developer's own backend: **Conversation State**. Both with **Conversation View** and **Composer** |
-| **B. Assistant inside an existing messenger** (support bot, "ask AI", copilot) | humans and a bot in channels the app already renders with the Chat Compose SDK | **Compose Integration**, then the slot work below - the docs do not cover this case |
+| **B. Assistant inside an existing messenger** (support bot, "ask AI", copilot) | humans and a bot in channels the app already renders with the Chat Compose SDK | **Compose Integration** - it covers the AI bubble, agent steps, the "Edited" label, indicator events and stop; the slot work below adds the stop button and where the thinking indicator goes |
 | **C. Agent that shows its work and asks first** (reasoning, tool calls, "ask before it books / shares / deletes") | approvals, tool use, transparency | A or B, plus **Reasoning and Tool Calls** and the contract's "Agent steps" section |
 | **D. Agent acts on the device** (read location, calendar, open a screen) | "the assistant should do X on the phone" | A or B, plus **Reasoning and Tool Calls** "Tools on the device" |
 | **E. Voice agent** (the person talks to the agent on a call) | "voice agent", "talk to the assistant", a glow or wave while it speaks | **Voice Agent** and **Voice Visualizations** |
@@ -50,13 +50,13 @@ Decisions the docs leave to you:
 ### Shape A on Stream Agents
 
 - **Ask the session, never the channel.** The agent doesn't answer a message sent to the session's channel; the router writes the person's message into the channel itself. Sending through `ChatClient` produces a message nobody answers.
-- **The conversation is the session's channel.** `AgentSession.channelState()` gives its messages; wrap each as an `AIMessage` (the Quickstart's `AgentMessage`) and hand the list to `AIConversation`. Keep one `StreamAgents` client per app, created once, and set the user when they sign in.
+- **The conversation is an `AIConversationState` (Chat 7.19.0 or later) over the session's channel.** The app writes the `AIConversationTransport` (the Quickstart's `AgentTransport`): it feeds the state from `session.channelState(context, scope)`, wrapping each message as an `AIMessage` (the Quickstart's `AgentMessage`), sends with `session.responses.create(text)`, and stops with `session.interrupt()`. Keep the state in a `ViewModel` and pass it to both `AIConversation` and `ChatComposer`. Keep one `StreamAgents` client per app, created once, and set the user when they sign in.
 - **One `AIToolApprover` per signed-in user**, built with that user's id, passed to `AIConversation`.
 - **Errors:** session calls throw `AgentsException`; catch it where the person can see what failed.
 
 ### Shape A on the developer's own backend
 
-Follow **Conversation State**: the screen is built on the **low-level client plus the state layer** (`watchChannelAsState`), wrapping the channel's messages as `AIMessage`s for `AIConversation`. Not the Chat Compose SDK's `MessagesScreen` / `MessageList`: an AI conversation has one bot and one human, no reactions, threads, or read state, so the bundled messenger screens carry weight you then have to remove.
+Follow **Conversation State**: the screen is an `AIConversationState` (Chat 7.19.0 or later) kept in a `ViewModel` and passed to `AIConversation` and `ChatComposer`. The app writes its `AIConversationTransport` on the **low-level client plus the state layer**: it watches the channel with `watchChannelAsState` and wraps the messages as `AIMessage`s, follows the `ai_indicator.*` events, sends what the user asks as a channel message, and stops the reply with the stop event. Not the Chat Compose SDK's `MessagesScreen` / `MessageList`: an AI conversation has one bot and one human, no reactions, threads, or read state, so the bundled messenger screens carry weight you then have to remove.
 
 ### Shape B - a bot inside an existing Stream messenger
 
@@ -73,18 +73,21 @@ Read the AI-generated and generating flags off `Message.extraData` (`"ai_generat
 
 ### Indicator events and stop (own backend, shapes A and B)
 
-The Chat client already models the protocol - no custom transport:
+The Chat client already models the protocol - no custom wire format (on shape A these events feed your `AIConversationTransport`):
 
 - `AIIndicatorUpdatedEvent` (`aiState: String`, `messageId: String`), `AIIndicatorClearEvent`, `AIIndicatorStopEvent`
 - `EventType.AI_TYPING_INDICATOR_UPDATED` / `_CLEAR` / `_STOP` (`ai_indicator.update` / `.clear` / `.stop`)
 
 **Subscribe on the `ChannelClient`, not on `ChatClient`.** `chatClient.channel(cid).subscribeFor<...>` already filters these three events by `cid`, so the contract's key-by-channel rule costs you nothing; subscribing on the client means "Thinking" appears in the wrong conversation.
 
-**Android has no `stopAIResponse()` helper** (React and React Native do). Stop is an event:
+**Android has no `stopAIResponse()` helper** (React and React Native do). Stop is an event: send `ai_indicator.stop` with the `message_id` of the reply, the id from the latest `AIIndicatorUpdatedEvent`. `sendEvent` sends the entries of `extraData` as top-level fields of the event, next to the channel's `cid`:
 
 ```kotlin
 chatClient.channel(cid)
-    .sendEvent(EventType.AI_TYPING_INDICATOR_STOP)
+    .sendEvent(
+        eventType = EventType.AI_TYPING_INDICATOR_STOP,
+        extraData = mapOf("message_id" to replyId),
+    )
     .enqueue()
 ```
 
