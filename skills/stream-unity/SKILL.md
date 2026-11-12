@@ -5,22 +5,6 @@ license: See LICENSE in repository root
 compatibility: Requires a Unity project (Unity 2020.3+ for Video, 2019.4+ for Chat) for build/integrate work. Docs lookups need only network access. The `getstream` CLI is the default path for credentials (API key + user token); optional if the user pastes them.
 metadata:
   author: GetStream
-allowed-tools: >-
-  Read, Write, Edit, Glob, Grep,
-  WebFetch(domain:getstream.io),
-  WebFetch(domain:github.com),
-  WebFetch(domain:raw.githubusercontent.com),
-  Bash(ls *),
-  Bash(grep *),
-  Bash(find * *),
-  Bash(find . *),
-  Bash(cat *.json), Bash(cat *.asmdef), Bash(cat *.asset),
-  Bash(jq *),
-  Bash(gh release *),
-  Bash(gh api *),
-  Bash(unzip *),
-  Bash(curl -sL *),
-  Bash(getstream *)
 ---
 
 # Stream Unity - docs orchestrator for Unity Engine

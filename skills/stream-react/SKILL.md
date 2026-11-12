@@ -1,6 +1,6 @@
 ---
 name: stream-react
-description: "Build, integrate, audit, or upgrade Stream Chat, Video, Feeds, and Moderation in React / Next.js web apps - the default skill for web work. Scaffold a new app, add Stream to an existing project, review an integration, upgrade an SDK major, or migrate from Sendbird. Covers team messaging, DMs, video conferencing, livestreaming, social feeds, AI assistants (including generative UI with A2UI / OpenUI), and apps built on Stream Agents (voice and text agents, @stream-io/stream-agents). Web React only - React Native uses stream-react-native."
+description: "Build, integrate, audit, or upgrade Stream Chat, Video, Feeds, and Moderation in React / Next.js web apps - the default skill for web work. Scaffold a new app, add Stream to an existing project, review an integration, upgrade an SDK major, or migrate from Sendbird. Covers team messaging, DMs, video conferencing, livestreaming, social feeds, AI assistants and LLM chat (ChatGPT-style apps, streaming replies, thinking indicators, stop generating, reasoning and tool-call steps, tool approvals, generative UI with A2UI / OpenUI), and apps built on Stream Agents (voice and text agents, @stream-io/stream-agents). Web React only - React Native uses stream-react-native."
 license: See LICENSE in repository root
 metadata:
   author: GetStream
@@ -19,7 +19,7 @@ cat $(getstream docs chat-sdk/react)/INDEX.md
 
 Client and UI: chat-sdk/react, video/react, activity-feeds/react. Node.js
 backend (e.g. Next.js routes): chat/node, activity-feeds/node, moderation/node.
-Stream Agents (sessions, voice, tools): agents/javascript.
+Stream Agents (sessions, voice, tools): agents.
 Previous majors are available too (chat-sdk/react/v<major>).
 
 Chat SDK majors can differ deeply (state, layout, configuration). Before any Chat
@@ -47,8 +47,14 @@ Install the SDKs:
 
 Don't bump an already-installed Stream major.
 
-For Video apps, label the use case once, without asking the user (metadata, no
-runtime effect):
+Writes through `getstream api` (product configuration: channel types, feed
+groups, moderation policies, and the Video label below) are app-wide. Before the
+first one, run `getstream status` and tell the user which app it will change, so
+a stale CLI binding doesn't write to the wrong (possibly production) app. Ask
+before each app-wide write, and run it only once the user agrees.
+
+For Video apps, offer to label the use case once (metadata, no runtime effect),
+and set it once the user agrees:
 
 ```sh
 getstream api UpdateApp --request '{"video_primary_use_case":"livestreaming"}'
@@ -61,7 +67,7 @@ type but is `live-shopping`). Any commerce signal means `live-shopping`. Unsure
 means `other`.
 
 Product configuration (channel types, feed groups, moderation policies) goes
-through `getstream api`.
+through `getstream api`, with the user's go-ahead as above.
 
 ## Auth and users
 
@@ -141,9 +147,9 @@ Override the smallest slot that does the job, and add to existing
 `WithComponents` overrides instead of replacing them. Replacing a whole region
 drops everything it rendered by default:
 
-- A custom `Message` / `VirtualMessage` must put back what the default renders:
-  text, attachments, quoted message, polls, reactions, replies count, actions,
-  timestamp, read status. The full composition is in the docs.
+- A custom `MessageUI` / `VirtualMessage` (`Message` before v15) must put back
+  what the default renders: text, attachments, quoted message, polls, reactions,
+  replies count, actions, timestamp, read status. The full composition is in the docs.
 - A custom `MessageComposerUI` must put back the attachment picker and
   previews, drag-and-drop upload, link previews, the quoted-message preview,
   voice recording, and the send button - see the docs.
@@ -158,9 +164,9 @@ The defaults, and what usually turns them off:
   types missing from `reactionOptions`. Check: react, and see the pill.
 - Threads. A layout without `<Thread />`, or a custom message without the
   replies count button. Check: reply in a thread, and open it from the parent.
-- AI replies: `isMessageAIGenerated` on `<Chat>` (typewriter and markdown), the
-  stop button (replacing the composer drops it), and `AIStateIndicator` inside
-  `<Channel>`. Check: as in ai-integration.md.
+- AI replies in a channel's message list: `isMessageAIGenerated` on `<Chat>`
+  (typewriter and markdown), the stop button (replacing the composer drops it),
+  and `AIStateIndicator` inside `<Channel>`. Check: as in ai-integration.md.
 
 ## Verify
 

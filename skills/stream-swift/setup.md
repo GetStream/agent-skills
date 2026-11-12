@@ -112,9 +112,9 @@ getstream init
 
 # API key -> Secrets.xcconfig (read via Info.plist / Bundle.main); the secret is never printed.
 # It is written in the project root (where .stream/ is), and a relative --out is read from there
-# too, so for an Xcode project in a subfolder pass an absolute path from that folder:
+# too, so for an Xcode project in a subfolder pass an absolute path to that folder:
 getstream env --target ios                                  # Xcode project at the root
-getstream env --target ios --out "$PWD/Secrets.xcconfig"     # run from the Xcode project's folder
+getstream env --target ios --out "<absolute path to the Xcode project folder>/Secrets.xcconfig"
 
 # Token (never-expiring, or add --ttl <duration>)
 getstream token <user_id>

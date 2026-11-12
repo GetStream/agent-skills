@@ -29,10 +29,11 @@ docs don't show; don't copy their auth, hosts, or tokens.
 
 ## Setup
 
-- The `getstream agents` commands need the beta CLI (see stream skill). Run
-  `getstream init`, then `getstream agents init <name> --template text` (or `voice`). It
-  also creates the `agent` call type and channel type that sessions need. Edit the
-  folder, then `getstream agents sync <name>` and `getstream agents test <name>`.
+- The `getstream agents` commands need the beta CLI (see stream skill). After
+  `getstream init`, `getstream agents init <name> --template text` (or `voice`) creates the
+  folder and also the app-wide `agent` call type and channel type that sessions need. Ask
+  the user before running it: run `getstream status` first and tell them which app it will
+  change. Then edit the folder, `getstream agents sync <name>` and `getstream agents test <name>`.
 - The conversation view (`AIConversation`, `AIConversationController`) ships in
   `stream-chat-react-native` / `stream-chat-expo` 9.14.0 and later on the v9 line. Check
   that the installed major exports `ai-components/conversation` before planning around it;

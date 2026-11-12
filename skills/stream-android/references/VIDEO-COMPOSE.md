@@ -10,7 +10,7 @@ Rules: [../RULES.md](../RULES.md) (secrets, no fake credentials, client lifetime
 
 ## Quick ref
 
-- **Artifact (Compose):** `io.getstream:stream-video-android-ui-compose` via Maven Central
+- **Artifact (Compose):** `io.getstream:stream-video-android-ui-compose` from Stream's Maven repository, `maven("https://stream-io-repo.com")` ([`../builder.md`](../builder.md) "Install the SDKs")
 - **Artifact (core only):** `io.getstream:stream-video-android-core` (pulled in transitively by the Compose artifact)
 - **First:** Installation -> Manifest -> `StreamVideoBuilder(...).build()` -> `streamVideo.call(...)` -> `VideoTheme { CallContent(call) }`
 - **Per feature:** Jump to the relevant section or blueprint when implementing a screen
@@ -54,7 +54,7 @@ dependencies {
 
 The SDK brings Compose in only at runtime, so the app's own Composables need the Compose BOM plus `androidx.compose.foundation:foundation` and `androidx.compose.material3:material3` in the app module; without them `Column`, `Text`, and `MaterialTheme` don't resolve.
 
-If you don't know the latest version, look it up via the sources listed in [`RULES.md` -> Version lookup](../RULES.md#version-lookup) (Maven Central / GitHub releases). Never use `search.maven.org`.
+If you don't know the latest version, look it up via the sources listed in [`RULES.md` -> Version lookup](../RULES.md#version-lookup) (Stream's Maven repository / GitHub releases). Never use `search.maven.org`.
 
 Mandatory permissions are declared in the SDK's library manifest and merged automatically — you do **not** need to add them to your app manifest. You **do** need to request `CAMERA` / `RECORD_AUDIO` at runtime before joining a call (see [Permissions](#permissions)).
 
