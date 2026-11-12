@@ -50,150 +50,56 @@ components). The backend source is github.com/GetStream/Vision-Agents.
 - Install `@stream-io/stream-agents stream-chat stream-chat-react @stream-io/video-react-sdk`.
   `@stream-io/stream-agents/video` brings in `@stream-io/video-client` with the Video React SDK:
   don't install it separately.
-- Load the styles once, where the app starts, the SDK's first:
-  `import "stream-chat-react/dist/css/index.css";` then
-  `import "stream-chat-react/dist/css/ai-components.css";`.
-- Token route as in SKILL.md. Create one `Client` (`new Client({ apiKey })`) and call
-  `api.setUser(userId, token)` when the user signs in; it never gets the secret. One user
+- Load the SDK's stylesheet and then the AI components' one, once, where the app starts
+  (`$c/ai-components.md`, "Step 2: Install the SDKs").
+- Token route as in SKILL.md. Create one Stream Agents `Client` and call `setUser` when the
+  user signs in; it never gets the secret. One user
   token signs in Stream Agents, Chat, and Video. If the app already has its own `StreamChat` or
   `StreamVideoClient`, hand them over with `api.use({ chat, video })`, or sessions open second
   connections as the same user.
 - The components and the SDK use browser APIs: put them in `'use client'` modules.
 
-## Conversation
+## Conversation and view
 
-One `AgentChat` and one `AIConversationController` per conversation, made in an effect keyed
-on the session id, so React Strict Mode's second mount makes fresh ones:
+Build it as the agents quickstart's "Add the chat UI" step shows (`$d/quickstart.md`), with
+`$c/ai-components/conversation-view.md` for the view. Rules the docs leave to you:
 
-```tsx
-import { AgentChat, agentChatTransport } from "@stream-io/stream-agents/chat";
-import type { LocalMessage } from "stream-chat";
-import { AIConversationController, fromStreamMessage } from "stream-chat-react/ai-components";
-
-useEffect(() => {
-  const sessions = api.agent("my-agent").sessions;
-  const chat = new AgentChat<LocalMessage>({
-    sessionId, // undefined starts a new conversation
-    open: (id) => (id ? sessions.resume(id) : sessions.create()),
-  });
-  const conversation = new AIConversationController({
-    transport: agentChatTransport(chat, {
-      adapt: (message, reasoningText) => fromStreamMessage(message, { reasoningText }),
-    }),
-    actions: { edit: false, regenerate: false }, // the router can't rewind a conversation
-  });
-  setState({ chat, conversation });
-  return () => {
-    conversation.dispose();
-    void chat.close();
-  };
-}, [sessionId]);
-```
-
-- Tools the browser registers go to both: `sessions.resume(id, { tools })` and
-  `sessions.create({ tools })`.
-- The session opens when the user first asks, so a conversation that is only looked at is
-  never created. `chat.close()` deletes a new conversation nothing was asked in and ends any
-  other, keeping its history.
-- Asking goes through the session (`session.responses.create`), which records the question in
-  the channel: the composer does this through the controller. Never post to the channel - the
-  agent doesn't answer it. Don't build a second transcript from `session.events()`.
-
-## View
-
-```tsx
-import { AIConversation, AIMessageComposer } from "stream-chat-react/ai-components";
-
-<div style={{ display: "flex", flexDirection: "column", height: "100dvh" }}>
-  <AIConversation conversation={conversation} />
-  <div>
-    <AIMessageComposer conversation={conversation} layout="inline">
-      <AIMessageComposer.TextInput />
-      <AIMessageComposer.SubmitButton />
-    </AIMessageComposer>
-  </div>
-</div>
-```
-
-- `AIConversation` scrolls inside itself, so its parent needs a height. Keep the composer in
-  an element of its own, or the form grows to fill the column.
-- The controller shows the question at once and the agent thinking until its reply starts,
-  turns Send into Stop while the agent answers, and loads older messages on scroll up.
-- A reply's reasoning and tool calls are `ai_reasoning` and `ai_tool_call` steps (attachments
-  of the reply) that `AIConversation` renders, with generative UI from the message's
-  `custom.ai_ui`. Don't render them yourself. For generative UI, read `$d/generative-ui.md` and
-  ai-integration.md's "Generative UI" section.
+- One `AgentChat` and one `AIConversationController` per session id, made in an effect keyed
+  on it, so React Strict Mode's remount makes fresh ones. The cleanup disposes the controller
+  and closes the chat.
+- Tools the browser registers go to both `sessions.create` and `sessions.resume`, or a
+  resumed conversation can't run them.
+- Never post to the channel - the agent doesn't answer it. Asking goes through the session,
+  which the controller does when the composer sends. Don't build a second transcript from
+  `session.events()`.
+- `chat.close()` deletes a new conversation nothing was asked in, so an unused one doesn't
+  show in the list; any other is ended and keeps its history.
+- Reasoning, tool calls and generative UI are steps and fields of the reply that
+  `AIConversation` renders: don't render them yourself. For generative UI, read
+  `$d/generative-ui.md` and ai-integration.md's "Generative UI" section.
 
 ## Tool approvals
 
-For tools that ask before they run, give the controller an `approver` that answers through
-the chat's session (`chat.session()` opens it if it isn't yet):
-
-```ts
-import { AIClientIdentity } from "stream-chat-react/ai-components";
-
-approver: {
-  userId, // the signed-in user
-  clientId: AIClientIdentity.installId(),
-  decide: async (call, allowed) => (await chat.session()).decide(call.id, { allowed }),
-},
-```
-
-Validate what a tool's `run` receives - the arguments are model output.
+For tools that ask before they run, give the controller an approver that answers through
+the chat's session, as `$c/ai-components/reasoning-and-tool-calls.md` ("Tool approvals")
+shows. Validate what a tool's `run` receives - the arguments are model output.
 
 ## Voice
 
-Switch an open conversation to voice from a click (a browser asks for the microphone and plays
-audio only after one), and show the same conversation as the transcript:
+Build it as the agents quickstart's "Add the voice UI" step shows, with
+`$c/ai-components/use-cases/voice-agent.md` for a full voice agent and
+`$c/ui-cookbooks/ai/voice-agent-visuals.md` for its look. Rules the docs leave to you:
 
-```tsx
-import { VoiceSession } from "@stream-io/stream-agents/video";
-import { ParticipantsAudio, StreamCall, StreamVideo, useCallStateHooks } from "@stream-io/video-react-sdk";
-import { VoiceGlow } from "stream-chat-react/ai-components";
-
-const startVoice = async () => {
-  const session = await chat.use(); // opens the session and counts the conversation as used
-  await session.voice.start();
-  return VoiceSession.of(session);
-};
-
-// In the voice view:
-const { call, client, failure, muted, status } = useSyncExternalStore(voice.subscribe, voice.get);
-useEffect(() => { voice.join().catch(() => undefined); }, [voice]); // failures land in `failure`
-const hangUp = async () => {
-  await voice.leave().catch(() => undefined);              // this device leaves the call
-  await voice.session.voice.stop().catch(() => undefined); // the agent leaves; chat goes on
-};
-
-<VoiceGlow state={status} />
-{call && client && (
-  <StreamVideo client={client}>
-    <StreamCall call={call}>
-      <AgentAudio />
-    </StreamCall>
-  </StreamVideo>
-)}
-<button onClick={() => voice.setMuted(!muted).catch(() => undefined)}>{muted ? "Unmute" : "Mute"}</button>
-
-// Plays the agent; it reads call state, so it renders inside <StreamCall>.
-const AgentAudio = () => {
-  const { useRemoteParticipants } = useCallStateHooks();
-  return <ParticipantsAudio participants={useRemoteParticipants()} />;
-};
-```
-
-- `status` is `connecting`, `idle`, `listening`, `thinking` or `speaking` - what `VoiceGlow`
-  and `VoiceWave` take. Don't derive it from `session.events()` or participants.
-- Show `failure` (a denied microphone, a failed join): `join()` doesn't need a try/catch for
-  the page to know.
-- The transcript is the same `AIConversation`, in a box with a height. Replies are written
-  ahead of the voice. The voice agent use case's "Reveal replies as they're spoken" paces
-  them with `useHeardText` and `session.speech.heard`, for its own transcript; on
-  `AIConversation` that goes in an `AssistantMessage` override - check the types before
-  promising it, and say so in the summary if it isn't done.
-- For a call without a chat first, `VoiceSession.start(api.agent("my-agent"))`; its `leave()`
-  ends the session too. `voice.end()` ends it whoever started it.
-- The look of a voice agent (glow, wave, layout) is in `ui-cookbooks/ai/voice-agent-visuals.md`.
+- Start voice from a click: a browser asks for the microphone and plays audio only after one.
+- Keep the composer hidden while voice is on: a typed turn in a voice session is not marked
+  finished, so the next one is refused.
+- What the agent is doing comes from the voice session's snapshot (`voice.get()`, its
+  `status`), not from `session.events()` or participants.
+- Show the snapshot's `failure` (a denied microphone, a failed join).
+- The transcript is the same `AIConversation`. Replies are written ahead of the voice; the
+  voice agent use case's "Reveal replies as they're spoken" paces them for its own
+  transcript. On `AIConversation` that would go in an `AssistantMessage` override - check the
+  types before promising it, and say so in the summary if it isn't done.
 - A copilot that listens to a call between people, rather than talking in it, shows the
   call's closed captions from the Video SDK (video/react), not a conversation.
 
@@ -217,9 +123,8 @@ const AgentAudio = () => {
   a second agent, fed each exchange, call the tools.
 - A session takes one response at a time: `responses.create` while one runs fails with
   "a response is already running". Queue and retry.
-- Don't test a voice session by typing into it with `responses.create`, and don't show the
-  composer while voice is on: the typed turn is not marked finished, so the next
-  `responses.create` is refused. Use `session.say()` for the agent's side and a real
+- Don't test a voice session by typing into it with `responses.create`: the typed turn is
+  not marked finished, so the next `responses.create` is refused. Use `session.say()` for the agent's side and a real
   microphone, or `getstream agents simulate`, for the user's.
 - Pick model routes by measuring them. The `turn` event's `speech_end_to_audio_ms` is
   voice in to voice out; route names that sound fast aren't always the fastest.
