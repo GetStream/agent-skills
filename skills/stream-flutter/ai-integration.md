@@ -129,7 +129,7 @@ Either way: keep each line's `id` stable across updates (a message id, or the sp
 - **`ChatComposer` is not `StreamMessageComposer`.** It is a standalone AI composer with its own controller; the Chat composer's attachment upload, commands and slow mode are not in it.
 - **`LiveValue`s start with a value.** Give each `StreamBuilder` over one `initialData: value.value`, or the first frame has no data.
 - **Permissions:** the composer's dictation and photos need the keys on `/composer.md` "Permissions"; a call and a device tool need their own.
-- **Local backend:** the iOS simulator reaches `localhost`; the Android emulator reaches the host as `10.0.2.2` (or `adb reverse tcp:<port> tcp:<port>`); a physical device needs the machine's LAN IP or a tunnel. Keep the URLs in config.
+- **Local backend:** the iOS simulator reaches `localhost`; the Android emulator reaches the host as `10.0.2.2` (or `adb reverse tcp:<port> tcp:<port>`); a physical device needs the machine's LAN IP or a tunnel. Android 9+ refuses plain `http://`, so allow it for debug builds only with `android:usesCleartextTraffic="true"` on `<application>` in `android/app/src/debug/AndroidManifest.xml`. Keep the URLs in config.
 - **No provider key in the app.** The agent runs on a backend or on Stream; the app starts and stops it through an authenticated route, or opens a Stream Agents session with the user's token ([`RULES.md`](RULES.md) "Secrets and auth"). The reference backends' start / stop routes accept anyone: tell the developer to add the check before shipping.
 
 ## Verify before stopping
