@@ -47,9 +47,10 @@ For older CLI installations, [`stream-builder`](skills/stream-builder/SKILL.md) 
   - [`sendbird-data-migration.md`](skills/stream/sendbird-data-migration.md) - shared Sendbird data export, import, and cutover workflow
   - [`integration-review.md`](skills/stream/integration-review.md) - read-only integration review: procedure, cross-platform checks, and the report format
   - [`livestream-review.md`](skills/stream/livestream-review.md) - livestream and audio-room checks for the integration review: viewer join path, host path, call-type settings, audience scale, event readiness
+  - [`two-person-review.md`](skills/stream/two-person-review.md) - two-person call checks for the integration review (scheduled calls, and calls that ring): access and membership, call-type settings, two-person media behaviour, leave and end handling, devices and audio, plus a group for scheduled calls
 - [`skills/stream-react/`](skills/stream-react/) - **React web sub-skill** (default for web React / Next.js work)
   - [`SKILL.md`](skills/stream-react/SKILL.md) - build and integrate Stream, audit an app, upgrade SDKs, and verify the result
-  - [`integration-review.md`](skills/stream-react/integration-review.md) - React checks for an integration review: Video client, calls, and the livestream checks
+  - [`integration-review.md`](skills/stream-react/integration-review.md) - React checks for an integration review: Video client, calls, the livestream checks, and the two-person call checks
   - [`chat-versions.md`](skills/stream-react/chat-versions.md) - pin the installed Chat React major, use that major's docs, find its migration guide
   - [`design-matching.md`](skills/stream-react/design-matching.md) - implement and verify a reference design
   - [`sendbird-migration.md`](skills/stream-react/sendbird-migration.md) - migrate a Sendbird app to Stream Chat React

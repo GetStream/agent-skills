@@ -3,13 +3,14 @@
 React (web) checks for a read-only integration review. Run the procedure in
 stream skill's integration-review.md; this file uses the same section names,
 and each bullet here replaces the generic bullet on the same topic. The
-"Livestream" section does the same for stream skill's livestream-review.md.
+"Livestream" section does the same for stream skill's livestream-review.md,
+and "Two-person calls" for stream skill's two-person-review.md.
 
-This file covers Video: the client, calls, and livestreams. For Chat and
-Feeds run the generic checks against the SDK's docs; a section with no
-heading here has no React detail yet. React Native shares the Video client
-but differs on devices, background behaviour, and playback: use the
-stream-react-native skill for it.
+This file covers Video: the client, calls, livestreams, and two-person
+calls. For Chat and Feeds run the generic checks against the SDK's docs; a
+section with no heading here has no React detail yet. React Native shares
+the Video client but differs on devices, background behaviour, and
+playback: use the stream-react-native skill for it.
 
 Video pages are under `getstream docs video/react`, Chat SDK pages under
 `getstream docs chat-sdk/react`. The Video checklist is
@@ -296,3 +297,171 @@ the app uses.
   both with the date. Below 1.42.0 (the shared in-flight join) the checks
   above behave differently; say so in the finding. Release notes are on
   the SDK's GitHub releases page.
+
+## Two-person calls
+
+React detail for stream skill's two-person-review.md, group by group. The
+bullets here add to the generic checks and don't replace them: every
+requirement in the generic bullet still applies. "Scheduled calls" at
+the end is only for apps where both sides open a call at a booked time;
+skip it for calls that ring. An app on the
+plain JS client (`@stream-io/video-client`, no React) is covered by the
+same checks: each hook named here reads `call.state` or a device manager,
+which that app uses directly, and its pages are under `getstream docs
+video/javascript`. Docs: `guides/joining-and-creating-calls.md`,
+`guides/permissions-and-moderation.md`, `guides/events.md`,
+`guides/custom-events.md`, `guides/camera-and-microphone.md`,
+`guides/noise-cancellation.md`.
+
+### Access and membership
+
+- Where the backend creates the call with both people as members
+  (`@stream-io/node-sdk`: `client.video.call(type, id).getOrCreate({ data:
+  { created_by_id, members } })`), the browser only joins: a plain
+  `call.join()` never creates a call. `call.getOrCreate()` or `call.join({
+  create: true })` in the browser, with members taken from the page, lets
+  a signed-in user make a call with members of their choosing when their
+  role has `create-call`, and with `ring: true` it rings them. That is
+  how a call button in a chat is usually built: run the generic check on
+  what ties the two people together. Source: SDK code.
+- The `user` object given to `StreamVideoClient` is sent to Stream when
+  the client connects: its `name`, `image`, and `custom` are stored on the
+  user. Run the personal-data check on it, as well as on the backend's
+  `upsertUsers` and on member `custom`. Source: SDK code.
+- A join refused by the participant limit rejects `call.join()` with an
+  `SfuJoinError`, after the SDK's own attempts. The page shows it with a
+  retry button and doesn't loop. Source: SDK code.
+
+### Call-type settings
+
+No React detail: the generic checks apply. The client has no bitrate
+setting of its own (see the internal calls under Two-person media
+behaviour), and the SDK applies the call type's target resolution to the
+camera.
+
+### Two-person media behaviour
+
+- Receiver-requested resolution: in this SDK "the size the receiver asks
+  for" is the size of the element behind `ParticipantView` or
+  `call.bindVideoElement`, which the SDK reports by itself, and
+  `call.setPreferredIncomingVideoResolution()`. The generic check says
+  what they do in a two-person call. `call.setIncomingVideoEnabled(false)`
+  is not a resolution request: it drops the subscription, with any number
+  of participants. Docs: `ui-cookbook/manual-video-quality-selection.md`;
+  source: SDK code.
+- Internal calls on the sending side: `call.updatePublishOptions()`
+  (`preferredBitrate`, `preferredCodec`, `maxSimulcastLayers`) is marked
+  `@internal`, logs a warning, and has no effect once the call is joined.
+  `call.camera.selectTargetResolution()` is marked `@internal` too. FAIL
+  for either. At 1.46.2 no public call changes the resolution or the
+  bitrate that is sent during a call. `applyConstraints()` on the track
+  taken from `call.camera.state.mediaStream` is not SDK API: the SDK gets
+  a new track, with its own constraints, when the camera is turned off and
+  on or the device changes, and the app's constraint is gone. Worth doing.
+  Source: SDK code.
+- Layout: `useParticipants()` and `useRemoteParticipants()` return
+  sessions. A layout that draws `remoteParticipants[0]` and nothing else
+  has a state for an empty list, and doesn't break or show the wrong
+  person when the list holds two: the same user in a second tab is a
+  remote participant with the same `userId`. Source: the app code.
+- Drawing video with `ParticipantView`: see Playback and event readiness
+  under Livestream.
+
+### Leave and end handling
+
+- Leave reasons: FAIL for a comparison of `event.reason` from
+  `call.on('call.session_participant_left', ...)` with fixed strings. This
+  SDK alone sends several: `call.leave()` sends "user is leaving the call"
+  unless the app passes `call.leave({ message })`, and the SDK's own
+  leaves send other texts. For a deliberate leave: `await
+  call.sendCustomEvent({ type: ... })`, then `call.leave()`; the other
+  side listens with `call.on('custom', ...)`. The sender's role needs the
+  `send-event` grant. Docs: `guides/custom-events.md`; source: SDK code.
+- Own connection: the page shows `CallingState.RECONNECTING`, `MIGRATING`,
+  and `OFFLINE` from `useCallCallingState()` as states, and calls neither
+  `leave()` nor `endCall()` on them. `RECONNECTING_FAILED` is shown with a
+  way to join again. Docs: `ui-cookbook/network-disruption.md`.
+- The end of the call: on `call.ended` the SDK leaves by itself,
+  `useCallEndedAt()` gets a value, and the calling state becomes `LEFT`.
+  The page shows an ended state. An effect that joins whenever the state
+  is not `JOINED` starts a loop here: FAIL. `call.endCall()` ends it for
+  both and needs `end-call`; `call.leave()` is the hang-up. Source: SDK
+  code.
+- Kicked, removed, or blocked: the SDK treats being taken out by the
+  server like the end. It leaves, sets `endedAt` locally, and the calling
+  state becomes `LEFT`, although the call goes on for the other person.
+  `useCallEndedAt()` alone can't tell the two apart, and `LEFT` alone
+  doesn't say why. The page remembers its own `leave()`. For a `LEFT` it
+  did not ask for, a `call.kicked_user` or `call.blocked_user` event with
+  its own id in `event.user` says the person was taken out, and one
+  `get()` on a new call object tells a call that has ended from one that
+  goes on. A failed read proves nothing. If the cause stays unknown the
+  page shows a closed session, with no automatic join and no polling.
+  Whether the event or the SDK's own leave reaches the page first is
+  unverified without a test. Source: SDK code.
+
+### Devices and audio
+
+- Mute: with the microphone muted and the user joined, speaking-while-
+  muted detection keeps a capture of its own open, so the browser goes on
+  showing the microphone as in use. It is on by default for users who may
+  send audio. Turn it off with
+  `call.microphone.disableSpeakingWhileMutedNotification()` and back on
+  with `enableSpeakingWhileMutedNotification()`;
+  `useMicrophoneState().isSpeakingWhileMuted` is the signal for the hint.
+  `call.microphone.state.disableMode` and `call.camera.state.disableMode`
+  are read-only: FAIL for code that assigns to them, with a cast or
+  without. Docs: `guides/camera-and-microphone.md` (speaking while muted
+  detection); source: SDK code.
+- Noise cancellation: `call.microphone.enableNoiseCancellation()` throws
+  until the call's settings and the user's capabilities are loaded, when the
+  call type's mode is `disabled`, and when the user lacks the
+  `enable-noise-cancellation` capability. `NoiseCancellationProvider` below
+  `StreamCall` waits for the settings by itself. FAIL for a direct call that
+  can run before the call is loaded (before `call.get()`,
+  `call.getOrCreate()`, or `call.join()` has resolved), and for one whose
+  rejection is swallowed. Overload: from `@stream-io/video-react-sdk` 1.45.0
+  (`@stream-io/video-client` 1.64.0, `@stream-io/audio-filters-web` 0.11.0)
+  `useNoiseCancellation().status` is `enabled`, `disabled`, `suspended`, or
+  `overloaded`, and `call.microphone.state.noiseCancellationStatus$` carries
+  the same for the plain client. The page shows `suspended` and
+  `overloaded`. On an older version there is no signal: report the version,
+  not a FAIL. Docs: `guides/noise-cancellation.md` (handling device
+  overload); source: SDK code.
+- Blocked audio: the prompt is `useIsAutoplayBlocked()` with a button that
+  calls `call.resumeAudio()`; `DefaultParticipantViewUI` has it built in
+  (see Playback and event readiness under Livestream). From 1.44.1
+  (`@stream-io/video-client` 1.63.0) the SDK also resumes blocked audio
+  on the next click or key press anywhere on the page; below that only
+  the app's own button does. Blocking is less likely for a person who
+  clicked Join on the same page, and more likely for one who arrives
+  from a link that joins without a click; the prompt is needed either
+  way. Docs: `ui-cookbook/blocked-audio.md`; source: SDK code.
+- Picture-in-picture: the video-element API
+  (`ui-cookbook/picture-in-picture.md`) shows one video and is offered only
+  when `document.pictureInPictureEnabled` is true. Document
+  picture-in-picture (`ui-cookbook/document-pip.md`) carries a whole call UI
+  and is offered only when `'documentPictureInPicture' in window`; the page
+  lists the browsers that have it, and not all do. FAIL for a control shown
+  with no feature check of any kind. With Document picture-in-picture the
+  audio elements stay in the main window (`ParticipantsAudio`). On iPhone
+  and iPad browsers, picture-in-picture of a call and what happens to the
+  camera in the background are unverified without a device test.
+
+### Scheduled calls
+
+- The other side: an effect that leaves, ends the call, or navigates away
+  as soon as `useRemoteParticipants()` is empty ends the appointment on a
+  drop or a reload of the other person. It waits on a timer, or for the
+  custom event above. Source: the app code.
+- Nothing in the SDK carries a call across a reload. The page takes the
+  appointment from its route, makes the call object in an effect, and
+  offers the same call again, as a new session and subject to the generic
+  check. Source: SDK code.
+- The page doesn't call `endCall()` in an unmount cleanup or on
+  `beforeunload`: that ends the appointment for the other person on every
+  reload. `call.leave()` in the cleanup is the documented pattern. Docs:
+  `advanced/integration-best-practices.md`.
+- The lobby: `VideoPreview`, a device selector, and microphone and camera
+  state from `useMicrophoneState()` and `useCameraState()`, as in Host
+  path under Livestream. Docs: `ui-cookbook/lobby-preview.md`.
