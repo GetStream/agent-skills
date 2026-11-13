@@ -215,11 +215,10 @@ Read the call type the launch build uses, on the app it points at.
 - Per-call overrides in the code that creates calls don't contradict the
   type.
 
-Docs: `call-types/settings.md`, `call-types/builtin.md`,
+Docs: `call-types/builtin.md` (call type settings: the unit of `bitrate`,
+its maximum, and what 0 means), `call-types/settings.md`,
 `call-types/permissions.md`, and `quality/introduction.md` (bandwidth by
-resolution and codec) in `getstream docs video/api`. Where those pages
-don't state the unit, the maximum, or the meaning of 0 for `bitrate`, the
-source is server behaviour.
+resolution and codec) in `getstream docs video/api`.
 
 ### Two-person media behaviour
 
@@ -232,8 +231,9 @@ can't keep up with encoding. Nothing in the app turns this on or off. Two
 exceptions publish layers even with two participants: a publisher on
 Firefox, and any call of the `livestream` type. When a third participant
 joins and subscribes, the publishers switch to three layers during the
-call, and back to one stream when it is two again. Source: server
-behaviour, and the October 2024 entry in `roadmap-and-changelog.md`.
+call, and back to one stream when it is two again. Docs:
+`quality/introduction.md` (two-participant calls) in `getstream docs
+video/api`.
 
 - Receiver-requested resolution. In a two-person call the size the
   receiver asks for (the size of the video element, or an explicit
@@ -246,8 +246,10 @@ behaviour, and the October 2024 entry in `roadmap-and-changelog.md`.
   two exceptions above still publish layers, so on the `livestream` type,
   or with the other person on Firefox, the request does take effect:
   don't report it there. Going from a small tile to full screen needs no
-  call at all: the full stream is already arriving. Source: server
-  behaviour.
+  call at all: the full stream is already arriving. Docs:
+  `quality/introduction.md` (two-participant calls, requested
+  resolution); the SDK's manual video quality selection page has the same
+  note.
 - Nothing changes the sent video through internal SDK calls. An app that
   shrinks what its own camera sends when the other side shows it small
   (often on a message from the other side) usually reaches for calls the
