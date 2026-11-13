@@ -407,12 +407,12 @@ names above. As a guide:
 
 - **Fix now:** anyone signed in can join or read a private call, personal
   or regulated data in user, member, or call data, a participant limit
-  used as the lock, internal SDK calls on the media path, an automatic
-  rejoin after a kick.
-- **Fix before scaling:** states or records that depend on leave-reason
-  strings, a bitrate cap taken from the wrong codec column, and for
-  scheduled calls a standing room shared by successive clients and no
-  way back in after a reload.
+  used as the lock, an automatic rejoin after a kick.
+- **Fix before scaling:** internal SDK calls on the media path (they work
+  until an SDK upgrade changes them, and nothing blocks a release today),
+  states or records that depend on leave-reason strings, a bitrate cap
+  taken from the wrong codec column, and for scheduled calls a standing
+  room shared by successive clients and no way back in after a reload.
 - **Worth doing:** requests for a smaller incoming video that do nothing
   with two participants, an oversized bitrate or resolution, a missing
   lobby, picture-in-picture, the mute indicator.
