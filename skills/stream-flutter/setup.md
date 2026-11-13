@@ -17,7 +17,7 @@ Interpret and hold in context (do not re-run unless the directory or project sha
 - `pubspec.yaml` with a Stream dependency -> Stream already installed; inspect the existing wiring before editing, and run the version check below.
 - `pubspec.yaml` with no Stream dependency -> install (step 3), then wire.
 - No `pubspec.yaml` / `EMPTY_CWD` -> if the user explicitly asked for a new app, scaffold with `flutter create --org <reverse.domain> --project-name <name> --platforms android,ios <dir>`; otherwise stop and tell them to run `flutter create my_app` first ([`RULES.md`](RULES.md) "Project ownership").
-- Flutter 3.50+ templates import `package:material_ui/material_ui.dart`. Stream's UI packages build on `package:flutter/material.dart`, so switch the app's imports to it (with `// ignore: deprecated_member_use` above each), or the composer throws "No MaterialLocalizations found". Keep it until the packages support `material_ui`.
+- Flutter 3.50+ templates import `package:material_ui/material_ui.dart`. Stream's UI packages build on `package:flutter/material.dart`, so switch the app's imports to it (with `// ignore: deprecated_member_use` above each), or Stream's widgets throw "No Material widget found" / "No MaterialLocalizations found". Keep it until the packages support `material_ui`.
 - `sendbird_chat_sdk` / `sendbird_uikit` present -> this is a migration; [`sendbird-migration.md`](sendbird-migration.md) drives, and calls back into steps 2-4 here.
 
 State a one-line status, e.g. `Flutter app detected - stream_chat_flutter 10.6.0 already in pubspec.lock`.
