@@ -17,6 +17,7 @@ Interpret and hold in context (do not re-run unless the directory or project sha
 - `pubspec.yaml` with a Stream dependency -> Stream already installed; inspect the existing wiring before editing, and run the version check below.
 - `pubspec.yaml` with no Stream dependency -> install (step 3), then wire.
 - No `pubspec.yaml` / `EMPTY_CWD` -> if the user explicitly asked for a new app, scaffold with `flutter create --org <reverse.domain> --project-name <name> --platforms android,ios <dir>`; otherwise stop and tell them to run `flutter create my_app` first ([`RULES.md`](RULES.md) "Project ownership").
+- Flutter 3.50+ templates import `package:material_ui/material_ui.dart`. Stream's UI packages build on `package:flutter/material.dart`, so switch the app's imports to it (with `// ignore: deprecated_member_use` above each), or Stream's widgets throw "No Material widget found" / "No MaterialLocalizations found". Keep it until the packages support `material_ui`.
 - `sendbird_chat_sdk` / `sendbird_uikit` present -> this is a migration; [`sendbird-migration.md`](sendbird-migration.md) drives, and calls back into steps 2-4 here.
 
 State a one-line status, e.g. `Flutter app detected - stream_chat_flutter 10.6.0 already in pubspec.lock`.
@@ -48,7 +49,8 @@ If the user pastes credentials, take them and skip the CLI steps.
 # env/token/api fail with "stream project is not initialized" otherwise.
 getstream init
 # Run non-interactively (as an agent), init writes .stream/init-<id>.yaml listing
-# your orgs/apps. Uncomment `app_id:` (or the new-app block), then rerun:
+# your orgs/apps. Uncomment `app_id:` (or the new-app block), then rerun.
+# Leave the optional `skills:` block commented (it installs the Stream skills into the project):
 getstream init --command .stream/init-<id>.yaml
 
 # API key -> dart_defines.json (read with String.fromEnvironment('STREAM_API_KEY');
@@ -60,9 +62,9 @@ getstream token <user_id>
 getstream token <user_id> --ttl <duration>
 ```
 
-A 401 means the CLI session expired - run `getstream login` and retry. If `getstream` is not installed, ask the user to install it from https://getstream.io and wait, or take pasted values (Dashboard -> Explorer has a token generator). Never fetch or run an install script.
+A 401 means the CLI session expired - run `getstream login` and retry. If `getstream` is missing, or Stream Agents needs the beta build, install it as the stream skill says (ask the user first), or take pasted values (Dashboard -> Explorer has a token generator).
 
-Hold the token in context and use the real key and token in generated code - no placeholder strings.
+Add the token to the same gitignored `dart_defines.json` as `STREAM_USER_TOKEN` (`getstream env` keeps the keys it doesn't write), and read both with `String.fromEnvironment` - no placeholder strings and no token in source files.
 
 ### Seed channels (Chat, if requested)
 
@@ -152,6 +154,7 @@ Use `flutter pub add` so pub resolves the current release; install only what the
 | Video / livestream / audio rooms | `stream_video_flutter` | `stream_video` - re-exported |
 | Video extras | `stream_video_push_notification` (ringing), `stream_video_filters`, `stream_video_noise_cancellation`, `stream_video_screen_sharing` (iOS broadcast) - same version as `stream_video_flutter` | - |
 | Feeds | `stream_feeds`, plus `flutter_state_notifier` for `StateNotifierBuilder` (`stream_feeds` only depends on the pure-Dart `state_notifier`) | never `stream_feed` / `stream_feed_flutter_core` |
+| AI assistants / agents | `stream_chat_flutter_ai` (`^0.2.0`), `stream_chat_flutter_ai_a2ui` for generative UI; on Stream Agents `stream_agents_core` + `stream_agents_chat` + `stream_chat` (+ `stream_agents_rtc` for voice); [`ai-integration.md`](ai-integration.md) Step 0 | - |
 
 SDK floors (Dart / Flutter versions) are in each package's `pubspec.yaml` `environment:` (e.g. `stream_chat_flutter` 10.6 needs Flutter >= 3.44). For per-platform requirements, fetch the product's install page from [`docs-map.md`](docs-map.md) (Chat "Install packages", Video "Install packages + platform permissions", Feeds "install" in the Feeds intro).
 

@@ -42,7 +42,7 @@ Use `/stream` for generic routing, or invoke a skill directly by name. Each skil
 | [`/stream-swift`](https://getstream.io/agent-skills/docs/skills/stream-swift/) | Swift, SwiftUI, UIKit, and iOS apps |
 | [`/stream-android`](https://getstream.io/agent-skills/docs/skills/stream-android/) | Android and Jetpack Compose apps |
 | [`/stream-react-native`](https://getstream.io/agent-skills/docs/skills/stream-react-native/) | React Native CLI and Expo apps: Chat, Video, and Feeds - build, add Stream, audit, upgrade SDKs, migrate from Sendbird, and add AI assistants |
-| [`/stream-flutter`](https://getstream.io/agent-skills/docs/skills/stream-flutter/) | Flutter apps: Chat, Video, and Feeds |
+| [`/stream-flutter`](https://getstream.io/agent-skills/docs/skills/stream-flutter/) | Flutter apps: Chat, Video, and Feeds, plus AI assistants and Stream Agents voice and text agents |
 | [`/stream-unity`](https://getstream.io/agent-skills/docs/skills/stream-unity/) | Unity projects (C#): Chat and Video, no Feeds |
 | [`/stream-unreal`](https://getstream.io/agent-skills/docs/skills/stream-unreal/) | Unreal Engine 5.7/5.8 projects (C++ and Blueprint): Chat only |
 | `/stream-feeds-migration` | Feeds v2 -> v3 migration: generates the sync mapping from your app's live data |
