@@ -23,7 +23,7 @@ two-person-review.md the same way.
 
 | Platform | Platform checks |
 |---|---|
-| Android | Read stream-android skill's integration-review.md |
+| Android | Read stream-android skill's integration-review.md (it has the two-person call checks too) |
 | React | Read stream-react skill's integration-review.md (Video, livestream, and two-person call checks), plus the skill's audit section |
 | React Native | The platform skill's audit section, plus the Video "Integration best practices" page in that SDK's docs |
 | Flutter | Read stream-flutter skill's integration-review.md |

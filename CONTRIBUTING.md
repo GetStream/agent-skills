@@ -77,7 +77,7 @@ For older CLI installations, [`stream-builder`](skills/stream-builder/SKILL.md) 
   - [`SKILL.md`](skills/stream-android/SKILL.md) - entrypoint: intent classifier, local project detection, module pointers
   - [`RULES.md`](skills/stream-android/RULES.md) - Android non-negotiable rules
   - [`builder.md`](skills/stream-android/builder.md) + [`sdk.md`](skills/stream-android/sdk.md) - shared Android app integration flow and SDK ownership patterns
-  - [`integration-review.md`](skills/stream-android/integration-review.md) - Android checks for an integration review
+  - [`integration-review.md`](skills/stream-android/integration-review.md) - Android checks for an integration review, including the two-person call checks
   - [`references/`](skills/stream-android/references/) - product/framework-specific Android references and blueprints
 - [`skills/stream-flutter/`](skills/stream-flutter/) - **Flutter sub-skill** (docs orchestrator; Chat + Video + Feeds)
   - [`SKILL.md`](skills/stream-flutter/SKILL.md) - entrypoint: the `.md` docs convention, intent classifier, Chat UI-strategy decision, docs-lookup loop
