@@ -371,7 +371,10 @@ N/A for an audio-only call, as the generic file says. For a video call:
   The check is that the app has not turned it off
   (`runCallServiceInForeground` in the call service configuration) and
   that the merged manifest keeps the SDK's foreground-service permissions
-  (Push above). Docs: `guides/keeping-the-call-alive.md`.
+  (Push above). With it off for a call type, the SDK's notification
+  handler also shows nothing for a ringing push of that type: the phone
+  rings only while the app is open. FAIL in an app that rings. Docs:
+  `guides/keeping-the-call-alive.md`; source: SDK code.
 - Noise cancellation: the processor is given to `StreamVideoBuilder`
   (`audioProcessing`), one instance for the whole app.
   `call.setAudioProcessingEnabled(true)` does nothing but log when the
