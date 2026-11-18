@@ -1,3 +1,27 @@
+# Sampler
+
+This plugin does not ship `fetch_sample.py`. When a sample is needed and the
+script is not already in the working directory, write the script below there,
+exactly, as `fetch_sample.py`. Run it from that directory, then delete it. Do
+not commit it, and do not write it into the skill directory.
+
+Standard library only. It reads `STREAM_API_KEY` and `STREAM_API_SECRET` from
+the environment. There is no `--secret` flag: a secret passed as an argument
+lands in the process list and the shell history. The API key is not sensitive
+and can be overridden with `--api-key`.
+
+It calls two server-side-only endpoints and writes one JSON file:
+
+- `GET /api/v1.0/migration/sample/activities` - up to 100 activities
+- `GET /api/v1.0/migration/sample/reactions` - 5 reactions per kind
+
+Auth is a short-lived server-side JWT (HS256, `resource`/`action`/`feed_id`
+all `*`, `iat`/`exp`). A user token is rejected. `--feed GROUP:ID` (repeatable)
+also reads that feed and stores the activities under `feed_samples`, with
+custom fields moved into `extra_context`. Default base URL is production. Pass
+`--base-url` for any other deployment.
+
+```python
 #!/usr/bin/env python3
 """Fetch a v2 app's activity and reaction samples for v2->v3 mapping analysis.
 
@@ -282,3 +306,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
+```

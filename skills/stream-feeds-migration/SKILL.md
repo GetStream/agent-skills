@@ -2,7 +2,7 @@
 name: stream-feeds-migration
 description: "Generate the v2 -> v3 sync mapping for a Stream Activity Feeds app by sampling its live v2 activities and reactions and, when the app's v2 integration code is available, reading its write paths, and, from that code, plan how the app's code moves from v2 to v3. Use when setting up a Feeds v2 to v3 migration, when asked to build, review, or debug a v3 sync mapping, when someone asks 'what mapping do we need for our app?', when asked how to port an app's v2 Feeds code to v3, or when a migrated activity lands in v3 with missing text, missing attachments, comments that are not comments, or bookmarks that went missing. Triggers on v3sync, v2 to v3, feeds migration, activity feeds migration, sync mapping, extra_context, reaction kinds, comments and bookmarks mapping, porting plan. The same mapping drives both the live syncer and the bulk exporter."
 license: See LICENSE in repository root
-compatibility: Requires the v2 app's API key and secret, exported as environment variables, plus Python 3 (standard library only - no pip install). Read-only against the v2 app; writes one sample file to the working directory. No project or SDK required; when the app's repository is available, its v2 integration code is read to cover what a sample cannot and to write a porting plan. The skill never modifies the code; porting it is a follow-up done only when the user asks.
+compatibility: Requires the v2 app's API key and secret, exported as environment variables, plus Python 3 (standard library only - no pip install). The sampler is not part of the plugin: write it from fetch-sample.md into the working directory when a sample is needed, run it, then delete it. Read-only against the v2 app; writes one sample file to the working directory. No project or SDK required; when the app's repository is available, its v2 integration code is read to cover what a sample cannot and to write a porting plan. The skill never modifies the app's code; porting it is a follow-up done only when the user asks.
 metadata:
   author: GetStream
 ---
@@ -45,27 +45,21 @@ target and the user will say so if they mean otherwise.
 
 ### 3. Fetch the sample
 
+The plugin does not ship the sampler. Read [`fetch-sample.md`](fetch-sample.md),
+next to this file. If `fetch_sample.py` is not already in the working directory,
+write that script there, exactly as given. Run it, then delete it. Do not commit
+it, and do not write it into the skill directory.
+
 ```bash
 set -a
 . "<env-file>"
 set +a
-python3 <skill-dir>/fetch_sample.py --out v3sync-sample.json
+python3 fetch_sample.py --out v3sync-sample.json
 ```
 
 `<env-file>` is the absolute path to the file written by `getstream env`. Run
-the block in one shell invocation so Python inherits the credentials.
-
-`<skill-dir>` is the directory holding this `SKILL.md`. Resolve it to an
-absolute path before running - the skill runs from whatever directory the user
-happens to be in, so a relative path only works by accident. Use the path this
-`SKILL.md` was loaded from: a plugin install keeps it in the agent's plugin
-folder, not in the project. If you do not have that path, `getstream skills`
-linked the pack into one of two places, so it is one of:
-
-- `.agents/skills/stream-feeds-migration` (Cursor, Codex)
-- `.claude/skills/stream-feeds-migration` (Claude Code)
-
-Glob `{.agents,.claude}/skills/stream-feeds-migration/SKILL.md` to settle which.
+the block in one shell invocation, from the directory where you wrote
+`fetch_sample.py`, so Python inherits the credentials.
 
 The key and secret are read from `STREAM_API_KEY` and `STREAM_API_SECRET`. The
 script takes **no `--secret` flag** by design - a secret passed as an argument
@@ -142,8 +136,10 @@ group is written by a different code path. For each group the sample may have
 missed, read a feed or two of it directly with `--feed` (read-only,
 repeatable):
 
+Recreate `fetch_sample.py` first if you already deleted it, then run:
+
 ```bash
-python3 <skill-dir>/fetch_sample.py --out v3sync-sample.json \
+python3 fetch_sample.py --out v3sync-sample.json \
   --feed notification:<user-id> --feed timeline:<user-id>
 ```
 
@@ -165,9 +161,9 @@ it is available; the skill works without it.
 
 Follow [`code-inventory.md`](code-inventory.md):
 
-1. Run `<skill-dir>/scan_v2_calls.py --root <repo> --out v2-code-scan.json` to list every v2 write call
-   site (read-only; secrets in snippets are redacted - never quote one from the
-   code yourself).
+1. Search the repository for the v2 write methods in
+   [`code-inventory.md`](code-inventory.md) and read every hit. Never quote a
+   secret from the code.
 2. Read the call sites and build the **inventory**: one row per write path,
    with its feed group(s), to-targets, fields, `foreign_id` construction,
    reaction kinds and data shape, child reactions, and user fields.

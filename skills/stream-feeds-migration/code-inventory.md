@@ -10,20 +10,11 @@ disagree, the disagreement is the finding.
 
 ## 1. Find the write paths
 
-Run the scanner from the skill's directory against the app's
-repository (read-only, standard library only, writes one JSON file):
+Search the app's repository for the v2 write methods in the table below, and
+for raw REST calls to `/api/v1.0/`. Read every hit. Never copy a secret out of
+the code into the conversation.
 
-```bash
-python3 <skill-dir>/scan_v2_calls.py --root <repo> --out v2-code-scan.json
-```
-
-It lists every v2 write call site with its file, line, call kind, the feed
-groups named near it (`feed_groups_nearby`), the reaction kind when it is a
-literal, and a short snippet. Long key-like tokens and string literals on lines that
-mention a secret are replaced with `<redacted>`. Never copy a secret out of the
-code into the conversation, even if the scanner missed one.
-
-Call kinds:
+Call kinds to account for:
 
 | Kind | What it writes |
 | --- | --- |
@@ -40,27 +31,21 @@ Call kinds:
 | `rest_call` | raw REST calls to the v2 API |
 
 Most apps create the client in one module (`lib/stream.js`,
-`StreamService.java`) and import it everywhere else. The scanner follows that
-one level: a file that imports the SDK module counts as SDK code
-(`sdk_files_indirect` names the module it came through). Feed groups kept in
-constants (`FeedGroup = { USER: 'user' }`, `USER_FEED = "user"`) and helpers
-that return one feed (`userFeed = (id) => client.feed('user', id)`) are read
-from those modules (`feed_group_constants`, `feed_helpers`), and a reference
-to either near a call counts as that group.
+`StreamService.java`) and import it everywhere else. Start in that module, then
+follow the imports. Feed groups kept in constants
+(`FeedGroup = { USER: 'user' }`, `USER_FEED = "user"`) and helpers that return
+one feed (`userFeed = (id) => client.feed('user', id)`) count as that group
+when a call uses them.
 
-The scanner finds calls, not meaning. Feed groups and reaction kinds built at
+A search finds calls, not meaning. Feed groups and reaction kinds built at
 runtime, a client reached through more than one module, and Java's positional
 arguments (`reactions().add(userId, kind, ...)`) show up without a value: read
-those call sites. Calls through the app's own wrapper functions are listed as
-`wrapper_call` (`wraps` names the function); the payload is built either inside
-the wrapper or at these call sites, so read both.
+those call sites. Apps usually wrap the SDK (`postService.create` calls
+`feed.addActivity`); the payload is built either inside the wrapper or at its
+call sites, so read both.
 
-The output JSON holds `calls` (each with `file`, `line`, `kinds`,
-`feed_groups_nearby`, `reaction_kinds`, `snippet`, and `sdk_via` when the file
-reaches the SDK through another module), plus `sdk_files`,
-`sdk_files_indirect`, `feed_group_constants` and `feed_helpers`.
-
-Method names by SDK, for searching by hand:
+Generic names (`follow`, `update`, `delete`) only count in files that use the
+Stream client. Method names by SDK:
 
 | SDK | Activities | Reactions | Users |
 | --- | --- | --- | --- |
@@ -76,7 +61,7 @@ Method names by SDK, for searching by hand:
 
 ## 2. Build the inventory
 
-Read each call site the scanner found (and the code that builds its payload),
+Read each write call site (and the code that builds its payload),
 and fill one row per **write path** - a distinct place in the app that writes
 v2 data, not one row per line:
 
