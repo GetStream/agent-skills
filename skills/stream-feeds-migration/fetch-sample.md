@@ -22,7 +22,6 @@ custom fields moved into `extra_context`. Default base URL is production. Pass
 `--base-url` for any other deployment.
 
 ```python
-#!/usr/bin/env python3
 """Fetch a v2 app's activity and reaction samples for v2->v3 mapping analysis.
 
 Calls the two server-side-only migration sample endpoints and writes both
