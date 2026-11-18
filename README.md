@@ -78,7 +78,7 @@ The skills and plugins connect to:
 - **Stream MCP server** (`mcp.getstream.io`), once you sign in with your Stream account.
 - **Stream API**, through the `getstream` CLI.
 - **Docs and SDK source**: skills fetch Stream SDK docs from `getstream.io` and `getstream.github.io`, SDK source from `github.com` and `raw.githubusercontent.com`, and Flutter package pages from `pub.dev`.
-- **Feeds migration**: `fetch_sample.py` reads `STREAM_API_KEY` and `STREAM_API_SECRET` from your environment, signs a short-lived token with the secret on your machine, and reads activities from the Stream v2 API (`api.stream-io-api.com`). The secret itself is never sent. `scan_v2_calls.py` reads local files only.
+- **Feeds migration**: when a sample is needed, the skill writes a temporary `fetch_sample.py` into the working directory and deletes it after the run. That script reads `STREAM_API_KEY` and `STREAM_API_SECRET` from the environment, signs a short-lived token with the secret on your machine, and reads activities from the Stream v2 API (`api.stream-io-api.com`). The secret itself is never sent. The script is not part of the plugin.
 
 Stream's [privacy policy](https://getstream.io/legal/privacy/) covers the data sent to Stream.
 

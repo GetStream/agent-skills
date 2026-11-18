@@ -42,7 +42,7 @@ are switched all at once, never one feature at a time.
 
 ## 2. Find the read paths
 
-The scanner lists writes only. Find the read paths by hand: search for
+Write paths come from the inventory. Find the read paths by hand: search for
 `.get(` on feeds (`feed(...).get`, `flatFeed(...).get`), `getActivityDetail`,
 `getActivities`, `reactions.filter` / `reactions.get`, `collections.get`,
 `user(...).get`, and user-token creation (`createUserToken`, `create_user_token`,
