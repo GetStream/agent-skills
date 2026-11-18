@@ -275,7 +275,7 @@ For a specific customization or behavior the docs do not cover - an exact compon
 | Video | `stream-video-flutter` | `packages/stream_video`, `stream_video_flutter`, `stream_video_push_notification`, `stream_video_filters` | `dogfooding/`, `packages/*/example/` |
 | Feeds | `stream-feeds-flutter` | `packages/stream_feeds` | `sample_app/` |
 | AI components | `stream-chat-flutter-ai` | `packages/stream_chat_flutter_ai` (`README.md`, `CHANGELOG.md`), `packages/stream_chat_flutter_ai_a2ui` | `packages/*/example/` |
-| Stream Agents Dart SDK | `Vision-Agents` | `sdks/dart/core`, `sdks/dart/chat`, `sdks/dart/rtc` (`stream_agents_core`, `_chat`, `_rtc`) | `examples/voice_agents/flutter_assistant`, `flutter_demo` (read for patterns; build on the hosted router) |
+| Stream Agents Dart SDK | `GetStream/Agents` | `sdks/dart/core`, `sdks/dart/chat`, `sdks/dart/rtc` (`stream_agents_core`, `_chat`, `_rtc`) | `examples/voice_agents/flutter_assistant`, `flutter_demo` (read for patterns; build on the hosted router) |
 
 How to search (prefer the version-accurate local checkout - no network, matches what the project compiles):
 

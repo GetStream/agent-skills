@@ -23,7 +23,7 @@ When the request doesn't say, and nothing in the project shows a backend agent, 
 - `stream_chat_flutter` (10.6.0+, with the app's other `stream_chat_*` packages on the same version) only for the message-list path (Step 1) or its channel list. Import it with the hide list on `/stream-chat-integration.md`. 10.6.0 is the first `stream_chat` that reads both "checking sources" spellings.
 - **From 0.1.x:** the move to 0.2.0 breaks code. Defaults come from `StreamTheme`; a `CodeHighlighter` takes one `CodeHighlightRequest`, and `codeBlockTheme` / `CodeBlockView.theme` replace the code colors; the composer's slot builders (`streamAIComponentBuilders`) replace `ChatComposerFactory`; `AnimatedDots` and `dotCount` are gone; `StreamingMessageView` types only while `expectMoreText` is `true`. Apply the rest from the package `CHANGELOG.md` "Breaking" section and tell the developer. An app on `stream_chat_flutter`'s own AI widgets follows the migration note in `/streaming-messages.md` "Type the reply out".
 
-Where the docs and the code disagree, the source at the resolved version wins (`stream-chat-flutter-ai` `packages/stream_chat_flutter_ai` and `_a2ui`; `Vision-Agents` `sdks/dart/core`, `chat`, `rtc`; the pub-cache checkout, see [`docs-map.md`](docs-map.md) "When the docs fall short") - say so.
+Where the docs and the code disagree, the source at the resolved version wins (`stream-chat-flutter-ai` `packages/stream_chat_flutter_ai` and `_a2ui`; `GetStream/Agents` `sdks/dart/core`, `chat`, `rtc`; the pub-cache checkout, see [`docs-map.md`](docs-map.md) "When the docs fall short") - say so.
 
 ## Step 1: Classify, then fetch
 

@@ -30,7 +30,7 @@ cat $c/ui-cookbooks/ai/voice-agent-visuals.md    # the voice agent's look
 
 When the docs and the SDKs disagree, the types win
 (`node_modules/@stream-io/stream-agents/dist/*.d.ts`, and `stream-chat-react`'s for the
-components). The backend source is github.com/GetStream/Vision-Agents.
+components). The backend source is github.com/GetStream/Agents.
 
 ## Setup
 
