@@ -273,9 +273,10 @@ requirement in the generic bullet still applies. "Scheduled calls" at the
 end is only for apps where both sides open a call at a booked time; skip it
 for calls that ring. Ringing itself is in Calls and Push above.
 
-Symbols were read in the source of `stream-video-android` v1.38.0. Review
-the version the build pins, from the sources in the Gradle cache, and adapt
-a check that names a newer API. Docs: `guides/joining-and-creating-calls.md`,
+Symbols were read in the source of `stream-video-android` v1.38.0, and the
+section was run against a test app on 1.37.1. Review the version the build
+pins, from the sources in the Gradle cache, and adapt a check that names a
+newer API. Docs: `guides/joining-and-creating-calls.md`,
 `guides/call-and-participant-state.md`, `guides/keeping-the-call-alive.md`,
 and `advanced/incoming-calls/ringing.md` in `getstream docs video/android`.
 
@@ -286,31 +287,46 @@ and `advanced/incoming-calls/ringing.md` in `getstream docs video/android`.
   in the app, with the other person's id taken from a screen or an intent,
   let a signed-in user call anyone they can name when their role has
   `create-call`. That is how a call button is usually built: run the
-  generic check on what ties the two people together. Source: SDK code.
-- Where the backend creates the ringing call, it sets the caller as the
-  creator (`created_by_id`), and the caller's app loads that call, joins
-  without `create`, and registers it as an outgoing ring with
-  `streamVideo.state.addRingingCall(call, RingingState.Outgoing())`. The
-  SDK shows a ringing call as outgoing when its creator is the local
+  generic check on what ties the two people together, and read the role's
+  grants, not only the arguments the app passes. Source: SDK code.
+- Where the backend creates the ringing call for a person who placed it,
+  it sets that person as the creator (`created_by_id`). The caller's app
+  loads the call and joins without `create`. To show the SDK's outgoing
+  state it registers the call with
+  `streamVideo.state.addRingingCall(call, RingingState.Outgoing())`: the
+  SDK treats a ringing call as outgoing when its creator is the local
   user. `call.ring()` from the app sends a ring but doesn't put the SDK
-  in the outgoing state. Source: SDK code, not run.
+  in the outgoing state. This is a lead for apps that use that state, not
+  a requirement: a call the backend places for nobody has no outgoing
+  screen. Source: SDK code, not run.
 - The `User` given to `StreamVideoBuilder` is sent to Stream when the
   client connects: its `name`, `image`, and `custom` are stored on the
   user. Run the personal-data check on it (a phone number in `custom` is
   the usual one), as well as on what the backend writes. Source: SDK code.
 - A join refused by the participant limit comes back as a
-  `Result.Failure` from `join()`: the Calls check above on shown failures
-  covers it.
+  `Result.Failure` from `join()`. Where the product keeps a hard cap, the
+  failure is shown with a way to try again; record it once, under the
+  Calls check on shown failures.
 
 ### Call-type settings
 
-- An audio-only app passes `video = false` when it rings, and never
-  enables `call.camera`. The generic check on the call type still applies:
-  the built-in `audio_call` type has video off. Source: SDK code.
+- An app whose calls are voice only describes them as such where it
+  creates the ringing call (`video = false`), and never enables
+  `call.camera`. The generic check on the call type still applies: the
+  built-in `audio_call` type has video off. Source: SDK code.
+- At join the SDK applies the call type's device defaults. With
+  `camera_default_on` it turns the camera on and starts the call on the
+  loudspeaker. Without it, the loudspeaker is used only when
+  `audio.default_device` is `speaker` or `speaker_default_on` is set.
+  FAIL for a voice-only call whose join path can start camera capture:
+  the camera default is on and the app holds, or asks for, the camera
+  permission. The loudspeaker start goes under the audio route check.
+  Source: SDK code.
 
 ### Two-person media behaviour
 
-N/A for an audio-only call, as the generic file says. For a video call:
+For an audio-only call the resolution and internal-call bullets are N/A,
+as the generic file says. The layout bullet always applies.
 
 - Receiver-requested resolution: in this SDK "the size the receiver asks
   for" is the size of the SDK's video renderer and
@@ -318,80 +334,112 @@ N/A for an audio-only call, as the generic file says. For a video call:
   they do in a two-person call. `call.setIncomingVideoEnabled(false)` is
   not a resolution request. Source: SDK code.
 - Internal calls: anything behind `@InternalStreamVideoApi` needs an
-  opt-in to compile, so `@OptIn(InternalStreamVideoApi::class)` in app
-  code is the thing to search for. FAIL when it is on the media path.
-  Source: SDK code.
+  opt-in to compile. `@OptIn(InternalStreamVideoApi::class)` in app code,
+  or the same opt-in as a compiler option, is where to start looking, not
+  the finding. FAIL for an internal call the app really makes on the
+  media path, and name it. Source: SDK code.
 - Layout: `call.state.participants` and `call.state.remoteParticipants`
-  hold sessions, and `call.state.me` is the local one. A screen that draws
-  the first remote participant has a state for an empty list, and for a
-  list of two. Source: the app code.
+  hold sessions, and `call.state.me` is the local one. A screen that
+  draws the other person, in a voice call too, has a state for an empty
+  remote list, and for a list of two: the same person on a second device
+  is another session. Source: the app code.
 
 ### Leave and end handling
 
 - Leave reasons: `CallSessionParticipantLeftEvent.reason` is a nullable
-  string. FAIL for a comparison with fixed strings. The default reason of
-  this SDK's `call.leave()` is "user", the app can pass its own, and
-  other SDKs use other texts. For a deliberate leave:
-  `call.sendCustomEvent(...)`, then `call.leave()`; the other side
-  handles `CustomVideoEvent` from `call.events`, or with
-  `call.subscribeFor(CustomVideoEvent::class.java)`. Source: SDK code.
+  string. FAIL when a screen state, an automatic action, or a record
+  depends on comparing it with fixed strings; writing it to a log is
+  fine. The default reason of this SDK's `call.leave()` is "user", the
+  app can pass its own, and other SDKs use other texts. Where a hang-up
+  ends the call, use the ended state, as the generic check says. A custom
+  event (`call.sendCustomEvent(...)`, handled as `CustomVideoEvent` from
+  `call.events` or `call.subscribeFor(CustomVideoEvent::class.java)`) is
+  for apps where a hang-up only leaves, and never a reason to add
+  `send-event` in an app that rings through its backend. Source: SDK
+  code.
 - Hang-up and end: `call.leave()` takes this user out and the call goes
   on; `call.end()` ends it for both and needs `end-call`. Where a hang-up
-  should end the call for both, as in a phone call, the hang-up button
-  calls `end()`. The SDK's own hang-up leaves, and the single-use
-  lifecycle doesn't end an answered call, so an app that changes nothing
-  keeps the other person in a live call that can be joined and rung
-  again. Source: SDK code; `ring-calls.md` in `getstream docs video/api`.
+  should end the call for both, as in a phone call, trace every
+  deliberate hang-up: the button, the back gesture, and the action on an
+  ongoing-call notification if the app has one. Each ends the call,
+  through `end()` or through the backend, and a failed `end()` is not
+  shown as a finished call. The SDK's own hang-up leaves, and the
+  single-use lifecycle doesn't end an answered call, so an app that
+  changes nothing keeps the other person in a live call that can be
+  joined and rung again. `StreamCallActivity` started with
+  `leaveWhenLastInCall` closes the last person's screen, and that is not
+  an end either. Source: SDK code; `ring-calls.md` in `getstream docs
+  video/api`.
 - The end of the call: on `CallEndedEvent` the SDK sets
   `call.state.endedAt` and leaves by itself. The screen closes or shows an
   ended state, and nothing joins again. Source: SDK code.
 - Kicked, removed, or blocked: being taken out by the server reaches the
   SDK as the media server's call-ended event, and the SDK handles it like
   the end: it sets `call.state.endedAt` and leaves, although the call goes
-  on for the other person. `endedAt` alone can't tell the two apart. A
-  screen that needs to listens for `KickedUserEvent` and
-  `BlockedUserEvent` with its own user id. Which arrives first is
-  unverified without a test. Source: SDK code.
+  on for the other person. `endedAt` alone can't tell the two apart.
+  `KickedUserEvent` and `BlockedUserEvent` with the local user's id say
+  the person was taken out. The order of the events is unverified without
+  a test, so the screen doesn't depend on it: it shows that the call
+  closed for this person, and nothing joins again by itself. Source: SDK
+  code.
 - Own connection: `call.state.connection` is `Reconnecting` or `Migrating`
-  while the SDK recovers, and the screen shows that without leaving.
-  `ReconnectingFailed` and `Failed` are shown with a way to call or join
-  again. Source: SDK code.
+  while the SDK recovers, and the screen shows that without leaving or
+  joining again. `ReconnectingFailed` and `Failed` are shown with a way
+  to try again that the person has to press, offered only while the call
+  is open and they may still join. Source: SDK code.
 
 ### Devices and audio
 
-- Audio route: `call.speaker.setSpeakerPhone(true)` and `(false)` switch
-  between the speaker and the earpiece or headset.
-  `call.microphone.devices` lists the routes as `StreamAudioDevice`
-  (`Earpiece`, `Speakerphone`, `WiredHeadset`, `BluetoothHeadset`),
-  `call.microphone.selectedDevice` is the active one, and
-  `call.microphone.select(device)` picks one. A Bluetooth headset needs
-  the `BLUETOOTH_CONNECT` runtime permission on Android 12 and later; the
-  SDK's manifest declares it, and the app asks for it. Source: SDK code.
+- Audio route: `call.microphone.devices` lists the routes as
+  `StreamAudioDevice` (`Earpiece`, `Speakerphone`, `WiredHeadset`,
+  `BluetoothHeadset`), `call.microphone.selectedDevice` is the active one,
+  and `call.microphone.select(device)` picks one.
+  `call.speaker.setSpeakerPhone(true)` turns the loudspeaker on;
+  `(false)` turns it off, and the route that results depends on what is
+  connected. The route control reads `selectedDevice`, not the last
+  button pressed, and a headset that disconnects doesn't end the call.
+  Source: SDK code.
+- Bluetooth: the SDK's own permission helper
+  (`rememberCallPermissionsState`) asks for `BLUETOOTH_CONNECT` on
+  Android 12 and later, and the SDK's manifest declares it. An app with
+  its own permission request asks for it too when its users call with
+  Bluetooth headsets, and a refusal leaves the other routes usable.
+  Source: SDK code.
 - Background: the SDK keeps a joined call alive with a foreground service.
   The check is that the app has not turned it off
-  (`runCallServiceInForeground` in the call service configuration) and
-  that the merged manifest keeps the SDK's foreground-service permissions
-  (Push above). Docs: `guides/keeping-the-call-alive.md`.
+  (`runCallServiceInForeground` in the call service configuration)
+  without a service of its own that does the same job, and that the
+  merged manifest keeps the SDK's foreground-service permissions (Push
+  above). With it off for a call type, the SDK's notification handler
+  also shows nothing for a ringing push of that type: the phone rings
+  only while the app is open. Report that under Push, as a FAIL in an
+  app that rings. What the call does with the screen off is unverified
+  without a device test. Docs: `guides/keeping-the-call-alive.md`;
+  source: SDK code.
 - Noise cancellation: the processor is given to `StreamVideoBuilder`
   (`audioProcessing`), one instance for the whole app.
   `call.setAudioProcessingEnabled(true)` does nothing but log when the
   call's settings or the user's capabilities don't allow it, or are not
-  loaded yet: the app reads `call.isAudioProcessingEnabled()` afterwards
-  and doesn't assume it is on. Source: SDK code.
+  loaded yet. The app turns it on after the call is loaded, and shows the
+  state the SDK reports (`call.isAudioProcessingEnabled()`, or an
+  observer of the same state), not a flag of its own. Source: SDK code.
 - Mute and the recording indicator: `call.state.speakingWhileMuted` is the
-  signal for the hint. Whether the system's microphone indicator stays on
-  while muted was not verified for this file: list it as unverified, and
-  test it on a device when the product needs capture to stop on mute.
-- Permissions: see Calls above. An audio-only app requests only
-  `RECORD_AUDIO`.
+  signal for the hint; it is not a capture control. Whether the system's
+  microphone indicator stays on while muted was not verified for this
+  file: list it as unverified, and test it on a device when the product
+  needs capture to stop on mute.
+- Permissions: see Calls above. For call media, a voice-only app requests
+  `RECORD_AUDIO` and not `CAMERA`.
 
 ### Scheduled calls
 
 - `StreamCallActivity` started with `leaveWhenLastInCall` closes the
   screen as soon as the other person is gone, a dropped connection
-  included. That is wrong for an appointment, where the generic check
-  wants a waiting state. In a call that rings it closes the screen but
-  only leaves: the call is not ended. Source: SDK code.
+  included. An appointment wants the waiting state of the generic check
+  there. Source: SDK code.
 - Nothing in the SDK brings a call back after the process dies. The app
-  keeps which appointment was open and offers it again, subject to the
-  generic check. Source: SDK code.
+  can find the appointment again (from its backend, or from what it
+  stored), checks that it is still open and that the person may enter,
+  and offers a new join. An activity that is only recreated, on a
+  rotation for example, keeps the same `Call` and doesn't join a second
+  time (Calls above). Source: SDK code.

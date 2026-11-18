@@ -296,21 +296,21 @@ line. The layout check and the `livestream` type check still apply.
 
 - No branching on the `reason` string of `call.session_participant_left`.
   The values are not a documented contract: some are set by the server,
-  clients can send their own text, the SDKs differ, and they change
-  between versions. FAIL when the UI's states or the backend's records
-  depend on matching it. Use it as a hint in logs. Where a hang-up ends
-  the call (the next check), an ended call is the signal: a participant
-  who is gone from a call that has not ended dropped. Where a hang-up
-  only leaves, the leaving side can send a custom event and then leave,
-  without holding the hang-up on it for long. That is a hint for the
-  other person's screen, not a record: the send can fail, and a closed
-  tab or a crash sends nothing. A participant who goes without one is
-  "gone, reason unknown", not "connection lost". Custom events need the
+  clients can send their own text, the SDKs differ, and they change between
+  versions. FAIL when the UI's states or the backend's records depend on
+  matching it. Use it as a hint in logs. Where a hang-up ends the call (the
+  next check), an ended call is the signal: a participant who is gone from a
+  call that has not ended did not hang up, so show them as absent, without a
+  cause. Where a hang-up only leaves, the leaving side can send a custom
+  event and then leave, without holding the hang-up on it for long. That is
+  a hint for the other person's screen, not a record: the send can fail, and
+  a closed tab or a crash sends nothing. A participant who goes without one
+  is "gone, reason unknown", not "connection lost". Custom events need the
   `send-event` grant, and the same grant lets a client ring the call's
-  members again: don't add it for this in an app that keeps ringing to
-  its backend. Billing and the app's own records come from the server
-  (below). Docs: `webhooks/events.md` (the field is a free string); the
-  SDK's custom-events page. Source for the grant: server behaviour.
+  members again: don't add it for this in an app that keeps ringing to its
+  backend. Billing and the app's own records come from the server (below).
+  Docs: `webhooks/events.md` (the field is a free string); the SDK's
+  custom-events page. Source for the grant: server behaviour.
 - The end of the call is handled on both sides: on `call.ended` each side
   shows an ended state and nothing tries to join again. Hanging up
   (leaving) and ending the call for both are different actions in the
