@@ -22,7 +22,7 @@ calls, Generative UI) found through its `INDEX.md`, as in ai-integration.md.
 
 When the docs and the SDKs disagree, the installed types win
 (`node_modules/@stream-io/stream-agents/dist/*.d.ts`, and the Chat SDK's `ai-components`
-types). The backend source is github.com/GetStream/Vision-Agents. Two working apps on
+types). The backend source is github.com/GetStream/Agents. Two working apps on
 Stream Agents are `examples/ExpoChatGPTSample` and `examples/ExpoCrewAssistant` in
 `GetStream/stream-chat-react-native`, on the `v9-release` branch. Read them for wiring the
 docs don't show; don't copy their auth, hosts, or tokens.

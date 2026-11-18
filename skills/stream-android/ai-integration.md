@@ -21,7 +21,7 @@ Use the Chat version the project already resolves for every AI artifact ([`refer
 
 **`stream-chat-android-ai-compose` does not depend on the Chat SDK.** It never sees a `ChatClient`, a `Channel` or a `Message`: you hand it `AIMessage`s and callbacks. That is the fact that shapes everything below - the connection to Stream is either Stream Agents' (shape A on Stream Agents) or yours (every other shape).
 
-**Stream Agents on Android.** When the agent runs on Stream Agents (an `agents/<name>/` folder synced with `getstream agents`, see [`../stream/SKILL.md`](../stream/SKILL.md)), the app opens its sessions with `io.getstream:stream-agents-android-core` from `https://stream-io-repo.com` (look the version up as [`references/DOCS.md`](references/DOCS.md) "Version lookup before installing" shows). The client is `StreamAgents`, the package `io.getstream.agents.android.core`. It needs `compileSdk` 37, Kotlin 2.3 or newer and `minSdk` 24, and brings Stream Chat and Stream Video with it. Its source is `sdks/kotlin` on the `accelerate` branch of `GetStream/Vision-Agents` (`https://raw.githubusercontent.com/GetStream/Vision-Agents/accelerate/sdks/kotlin/README.md`). When the docs and the SDK disagree, the SDK's source at the resolved version wins.
+**Stream Agents on Android.** When the agent runs on Stream Agents (an `agents/<name>/` folder synced with `getstream agents`, see [`../stream/SKILL.md`](../stream/SKILL.md)), the app opens its sessions with `io.getstream:stream-agents-android-core` from `https://stream-io-repo.com` (look the version up as [`references/DOCS.md`](references/DOCS.md) "Version lookup before installing" shows). The client is `StreamAgents`, the package `io.getstream.agents.android.core`. It needs `compileSdk` 37, Kotlin 2.3 or newer and `minSdk` 24, and brings Stream Chat and Stream Video with it. Its source is `sdks/kotlin` on the `main` branch of `GetStream/Agents` (`https://raw.githubusercontent.com/GetStream/Agents/main/sdks/kotlin/README.md`). When the docs and the SDK disagree, the SDK's source at the resolved version wins.
 
 ## Step 1: Classify the shape, then fetch
 
@@ -99,7 +99,7 @@ The states are `AI_STATE_THINKING`, `AI_STATE_GENERATING`, `AI_STATE_ERROR`, and
 
 Read the matching file instead of inventing it, and say the pattern came from the sample:
 
-- **Stream Agents:** `examples/voice_agents/android_assistant` on the `accelerate` branch of `GetStream/Vision-Agents` - a text and voice assistant on `stream-agents-android-core` and the AI components.
+- **Stream Agents:** `examples/voice_agents/android_assistant` on the `main` branch of `GetStream/Agents` - a text and voice assistant on `stream-agents-android-core` and the AI components.
 - **Own backend:** `stream-chat-android-ai-compose-sample` in `GetStream/stream-chat-android` (`develop`). It predates `AIConversation`: take its wiring around the channel, not its message list.
 
 `https://raw.githubusercontent.com/GetStream/stream-chat-android/develop/stream-chat-android-ai-compose-sample/src/main/kotlin/io/getstream/chat/android/ai/compose/sample/<file>`
