@@ -307,6 +307,13 @@ and `advanced/incoming-calls/ringing.md` in `getstream docs video/android`.
 - An audio-only app passes `video = false` when it rings, and never
   enables `call.camera`. The generic check on the call type still applies:
   the built-in `audio_call` type has video off. Source: SDK code.
+- At join the SDK applies the call type's device defaults. With
+  `camera_default_on` it turns the camera on and starts the call on the
+  loudspeaker. Without it, the loudspeaker is used only when
+  `audio.default_device` is `speaker` or `speaker_default_on` is set. A
+  voice call on a type that has the camera default on therefore publishes
+  video that nothing draws, when the app holds the camera permission, and
+  plays through the loudspeaker. FAIL. Source: SDK code.
 
 ### Two-person media behaviour
 
