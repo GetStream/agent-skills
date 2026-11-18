@@ -61,6 +61,8 @@ what the code can't answer:
 - For scheduled calls: one call per appointment, or a standing room
   (one per clinician, tutor, or agent) that successive clients enter, and
   whether one side waits to be let in by the other (a waiting room).
+- Audio only, or audio and video. A product whose calls never show video
+  is an audio-only call for this review, whatever the call type allows.
 - What kind of data the conversation and the user records carry: health,
   legal, financial, minors, or nothing regulated.
 - Recording, transcription, and captions: on or off, who starts them, who
@@ -173,6 +175,15 @@ Docs: `call-types/permissions.md`, `call-types/settings.md`, `calls.md`
 
 Read the call type the launch build uses, on the app it points at.
 
+- An audio-only product uses a call type with video off
+  (`settings.video.enabled` false and the camera off by default), such as
+  the built-in `audio_call` type, not a video type whose camera button is
+  left out of the UI. On a video type the SDK can apply the type's camera
+  default and ask for the camera, the other side's app version can publish
+  video this one doesn't draw, and the role keeps `send-video`. Worth
+  doing; FAIL when the app shows a camera permission prompt it never
+  needs. With video off, the three bitrate checks below are N/A. Docs:
+  `call-types/builtin.md`.
 - `settings.video.target_resolution.bitrate` is in bits per second and is
   an upper bound for the best video a publisher sends, not a target. The
   encoder goes below it when the network or the device needs that, and
@@ -234,6 +245,10 @@ joins and subscribes, the publishers switch to three layers during the
 call, and back to one stream when it is two again. Docs:
 `quality/introduction.md` (two-participant calls) in `getstream docs
 video/api`.
+
+In an audio-only call none of this applies: record the resolution, the
+internal-call, the renderer, and the encodings checks below as N/A in one
+line. The layout check and the `livestream` type check still apply.
 
 - Receiver-requested resolution. In a two-person call the size the
   receiver asks for (the size of the video element, or an explicit
@@ -319,6 +334,18 @@ calling-state and events pages.
   the filter turns itself off because the device is overloaded, at least
   with a notice. The platform file names the API and the first version
   that has it.
+- The audio route fits how the call is held. A voice call on a phone
+  starts on the earpiece, a video call on the speaker, and the call
+  type's `audio.default_device` says which. The app offers the speaker,
+  follows a wired or Bluetooth headset when one is connected, and shows
+  which route is active. FAIL for a voice call that can only play
+  through the speaker, or that has no way to reach it. The platform file
+  names the calls.
+- On a phone the call goes on when the app is in the background or the
+  screen is off: a voice call is often held with the screen dark. The
+  platform file names the setup. What the device really does is
+  unverified without a test.
+- An audio-only app asks for the microphone, not the camera.
 - Web and WebView: a blocked-audio prompt. A person who lands in the call
   without a click on the page may hear nothing until they make one. N/A
   on native.
