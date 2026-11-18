@@ -147,7 +147,12 @@ Stream calls it makes.
   itself, the role's `create-call` grant lets a user make a call with any
   member they name: check what stops a user calling someone they have no
   such tie to, and what happens to the right to call when the tie ends
-  (a block, an unmatch, a delivered order). A block in the app is also
+  (a block, an unmatch, a delivered order). The way to have the server
+  enforce it: the role can neither create calls (`create-call`) nor add
+  members (`update-call-member`), the backend creates the call after its
+  own checks, with both people as members and with the ring where the
+  call rings, and the app joins without creating. A direct request to
+  Stream is then refused and nothing rings. A block in the app is also
   made in Stream: a user who has blocked another no longer gets ringing
   calls or call notifications from them. The token check under
   Initialization still applies. Source: the app code; user blocking is in
@@ -293,21 +298,31 @@ line. The layout check and the `livestream` type check still apply.
   The values are not a documented contract: some are set by the server,
   clients can send their own text, the SDKs differ, and they change
   between versions. FAIL when the UI's states or the backend's records
-  depend on matching it. Use it as a hint in logs. To show "left on
-  purpose", the leaving side sends a custom event and then leaves, without
-  holding the hang-up on it for long. That is a hint for the other
-  person's screen, not a record: the send can fail, and a closed tab or a
-  crash sends nothing. A participant who goes without one is "gone, reason
-  unknown", not "connection lost". Billing and the app's own records come
-  from the server (below). Docs: `webhooks/events.md` (the field is a free
-  string); the SDK's custom-events page.
+  depend on matching it. Use it as a hint in logs. Where a hang-up ends
+  the call (the next check), an ended call is the signal: a participant
+  who is gone from a call that has not ended dropped. Where a hang-up
+  only leaves, the leaving side can send a custom event and then leave,
+  without holding the hang-up on it for long. That is a hint for the
+  other person's screen, not a record: the send can fail, and a closed
+  tab or a crash sends nothing. A participant who goes without one is
+  "gone, reason unknown", not "connection lost". Custom events need the
+  `send-event` grant, and the same grant lets a client ring the call's
+  members again: don't add it for this in an app that keeps ringing to
+  its backend. Billing and the app's own records come from the server
+  (below). Docs: `webhooks/events.md` (the field is a free string); the
+  SDK's custom-events page. Source for the grant: server behaviour.
 - The end of the call is handled on both sides: on `call.ended` each side
   shows an ended state and nothing tries to join again. Hanging up
   (leaving) and ending the call for both are different actions in the
   API. Where the product offers both, the second is behind a confirmation
-  and a grant; where a hang-up by either side should end the call, as in
-  a phone call, something does end it, and the other side isn't left
-  alone in a live call.
+  and a grant. Where a hang-up by either side should end the call, as in
+  a phone call, the hang-up ends it (the role needs `end-call`), and the
+  backend ends the call when its session ends, which covers an app that
+  was killed. A call that is only left is not ended: it can be joined
+  again, and rung again. The single-use lifecycle ends a call that was
+  cancelled or not answered, not one that was answered. Docs:
+  `ring-calls.md` (recommended setup for phone-style calls) in `getstream
+  docs video/api`.
 - Being removed, kicked, or blocked has its own state. The person sees
   that the call was closed for them, not a network error, and nothing
   joins again by itself: a kicked user is allowed back in, so an automatic
