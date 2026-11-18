@@ -376,7 +376,8 @@ camera.
   leaves send other texts. For a deliberate leave: `await
   call.sendCustomEvent({ type: ... })`, then `call.leave()`; the other
   side listens with `call.on('custom', ...)`. The sender's role needs the
-  `send-event` grant. Docs: `guides/custom-events.md`; source: SDK code.
+  `send-event` grant; read the generic check before adding it in an app
+  that rings. Docs: `guides/custom-events.md`; source: SDK code.
 - Own connection: the page shows `CallingState.RECONNECTING`, `MIGRATING`,
   and `OFFLINE` from `useCallCallingState()` as states, and calls neither
   `leave()` nor `endCall()` on them. `RECONNECTING_FAILED` is shown with a

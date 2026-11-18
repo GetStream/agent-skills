@@ -287,6 +287,13 @@ and `advanced/incoming-calls/ringing.md` in `getstream docs video/android`.
   let a signed-in user call anyone they can name when their role has
   `create-call`. That is how a call button is usually built: run the
   generic check on what ties the two people together. Source: SDK code.
+- Where the backend creates the ringing call, it sets the caller as the
+  creator (`created_by_id`), and the caller's app loads that call, joins
+  without `create`, and registers it as an outgoing ring with
+  `streamVideo.state.addRingingCall(call, RingingState.Outgoing())`. The
+  SDK shows a ringing call as outgoing when its creator is the local
+  user. `call.ring()` from the app sends a ring but doesn't put the SDK
+  in the outgoing state. Source: SDK code, not run.
 - The `User` given to `StreamVideoBuilder` is sent to Stream when the
   client connects: its `name`, `image`, and `custom` are stored on the
   user. Run the personal-data check on it (a phone number in `custom` is
@@ -331,8 +338,10 @@ N/A for an audio-only call, as the generic file says. For a video call:
 - Hang-up and end: `call.leave()` takes this user out and the call goes
   on; `call.end()` ends it for both and needs `end-call`. Where a hang-up
   should end the call for both, as in a phone call, the hang-up button
-  calls `end()`, or the call's lifecycle ends it. An app that only leaves
-  keeps the other person in a live call. Source: SDK code.
+  calls `end()`. The SDK's own hang-up leaves, and the single-use
+  lifecycle doesn't end an answered call, so an app that changes nothing
+  keeps the other person in a live call that can be joined and rung
+  again. Source: SDK code; `ring-calls.md` in `getstream docs video/api`.
 - The end of the call: on `CallEndedEvent` the SDK sets
   `call.state.endedAt` and leaves by itself. The screen closes or shows an
   ended state, and nothing joins again. Source: SDK code.
@@ -380,9 +389,9 @@ N/A for an audio-only call, as the generic file says. For a video call:
 
 - `StreamCallActivity` started with `leaveWhenLastInCall` closes the
   screen as soon as the other person is gone, a dropped connection
-  included. That is right for a call that rings and wrong for an
-  appointment, where the generic check wants a waiting state. Source: SDK
-  code.
+  included. That is wrong for an appointment, where the generic check
+  wants a waiting state. In a call that rings it closes the screen but
+  only leaves: the call is not ended. Source: SDK code.
 - Nothing in the SDK brings a call back after the process dies. The app
   keeps which appointment was open and offers it again, subject to the
   generic check. Source: SDK code.
