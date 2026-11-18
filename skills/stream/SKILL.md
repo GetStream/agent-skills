@@ -107,7 +107,7 @@ First match wins:
    its Chat UI kit renders the session's conversation and its Video SDK holds
    the call. React Native runs `@stream-io/stream-agents` for text agents, with
    no call-based voice (stream-react-native skill's stream-agents.md). Flutter
-   runs the `stream_agents_*` Dart packages for text and voice (stream-flutter
+   runs the `stream_agents` Dart package for text and voice (stream-flutter
    skill's ai-integration.md). Unity and
    Unreal have no Agents client SDK - tell the user before building.
 
