@@ -121,7 +121,7 @@ All page URLs end in `.md` (the Markdown twin - see [`SKILL.md`](SKILL.md)). Fet
 
 ### AI integrations
 
-For build / integrate work, run [`ai-integration.md`](ai-integration.md) first - it settles which agent (Stream Agents with the `stream_agents_*` SDK, or an agent of your own) and which packages, carries the wiring the docs leave out, and links the shared backend contract. Prefix `https://getstream.io/chat/docs/sdk/flutter/ai-components` (the pages moved there from `.../guides/ai-integrations/`, whose `.md` URLs are gone):
+For build / integrate work, run [`ai-integration.md`](ai-integration.md) first - it settles which agent (Stream Agents with the `stream_agents` SDK, or an agent of your own) and which packages, carries the wiring the docs leave out, and links the shared backend contract. Prefix `https://getstream.io/chat/docs/sdk/flutter/ai-components` (the pages moved there from `.../guides/ai-integrations/`, whose `.md` URLs are gone):
 
 | Want to ... | Page (.md) |
 |---|---|
@@ -275,7 +275,7 @@ For a specific customization or behavior the docs do not cover - an exact compon
 | Video | `stream-video-flutter` | `packages/stream_video`, `stream_video_flutter`, `stream_video_push_notification`, `stream_video_filters` | `dogfooding/`, `packages/*/example/` |
 | Feeds | `stream-feeds-flutter` | `packages/stream_feeds` | `sample_app/` |
 | AI components | `stream-chat-flutter-ai` | `packages/stream_chat_flutter_ai` (`README.md`, `CHANGELOG.md`), `packages/stream_chat_flutter_ai_a2ui` | `packages/*/example/` |
-| Stream Agents Dart SDK | `Vision-Agents` | `sdks/dart/core`, `sdks/dart/chat`, `sdks/dart/rtc` (`stream_agents_core`, `_chat`, `_rtc`) | `examples/voice_agents/flutter_assistant`, `flutter_demo` (read for patterns; build on the hosted router) |
+| Stream Agents Dart SDK | `Agents` | `sdks/dart/stream_agents` (`stream_agents`) | `examples/voice_agents/flutter_assistant`, `flutter_demo` (read for patterns; build on the hosted router) |
 
 How to search (prefer the version-accurate local checkout - no network, matches what the project compiles):
 
