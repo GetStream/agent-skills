@@ -32,15 +32,17 @@ installing the other Stream skills. Don't work from memory of it - run
 `getstream -h` and `getstream <command> -h` and follow what they print.
 
 Check for it with `command -v getstream`. If it is missing, ask the user before
-installing it: the install script downloads and runs code on their machine. Once
-they agree:
+installing it: the install downloads and runs code on their machine. Once
+they agree, install this exact version from npm. It needs Node.js 22.15 or
+newer (`node --version`):
 
 ```bash
-curl -fsSL https://getstream.io/cli.sh | bash
+npm install -g @stream-io/cli@1.12.1
 getstream --version
 ```
 
-Alternatively, the user can install the CLI from getstream.io/cli.
+Without npm or a new enough Node.js, don't install it another way: tell the
+user to install the CLI from getstream.io/cli, and wait.
 
 `getstream init` and `getstream login` can open a browser for a human to sign
 in. Tell the user, wait for them to finish, then check with `getstream status`. Use
@@ -49,8 +51,10 @@ user's OK.
 
 A CLI that is already installed can be too old for these skills: early stable
 builds (such as 1.0.0) have no `docs`, `status` or `webhook` command. If `getstream -h`
-doesn't list a command a skill asks for, run `getstream update` and check
-again.
+doesn't list a command a skill asks for, tell the user their CLI is too old and
+ask before updating it. Once they agree: for a CLI installed from npm
+(`npm ls -g @stream-io/cli` lists it) run the `npm install` above again,
+otherwise run `getstream update`. Then check again.
 
 The `getstream agents` commands are only in beta builds, whose version is a
 date and a commit (`YYYY-MM-DD-<commit>`) rather than semver. Tell which build
@@ -83,9 +87,8 @@ First match wins:
    production?", "prepare for the integration review"), read
    integration-review.md together with the platform skill.
 
-   Install a missing skill with `getstream skills <name>`, then follow it
-   (`getstream skills` alone installs every skill; an older CLI installs only
-   stream, stream-builder and stream-docs, so `getstream update` first). For a
+   If the platform skill is not installed, tell the user that
+   `getstream skills <name>` installs it. For a
    web app, or a generic app, pick stream-react. A framework beats an OS: "an
    Unreal chat app for iOS" is stream-unreal.
 

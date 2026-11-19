@@ -187,7 +187,7 @@ React checks for Video, livestreams, and two-person calls.
 
 When asked, read the upgrade notes for both the installed and the target major
 (use the versioned docs: chat-sdk/react/v<major>), apply them, then verify as if
-you're building an app. For Chat, follow the AI migration guide for the exact pair
+you're building an app. For Chat, use the migration guide for the exact pair
 of majors (chat-versions.md), one major per pass.
 
 ## Matching a reference design

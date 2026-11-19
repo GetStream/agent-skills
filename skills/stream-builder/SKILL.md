@@ -10,5 +10,5 @@ metadata:
 
 Refer to stream skill and follow its platform routing.
 Use the skill for the app's platform, with `stream-react` as the default for
-web or generic app work. Install a missing skill with `getstream skills <name>`,
-then follow that skill.
+web or generic app work. If that skill is not installed, tell the
+user that `getstream skills <name>` installs it.

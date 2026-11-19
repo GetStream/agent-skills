@@ -2,7 +2,7 @@
 
 Use this runbook when an Android request involves an **LLM or AI agent**: a ChatGPT-style app, an AI assistant / support bot / copilot in chat, a voice agent, streaming the model's answer, a thinking indicator, "stop generating", rendering markdown / code / tables / charts from the model, showing the agent's reasoning and tool calls, asking the person before a tool runs, letting the agent run tools on the device, generative UI in a reply, or voice dictation into the prompt.
 
-It is a **router, not a copy of the docs**: it picks the pages to fetch and adds only what the docs do not say. Fetch the pages live via [`references/DOCS.md`](references/DOCS.md), apply them, and cite what you used. **Read [`../stream/ai-backend-contract.md`](../stream/ai-backend-contract.md) first** - where the model runs, what the agent must send, and the CLI check are shared by every platform and live there. It composes with the track: run Track A / B first (Step 0.5 credentials, project signals, Chat setup), then this runbook drives the integration.
+It is an **index into the docs, not a copy of them**: it names the pages that document each feature and adds only what the docs do not say. Look the pages up via [`references/DOCS.md`](references/DOCS.md), read them for the API and code, and cite what you used. **Read [`../stream/ai-backend-contract.md`](../stream/ai-backend-contract.md) first** - where the model runs, what the agent must send, and the CLI check are shared by every platform and live there. It composes with the track: run Track A / B first (Step 0.5 credentials, project signals, Chat setup), then this runbook drives the integration.
 
 ---
 
