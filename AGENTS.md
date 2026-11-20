@@ -16,6 +16,7 @@ This repository contains the Stream skill pack. Skill source lives under `skills
 | [`skills/stream-unity/SKILL.md`](skills/stream-unity/SKILL.md) | Build or integrate Stream Chat and Stream Video in Unity Engine projects (C#). Chat + Video - no Feeds SDK for Unity |
 | [`skills/stream-unreal/SKILL.md`](skills/stream-unreal/SKILL.md) | Build or integrate Stream Chat in Unreal Engine 5.7/5.8 projects (C++ and Blueprint). Chat only - no Video or Feeds SDK for Unreal |
 | [`skills/stream-feeds-migration/SKILL.md`](skills/stream-feeds-migration/SKILL.md) | Generate the v2 -> v3 Activity Feeds sync mapping by sampling the v2 app's live activities and reactions, and by reading the app's v2 integration code when it is available. No CLI and no project required - it emits a config object |
+| [`skills/stream-security-audit/SKILL.md`](skills/stream-security-audit/SKILL.md) | Security audit of an SDK, library or package on any platform, Stream's or any other: a 148-check catalog, verified findings, a calibrated report and a coverage ledger. Read-only; no exploit traffic to live services |
 
 For Sendbird data migration, use the shared [`skills/stream/sendbird-data-migration.md`](skills/stream/sendbird-data-migration.md) runbook.
 

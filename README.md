@@ -46,6 +46,7 @@ Use `/stream` for generic routing, or invoke a skill directly by name. Each skil
 | [`/stream-unity`](https://getstream.io/agent-skills/docs/skills/stream-unity/) | Unity projects (C#): Chat and Video, no Feeds |
 | [`/stream-unreal`](https://getstream.io/agent-skills/docs/skills/stream-unreal/) | Unreal Engine 5.7/5.8 projects (C++ and Blueprint): Chat only |
 | `/stream-feeds-migration` | Feeds v2 -> v3 migration: generates the sync mapping from your app's live data |
+| `/stream-security-audit` | Security audit of an SDK or library, Stream's or any other: 148 explicit checks, verified findings, a calibrated report and a coverage ledger |
 
 `stream-builder` and `stream-docs` remain for older CLI installations and forward to the skills above.
 
@@ -60,6 +61,7 @@ Use `/stream` for generic routing, or invoke a skill directly by name. Each skil
 - **Build and extend Unity games** - wire Stream Chat and Stream Video into a Unity project, build the chat and call UI on UGUI or UI Toolkit (neither SDK ships components), and get the player settings right for Android, iOS, desktop, or WebGL (`/stream-unity`)
 - **Build and extend Unreal Engine games** - wire Stream Chat into UE 5.7/5.8 C++ or Blueprint projects, drop in the shipped UMG chat widgets, and package for mobile or desktop (`/stream-unreal`)
 - **Plan a Feeds v2 -> v3 migration** - sample your v2 app's real activities and reactions and get back the sync `mapping` object, with the keys it deliberately left at their defaults (`/stream-feeds-migration`)
+- **Security-audit an SDK** - walk 148 explicit checks (secrets in code and git history, token lifetime and logging, transport, untrusted content and LLM output, local data, crashes, CI and supply chain), verify each finding, and get a report that separates what is proven from what depends on the backend (`/stream-security-audit`)
 - **Query live data** - "any active calls?", "show flagged messages", "list my channels" - natural language to the `getstream` CLI (`/stream`)
 - **Configure apps and moderation** - channel types, roles, permissions, blocklists, automod - via the `getstream` CLI (`/stream`)
 - **Answer SDK questions** - token patterns, strict mode, client/server instantiation, theme wiring (`/stream` or the relevant platform skill)
@@ -79,6 +81,8 @@ The skills and plugins connect to:
 - **Stream API**, through the `getstream` CLI.
 - **Docs and SDK source**: skills fetch Stream SDK docs from `getstream.io` and `getstream.github.io`, SDK source from `github.com` and `raw.githubusercontent.com`, and Flutter package pages from `pub.dev`.
 - **Feeds migration**: when a sample is needed, the skill writes a temporary `fetch_sample.py` into the working directory and deletes it after the run. That script reads `STREAM_API_KEY` and `STREAM_API_SECRET` from the environment, signs a short-lived token with the secret on your machine, and reads activities from the Stream v2 API (`api.stream-io-api.com`). The secret itself is never sent. The script is not part of the plugin.
+
+- **Security audit**: the skill reads the audited code locally and sends nothing to Stream. It writes a temporary recon script to a scratch directory outside the repository and deletes it when the audit ends; the script is not part of the plugin. Dependency advisory checks send package names and versions to public advisory databases (OSV, GitHub Security Advisories, the ecosystem's audit command), and the skill asks first when dependencies are private. It never sends exploit traffic to live services.
 
 Stream's [privacy policy](https://getstream.io/legal/privacy/) covers the data sent to Stream.
 
