@@ -1,6 +1,6 @@
 ---
 name: stream
-description: "Stream overview, CLI, and router for Chat, Video, Feeds, Moderation, and Agents. Use for any Stream task: building or integrating Stream into web, iOS, Android, React Native, Flutter, Unity, or Unreal apps, building voice or text AI agents with Stream Agents, querying Stream data, running getstream CLI commands, looking up Stream SDK docs, or migrating (from Sendbird, or Feeds v2 to v3). Routes to the right skill."
+description: "Stream overview, CLI, and router for Chat, Video, Feeds, Moderation, and Agents. Use for any Stream task: building or integrating Stream into web, iOS, Android, React Native, Flutter, Unity, or Unreal apps, building voice or text AI agents with Stream Agents, querying Stream data, running getstream CLI commands, looking up Stream SDK docs, migrating (from Sendbird, or Feeds v2 to v3), or security-auditing an SDK or library. Routes to the right skill."
 license: See LICENSE in repository root
 metadata:
   author: GetStream
@@ -82,6 +82,9 @@ First match wins:
    For a review or audit of an existing integration ("is this ready for
    production?", "prepare for the integration review"), read
    integration-review.md together with the platform skill.
+   A security audit of SDK or library code itself (find vulnerabilities,
+   threat-model it, re-check a security report), for Stream's SDKs or any
+   other, is not integration work: use stream-security-audit skill.
 
    Install a missing skill with `getstream skills <name>`, then follow it
    (`getstream skills` alone installs every skill; an older CLI installs only
