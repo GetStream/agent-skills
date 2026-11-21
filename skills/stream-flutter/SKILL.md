@@ -5,6 +5,29 @@ license: See LICENSE in repository root
 compatibility: Requires a Flutter project for build/integrate work (or scaffolds one when asked to create a new app). Credentials and seeding use the getstream CLI. Docs lookups need only network access.
 metadata:
   author: GetStream
+allowed-tools: >-
+  Read, Write, Edit, Glob, Grep,
+  WebFetch(domain:getstream.io),
+  WebFetch(domain:github.com),
+  WebFetch(domain:raw.githubusercontent.com),
+  WebFetch(domain:pub.dev),
+  Bash(ls *),
+  Bash(grep *),
+  Bash(find . *),
+  Bash(find ~/.pub-cache *),
+  Bash(cat pubspec.yaml), Bash(cat pubspec.lock),
+  Bash(jq *),
+  Bash(flutter pub *),
+  Bash(flutter create *),
+  Bash(flutter run *),
+  Bash(flutter analyze *), Bash(flutter analyze),
+  Bash(flutter build *),
+  Bash(flutter devices),
+  Bash(flutter emulators *), Bash(flutter emulators),
+  Bash(getstream *),
+  Bash(sips *), Bash(awk *), Bash(adb *), Bash(xcrun simctl *),
+  Bash(flutter drive *), Bash(flutter test *), Bash(flutterfire *),
+  Bash(bash -c *), Bash(sed *), Bash(tr *)
 ---
 
 # Stream Flutter - docs orchestrator for Flutter

@@ -5,6 +5,12 @@ license: See LICENSE in repository root
 compatibility: "Requires the v2 app's API key and secret as environment variables, plus Python 3 (standard library only). The sampler is written from fetch-sample.md into the working directory, run, then deleted. Read-only against the v2 app; writes one sample file to the working directory. No project or SDK required; when the app's repository is available, its v2 integration code is read to write a porting plan. The skill never modifies the app's code."
 metadata:
   author: GetStream
+allowed-tools: >-
+  Read, Glob, Grep,
+  Bash(python3 *),
+  Bash(ls *),
+  Bash(git log *),
+  Bash(getstream *)
 ---
 
 # Stream Feeds - v2 to v3 sync mapping
