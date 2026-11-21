@@ -1,6 +1,6 @@
 # Contributing
 
-This repository holds the Stream skill pack. Every folder in `skills/` ships in the Claude Code and Cursor plugins, so only Stream skills go there. Conventions for writing and editing skills are in [`AGENTS.md`](AGENTS.md).
+This repository holds the Stream skill pack. Every folder in `skills/` ships in the Claude Code, Cursor, and Codex plugins, so only Stream skills go there. Conventions for writing and editing skills are in [`AGENTS.md`](AGENTS.md).
 
 ## Checking the plugin
 
@@ -11,6 +11,18 @@ CI runs the checks the directory applies to a submission (`.github/workflows/val
 ```bash
 claude plugin validate . --profile directory --strict
 ```
+
+### OpenAI plugin directory
+
+The Codex manifest is `.codex-plugin/plugin.json`. It reuses `skills/`, `mcp.json`, and `brand-kit/logo.png`. Keep its `version` in step with `.claude-plugin/plugin.json` and `.cursor-plugin/plugin.json`. Every upload needs a version the directory has not seen before.
+
+OpenAI takes a ZIP upload at [platform.openai.com/plugins](https://platform.openai.com/plugins) and runs its automated checks there. No local validator exists. Build the ZIP from a commit so it holds only tracked files and no other vendor manifests:
+
+```bash
+git archive --format=zip --output=getstream-codex.zip HEAD .codex-plugin brand-kit skills mcp.json LICENSE README.md
+```
+
+OpenAI cannot add an MCP server to a plugin that was first submitted without one, so keep `mcpServers` in the manifest.
 
 ## How it works
 
