@@ -157,7 +157,7 @@ and the reference read as the same screen.
    manager:
    ```bash
    mkdir -p .design-verify && printf '{"private":true}\n' > .design-verify/package.json
-   npm install --prefix .design-verify -D playwright
+   npm install --prefix .design-verify -D playwright@1.65.1
    .design-verify/node_modules/.bin/playwright install chromium
    ```
    Capture at the spec viewport. Gotchas: don't wait for `networkidle` - Stream holds a

@@ -493,7 +493,7 @@ Source: [getstream.io/video/docs/android/advanced/troubleshooting/](https://gets
 
 A failed WebSocket connection prevents calls from being established.
 
-- **Expired token** — verify at [jwt.io](https://jwt.io). When using expiring tokens always supply a `tokenProvider` so the SDK can refresh automatically.
+- **Expired token** - decode the token's payload locally (it is base64url-encoded JSON) and check its `exp` claim. When using expiring tokens always supply a `tokenProvider` so the SDK can refresh automatically.
 - **Wrong secret** — tokens must be signed with this app's secret. Tokens copied from docs use a demo secret and will be rejected.
 - **User-token mismatch** — the token must be signed for the same user id passed to `StreamVideoBuilder(user = ...)`.
 
