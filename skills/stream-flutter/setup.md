@@ -62,7 +62,7 @@ getstream token <user_id>
 getstream token <user_id> --ttl <duration>
 ```
 
-A 401 means the CLI session expired - run `getstream login` and retry. If `getstream` is missing, or Stream Agents needs the beta build, install it as the stream skill says (ask the user first), or take pasted values (Dashboard -> Explorer has a token generator).
+A 401 means the CLI session expired - run `getstream login` and retry. If `getstream` is missing, install it as the stream skill says (ask the user first), or take pasted values (Dashboard -> Explorer has a token generator).
 
 Add the token to the same gitignored `dart_defines.json` as `STREAM_USER_TOKEN` (`getstream env` keeps the keys it doesn't write), and read both with `String.fromEnvironment` - no placeholder strings and no token in source files.
 

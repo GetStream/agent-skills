@@ -33,9 +33,8 @@ cat $(getstream docs platform)/webhooks.md               # event_hooks registrat
    voice + screenshare. Auto-include persistence when the dashboard or escalation is
    checked. Voice is a **Stream Agents voice agent**, a different backend from this
    runbook's webhook bot - don't graft it onto the webhook. If ticked, build it as its own
-   agent with stream-agents.md. Only if the beta CLI can't be installed, skip it and say
-   "voice not built - needs the beta CLI" in the final summary. Screenshare isn't part of
-   either backend: say "screenshare not built" in the final summary.
+   agent with stream-agents.md. Screenshare isn't part of either backend: say "screenshare
+   not built" in the final summary.
 
 ## The loop
 
