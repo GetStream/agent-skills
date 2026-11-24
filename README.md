@@ -46,6 +46,7 @@ Use `/stream` for generic routing, or invoke a skill directly by name. Each skil
 | [`/stream-unity`](https://getstream.io/agent-skills/docs/skills/stream-unity/) | Unity projects (C#): Chat and Video, no Feeds |
 | [`/stream-unreal`](https://getstream.io/agent-skills/docs/skills/stream-unreal/) | Unreal Engine 5.7/5.8 projects (C++ and Blueprint): Chat only |
 | `/stream-feeds-migration` | Feeds v2 -> v3 migration: generates the sync mapping from your app's live data |
+| `/stream-security-audit` | Security audit of an SDK or library, Stream's or any other: 148 explicit checks, verified findings, a calibrated report and a coverage ledger |
 
 `stream-builder` and `stream-docs` remain for older CLI installations and forward to the skills above.
 
@@ -60,6 +61,7 @@ Use `/stream` for generic routing, or invoke a skill directly by name. Each skil
 - **Build and extend Unity games** - wire Stream Chat and Stream Video into a Unity project, build the chat and call UI on UGUI or UI Toolkit (neither SDK ships components), and get the player settings right for Android, iOS, desktop, or WebGL (`/stream-unity`)
 - **Build and extend Unreal Engine games** - wire Stream Chat into UE 5.7/5.8 C++ or Blueprint projects, drop in the shipped UMG chat widgets, and package for mobile or desktop (`/stream-unreal`)
 - **Plan a Feeds v2 -> v3 migration** - sample your v2 app's real activities and reactions and get back the sync `mapping` object, with the keys it deliberately left at their defaults (`/stream-feeds-migration`)
+- **Security-audit an SDK** - walk 148 explicit checks (secrets in code and git history, token lifetime and logging, transport, untrusted content and LLM output, local data, crashes, CI and supply chain), verify each finding, and get a report that separates what is proven from what depends on the backend (`/stream-security-audit`)
 - **Query live data** - "any active calls?", "show flagged messages", "list my channels" - natural language to the `getstream` CLI (`/stream`)
 - **Configure apps and moderation** - channel types, roles, permissions, blocklists, automod - via the `getstream` CLI (`/stream`)
 - **Answer SDK questions** - token patterns, strict mode, client/server instantiation, theme wiring (`/stream` or the relevant platform skill)
@@ -69,7 +71,7 @@ Use `/stream` for generic routing, or invoke a skill directly by name. Each skil
 
 Skills are Markdown instructions and supporting files, including helper scripts where needed. The Stream MCP server is hosted by Stream at `https://mcp.getstream.io/mcp`.
 
-The plugins do not include the `getstream` CLI, which skills use for data queries, app config, and SDK docs (`getstream docs`). When a skill needs it and it is not installed, the `stream` skill asks you, then installs a fixed version from npm (`npm install -g @stream-io/cli@1.12.1`, which needs Node.js 22.15 or newer). Without that, it asks you to install the CLI from [getstream.io/cli](https://getstream.io/cli) yourself. It also asks before updating a CLI that is too old. Stream Agents work needs the beta CLI, which the skill installs with Stream's install script (`curl -fsSL https://getstream.io/cli/beta/install.sh | bash`) after asking you. Tool permissions are managed by your agent harness.
+The plugins do not include the `getstream` CLI, which skills use for data queries, app config, and SDK docs (`getstream docs`). When a skill needs it and it is not installed, the `stream` skill asks you, then installs a fixed version from npm (`npm install -g @stream-io/cli@1.12.1`, which needs Node.js 22.15 or newer). Without that, it asks you to install the CLI from [getstream.io/cli](https://getstream.io/cli) yourself. It also asks before updating the CLI. Tool permissions are managed by your agent harness.
 
 ## Network access and privacy
 
@@ -83,6 +85,8 @@ The skills and plugins connect to:
 - **Sendbird data migration**: only when you ask for one, the `stream` skill reads your users, channels and messages from the Sendbird Platform API with your Sendbird API token, keeps the export on disk and uploads it to Stream with `getstream import`.
 - **Stream Agents**: `getstream agents sync` uploads the agent folder you are working on (its configuration, instructions and knowledge files) to Stream.
 - **Dev tunnels**: an AI support agent that replies from a webhook needs a public URL in development. If you choose the webhook trigger, the skill runs a `cloudflared` or ngrok tunnel to your local dev server, and Stream's webhook calls, which carry chat messages, pass through that provider.
+
+- **Security audit**: the skill reads the audited code locally and sends nothing to Stream. It writes a temporary recon script to a scratch directory outside the repository and deletes it when the audit ends; the script is not part of the plugin. Dependency advisory checks send package names and versions to public advisory databases (OSV, GitHub Security Advisories, the ecosystem's audit command), and the skill asks first when dependencies are private. It never sends exploit traffic to live services.
 
 Stream's [privacy policy](https://getstream.io/legal/privacy/) covers the data sent to Stream.
 

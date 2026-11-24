@@ -42,11 +42,10 @@ components). The backend source is github.com/GetStream/Agents.
   older major, one major per pass, as SKILL.md's "Upgrading an SDK version" says. If they
   decline, tell them this runbook's Stream Agents UI needs those versions, and stop - don't
   hand-roll it.
-- The `getstream agents` commands need the beta CLI (see stream skill). `getstream agents
-  init <name> --template voice` (or `text`) creates the folder and also the app-wide `agent`
-  call type and channel type that sessions need. Ask the user before running it: run
-  `getstream status` first and tell them which app it will change. Then edit the folder,
-  `getstream agents sync <name>` and `getstream agents test <name>`.
+- The `getstream agents` commands needs the CLI. `getstream agents init <name> --template voice`
+  (or `text`) creates the agent folder. Edit the folder, `getstream agents sync <name>` and
+  `getstream agents test <name>`. Be mindful of which app you're syncing to, check with
+  `getstream status`.
 - Install `@stream-io/stream-agents stream-chat stream-chat-react @stream-io/video-react-sdk`.
   `@stream-io/stream-agents/video` brings in `@stream-io/video-client` with the Video React SDK:
   don't install it separately.
