@@ -134,7 +134,7 @@ For build / integrate work, run [`ai-integration.md`](ai-integration.md) first -
 | The composer (`ChatComposer`): permissions, chat options, stop, dictation, slots | `.../composer.md` |
 | Streaming text (`StreamingMessageView`, `AIMarkdownBody`): code, charts, LaTeX, the typing indicator, migrating from `stream_chat_flutter`'s AI widgets | `.../streaming-messages.md` |
 | Reasoning and tool-call steps (`AIMessagePartsView`), tools on the device (`AIClientToolRunner`, `AIClientIdentity`), approvals (`AIToolApprover`), sign-ins (`AIToolAuthorizer`), the step format | `.../reasoning-and-tool-calls.md` |
-| Generative UI: `AIUIHost`, the A2UI renderer (`stream_chat_flutter_ai_a2ui`), app components and tools, actions, telling the agent what the app shows | `.../generative-ui.md` |
+| Generative UI: `AIUIHost`, the A2UI and OpenUI renderers (`stream_chat_flutter_ai_a2ui`, `stream_chat_flutter_ai_openui`), app components and tools, actions, telling the agent what the app shows | `.../generative-ui.md` |
 | Voice visualizations (`AIVoiceGlowView`, `AIVoiceWaveView`, `AIVoiceAgentState`) | `.../voice-visualizations.md` |
 | AI rows in the `stream_chat_flutter` message list, the indicator handler, stop, the import `hide` list, builders next to the Chat ones | `.../stream-chat-integration.md` |
 | Backend agent with the Vercel AI SDK (`@stream-io/chat-ai-sdk`) / LangChain (`@stream-io/chat-langchain-sdk`) | `.../stream-chat-ai-sdk.md`, `.../stream-chat-langchain-sdk.md` |
@@ -274,7 +274,7 @@ For a specific customization or behavior the docs do not cover - an exact compon
 | Chat theming + base components | `stream-core-flutter` | `stream_core_flutter` (`StreamTheme`, `StreamComponentBuilders`, `StreamColorScheme`) | - |
 | Video | `stream-video-flutter` | `packages/stream_video`, `stream_video_flutter`, `stream_video_push_notification`, `stream_video_filters` | `dogfooding/`, `packages/*/example/` |
 | Feeds | `stream-feeds-flutter` | `packages/stream_feeds` | `sample_app/` |
-| AI components | `stream-chat-flutter-ai` | `packages/stream_chat_flutter_ai` (`README.md`, `CHANGELOG.md`), `packages/stream_chat_flutter_ai_a2ui` | `packages/*/example/` |
+| AI components | `stream-chat-flutter-ai` | `packages/stream_chat_flutter_ai` (`README.md`, `CHANGELOG.md`), `packages/stream_chat_flutter_ai_a2ui`, `packages/stream_chat_flutter_ai_openui` | `packages/*/example/` |
 | Stream Agents Dart SDK | `Agents` | `sdks/dart/stream_agents` (`stream_agents`) | `examples/voice_agents/flutter_assistant`, `flutter_demo` (read for patterns; build on the hosted router) |
 
 How to search (prefer the version-accurate local checkout - no network, matches what the project compiles):
