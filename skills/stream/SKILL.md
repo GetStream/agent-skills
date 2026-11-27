@@ -47,6 +47,25 @@ even in non-interactive terminals. Check login with `getstream status`. Use
 `getstream login --guest` (a temporary account an agent can use) only with the
 user's OK.
 
+## Generated code
+
+Don't edit generated source code, not even to fix a bug or get a build to
+pass. The next generator run overwrites the edit, and the real fix is never
+made. Reading it is fine. Recognize it by:
+
+- a header such as `Code generated`, `DO NOT EDIT`, `@generated` or
+  `auto-generated`;
+- a `generated/` or `gen/` folder, or a suffix such as `*.g.dart`,
+  `*.freezed.dart`, `*.pb.*` or `*.generated.h`;
+- OpenAPI models and API clients. Many Stream SDKs generate theirs from the
+  API spec.
+
+Change what the code is generated from instead (the spec, a template, the
+generator's config) and rerun the generator the project uses. Or put the
+hand-written code in a separate file: an extension, a wrapper, or a subclass.
+When the generator or its input isn't in this project, as with an installed
+SDK, stop and tell the user which generated file is wrong and why.
+
 ## Routing
 
 First match wins:
