@@ -18,6 +18,6 @@ redirect stderr. The path you need is on stdout.
 Cite every page you answer from with the URL in its "For the most recent version
 of this documentation" line.
 
-Only when the CLI cannot be installed, fall back to fetching
-`https://getstream.io/docs/llms.txt` and following the links there. Cite the URL
+Only when the CLI cannot be installed, fall back to the docs index at
+`https://getstream.io/docs/llms.txt` and read the pages it lists. Cite the URL
 of each page you used.

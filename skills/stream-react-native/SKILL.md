@@ -345,7 +345,7 @@ integration-review.md.
 
 When asked, read the upgrade notes for both the installed and the target major
 (use the versioned docs), apply them, then verify as if you're building an app.
-For Chat, follow the AI migration guide for the exact pair of majors
+For Chat, use the migration guide for the exact pair of majors
 (chat-versions.md), one major per pass.
 
 RN upgrades also carry native work, in this order: prerequisites the guide

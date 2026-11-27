@@ -50,27 +50,26 @@ another major's docs because they are "the closest documented API".
 
 ## 3. The migration guides
 
-Besides the upgrade page in the target major's docs, the SDK repo has an AI migration
-guide per pair of majors, written for agents: the authoritative list of what changed. Find
-the one for your pair:
+Besides the upgrade page in the target major's docs, the SDK repo has a migration guide
+per pair of majors: the authoritative list of what changed. Each guide is pinned here to
+a commit, so its content is the one this skill was checked against:
 
-```bash
-curl -s https://api.github.com/repos/GetStream/stream-chat-react/contents/ai-docs \
-  | jq -r '.[].name'                          # ai-migration*.md files
-curl -s https://raw.githubusercontent.com/GetStream/stream-chat-react/master/ai-docs/<file> | head -1
-```
+| Pair | Guide |
+|---|---|
+| v13 -> v14 | `https://raw.githubusercontent.com/GetStream/stream-chat-react/c0bdcfcf418d81189bf5df508bf680872c763d19/ai-docs/ai-migration.md` |
+| v14 -> v15 | `https://raw.githubusercontent.com/GetStream/stream-chat-react/c0bdcfcf418d81189bf5df508bf680872c763d19/ai-docs/ai-migration-v14-v15.md` |
 
-Each guide's title names the pair it covers. A guide for a major that isn't released yet
-may live only on that major's release branch: list branches with
-`git ls-remote --heads https://github.com/GetStream/stream-chat-react` and add
-`?ref=<branch>` to the listing. No guide for the pair: use the upgrade page alone.
+Each guide's title names the pair it covers. Where a guide links another file in
+`ai-docs` on `master` (`breaking-changes.md`, `v15-breaking-changes.md`, the i18n files),
+read that file at the same commit: put the commit in place of `master` in the URL. No
+guide for the pair: use the upgrade page alone.
 
 Use the guide in three cases:
 
-- **Upgrading.** Follow it end to end, one major per pass, with the upgrade page in the
-  target major's docs. It names its companion documents and when to fetch each.
-- **Telling which major existing code targets.** Run the guide's detection step: hits for
-  the older major's names in a project that installs the newer one are unmigrated code.
+- **Upgrading.** Work through its changes in order, one major per pass, with the upgrade
+  page in the target major's docs.
+- **Telling which major existing code targets.** Search the project for the older major's
+  names the guide lists: hits in a project that installs the newer one are unmigrated code.
   Say so, and ask before mixing styles.
 - **Writing any Chat code.** Before the first edit, read the old -> new reference and the
   list of changes that still compile in the guide for the pair that ends at the pinned

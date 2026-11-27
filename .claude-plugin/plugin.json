@@ -1,8 +1,8 @@
 {
   "name": "getstream",
   "displayName": "Stream",
-  "version": "0.3.2",
-  "description": "Build with Stream Chat, Video, Feeds, and Moderation: scaffold apps, add Stream to existing projects, and query and manage your Stream apps through the Stream MCP server.",
+  "version": "0.3.4",
+  "description": "Build with Stream Chat, Video, Feeds, and Moderation: scaffold apps, add Stream to existing projects, and query and manage your Stream apps through the Stream MCP server. Skills use the getstream CLI and the Stream API, read Stream docs and SDK source from getstream.io and GitHub, and for migrations read data from your Stream Feeds or Sendbird app.",
   "author": {
     "name": "GetStream",
     "url": "https://getstream.io"

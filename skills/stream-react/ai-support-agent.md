@@ -20,7 +20,8 @@ cat $(getstream docs platform)/webhooks.md               # event_hooks registrat
 2. **Knowledge source** - `none` (facts in the prompt), `local` (embed a docs folder), or
    `external` (TurboPuffer/Pinecone + an ingestion script). Steer by size: tiny/static ->
    none or local; large/changing -> external.
-3. **Trigger** - server-side **webhook** (production; needs a public tunnel in dev) or
+3. **Trigger** - server-side **webhook** (production; in dev it needs a public tunnel, `cloudflared`
+   or ngrok as the user prefers, and chat messages pass through it) or
    **client-triggered** (demo-only: fires from the browser, silent when no tab is open).
 4. **Capabilities** - plain Q&A, or a tool-using agent (`searchKnowledge`,
    `updateTicketState`, a stubbed `mockApiCall`). Add `escalateToHuman` only when a real
@@ -67,8 +68,8 @@ ai_indicator THINKING -> GENERATING -> send message (ai_generated: true) -> clea
 
 Stream can't reach `localhost`: until a public tunnel is registered, the bot receives
 messages and never replies - the most common "built it but nothing happens" cause. Treat
-it as the final build step: start the dev server, expose it (`cloudflared tunnel --url
-http://localhost:<port>` or ngrok), register `<tunnel>/api/stream/webhook` via
+it as the final build step: start the dev server, expose it with the tunnel the user chose
+(`cloudflared tunnel --url http://localhost:<port>`, or ngrok), register `<tunnel>/api/stream/webhook` via
 `updateAppSettings({ event_hooks: [...] })`, and ship it as one `npm run tunnel` command
 that parses the tunnel URL and registers it. Re-register whenever the tunnel or dev server
 restarts - quick tunnels mint a new hostname each time, and a stale URL breaks replies

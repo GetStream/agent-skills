@@ -71,7 +71,7 @@ Use `/stream` for generic routing, or invoke a skill directly by name. Each skil
 
 Skills are Markdown instructions and supporting files, including helper scripts where needed. The Stream MCP server is hosted by Stream at `https://mcp.getstream.io/mcp`.
 
-The plugins do not include the `getstream` CLI, which skills use for data queries, app config, and SDK docs (`getstream docs`). When a skill needs it and it is not installed, the `stream` skill asks you, then runs Stream's install script (`curl -fsSL https://getstream.io/cli.sh | bash`). Tool permissions are managed by your agent harness.
+The plugins do not include the `getstream` CLI, which skills use for data queries, app config, and SDK docs (`getstream docs`). When a skill needs it and it is not installed, the `stream` skill asks you, then installs a fixed version from npm (`npm install -g @stream-io/cli@1.12.1`, which needs Node.js 22.15 or newer). Without that, it asks you to install the CLI from [getstream.io/cli](https://getstream.io/cli) yourself. It also asks before updating the CLI. Tool permissions are managed by your agent harness.
 
 ## Network access and privacy
 
@@ -79,8 +79,12 @@ The skills and plugins connect to:
 
 - **Stream MCP server** (`mcp.getstream.io`), once you sign in with your Stream account.
 - **Stream API**, through the `getstream` CLI.
-- **Docs and SDK source**: skills fetch Stream SDK docs from `getstream.io` and `getstream.github.io`, SDK source from `github.com` and `raw.githubusercontent.com`, and Flutter package pages from `pub.dev`.
+- **Docs and SDK source**: skills fetch Stream SDK docs from `getstream.io` and `getstream.github.io`, SDK source, releases and migration guides from Stream's repositories on GitHub (`github.com`, `api.github.com`, `raw.githubusercontent.com`), and Flutter package pages from `pub.dev`. Nothing from your project is sent in these requests.
+- **Package versions and installs**: skills look up current SDK versions on Stream's Maven repository (`stream-io-repo.com`), `dl.google.com` and the npm registry. The apps they build install dependencies from the registries those apps already use (npm, Maven including `jitpack.io`, Swift packages on GitHub, `pub.dev`). The React design check can install Playwright and its Chromium build into a scratch folder.
 - **Feeds migration**: when a sample is needed, the skill writes a temporary `fetch_sample.py` into the working directory and deletes it after the run. That script reads `STREAM_API_KEY` and `STREAM_API_SECRET` from the environment, signs a short-lived token with the secret on your machine, and reads activities from the Stream v2 API (`api.stream-io-api.com`). The secret itself is never sent. The script is not part of the plugin.
+- **Sendbird data migration**: only when you ask for one, the `stream` skill reads your users, channels and messages from the Sendbird Platform API with your Sendbird API token, keeps the export on disk and uploads it to Stream with `getstream import`.
+- **Stream Agents**: `getstream agents sync` uploads the agent folder you are working on (its configuration, instructions and knowledge files) to Stream.
+- **Dev tunnels**: an AI support agent that replies from a webhook needs a public URL in development. If you choose the webhook trigger, the skill runs a `cloudflared` or ngrok tunnel to your local dev server, and Stream's webhook calls, which carry chat messages, pass through that provider.
 
 - **Security audit**: the skill reads the audited code locally and sends nothing to Stream. It writes a temporary recon script to a scratch directory outside the repository and deletes it when the audit ends; the script is not part of the plugin. Dependency advisory checks send package names and versions to public advisory databases (OSV, GitHub Security Advisories, the ecosystem's audit command), and the skill asks first when dependencies are private. It never sends exploit traffic to live services.
 

@@ -32,15 +32,21 @@ endpoint, obtaining credentials, minting user tokens, reading the docs, and
 installing the other Stream skills. Don't work from memory of it - run
 `getstream -h` and `getstream <command> -h` and follow what they print.
 
-If the `getstream` command is missing, ask the user before installing it:
+If the `getstream` command is missing, ask the user before installing it. Once
+they agree, install this exact version from npm. It needs Node.js 22.15 or
+newer (`node --version`):
 
 ```bash
-curl -fsSL https://getstream.io/cli.sh | bash
+npm install -g @stream-io/cli@1.12.1
 getstream --version
 ```
 
-Alternatively, the user can install the CLI from getstream.io/cli. Ensure the
-CLI is up-to-date with `getstream update`.
+Without npm or a new enough Node.js, don't install it another way: tell the
+user to install the CLI from getstream.io/cli, and wait.
+
+Keep the CLI up to date, asking the user before updating it. Once they agree:
+for a CLI installed from npm (`npm ls -g @stream-io/cli` lists it) run the
+`npm install` above again, otherwise run `getstream update`.
 
 `getstream init` and `getstream login` can open a browser for a user to sign in,
 even in non-interactive terminals. Check login with `getstream status`. Use
@@ -90,9 +96,8 @@ First match wins:
    security report), for Stream's SDKs or any other, is not integration work:
    use stream-security-audit skill.
 
-   Install a missing skill with `getstream skills <name>`, then follow it
-   (`getstream skills` alone installs every skill; an older CLI installs only
-   stream, stream-builder and stream-docs, so `getstream update` first). For a
+   If the platform skill is not installed, tell the user that
+   `getstream skills <name>` installs it. For a
    web app, or a generic app, pick stream-react. A framework beats an OS: "an
    Unreal chat app for iOS" is stream-unreal.
 

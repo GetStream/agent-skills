@@ -13,7 +13,7 @@ This pack bundles curated references and blueprints (`CHAT-COMPOSE.md`, `VIDEO-C
 - **Bundled references and blueprints stay mandatory** for screen structure, slot maps, and the Android-specific rules in [`../RULES.md`](../RULES.md). Read them as that file requires, on every turn.
 - **The manifests are the source for anything not bundled**: guides, API detail, newer surfaces, and any product/UI-layer combination this pack does not carry (AI integrations, moderation, location sharing, migration guides).
 
-When the two disagree about an API signature, the fetched docs page wins and the bundled reference is stale - say so rather than quietly picking one.
+When the two disagree about an API signature, the docs page is current and the bundled reference is stale - say so rather than quietly picking one.
 
 ---
 
